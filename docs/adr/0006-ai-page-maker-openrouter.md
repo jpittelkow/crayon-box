@@ -29,8 +29,8 @@ without code changes.
   The parent area states this next to the button. Original photos aren't kept after the page is made.
   - The setup notes say to turn off, in the OpenRouter account's privacy settings, routing to providers that
     train on inputs.
-  - The button's note suggests photos of pets, toys and drawings. Whether photos that show the kids are sent is
-    the parent's call each time; whether the app should discourage it more strongly is an open question.
+  - The app does not steer or discourage which photos a parent uses, including photos that show the kids. It
+    says where the photo goes and leaves the choice to the parent (decided by the owner, 2026-11-14).
 - **Failure:** no internet, no key, an API error, or the model refusing the photo (some models decline photos of
   people) shows a plain message and leaves the photo in place to retry.
 

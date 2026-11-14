@@ -36,8 +36,9 @@ the same app, share kid profiles, the parent area and updates, and not slow down
 - Home screen shows only enabled games; a parent can hide a game. With one game enabled, the home screen is
   skipped.
 - Shared kid UI rules (ADR 0003) apply to every game.
-- **Racing game (milestone 3, own ADR later):** canvas-based, original cartoon cars, one-finger controls
-  (touch left/right half to steer, car drives itself), no way to lose, stickers or confetti for finishing a lap.
+- **Racing game (milestone 3, own ADR later):** original cartoon cars, one-finger controls (touch left/right half
+  to steer, car drives itself), no way to lose, stickers or confetti for finishing a lap. It is expected to need
+  3D models and a lot of design, so how it is drawn (the first sketch was a flat canvas game) is left to its ADR.
 
 ## Consequences
 - Adding a game = a new folder plus one line in the game registry.

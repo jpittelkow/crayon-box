@@ -24,11 +24,8 @@ laptop.
   *Check now*. The parent area shows the version, the release notes, and *Install and restart*. Kid screens never
   show update prompts.
 - **Repo visibility:** the updater downloads release files without logging in, so the releases must be public.
-  The code stays in a private repo and the workflow publishes releases to a second, public releases-only repo
-  (ADR 0013), using the action's `owner` and `repo` inputs and a token that can write to that repo. Check the
-  cross-repo and draft settings against the current `tauri-action` README when building the workflow; the two
-  together have had bugs. Nothing secret is in the code either way (the OpenRouter key is entered on the laptop,
-  ADR 0006).
+  The repo is public (ADR 0013), so releases are published in the same repo and need no extra setup. Nothing
+  secret is in the code (the OpenRouter key is entered on the laptop, ADR 0006).
 - **Windows SmartScreen:** without a paid code-signing certificate, Windows shows "Windows protected your PC"
   on first install (More info → Run anyway). In-app updates don't trigger it again. A certificate can be added
   later.

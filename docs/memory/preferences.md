@@ -11,7 +11,12 @@ _Last confirmed: 2026-11-14_
 - A car theme matters to at least one kid; asked for a well-known animated car franchise, which was replaced by
   original cartoon cars for licensing reasons (ADR 0011).
 
+- The AI page maker must not steer or discourage which photos a parent uses; that choice is the parent's
+  (ADR 0006).
+- Expects the racing game to use 3D models and to need a lot of design, so it comes after the installer.
+
 ## Tooling and hosting
+- The repo is public, one repo for code and releases (ADR 0013).
 - Install from GitHub and update inside the app; no dev tools on the family laptop (ADR 0009).
 - GitHub is fine as the main host; a self-hosted Gitea exists and may mirror (ADR 0013).
 - Uses OpenRouter for AI image models, with their own key (ADR 0006).

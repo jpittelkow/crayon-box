@@ -11,8 +11,8 @@ Design done, no code yet. The repo holds the README, ADRs 0001–0015, and the m
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
 3. **Racing game** (ADR 0012): second game module, needs its own ADR first.
 
-Milestone 1 is first. The order of 2 and 3 is not decided (see [open-questions.md](open-questions.md)).
-Deferred: printing and export (ADR 0010).
+Built in this order (owner's decision, 2026-11-14). The racing game is last because it needs an ADR, 3D models
+and a lot of design. Deferred: printing and export (ADR 0010).
 
 ## Status of decisions
 - ADR 0001 is Accepted; 0010 is Deferred; all others are **Proposed** and waiting on the owner's go-ahead.

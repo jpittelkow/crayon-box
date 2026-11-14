@@ -18,7 +18,7 @@ in-app updates from GitHub Releases. Design lives in [docs/adr](docs/adr/README.
 3. A new or changed design decision becomes an ADR (ADR 0001), not just a memory note.
 
 ## Privacy rule (hard rule, applies to every file in the repo)
-This repo may be public (ADR 0009, 0013). **Never write anything that identifies the family's kids**, in docs,
+This repo is public (ADR 0013). **Never write anything that identifies the family's kids**, in docs,
 code, comments, tests, sample data, commit messages, page names or file names:
 - No kids' names, nicknames or initials.
 - No birthdays, exact ages tied to a specific child, school, daycare, location or address.

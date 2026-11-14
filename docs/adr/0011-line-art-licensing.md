@@ -24,8 +24,9 @@ code itself. Many of the built-in pages are likely to be made with AI, which nee
 - **Sounds, icons and fonts** follow the same rule as line art: original, CC0 / public domain, or a license that
   allows redistribution. Each third-party one is listed in a `CREDITS.md` at the repo root with its source and
   license.
-- **Code:** a `LICENSE` file is added before the code or the installers are public. Which license is an open
-  question for the owner; until then the code is all rights reserved.
+- **Code:** MIT, in the `LICENSE` file at the repo root (decided by the owner, 2026-11-14). MIT was chosen over
+  GPL because it is short, matches Tauri and most of the web tooling the app depends on, and puts no obligations
+  on the owner. The license covers the code only; built-in line art stays CC0 as above.
 
 ## Consequences
 - The app and repo can be shared publicly without license problems.

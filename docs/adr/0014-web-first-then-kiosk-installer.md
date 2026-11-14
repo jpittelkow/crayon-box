@@ -16,7 +16,8 @@ The work is split into three milestones. Other ADRs refer to them by these names
 | 2. Installer | The Windows app (Tauri) with the kiosk lock, file storage, updates and the AI page maker |
 | 3. Racing game | The second game (ADR 0012) |
 
-Milestone 1 comes first. Whether the installer or the racing game comes next is an open question for the owner.
+They are built in this order (decided by the owner, 2026-11-14). The racing game is last because it needs its
+own ADR, 3D models and a lot of design work.
 
 ### Milestone 1: web app
 The same TypeScript code (ADR 0002) runs in Edge, served from the dev machine or as a static site. It uses the

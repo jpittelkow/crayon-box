@@ -13,14 +13,13 @@ for the updater from anywhere. Gitea can mirror the repo if wanted. Moving to Gi
 (Gitea Actions plus a self-hosted Windows runner, and the updater URL pointed at Gitea releases) but needs that
 runner and a Gitea reachable from the laptop.
 
-Visibility: **a private code repo plus a public releases-only repo** (ADR 0009). The code repo now also holds
-the project memory and a session journal with playtest notes about a family's kids. The privacy rule in
-`CLAUDE.md` keeps names and identifiers out of them, but keeping the repo private is a second layer. A single
-public repo is simpler and remains possible if the owner prefers it.
+Visibility: **one public repo** (decided by the owner, 2026-11-14). Code, releases, built-in pages, the project
+memory and the session journal all live in it. A private code repo plus a public releases-only repo was
+considered and turned down as more setup than it is worth.
 
 ## Consequences
-- No build machine to maintain.
-- Only the installers are public. The code, built-in pages, memory and journal are not.
-- A private repo has a monthly allowance of free build minutes rather than unlimited ones. A few releases a
-  month should fit comfortably; check the current allowance when setting up the workflow.
-- Publishing to a second repo needs one extra token and a little more workflow setup.
+- No build machine to maintain, and builds on hosted runners are free for a public repo.
+- Everything in the repo is visible to anyone, including the memory and journal. The privacy rule in `CLAUDE.md`
+  is the only thing keeping the kids' names and identifiers out, so it applies to every commit.
+- Commit history is public too, including each commit's author name and email.
+- No secrets are in the repo (ADR 0006, 0009).
