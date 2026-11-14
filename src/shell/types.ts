@@ -5,10 +5,17 @@ export type KidColor = 'orange' | 'pink' | 'purple' | 'green' | 'blue' | 'teal';
 export type KidSymbol = 'star' | 'heart' | 'moon' | 'flower' | 'sun' | 'leaf';
 export type ColoringMode = 'free' | 'lines';
 
-/** A kid is a color and a symbol, never a name (ADR 0007). The symbol doubles as the storage folder name. */
+/**
+ * A kid profile (ADR 0007, 0018). Name and photo are optional, set by a parent, and kept on the device only.
+ * `id` names the kid's storage folders, so it is never the kid's name.
+ */
 export interface KidProfile {
-  id: KidSymbol;
+  id: string;
+  symbol: KidSymbol;
   color: KidColor;
+  name?: string;
+  /** True when a photo is stored for this kid. */
+  hasPhoto?: boolean;
   /** Where this kid's new pictures start (ADR 0004, 0007). */
   startMode: ColoringMode;
 }
@@ -26,9 +33,19 @@ export interface GameContext {
   exitToHome(): void;
 }
 
-/** A section a game adds to the parent area. Shape to be settled with the parent area (ADR 0008). */
+/** What a game's parent-area section gets to work with. */
+export interface ParentSectionContext {
+  storage: GameStorage;
+  kids: KidProfile[];
+  /** The kid's name, or their symbol name when they have none. */
+  kidLabel(kid: KidProfile): string;
+}
+
+/** A screen a game adds to the parent area (ADR 0008, 0012). */
 export interface SettingsSection {
+  id: string;
   title: string;
+  render(el: HTMLElement, ctx: ParentSectionContext): Promise<void>;
 }
 
 /** The game itself, loaded on demand. */
@@ -36,6 +53,8 @@ export interface GameModule {
   /** Draws the game into `el`. Returns an unmount function that resolves once the game has finished saving. */
   mount(el: HTMLElement, ctx: GameContext): () => Promise<void>;
   parentSettings?: SettingsSection[];
+  /** Deletes everything the game keeps for a kid, when a parent deletes the kid. */
+  forgetKid?(storage: GameStorage, kidId: string): Promise<void>;
 }
 
 /** Registry entry, loaded at start-up: enough to draw the home tile. */

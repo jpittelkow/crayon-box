@@ -25,8 +25,9 @@ code, comments, tests, sample data, commit messages, page names or file names:
 - No photos, drawings or AI-generated pages made from family photos (those stay on the laptop, ADR 0011).
 - No other specific identifiers (usernames, device names, account ids, emails).
 
-Refer to kids generically: "the kids", "a kid", "the youngest", "a car-loving kid". In the app, kids are
-profiles with a color and a symbol, never a name (ADR 0007). Test data uses symbols too (e.g. `star`, `heart`).
+Refer to kids generically: "the kids", "a kid", "the youngest", "a car-loving kid". The rule is about what gets
+committed. Inside the app a parent may give a profile a name and a photo; those stay on the device only and never
+reach the repo, file names or any service (ADR 0018). Test data uses symbols and generated images (e.g. `star`).
 If you notice an identifier already in the repo, flag it to the owner rather than silently leaving it.
 
 ## Working conventions

@@ -60,3 +60,30 @@ export async function savePicture(storage: GameStorage, picture: Picture, paint:
   if (paint) await storage.putBlob(`${dir(picture)}paint.png`, paint);
   await storage.putJson(`${dir(picture)}art.json`, picture.meta);
 }
+
+export async function hasPrevious(storage: GameStorage, picture: Picture): Promise<boolean> {
+  return (await storage.getBlob(`${dir(picture)}prev.png`)) !== undefined;
+}
+
+/**
+ * Brings back the previous version (ADR 0007). The current paint becomes the previous version, so restoring twice
+ * puts things back as they were.
+ */
+export async function restorePrevious(storage: GameStorage, picture: Picture): Promise<boolean> {
+  const prev = await storage.getBlob(`${dir(picture)}prev.png`);
+  if (!prev) return false;
+  const current = await getPaint(storage, picture);
+  if (current) await storage.putBlob(`${dir(picture)}prev.png`, current);
+  else await storage.delete(`${dir(picture)}prev.png`);
+  await savePicture(storage, picture, prev);
+  return true;
+}
+
+export async function deletePicture(storage: GameStorage, picture: Picture): Promise<void> {
+  for (const path of await storage.list(dir(picture))) await storage.delete(path);
+}
+
+/** Removes every picture of a kid, when a parent deletes the kid. */
+export async function forgetKid(storage: GameStorage, kid: string): Promise<void> {
+  for (const path of await storage.list(`art/${kid}/`)) await storage.delete(path);
+}

@@ -12,6 +12,12 @@ _Last confirmed: 2026-11-14_
   show 23 plus rainbow, the most that fits at full button size (ADR 0003, 0016); the owner has not yet said
   whether that is enough.
 - Printing is not needed for v1 (ADR 0010).
+- **Pages can be colored again and again**: a page tap always starts a new picture; old ones are continued from
+  My pictures (asked 2026-11-14, ADR 0017).
+- **The coloring page should be as big as possible**; accepted 64 px color buttons for it (2026-11-14, ADR 0019).
+- **Profiles get names and photos**, names shown under the badges as a setting (asked 2026-11-14, ADR 0018). The
+  owner's view: the privacy rule is about what gets committed to the repo, not settings inside the app.
+- Would like settings (and maybe more) to **sync across devices** later, knowing it is a big lift (2026-11-14).
 - Wants lots of pages and an easy way for the family to add more, including from photos via AI (ADR 0005, 0006).
 - A car theme matters to at least one kid; asked for a well-known animated car franchise, which was replaced by
   original cartoon cars for licensing reasons (ADR 0011).

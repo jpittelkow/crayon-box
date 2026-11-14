@@ -1,6 +1,6 @@
 # 0003. Toddler-first interaction rules
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); swatch size superseded by [0019](0019-bigger-coloring-page.md)
 - Date: 2026-11-14
 
 ## Context

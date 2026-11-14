@@ -1,13 +1,13 @@
-/* Coloring screens, laid out on the 1280 x 800 reference frame (ADR 0016). */
+/* Coloring screens (ADR 0016, 0017, 0019). The frame fills the window, so sizes here are minimums or fractions. */
 
 /* ---- Coloring screen: tool rail left, page in the middle, tray under it, color rail right ---- */
 .coloring {
   position: absolute;
   inset: 0;
   box-sizing: border-box;
-  padding: var(--space-6);
+  padding: var(--space-4);
   display: flex;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 .tool-rail {
@@ -24,18 +24,25 @@
 
 .center {
   flex-grow: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 28px;
+  gap: var(--space-5);
 }
 
-/* The page is 4:3: 768 x 576 inside a 5 px outline. */
+/* All the room the rails and tray leave; the page is sized to the largest 4:3 that fits (session.ts). */
+.page-area {
+  flex-grow: 1;
+  min-height: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .page-frame {
   box-sizing: content-box;
-  width: 768px;
-  height: 576px;
+  flex-shrink: 0;
   border: var(--outline) solid var(--ink);
   border-radius: 20px;
   background: var(--paper);
@@ -57,10 +64,12 @@
 }
 
 .tray {
-  width: 778px;
+  flex-shrink: 0;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-4);
 }
 .tray-panel {
   height: 100px;
@@ -74,19 +83,19 @@
 }
 
 .color-rail {
-  width: 292px;
   flex-shrink: 0;
   display: grid;
-  grid-template-columns: repeat(3, 80px);
+  grid-template-columns: repeat(3, var(--kid-swatch));
   gap: var(--kid-gap-min);
   align-content: center;
   justify-content: center;
 }
 
-/* ---- Page picker: paper tiles, three across and two down ---- */
-.page-picker {
+/* ---- Tile screens: start, page library, My pictures ---- */
+.tile-screen {
   position: absolute;
   inset: 0;
+  container-type: size;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,11 +105,46 @@
   top: var(--space-6);
   left: var(--space-6);
 }
-.page-grid {
+
+/* Three across, two down, as large as the screen allows below the corner button. */
+.tile-grid {
+  --tile-w: min(calc((100cqw - 2 * 152px - 2 * 28px) / 3), calc((100cqh - 2 * 120px - 30px) / 1.5));
   display: grid;
-  grid-template-columns: repeat(3, 240px);
-  gap: 48px 56px;
+  grid-template-columns: repeat(3, var(--tile-w));
+  gap: 30px 28px;
+  margin-top: 64px;
+}
+.tile-grid .cb-paper {
+  width: var(--tile-w);
+  height: calc(var(--tile-w) * 0.75);
 }
 .more-tile {
   background: var(--paper);
+}
+
+.start-row {
+  display: flex;
+  gap: 64px;
+}
+.big-tile.cb-paper {
+  --big-w: min(calc((100cqw - 2 * 152px - 64px) / 2), calc((100cqh - 2 * 120px) * 4 / 3), 520px);
+  width: var(--big-w);
+  height: calc(var(--big-w) * 0.75);
+  border-width: 6px;
+  border-radius: 40px;
+  box-shadow: 0 10px 0 var(--ink);
+}
+.tile-badge {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 84px;
+  height: 84px;
+  box-sizing: border-box;
+  border: 4px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

@@ -7,9 +7,56 @@
   position: absolute;
   inset: 0;
   display: flex;
+  flex-wrap: wrap;
+  /* Badges line up along the top, so a name under one doesn't lift it above the others. */
+  align-items: flex-start;
+  align-content: center;
+  justify-content: center;
+  gap: 40px 56px;
+  padding: 96px 40px;
+}
+.kid-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+.kid-picker-row.is-crowded .cb-badge--xl {
+  width: 176px;
+  height: 176px;
+}
+.kid-name {
+  max-width: 240px;
+  font: 600 30px/36px var(--font-display);
+  color: var(--ink);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.avatar-photo {
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.lock-button {
+  position: absolute;
+  top: var(--space-6);
+  right: var(--space-6);
+  box-sizing: border-box;
+  width: var(--lock-size);
+  height: var(--lock-size);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-round);
+  background: var(--manila-deep);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 56px;
+  touch-action: none;
+  cursor: pointer;
 }
 .deco {
   position: absolute;

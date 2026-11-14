@@ -31,3 +31,9 @@ _Last updated: 2026-11-14_
 - Undo with two fingers at once: if one finger lifts while the other is still painting, undoing the second
   stroke later can leave a bit of it behind inside the first stroke's box. Accepted for now; noted in
   `engine.ts` (2026-11-14).
+- A parent-world button styled `display: inline-flex` ignores the `hidden` attribute unless CSS restores it;
+  `parent.css` has a `[hidden]` rule for that (found 2026-11-14).
+- The keyboard is blocked app-wide (ADR 0003) except while `body[data-world="parent"]`, so the name field can be
+  typed in. Browser shortcuts (Ctrl/Alt) stay blocked there too (2026-11-14).
+- Scripts outside the repo can't import `@playwright/test` by name; import it by file URL from the repo's
+  `node_modules` (found 2026-11-14).

@@ -36,10 +36,9 @@ function folderOf(path: string): { theme: string; slug: string } {
   return { theme: parts[2], slug: parts[3] };
 }
 
-export function builtinPages(): Page[] {
-  const themes = new Map<string, ThemeMeta>();
-  for (const [path, meta] of Object.entries(themeFiles)) themes.set(path.split('/')[2], meta);
-
+/** Every built-in page, in theme order, including ones a parent has hidden. */
+export function allBuiltinPages(): Page[] {
+  const themes = builtinThemes();
   const pages: Page[] = [];
   for (const [path, meta] of Object.entries(pageFiles)) {
     const { theme, slug } = folderOf(path);
@@ -50,4 +49,20 @@ export function builtinPages(): Page[] {
   }
   const order = (p: Page) => themes.get(p.theme)?.order ?? 99;
   return pages.sort((a, b) => order(a) - order(b) || a.meta.title.localeCompare(b.meta.title));
+}
+
+export function builtinThemes(): Map<string, ThemeMeta> {
+  const themes = new Map<string, ThemeMeta>();
+  for (const [path, meta] of Object.entries(themeFiles)) themes.set(path.split('/')[2], meta);
+  return themes;
+}
+
+/** The pages a kid sees in the library: all of them except the ones a parent hid. */
+export function libraryPages(hidden: readonly string[]): Page[] {
+  const set = new Set(hidden);
+  return allBuiltinPages().filter((p) => !set.has(p.id));
+}
+
+export function pageById(id: string): Page | undefined {
+  return allBuiltinPages().find((p) => p.id === id);
 }

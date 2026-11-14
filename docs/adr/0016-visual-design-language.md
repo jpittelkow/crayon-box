@@ -1,6 +1,6 @@
 # 0016. Visual design language: Crayon Box
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); partly superseded by [0017](0017-new-pictures-and-my-pictures.md), [0018](0018-kid-names-and-photos.md) and [0019](0019-bigger-coloring-page.md)
 - Date: 2026-11-14
 
 ## Context

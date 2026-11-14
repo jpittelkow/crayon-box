@@ -2,11 +2,13 @@ import { fitFrame, fullscreenOnFirstTouch, installGuards } from './shell/guards'
 import { Shell } from './shell/shell';
 import { memoryBackend, openIdbBackend } from './storage/idb';
 import { appStorage } from './storage/namespaced';
+import '@fontsource/fredoka/600.css';
 import './ui/tokens.css';
 import './ui/kid.css';
 import './shell/shell.css';
 
 async function boot(): Promise<void> {
+  document.body.dataset.world = 'kid';
   installGuards();
   fullscreenOnFirstTouch();
 

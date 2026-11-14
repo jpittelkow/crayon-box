@@ -4,8 +4,12 @@ export function installGuards(win: Window = window): void {
   const doc = win.document;
   const block = (e: Event) => e.preventDefault();
 
+  // The parent area is ordinary text UI (ADR 0016 rule 8): typing and selecting text work there.
+  const inParentWorld = () => doc.body.dataset.world === 'parent';
+  const isField = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement;
+
   doc.addEventListener('contextmenu', block);
-  doc.addEventListener('selectstart', block);
+  doc.addEventListener('selectstart', (e) => !isField(e.target) && !inParentWorld() && e.preventDefault());
   doc.addEventListener('dragstart', block);
   // Pinch-zoom on touchpads and Ctrl+wheel zoom
   win.addEventListener('wheel', (e) => e.ctrlKey && e.preventDefault(), { passive: false });
@@ -26,6 +30,8 @@ export function installGuards(win: Window = window): void {
       }
       // While developing, keep reload and the dev tools reachable.
       if (import.meta.env.DEV && (e.key === 'F5' || e.key === 'F12')) return;
+      // Parents type names in the parent area; browser shortcuts stay blocked even there.
+      if (inParentWorld() && !e.ctrlKey && !e.altKey && !e.metaKey) return;
       e.preventDefault();
     },
     { capture: true },
@@ -43,10 +49,17 @@ export function fullscreenOnFirstTouch(win: Window = window): void {
   win.addEventListener('pointerup', go, { capture: true });
 }
 
-/** Keeps the 1280 x 800 reference frame as large as the window allows (ADR 0016). */
+/**
+ * Makes the frame fill the window (ADR 0019). Only a window smaller than the 1280 x 800 reference screen scales the
+ * frame down, by just enough to fit; larger windows give the screens more room instead of bigger buttons.
+ */
 export function fitFrame(frame: HTMLElement, win: Window = window): void {
   const fit = () => {
-    const scale = Math.min(win.innerWidth / 1280, win.innerHeight / 800);
+    const w = win.innerWidth;
+    const h = win.innerHeight;
+    const scale = Math.min(1, w / 1280, h / 800);
+    frame.style.width = `${w / scale}px`;
+    frame.style.height = `${h / scale}px`;
     frame.style.setProperty('--frame-scale', String(scale));
   };
   fit();

@@ -1,16 +1,19 @@
 // The app shell (ADR 0012): kid picker, then the home screen (skipped while one game is enabled), then a game.
+// The lock on the shell's screens leads through the gate to the parent area (ADR 0008).
 import type { AppStorage } from '../storage/types';
 import { icons } from '../ui/icons';
 import { el, kidButton } from '../ui/kid';
-import { kidPickerScreen } from './kidPicker';
-import { kidTintVar, loadProfiles } from './profiles';
+import { kidPickerScreen, lockButton } from './kidPicker';
+import { getPhoto, kidTintVar, loadProfiles, loadShellSettings } from './profiles';
 import { GAMES } from './registry';
 import { silentSound } from './sound';
 import type { GameEntry, KidProfile } from './types';
 
 export class Shell {
   private unmount: (() => Promise<void>) | null = null;
+  private stopParent: (() => void) | null = null;
   private busy = false;
+  private urls: string[] = [];
 
   constructor(
     private readonly frame: HTMLElement,
@@ -22,7 +25,10 @@ export class Shell {
     await this.showKidPicker();
   }
 
-  private async leaveGame(): Promise<void> {
+  private async leave(): Promise<void> {
+    this.stopParent?.();
+    this.stopParent = null;
+    document.body.dataset.world = 'kid';
     if (!this.unmount) return;
     const unmount = this.unmount;
     this.unmount = null;
@@ -30,17 +36,39 @@ export class Shell {
     await unmount();
   }
 
-  private show(screen: HTMLElement): void {
-    const ground = screen.style.getPropertyValue('--ground') || 'var(--manila)';
+  private show(screen: HTMLElement, ground = screen.style.getPropertyValue('--ground') || 'var(--manila)'): void {
     this.frame.parentElement?.style.setProperty('--ground', ground);
     screen.classList.add('slide-in');
     this.frame.replaceChildren(screen);
   }
 
+  private revokeUrls(): void {
+    this.urls.splice(0).forEach((u) => URL.revokeObjectURL(u));
+  }
+
   async showKidPicker(): Promise<void> {
-    await this.leaveGame();
+    await this.leave();
+    this.revokeUrls();
     const kids = await loadProfiles(this.storage.shell);
-    this.show(kidPickerScreen(kids, (kid) => void this.afterKidPicked(kid)));
+    const settings = await loadShellSettings(this.storage.shell);
+    const photos = new Map<string, string>();
+    for (const kid of kids) {
+      const blob = await getPhoto(this.storage.shell, kid);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        this.urls.push(url);
+        photos.set(kid.id, url);
+      }
+    }
+    this.show(
+      kidPickerScreen({
+        kids,
+        photos,
+        showNames: settings.showNames,
+        onPick: (kid) => void this.afterKidPicked(kid),
+        onUnlock: () => void this.showGate(),
+      }),
+    );
   }
 
   private async afterKidPicked(kid: KidProfile): Promise<void> {
@@ -69,7 +97,7 @@ export class Shell {
       tile.style.background = game.tileColor;
       row.append(tile);
     }
-    screen.append(back, row);
+    screen.append(back, row, lockButton(() => void this.showGate()));
     return screen;
   }
 
@@ -90,5 +118,31 @@ export class Shell {
     } finally {
       this.busy = false;
     }
+  }
+
+  /** The read-and-tap gate (ADR 0008). The parent world's code loads only from here. */
+  private async showGate(): Promise<void> {
+    await this.leave();
+    const { gateScreen } = await import('../parent/gate');
+    const gate = gateScreen(
+      () => void this.showParentArea(),
+      () => void this.showKidPicker(),
+    );
+    this.stopParent = gate.stop;
+    document.body.dataset.world = 'parent';
+    this.show(gate.el, '#4a4336');
+  }
+
+  private async showParentArea(): Promise<void> {
+    await this.leave();
+    const { parentArea } = await import('../parent/area');
+    const area = await parentArea({
+      storage: this.storage,
+      games: this.games,
+      onExit: () => void this.showKidPicker(),
+    });
+    this.stopParent = area.stop;
+    document.body.dataset.world = 'parent';
+    this.show(area.el, 'var(--desk)');
   }
 }

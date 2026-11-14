@@ -15,7 +15,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* The app draws on the 1280 x 800 reference frame and scales it to fit the screen. */
+/* The frame fills the window; it is scaled down only below the 1280 x 800 reference screen (ADR 0019). */
 #app {
   position: fixed;
   inset: 0;
@@ -30,6 +30,7 @@ body {
   flex-shrink: 0;
   width: var(--frame-width);
   height: var(--frame-height);
+  transform-origin: center;
   transform: scale(var(--frame-scale, 1));
   overflow: hidden;
 }
@@ -126,7 +127,12 @@ body {
   background: var(--current-dot, var(--crayon-sky));
 }
 
-/* Swatches sit at the minimum gap, so the picked one gets a tight ring and does not grow. */
+/* Paint colors are 64 px (ADR 0019). They sit at the minimum gap, so the picked one gets a tight ring and does
+   not grow. */
+.cb-swatch {
+  width: var(--kid-swatch);
+  height: var(--kid-swatch);
+}
 .cb-swatch.is-picked,
 .cb-swatch.is-picked.is-pressed {
   box-shadow:

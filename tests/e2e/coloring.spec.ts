@@ -21,21 +21,26 @@ test('the kid picker opens the pages, then a page, on the kid’s color', async 
   await expect(page.locator('#app')).toHaveText('');
 
   await page.getByRole('button', { name: 'Heart kid' }).tap();
-  await expect(page.locator('[data-screen="page-picker"]')).toBeVisible();
+  // No pictures yet, so the game opens straight on the page library (ADR 0017).
+  await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
   await expect(page.locator('[data-page]')).toHaveCount(3);
   await page.getByRole('button', { name: SHAPES.title }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
   await expect(page.locator('#app')).toHaveCSS('background-color', 'rgb(232, 220, 250)'); // kid-purple-tint
   await expect(page.locator('#app')).toHaveText('');
-  // All 24 swatches on screen at the minimum target size (ADR 0003, 0016).
+  // All 24 swatches on screen at 64 px (ADR 0003, 0019).
   const swatches = page.locator('.color-rail button');
   await expect(swatches).toHaveCount(24);
   for (const box of await swatches.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()))) {
-    expect(box.width).toBeGreaterThanOrEqual(80);
+    expect(box.width).toBeGreaterThanOrEqual(64);
     expect(box.bottom).toBeLessThanOrEqual(800);
   }
+  // The page takes the room the rails leave: about 840 px wide on the reference screen (ADR 0019).
+  const pageBox = (await page.locator('.coloring-page').boundingBox())!;
+  expect(pageBox.width).toBeGreaterThanOrEqual(830);
+  expect(Math.abs(pageBox.width / pageBox.height - 4 / 3)).toBeLessThan(0.01);
 
-  await pick(page, 'Back to the pages');
+  await pick(page, 'Back');
   await pick(page, 'Back');
   await expect(page.locator('[data-screen="kid-picker"]')).toBeVisible();
 });
@@ -168,24 +173,59 @@ test('a picture and its mode are kept when the kid leaves and comes back', async
   await expectPaint(page, SHAPES.inCircle, RED);
   await pick(page, 'Stay in the lines');
 
-  await pick(page, 'Back to the pages');
-  // The started page shows the kid's coloring under its lines.
-  await expect(page.getByRole('button', { name: SHAPES.title }).locator('img')).toHaveCount(2);
+  await pick(page, 'Back');
+  // Back in the library, the page is blank again: library tiles are always fresh pages (ADR 0017).
+  await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: SHAPES.title }).locator('img')).toHaveCount(1);
 
-  await page.getByRole('button', { name: SHAPES.title }).tap();
+  // My pictures has it, drawn as it is now, and opening it continues it in its own mode.
+  await pick(page, 'Back');
+  await expect(page.locator('[data-screen="coloring-start"]')).toBeVisible();
+  await pick(page, 'My pictures');
+  const tile = page.getByRole('button', { name: 'Circle, square and triangle picture' });
+  await expect(tile.locator('img')).toHaveCount(2);
+  await tile.tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
   await expectPaint(page, SHAPES.inCircle, RED);
   await expect(page.getByRole('button', { name: 'Stay in the lines' })).toHaveAttribute('aria-pressed', 'true');
 
-  // Another kid's pages are their own.
-  await pick(page, 'Back to the pages');
+  // Another kid's pictures are their own.
   await pick(page, 'Back');
-  await openShapesPageFor(page, 'Moon kid');
+  await pick(page, 'Back');
+  await pick(page, 'Back');
+  await page.getByRole('button', { name: 'Moon kid' }).tap();
+  await page.getByRole('button', { name: SHAPES.title }).tap();
+  await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
   await expectBlank(page, SHAPES.inCircle);
 });
 
-async function openShapesPageFor(page: import('@playwright/test').Page, kid: string) {
-  await page.getByRole('button', { name: kid }).tap();
+test('the same page can be colored again as a new picture', async ({ page }) => {
+  await openShapesPage(page);
+  await pick(page, 'Paint bucket');
+  await pick(page, 'Red');
+  await tapPage(page, SHAPES.inCircle);
+  await expectPaint(page, SHAPES.inCircle, RED);
+  await pick(page, 'Back');
+
   await page.getByRole('button', { name: SHAPES.title }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
-}
+  await expectBlank(page, SHAPES.inCircle);
+  await pick(page, 'Paint bucket');
+  await pick(page, 'Blue');
+  await tapPage(page, SHAPES.inSquare);
+  await expectPaint(page, SHAPES.inSquare, BLUE);
+  await pick(page, 'Back');
+  await pick(page, 'Back');
+
+  await pick(page, 'My pictures');
+  await expect(page.locator('[data-picture]')).toHaveCount(2);
+});
+
+test('a page opened and left without painting adds nothing to My pictures', async ({ page }) => {
+  await openShapesPage(page);
+  await pick(page, 'Back');
+  await pick(page, 'Back');
+  await expect(page.locator('[data-screen="kid-picker"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
+});

@@ -3,10 +3,12 @@
 _Last updated: 2026-11-14_
 
 ## Phase
-Milestone 1 (web app) started on 2026-11-14. `npm run dev` opens the kid picker; a kid picks one of three
-placeholder pages and can fill, paint, erase, undo, start over and switch the coloring mode. Pictures autosave to
-IndexedDB. Unit tests (Vitest) and browser tests (Playwright, touch emulation) pass locally; a CI workflow runs
-them but has not run on GitHub yet (nothing committed).
+Milestone 1 (web app) in progress. `npm run dev` opens the kid picker. A kid starts a new picture from the page
+library or continues one from My pictures (ADR 0017), and can fill, paint, erase, undo, start over and switch the
+coloring mode. The page fills the window (ADR 0019). Holding the lock on the kid picker for a second opens the
+parent gate, then the parent area: kids with names and photos (ADR 0018), starting mode, the show-names setting,
+Pictures (restore, delete) and Page library (hide pages). Unit and browser tests pass locally. The first part is
+committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
 
 ## Milestones (defined in ADR 0014)
 1. **Web app:** a stepping stone. Coloring game in a browser (Edge), browser storage behind the storage
@@ -14,6 +16,9 @@ them but has not run on GitHub yet (nothing committed).
    online. Used to test with the kids early. Art made here is throwaway.
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
 3. **Racing game** (ADR 0012): second game module, needs its own ADR first.
+4. **Sync between devices** (asked by the owner on 2026-11-14, "maybe a later milestone"): settings, profiles and
+   maybe pictures saved to a server. Not designed yet; needs its own ADR, and changes ADR 0014 (nothing hosted
+   online) and ADR 0018 (names and photos stay on the device). See [open questions](open-questions.md).
 
 Built in this order (owner's decision, 2026-11-14). The racing game is last because it needs an ADR, 3D models
 and a lot of design. Deferred: printing and export (ADR 0010).
@@ -29,20 +34,22 @@ and a lot of design. Deferred: printing and export (ADR 0010).
   [open question](open-questions.md).
 
 ## Code map
-- `src/shell/`: app shell (ADR 0012): kid picker, home screen (skipped with one game), game registry, guards
-  against escape hatches (ADR 0003 rule 4), default profiles.
+- `src/shell/`: app shell (ADR 0012): kid picker with the lock, home screen (skipped with one game), game
+  registry, guards against escape hatches (ADR 0003 rule 4), profiles and shell settings.
+- `src/parent/`: gate (ADR 0008), parent area, kid editor, photo cropping. Loaded only when the gate opens.
 - `src/storage/`: storage interface (ADR 0007) with an IndexedDB backend and an in-memory one for tests.
-- `src/ui/`: Crayon Box tokens as CSS custom properties, kid components, icons and the palette (ADR 0016).
-- `src/games/coloring/`: the game (lazy-loaded), `engine/` (ADR 0004: canvases, region worker, undo),
-  `pictures.ts` (art.json, paint.png, prev.png), `pages.ts` (bundles `pages/`).
+- `src/ui/`: Crayon Box tokens as CSS custom properties, kid components, icons, the palette, and the parent
+  world kit with bundled fonts (ADR 0016).
+- `src/games/coloring/`: the game (lazy-loaded): `game.ts` (start, library, My pictures), `session.ts` (the
+  coloring screen), `engine/` (ADR 0004), `pictures.ts`, `pages.ts`, `parentSections.ts` (its parent screens).
 - `pages/`: three original CC0 placeholder pages in the ADR 0005 format.
 
 ## Milestone 1: what is left (ADR 0014 "In")
-- Parent gate and parent area with basic settings and page hiding (ADR 0008). Until then the three default
-  profiles (star, heart, moon) are seeded on first run and can't be changed.
-- Gallery (ADR 0007), the theme strip on the page picker (ADR 0016), the lock button on the shell screens.
+- The theme strip on the page library (ADR 0016); only three pages exist so far.
 - The rendered page check in CI (open shapes, tiny regions; ADR 0005). Only the page.json/license part exists.
 - The local container (Dockerfile) for a steadier copy (ADR 0014).
-- Sounds (none exist yet; the app is silent), and bundled fonts plus `CREDITS.md` once the parent world needs
-  text (ADR 0016).
+- Sounds (none exist yet; the app is silent, and there is no Sounds setting).
+- Optional PIN instead of number words at the gate (ADR 0008).
 - The ~48 real built-in pages (see open questions).
+- The design system and mockup artifacts still show 80 px swatches, no names, and the old page flow; they need
+  updating to ADRs 0017–0019.

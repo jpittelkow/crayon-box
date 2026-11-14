@@ -45,6 +45,20 @@ export const icons = {
       size,
     ),
   lines: (size = 48) => svg(`<rect x="9" y="9" width="30" height="30" rx="7" ${CURRENT}/>`, size),
+  gallery: (size = 60) =>
+    svg(
+      '<rect x="5" y="8" width="38" height="32" rx="4" fill="#ffffff"/><circle cx="16" cy="19" r="4" fill="#ffd23f"/>' +
+        '<path d="M6 35l10-9 8 6 7-7 11 10"/>',
+      size,
+    ),
+  /** A blank sheet with a green plus: start a new picture (ADR 0017). */
+  newPicture: (size = 140) =>
+    svg(
+      '<path d="M11 5h19l8 8v30H11z" fill="#ffffff"/><path d="M30 5v8h8"/>' +
+        '<path d="M24.5 20v15M17 27.5h15" stroke-width="5" style="stroke: #2fa35f"/>',
+      size,
+    ),
+  more: (size = 96) => svg('<path d="M17 7l17 17-17 17"/>', size, { stroke: 5 }),
   coloring: (size = 120) =>
     svg(
       '<path d="M11 5h19l8 8v30H11z" fill="#ffffff"/><path d="M30 5v8h8"/>' +

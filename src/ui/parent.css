@@ -1,0 +1,379 @@
+/* Parent world (ADR 0016 rule 8): cool desk ground, slate rail, text, one blue action. Loaded with the gate. */
+
+.parent-world {
+  position: absolute;
+  inset: 0;
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 26px;
+  color: var(--ink);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.parent-world button,
+.parent-world input {
+  font: inherit;
+  color: inherit;
+}
+.parent-world h1 {
+  margin: 0;
+  font: 600 30px/36px var(--font-display);
+}
+.parent-world h2 {
+  margin: 0;
+  font: 600 20px/28px var(--font-display);
+}
+.parent-world p {
+  margin: 0;
+}
+.parent-world [hidden] {
+  display: none !important;
+}
+.pw-muted {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--text-muted);
+}
+
+/* ---- Buttons and fields ---- */
+.pw-btn {
+  box-sizing: border-box;
+  height: var(--parent-target);
+  padding: 0 var(--space-5);
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pw-btn--primary {
+  border-color: var(--action);
+  background: var(--action);
+  color: var(--on-action) !important;
+  font-weight: 700;
+}
+.pw-btn--danger {
+  border-color: var(--danger);
+  color: var(--danger) !important;
+}
+.pw-btn--danger-solid {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--on-action) !important;
+  font-weight: 700;
+}
+.pw-btn:focus-visible,
+.pw-input:focus-visible,
+.pw-switch:focus-visible,
+.pw-seg button:focus-visible,
+.pw-chip:focus-visible,
+.pw-key:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
+}
+.pw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 360px;
+}
+.pw-input {
+  box-sizing: border-box;
+  height: var(--parent-target);
+  padding: 0 14px;
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+}
+.pw-switch-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-height: var(--parent-target);
+  cursor: pointer;
+}
+.pw-switch-row > span {
+  display: flex;
+  flex-direction: column;
+  padding-top: 11px;
+}
+.pw-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 32px;
+  margin: 8px 0 0;
+  border-radius: 16px;
+  background: var(--control-border);
+  cursor: pointer;
+}
+.pw-switch::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper);
+  transition: transform 120ms ease-out;
+}
+.pw-switch:checked {
+  background: var(--action);
+}
+.pw-switch:checked::before {
+  transform: translateX(24px);
+}
+.pw-seg {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: 12px;
+  background: var(--desk);
+}
+.pw-seg button {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+}
+.pw-seg button[aria-pressed='true'] {
+  background: var(--paper);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.pw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.pw-chip {
+  box-sizing: border-box;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.pw-chip[aria-checked='true'] {
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 6px var(--action);
+}
+
+/* ---- Layout ---- */
+.pw-shell {
+  display: flex;
+  background: var(--desk);
+}
+.pw-nav {
+  box-sizing: border-box;
+  width: 264px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 28px var(--space-4) var(--space-5);
+  background: var(--slate);
+  color: var(--on-slate);
+}
+.pw-nav-title {
+  padding: 0 14px 20px;
+  font: 600 22px/28px var(--font-display);
+}
+.pw-nav button {
+  box-sizing: border-box;
+  height: 52px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--on-slate);
+  text-align: left;
+  cursor: pointer;
+}
+.pw-nav button[aria-current='page'] {
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+}
+.pw-nav .pw-nav-back {
+  text-align: center;
+  background: var(--action);
+  color: var(--on-action);
+  font-weight: 700;
+}
+.pw-nav-note {
+  padding: 0 14px 12px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--on-slate-muted);
+}
+.pw-main {
+  flex-grow: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--space-8) var(--space-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+.pw-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+}
+.pw-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 52px;
+  flex-wrap: wrap;
+}
+.pw-grow {
+  flex-grow: 1;
+}
+.pw-avatar {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.pw-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pw-thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 120px;
+  height: 90px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.pw-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.pw-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.pw-tab {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 var(--space-4) 0 6px;
+  border: 2px solid var(--control-border);
+  border-radius: 22px;
+  background: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+.pw-tab[aria-selected='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper) !important;
+  font-weight: 700;
+}
+
+/* ---- Gate (ADR 0008) ---- */
+.pw-gate-ground {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #4a4336;
+}
+.pw-gate {
+  box-sizing: border-box;
+  width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 36px var(--space-10) 28px;
+  border-radius: 24px;
+  background: var(--paper);
+}
+.pw-gate-words {
+  font: 600 44px/52px var(--font-display);
+}
+.pw-dots {
+  display: flex;
+  gap: 14px;
+}
+.pw-dots i {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--control-border);
+  background: var(--paper);
+}
+.pw-dots i.is-on {
+  border-color: var(--action);
+  background: var(--action);
+}
+.pw-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 104px);
+  gap: var(--space-3);
+}
+.pw-key {
+  box-sizing: border-box;
+  height: 72px;
+  padding: 0;
+  border: 2px solid var(--control-border);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  font: 600 34px/40px var(--font-display) !important;
+  cursor: pointer;
+}
+.pw-key:last-child {
+  grid-column: 2;
+}
+.pw-timer {
+  align-self: stretch;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.pw-timer i {
+  display: block;
+  height: 100%;
+  background: var(--text-muted);
+  transform-origin: left;
+}

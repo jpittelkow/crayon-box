@@ -105,6 +105,7 @@
 
   /* Sizes */
   --kid-target-min: 80px;
+  --kid-swatch: 64px; /* paint color buttons only (ADR 0019) */
   --kid-target: 88px;
   --kid-target-lg: 104px;
   --kid-gap-min: 12px;
