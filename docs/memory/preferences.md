@@ -1,0 +1,21 @@
+# Owner preferences
+
+What the owner (the parent building this) has asked for, beyond what the ADRs spell out.
+_Last confirmed: 2026-11-14_
+
+## Product
+- Wants to test early as a web app before any installer (ADR 0014).
+- **Free coloring is the default**; stay-in-the-lines is a per-kid option (ADR 0004, 0007).
+- Printing is not needed for v1 (ADR 0010).
+- Wants lots of pages and an easy way for the family to add more, including from photos via AI (ADR 0005, 0006).
+- A car theme matters to at least one kid; asked for a well-known animated car franchise, which was replaced by
+  original cartoon cars for licensing reasons (ADR 0011).
+
+## Tooling and hosting
+- Install from GitHub and update inside the app; no dev tools on the family laptop (ADR 0009).
+- GitHub is fine as the main host; a self-hosted Gitea exists and may mirror (ADR 0013).
+- Uses OpenRouter for AI image models, with their own key (ADR 0006).
+
+## Working style
+- Keep docs and repo free of the kids' names and any specific identifiers (see [CLAUDE.md](../../CLAUDE.md)).
+- Wants a local memory + journal in the repo so work carries across sessions.
