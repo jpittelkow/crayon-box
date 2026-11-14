@@ -1,0 +1,8 @@
+# kidsapp
+
+A touch-screen app for little kids (ages 4 and under), starting with a coloring book and with room for more games
+(a simple racing game is planned next).
+
+- Built with web technology (TypeScript + HTML canvas), runs in a browser for testing, and ships as a Windows app
+  (Tauri) with full-screen kiosk mode and in-app updates from GitHub Releases.
+- Design decisions: [docs/adr](docs/adr/README.md)
