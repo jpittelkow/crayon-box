@@ -8,6 +8,9 @@ Jeff wants to install the app from GitHub and update it from inside the app, wit
 laptop.
 
 ## Decision
+- **Releases are only for the Windows installer** (decided by the owner, 2026-11-14). Each release holds the
+  installer, its signature and `latest.json`, and nothing else: no web build, no container image. The web app of
+  milestone 1 runs locally only (ADR 0014).
 - **Build:** a GitHub Actions workflow (`tauri-apps/tauri-action`) on a `windows-latest` runner builds the NSIS
   installer whenever a version tag (`v*`) is pushed, and creates a **draft** GitHub Release (`releaseDraft: true`)
   with the installer, its signature, and `latest.json`.

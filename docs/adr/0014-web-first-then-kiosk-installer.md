@@ -20,10 +20,18 @@ They are built in this order (decided by the owner, 2026-11-14). The racing game
 own ADR, 3D models and a lot of design work.
 
 ### Milestone 1: web app
-The same TypeScript code (ADR 0002) runs in Edge, served from the dev machine or as a static site. It uses the
-browser Fullscreen API and blocks what a page can (pinch-zoom, context menu, text selection, swipe back). Storage
-uses the browser (IndexedDB) behind the same storage interface the installed app uses for files, so nothing
-changes in game code later. Good for testing pages, tools and layout with the kids.
+A stepping stone to the installer, not a product of its own. The same TypeScript code (ADR 0002) runs in Edge. It
+uses the browser Fullscreen API and blocks what a page can (pinch-zoom, context menu, text selection, swipe back).
+Storage uses the browser (IndexedDB) behind the same storage interface the installed app uses for files, so
+nothing changes in game code later. Good for testing pages, tools and layout with the kids.
+
+- **Runs locally only** (decided by the owner, 2026-11-14): the Vite dev server while building, and a local
+  container on the dev machine that serves the built files when a steadier copy is wanted. It is never hosted
+  online, no container image is published, and the installer never loads it (ADR 0002 bundles the app's files
+  into the installer).
+- Opened as `http://localhost:<port>` on the machine running the container, the page counts as secure, so
+  `navigator.storage.persist()` below works. Opened from another device by IP address over plain `http`, it does
+  not, and stored art is kept on a best-effort basis only.
 
 - **In:** the shell with the kid picker, the coloring engine (ADR 0004), built-in pages, autosave and the
   gallery (ADR 0007), the parent gate with basic settings and page hiding (ADR 0008).

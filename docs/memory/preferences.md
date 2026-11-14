@@ -4,7 +4,8 @@ What the owner (the parent building this) has asked for, beyond what the ADRs sp
 _Last confirmed: 2026-11-14_
 
 ## Product
-- Wants to test early as a web app before any installer (ADR 0014).
+- Wants to test early as a web app before any installer (ADR 0014). The web app is only a stepping stone to the
+  installer, not something to host or keep.
 - **Free coloring is the default**; stay-in-the-lines is a per-kid option (ADR 0004, 0007).
 - Printing is not needed for v1 (ADR 0010).
 - Wants lots of pages and an easy way for the family to add more, including from photos via AI (ADR 0005, 0006).
@@ -17,6 +18,10 @@ _Last confirmed: 2026-11-14_
 
 ## Tooling and hosting
 - The repo is public, one repo for code and releases (ADR 0013).
+- GitHub Releases are only for the Windows installer; keep the release workflow focused on that (ADR 0009).
+- The web app runs locally only (dev server or a local container on the dev machine). No online hosting, no
+  published container image, and no home-server setup for this app (ADR 0014). Asked on 2026-11-14 to drop a
+  proposed home-server container and template.
 - Install from GitHub and update inside the app; no dev tools on the family laptop (ADR 0009).
 - GitHub is fine as the main host; a self-hosted Gitea exists and may mirror (ADR 0013).
 - Uses OpenRouter for AI image models, with their own key (ADR 0006).

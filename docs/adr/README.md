@@ -21,5 +21,8 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0013](0013-code-hosting.md) | Code hosting: GitHub (Gitea optional mirror) | Proposed |
 | [0014](0014-web-first-then-kiosk-installer.md) | Web app first, then installer with a kiosk lock | Proposed |
 | [0015](0015-testing-approach.md) | Testing approach | Proposed |
+| [0016](0016-visual-design-language.md) | Visual design language: Crayon Box | Proposed |
 
-Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H
+Both links below are private to the owner.
+- Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H
+- Design system (tokens, components, rules): https://claude.ai/artifact/5KmapasFWgcTtRsLbYDUkV
