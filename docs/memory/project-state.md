@@ -3,7 +3,10 @@
 _Last updated: 2026-11-14_
 
 ## Phase
-Design done, no code yet. The repo holds the README, ADRs 0001–0016, and the memory and journal docs.
+Milestone 1 (web app) started on 2026-11-14. `npm run dev` opens the kid picker; a kid picks one of three
+placeholder pages and can fill, paint, erase, undo, start over and switch the coloring mode. Pictures autosave to
+IndexedDB. Unit tests (Vitest) and browser tests (Playwright, touch emulation) pass locally; a CI workflow runs
+them but has not run on GitHub yet (nothing committed).
 
 ## Milestones (defined in ADR 0014)
 1. **Web app:** a stepping stone. Coloring game in a browser (Edge), browser storage behind the storage
@@ -25,7 +28,21 @@ and a lot of design. Deferred: printing and export (ADR 0010).
 - The mockups assume a 1280 × 800 screen; the real laptop's screen is still an
   [open question](open-questions.md).
 
-## Next step
-Scaffold the web app (Vite + TypeScript, `src/games/coloring/`, app shell per ADR 0012) and build the coloring
-engine (ADR 0004) with a handful of placeholder pages and the tests from ADR 0015. Kid screens are built from
-the Crayon Box tokens and components (ADR 0016).
+## Code map
+- `src/shell/`: app shell (ADR 0012): kid picker, home screen (skipped with one game), game registry, guards
+  against escape hatches (ADR 0003 rule 4), default profiles.
+- `src/storage/`: storage interface (ADR 0007) with an IndexedDB backend and an in-memory one for tests.
+- `src/ui/`: Crayon Box tokens as CSS custom properties, kid components, icons and the palette (ADR 0016).
+- `src/games/coloring/`: the game (lazy-loaded), `engine/` (ADR 0004: canvases, region worker, undo),
+  `pictures.ts` (art.json, paint.png, prev.png), `pages.ts` (bundles `pages/`).
+- `pages/`: three original CC0 placeholder pages in the ADR 0005 format.
+
+## Milestone 1: what is left (ADR 0014 "In")
+- Parent gate and parent area with basic settings and page hiding (ADR 0008). Until then the three default
+  profiles (star, heart, moon) are seeded on first run and can't be changed.
+- Gallery (ADR 0007), the theme strip on the page picker (ADR 0016), the lock button on the shell screens.
+- The rendered page check in CI (open shapes, tiny regions; ADR 0005). Only the page.json/license part exists.
+- The local container (Dockerfile) for a steadier copy (ADR 0014).
+- Sounds (none exist yet; the app is silent), and bundled fonts plus `CREDITS.md` once the parent world needs
+  text (ADR 0016).
+- The ~48 real built-in pages (see open questions).

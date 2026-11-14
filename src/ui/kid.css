@@ -1,0 +1,200 @@
+/* Kid world components (ADR 0016). No words: every control is an outlined object with a hard ledge. */
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--manila);
+  /* ADR 0003 rule 4: no pinch-zoom, swipe navigation, selection or callouts */
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The app draws on the 1280 x 800 reference frame and scales it to fit the screen. */
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ground, var(--manila));
+}
+
+.frame {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--frame-width);
+  height: var(--frame-height);
+  transform: scale(var(--frame-scale, 1));
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  background: var(--ground, var(--manila));
+}
+.screen.slide-in {
+  animation: cb-slide 200ms ease-out;
+}
+@keyframes cb-slide {
+  from {
+    transform: translateX(48px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---- Objects ---- */
+.cb-obj {
+  box-sizing: border-box;
+  border: var(--outline) solid var(--ink);
+  background: var(--paper);
+  box-shadow: var(--ledge-rest);
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  touch-action: none;
+  font: inherit;
+  color: inherit;
+  transition:
+    transform 80ms ease-out,
+    box-shadow 80ms ease-out;
+}
+.cb-obj.is-pressed {
+  transform: translateY(4px);
+  box-shadow: var(--ledge-pressed);
+}
+.cb-obj svg {
+  pointer-events: none;
+}
+
+.cb-action {
+  width: var(--kid-target);
+  height: var(--kid-target);
+  border-radius: var(--radius-lg);
+}
+.cb-action--lg {
+  width: var(--kid-target-lg);
+  height: var(--kid-target-lg);
+  border-radius: var(--radius-xl);
+}
+.cb-tool.is-picked {
+  background: var(--pick);
+  box-shadow: var(--ring-picked);
+  transform: scale(1.06);
+  animation: cb-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cb-choice {
+  width: var(--kid-target-min);
+  height: var(--kid-target-min);
+  border-radius: var(--radius-round);
+  box-shadow: 0 4px 0 var(--ink);
+}
+.cb-choice.is-pressed {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.cb-choice.is-picked {
+  box-shadow: var(--ring-picked);
+  transform: scale(1.06);
+  animation: cb-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cb-size.is-picked,
+.cb-mode.is-picked {
+  background: var(--pick);
+}
+.cb-size i {
+  display: block;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--current-dot, var(--crayon-sky));
+}
+
+/* Swatches sit at the minimum gap, so the picked one gets a tight ring and does not grow. */
+.cb-swatch.is-picked,
+.cb-swatch.is-picked.is-pressed {
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 8px var(--ink);
+  transform: none;
+  animation: none;
+}
+.cb-swatch--rainbow {
+  background: var(--crayon-rainbow);
+}
+
+.cb-badge {
+  border-radius: var(--radius-round);
+}
+.cb-badge--xl {
+  width: 220px;
+  height: 220px;
+  border-width: 6px;
+  box-shadow: 0 10px 0 var(--ink);
+}
+.cb-badge--xl.is-pressed {
+  transform: translateY(6px);
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.cb-paper {
+  width: 240px;
+  height: 180px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 0 var(--ink);
+  overflow: hidden;
+  position: relative;
+}
+.cb-paper img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Panels group controls; they get no outline and no ledge. */
+.cb-panel {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 14px;
+  border-radius: var(--radius-xl);
+  background: var(--paper);
+}
+
+@keyframes cb-pop {
+  0% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen.slide-in {
+    animation: none;
+  }
+  .cb-tool.is-picked,
+  .cb-choice.is-picked {
+    animation: none;
+  }
+}

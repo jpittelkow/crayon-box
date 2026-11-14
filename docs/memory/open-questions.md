@@ -18,3 +18,5 @@ _Last updated: 2026-11-14_
   3D models and a lot of design.
 - **Built-in page art:** who or what draws the ~48 original v1 pages (ADR 0005)? ADR 0011 now allows AI-made
   pages under conditions.
+- **Brush sizes:** the three dots paint 40, 80 and 130 page pixels wide (about 15, 30 and 49 px on the
+  1280 × 800 screen). A guess, to check in the first playtest (2026-11-14).

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original placeholder page, CC0. White fills only hide lines behind them; white counts as paper. -->
+  <defs>
+    <path id="body" d="M520 760 C700 420 1200 420 1400 760 C1200 1100 700 1100 520 760 Z"/>
+    <clipPath id="inside"><use href="#body"/></clipPath>
+  </defs>
+  <path d="M0 1400 Q256 1340 512 1400 T1024 1400 T1536 1400 T2048 1400"/>
+  <path d="M1360 760 L1700 520 L1640 760 L1700 1000 Z" fill="#ffffff"/>
+  <path d="M820 640 C860 380 1100 340 1220 600 Z" fill="#ffffff"/>
+  <path d="M880 940 C940 1110 1060 1120 1120 940 Z" fill="#ffffff"/>
+  <use href="#body" fill="#ffffff"/>
+  <g clip-path="url(#inside)">
+    <path d="M1000 400 C930 600 930 920 1000 1120"/>
+    <path d="M1150 400 C1090 600 1090 920 1150 1120"/>
+  </g>
+  <use href="#body"/>
+  <circle cx="700" cy="700" r="60"/>
+  <circle cx="712" cy="712" r="26" fill="#23201c"/>
+  <path d="M560 820 Q600 850 640 830"/>
+  <circle cx="440" cy="480" r="40"/>
+  <circle cx="360" cy="330" r="28"/>
+  <circle cx="430" cy="200" r="20"/>
+  <path d="M1780 1536 C1720 1420 1860 1320 1780 1170 C1900 1290 1860 1430 1880 1536"/>
+  <path d="M200 1536 C150 1440 260 1380 200 1260 C300 1360 270 1450 290 1536"/>
+</svg>

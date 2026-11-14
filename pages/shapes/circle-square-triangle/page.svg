@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original placeholder page, CC0. The browser tests rely on these shapes: keep their geometry. -->
+  <circle cx="560" cy="800" r="380"/>
+  <rect x="1140" y="420" width="700" height="700" rx="40"/>
+  <path d="M1024 140 L1200 380 L848 380 Z"/>
+</svg>

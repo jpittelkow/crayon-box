@@ -18,3 +18,16 @@ _Last updated: 2026-11-14_
   made in each artboard and in the design system's `tokens.json` (found 2026-11-14).
 - Publishing artifact files from the session scratch folder on the dev machine only worked with absolute source
   paths; relative ones were refused by a read-permission rule (found 2026-11-14).
+- Tooling resolved on 2026-11-14: Vite 8, Vitest 5, TypeScript 7, Playwright 1.65, Node 24. TypeScript 7 is
+  strict about `Uint8ClampedArray<ArrayBuffer>` vs `ArrayBufferLike` when building `ImageData`.
+- In page SVGs, white fills count as paper (only dark pixels become lines), so a white fill can hide lines
+  behind a shape. The fish page uses this for its fins (found 2026-11-14).
+- The bucket must read the color when the finger touches, not after the worker answers; a fast color pick in
+  between used to fill with the new color. A browser test now covers it (fixed 2026-11-14).
+- Two Playwright `tap()` calls started together can reach the page in either order. To test "this happened
+  before the worker answered", dispatch the pointer events in one `page.evaluate` (found 2026-11-14).
+- Canvas compositing can be off by one or two per color channel, so browser tests compare pixels with a
+  tolerance of 3 (found 2026-11-14).
+- Undo with two fingers at once: if one finger lifts while the other is still painting, undoing the second
+  stroke later can leave a bit of it behind inside the first stroke's box. Accepted for now; noted in
+  `engine.ts` (2026-11-14).

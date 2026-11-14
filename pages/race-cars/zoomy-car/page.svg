@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original placeholder page, CC0: a made-up cartoon race car, its face on the front bumper. -->
+  <circle cx="300" cy="280" r="110"/>
+  <path d="M0 1150 L2048 1150"/>
+  <path d="M60 820 L180 820 M40 920 L160 920 M80 1020 L190 1020"/>
+  <path d="M220 680 L410 680 L410 725 L220 725 Z"/>
+  <path d="M300 725 L300 805"/>
+  <path d="M260 1000 L260 860 Q270 780 380 760 L700 740 L900 560 Q940 530 1000 530 L1340 530 Q1400 530 1440 570 L1620 740 L1780 770 Q1860 790 1860 870 L1860 1000 Z"/>
+  <path d="M930 610 Q950 590 990 590 L1140 590 L1140 730 L790 730 Z"/>
+  <path d="M1190 590 L1350 590 Q1380 590 1400 610 L1520 730 L1190 730 Z"/>
+  <path d="M1165 720 L1165 1010"/>
+  <circle cx="950" cy="870" r="80"/>
+  <circle cx="1775" cy="850" r="42"/>
+  <circle cx="1785" cy="855" r="16" fill="#23201c"/>
+  <path d="M1690 945 Q1770 990 1845 935"/>
+  <circle cx="560" cy="1000" r="150"/>
+  <circle cx="560" cy="1000" r="60"/>
+  <circle cx="1560" cy="1000" r="150"/>
+  <circle cx="1560" cy="1000" r="60"/>
+</svg>

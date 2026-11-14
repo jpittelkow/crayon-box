@@ -1,0 +1,119 @@
+/* Crayon Box design tokens (ADR 0016). Names and values match the design system's tokens.json. */
+:root {
+  /* Lines and grounds */
+  --ink: #23201c;
+  --paper: #ffffff;
+  --manila: #fff1d6;
+  --manila-deep: #f5dfb3;
+  --lock-ink: #8a7754;
+  --pick: #ffd23f;
+
+  /* Kid profile colors and their tints (the ground while that kid plays) */
+  --kid-orange: #ff9f1c;
+  --kid-orange-tint: #ffe8c2;
+  --kid-pink: #ff6b9d;
+  --kid-pink-tint: #ffdce8;
+  --kid-purple: #9b5de5;
+  --kid-purple-tint: #e8dcfa;
+  --kid-green: #44b87b;
+  --kid-green-tint: #d5f0e0;
+  --kid-blue: #3a86ff;
+  --kid-blue-tint: #d6e6ff;
+  --kid-teal: #12b5b0;
+  --kid-teal-tint: #cdf0ee;
+
+  /* The 23 paint colors, in rail order (three per row), then rainbow */
+  --crayon-light-pink: #ffc2d6;
+  --crayon-pink: #ff70a6;
+  --crayon-red: #f23b2f;
+  --crayon-apricot: #ffbf75;
+  --crayon-orange: #ff8a1f;
+  --crayon-dark-red: #a8201a;
+  --crayon-yellow: #ffd23f;
+  --crayon-lime: #9bd93c;
+  --crayon-green: #2fa35f;
+  --crayon-dark-green: #1b6b3c;
+  --crayon-teal: #12a8a3;
+  --crayon-sky: #4cc9f0;
+  --crayon-pale-blue: #b5e8f8;
+  --crayon-blue: #2f6fed;
+  --crayon-navy: #1d3a9e;
+  --crayon-lavender: #d2b7f7;
+  --crayon-purple: #9b5de5;
+  --crayon-gray: #9aa0a6;
+  --crayon-peach: #f6c9a0;
+  --crayon-tan: #c98f5a;
+  --crayon-brown: #8d5a3b;
+  --crayon-dark-brown: #5b3a26;
+  --crayon-black: var(--ink);
+  --crayon-rainbow: conic-gradient(
+    var(--crayon-red),
+    var(--crayon-orange),
+    var(--crayon-yellow),
+    var(--crayon-green),
+    var(--crayon-sky),
+    var(--crayon-blue),
+    var(--crayon-purple),
+    var(--crayon-red)
+  );
+
+  /* Parent world */
+  --desk: #f1f3f6;
+  --slate: #1d2733;
+  --on-slate: #ffffff;
+  --on-slate-muted: #b6c0cc;
+  --text-muted: #5a6472;
+  --line: #d3d9e0;
+  --control-border: #7f8a99;
+  --action: #2457d6;
+  --on-action: #ffffff;
+  --action-soft: #e3ebfc;
+  --danger: #b3261e;
+  --danger-soft: #fbe4e1;
+  --ok: #0b7a75;
+  --ok-soft: #e3f5f3;
+  --warn: #8a5300;
+  --warn-soft: #fff0cc;
+
+  /* Type (parent world only; the kid world sets no type) */
+  --font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
+  --font-text: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, monospace;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Radius */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+  --radius-round: 50%;
+
+  /* Shadows: ledges are never blurred */
+  --ledge-rest: 0 6px 0 #23201c;
+  --ledge-pressed: 0 2px 0 #23201c;
+  --ring-picked: 0 0 0 4px #ffffff, 0 0 0 9px #23201c;
+  --focus-ring: 0 0 0 2px #ffffff, 0 0 0 5px #2457d6;
+
+  /* Sizes */
+  --kid-target-min: 80px;
+  --kid-target: 88px;
+  --kid-target-lg: 104px;
+  --kid-gap-min: 12px;
+  --parent-target: 48px;
+  --lock-size: 56px;
+  --outline: 5px;
+  --ledge-depth: 6px;
+
+  /* Reference frame */
+  --frame-width: 1280px;
+  --frame-height: 800px;
+}
