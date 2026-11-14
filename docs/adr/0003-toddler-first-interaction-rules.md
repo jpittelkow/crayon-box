@@ -11,13 +11,21 @@ accident. A parent sets things up.
 All kid screens follow these rules:
 1. **No text.** Every control is an icon. Feedback is a sound plus a small bounce.
 2. **Big targets:** at least 80 CSS px with 12 px gaps; buttons fire on pointer-up inside the button.
-3. **One finger.** The first active pointer paints; other touches are ignored until it lifts (palm rejection).
-4. **No escape hatches.** `touch-action: none`, pinch-zoom, swipe navigation, right-click menu, text selection and
-   keyboard shortcuts (except the parent unlock) are disabled. The app runs full screen.
+   To check in playtests: small fingers often slide off before lifting, so pick buttons (colors, sizes, tools) may
+   need to fire on touch-down instead. Buttons that change a lot (undo, start over, back) stay on pointer-up.
+3. **Every finger paints.** Each touch draws its own stroke (up to 4 at once), so a resting hand or a thumb
+   gripping the screen edge never blocks painting, and two kids can color together. Touches with a very large
+   contact area (palms) are ignored where the screen reports contact size.
+4. **No escape hatches.** `touch-action: none`, pinch-zoom, swipe navigation, right-click menu and text selection
+   are disabled, and so is every keyboard shortcut except `Ctrl+Shift+Q`, the parent's quit shortcut (ADR 0008).
+   The app runs full screen.
 5. **Few choices:** 12 colors + rainbow, 3 brush sizes as dots, 3 tools (bucket, brush, eraser), undo, start over.
-6. **Nothing is lost:** autosave after every action; "start over" is undoable.
+6. **Nothing is lost:** autosave after every action; "start over" is undoable; reopening a picture keeps the
+   previous version (ADR 0007).
 7. Anything destructive or outside the app (delete, settings, quit) lives in the parent area (ADR 0008).
 
 ## Consequences
 - Simple, predictable UI; some power features (zoom, color mixing) are left out on purpose.
+- Letting every finger paint means a resting hand can leave a stray mark where the screen doesn't report contact
+  size. Undo removes it, and that is a better failure than painting being blocked.
 - Every new screen is checked against this list before merging.

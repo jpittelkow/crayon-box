@@ -20,7 +20,12 @@ Options considered:
 ## Decision
 Build the UI in TypeScript with HTML canvas (Vite for bundling, no UI framework needed for the kid screens; a
 small one may be used for the parent area). Package with Tauri 2 for Windows (NSIS installer).
-Rust code stays thin: file system, credential storage, printing and updates via official Tauri plugins.
+Rust code stays thin:
+- File system and updates use official Tauri plugins.
+- Credential storage has no official plugin. It uses the Rust `keyring` crate (or a community keyring plugin)
+  behind one small command, which stores the key in Windows Credential Manager (ADR 0006).
+- Printing has no official plugin either. When it is picked up (ADR 0010) it uses the webview's own print dialog.
+- The kiosk keyboard lock is a small Windows-only Rust module (ADR 0014).
 
 All app logic and UI are web technology (HTML, CSS, TypeScript, canvas); Tauri is only the installer, window and
 OS bridge. The app also runs in a normal browser for development, previews and tests.

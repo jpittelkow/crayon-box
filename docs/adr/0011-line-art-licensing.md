@@ -1,11 +1,12 @@
-# 0011. Line art licensing policy
+# 0011. Licensing policy: line art, sounds, icons and code
 
 - Status: Proposed
 - Date: 2026-11-14
 
 ## Context
 Built-in pages are shipped in a repo and an installer, so their licenses matter. Characters from existing shows,
-films, games or brands can't be used.
+films, games or brands can't be used. The same goes for everything else that ships: sounds, icons, fonts and the
+code itself. Many of the built-in pages are likely to be made with AI, which needs its own rule.
 
 ## Decision
 - Built-in pages are original line art made for this project and released as CC0, or third-party art whose
@@ -16,6 +17,15 @@ films, games or brands can't be used.
   ship, upload or share those pages.
 - Family pages (imports and AI pages) stay on the laptop and are never added to the repo automatically.
 - The CI page check (ADR 0005) fails a page whose `page.json` has no `license` field.
+- **AI-made built-in pages** are allowed when all of these hold: the model's terms allow redistributing its
+  output, the prompt names no franchise, character or artist, and a person has looked at the page and found
+  nothing recognisable in it. `page.json` records `"source": "ai"` and the model used. They are released as CC0
+  like the hand-drawn ones.
+- **Sounds, icons and fonts** follow the same rule as line art: original, CC0 / public domain, or a license that
+  allows redistribution. Each third-party one is listed in a `CREDITS.md` at the repo root with its source and
+  license.
+- **Code:** a `LICENSE` file is added before the code or the installers are public. Which license is an open
+  question for the owner; until then the code is all rights reserved.
 
 ## Consequences
 - The app and repo can be shared publicly without license problems.
