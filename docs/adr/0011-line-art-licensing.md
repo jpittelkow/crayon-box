@@ -1,6 +1,6 @@
 # 0011. Licensing policy: line art, sounds, icons and code
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context

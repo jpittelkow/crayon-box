@@ -1,6 +1,6 @@
 # 0008. Parent area behind a hold-then-read gate
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context

@@ -16,11 +16,12 @@ Built in this order (owner's decision, 2026-11-14). The racing game is last beca
 and a lot of design. Deferred: printing and export (ADR 0010).
 
 ## Status of decisions
-- ADR 0001 is Accepted; 0010 is Deferred; all others are **Proposed** and waiting on the owner's go-ahead.
-- The Proposed ADRs were revised on 2026-11-14 after a review (see the journal entry for that day).
-- The look is ADR 0016 (Proposed): a design system called Crayon Box. It and the mockup canvas are artifacts,
+- ADRs 0001–0009 and 0011–0016 are **Accepted** (the owner accepted 0002–0016 on 2026-11-14); 0010 is
+  Deferred. From now on a change to any of them is a new ADR that supersedes it (ADR 0001).
+- The look is ADR 0016: a design system called Crayon Box. It and the mockup canvas are artifacts,
   linked from the [ADR index](../adr/README.md). The canvas has 12 screens and was redrawn on 2026-11-14 to match
-  the revised ADRs. Neither has been reviewed by the owner yet.
+  the revised ADRs. The owner reviewed it the same day, asked for more colors and a per-picture coloring mode
+  (both now in the mockups and ADRs 0003, 0004, 0007, 0016), and said it is otherwise about ready for an MVP.
 - The mockups assume a 1280 × 800 screen; the real laptop's screen is still an
   [open question](open-questions.md).
 

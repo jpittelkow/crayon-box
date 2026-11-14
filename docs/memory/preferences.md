@@ -6,7 +6,11 @@ _Last confirmed: 2026-11-14_
 ## Product
 - Wants to test early as a web app before any installer (ADR 0014). The web app is only a stepping stone to the
   installer, not something to host or keep.
-- **Free coloring is the default**; stay-in-the-lines is a per-kid option (ADR 0004, 0007).
+- **Free coloring or stay in the lines is chosen on each picture**, not only per kid (asked 2026-11-14). Free
+  coloring is where a kid's new pictures start unless a parent changes it (ADR 0004, 0007).
+- Wants **a lot more preset colors** on the coloring screen than the first 12 (asked 2026-11-14). The mockups now
+  show 23 plus rainbow, the most that fits at full button size (ADR 0003, 0016); the owner has not yet said
+  whether that is enough.
 - Printing is not needed for v1 (ADR 0010).
 - Wants lots of pages and an easy way for the family to add more, including from photos via AI (ADR 0005, 0006).
 - A car theme matters to at least one kid; asked for a well-known animated car franchise, which was replaced by
@@ -17,7 +21,8 @@ _Last confirmed: 2026-11-14_
 - Expects the racing game to use 3D models and to need a lot of design, so it comes after the installer.
 
 ## Tooling and hosting
-- The repo is public, one repo for code and releases (ADR 0013).
+- The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to
+  `crayon-box` on 2026-11-14; the local checkout folder may still be called `kidsapp`.
 - GitHub Releases are only for the Windows installer; keep the release workflow focused on that (ADR 0009).
 - The web app runs locally only (dev server or a local container on the dev machine). No online hosting, no
   published container image, and no home-server setup for this app (ADR 0014). Asked on 2026-11-14 to drop a

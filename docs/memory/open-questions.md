@@ -5,10 +5,9 @@ relevant memory file).
 
 _Last updated: 2026-11-14_
 
-- **Accept the Proposed ADRs?** 0002–0009 and 0011–0016 are all still Proposed.
-- **The look (ADR 0016):** the owner has not yet reviewed the redrawn mockups or the design system. The ADR
-  lists the screen decisions it adds (kid picker first, size tray under the page, blank page in the theme strip,
-  12 colors with gray dropped, a Pictures screen in the parent area).
+- **Enough colors?** The coloring screen now has 23 plus rainbow, which is all that fits at full button size on
+  a 1280 × 800 screen. If the owner wants more still, it costs page size or needs a second page of colors
+  (ADR 0016).
 - **"Fresh copy" of a page:** ADR 0007 says one is available "from the gallery" but not which gallery. The
   mockups show it in neither the kids' gallery nor the parent Pictures screen until this is decided.
 - **Default AI model** for the page maker: pick after a quality test with a few photos (ADR 0006).

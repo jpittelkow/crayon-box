@@ -1,6 +1,6 @@
 # 0012. Multi-game shell (coloring now, racing next)
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context

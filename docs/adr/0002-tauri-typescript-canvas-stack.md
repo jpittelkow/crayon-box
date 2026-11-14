@@ -1,6 +1,6 @@
 # 0002. Tauri 2 + TypeScript + HTML canvas
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context

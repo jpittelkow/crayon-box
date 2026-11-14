@@ -1,6 +1,6 @@
 # 0016. Visual design language: Crayon Box
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context
@@ -38,7 +38,7 @@ private to the owner, so the rules that matter are repeated here.
 | Ink (outlines, line art, text) | `#23201c` |
 | Kid grounds | manila `#fff1d6` when no kid is picked, else the kid's tint |
 | Kid profile colors | orange, pink, purple, green, blue, teal, each with a tint |
-| Paint colors | red, orange, yellow, light green, green, light blue, blue, purple, pink, peach, brown, black, plus rainbow |
+| Paint colors | 23 plus rainbow, three across and eight down, one color family per row (list below) |
 | Picked fill | yellow `#ffd23f`; nothing rests in yellow |
 | Parent world | ground `#f1f3f6`, rail `#1d2733`, action `#2457d6` |
 | Kid targets | 80 px minimum, 88 px tools, 104 px corner buttons, 12 px minimum gap (ADR 0003) |
@@ -48,13 +48,27 @@ private to the owner, so the rules that matter are repeated here.
 
 Every value has a named token in the design system; the app's CSS custom properties take the same names.
 
+The paint colors, in rail order (each line is one row):
+1. light pink, pink, red
+2. apricot, orange, dark red
+3. yellow, light green, green
+4. dark green, teal, light blue
+5. pale blue, blue, dark blue
+6. lavender, purple, gray
+7. peach, tan, brown
+8. dark brown, black, rainbow
+
 ### Screen decisions the mockups add
-These were open or unstated in earlier ADRs. They are part of this proposal.
+These were open or unstated in earlier ADRs. They are part of this decision.
 - **The kid picker is its own screen** and comes first. The home screen with one tile per game follows it, and is
   skipped while only one game is enabled (ADR 0012).
-- **The coloring screen:** tools in a rail on the left, the page as large as the height allows, colors two wide
-  in a rail on the right, and the three brush sizes on a tray under the page. The size dots are drawn in the
-  current color.
+- **The coloring screen:** tools in a rail on the left, the page in the middle, colors three wide in a rail on
+  the right, and a tray under the page with the three brush sizes at one end and the coloring mode at the other.
+  The size dots are drawn in the current color.
+- **The coloring mode is two round picture buttons:** a scribble running over the edge of a shape (color
+  anywhere) and a shape filled neatly to its edge (stay in the lines). It is set per picture (ADR 0004).
+- **All 24 swatches are always on screen.** A picked swatch gets a tight ring and does not grow, because the
+  swatches sit at the minimum 12 px gap.
 - **Sizes belong to the brush and eraser.** While the bucket is picked the tray fades; tapping a size picks that
   size and the brush.
 - **The blank page** is the last button in the theme strip, after "Our pages".
@@ -72,9 +86,12 @@ in `CREDITS.md`, and never loads fonts from the network. All icons in the kit ar
 
 ## Consequences
 - A new screen or game starts from existing parts, and can be checked against eight short rules.
-- The palette is fixed at 12 colors plus rainbow. The first mockups showed 13; gray was dropped.
+- The palette is fixed at 23 colors plus rainbow. That is the most that fits at the 80 px minimum on the
+  reference screen: the wider color rail already shrinks the page from about 850 × 640 to 780 × 588. More colors
+  would mean a smaller page or a second page of colors, and both were turned down.
 - The theme strip holds ten buttons at the minimum size: eight built-in themes, "Our pages" and the blank page.
   An eleventh theme needs a layout change, not a smaller button.
 - The layout assumes a 16:10 screen at 1280 × 800. The target laptop's screen is still unrecorded (ADR 0004); a
-  16:9 screen has less height, and the size tray under the page is the first thing that would have to move.
+  16:9 screen has less height: the color rail would hold seven rows, not eight, and the tray under the page is
+  the first thing that would have to move.
 - Two artifacts now need keeping in step with the ADRs: the design system and the mockup canvas.

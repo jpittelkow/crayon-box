@@ -1,4 +1,4 @@
-# kidsapp
+# crayon-box
 
 A touch-screen app for little kids (ages 4 and under), starting with a coloring book and with room for more games
 (a simple racing game is planned next).

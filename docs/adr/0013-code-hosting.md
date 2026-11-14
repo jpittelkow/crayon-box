@@ -1,6 +1,6 @@
 # 0013. Code hosting: GitHub (Gitea optional mirror)
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context

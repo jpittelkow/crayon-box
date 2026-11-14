@@ -1,6 +1,6 @@
 # 0003. Toddler-first interaction rules
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context
@@ -19,7 +19,10 @@ All kid screens follow these rules:
 4. **No escape hatches.** `touch-action: none`, pinch-zoom, swipe navigation, right-click menu and text selection
    are disabled, and so is every keyboard shortcut except `Ctrl+Shift+Q`, the parent's quit shortcut (ADR 0008).
    The app runs full screen.
-5. **Few choices:** 12 colors + rainbow, 3 brush sizes as dots, 3 tools (bucket, brush, eraser), undo, start over.
+5. **A fixed set of choices, all on screen:** 23 colors + rainbow, 3 brush sizes as dots, 3 tools (bucket, brush,
+   eraser), a two-way coloring mode (color anywhere or stay in the lines, ADR 0004), undo, start over. Nothing is
+   in a menu, a second page or a color mixer. The owner asked for many more colors than the first 12
+   (2026-11-14); 24 swatches is what fits at the minimum target size on the reference screen (ADR 0016).
 6. **Nothing is lost:** autosave after every action; "start over" is undoable; reopening a picture keeps the
    previous version (ADR 0007).
 7. Anything destructive or outside the app (delete, settings, quit) lives in the parent area (ADR 0008).

@@ -1,10 +1,10 @@
 # 0004. Coloring engine: layers, fill, stay-in-lines, undo
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context
-Kids need tap-to-fill, finger painting, an eraser, and a parent switch between "stay in the lines" and
+Kids need tap-to-fill, finger painting, an eraser, and a switch on each picture between "stay in the lines" and
 "free coloring". Black outlines must never get painted over.
 
 ## Decision
@@ -21,7 +21,11 @@ Kids need tap-to-fill, finger painting, an eraser, and a parent switch between "
   `destination-out` on the paint layer only.
 - **Stay in the lines:** the region under each stroke's starting point becomes that stroke's clip mask; the stroke
   only paints pixels in that region. A stroke that starts on a line uses the nearest region within 8 px, like the
-  bucket. Free coloring paints anywhere. **Free coloring is the default**; stay-in-the-lines is a per-kid option
+  bucket. Free coloring paints anywhere.
+- **The mode belongs to the picture** (decided by the owner, 2026-11-14). Two picture buttons on the coloring
+  screen switch between free coloring and stay in the lines at any time (ADR 0016). The choice is saved with the
+  picture (ADR 0007) and only affects strokes made after the switch; paint already on the page is untouched. A
+  new picture starts in the kid's starting mode, which is **free coloring** unless a parent changes it
   (ADR 0007).
 - **Undo:** each action (one stroke, one fill, one "start over") stores the "before" pixels of its bounding box
   only, run-length compressed. History is capped at 20 steps or about 150 MB per page session, whichever comes

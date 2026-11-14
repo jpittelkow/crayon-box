@@ -1,6 +1,6 @@
 # 0007. Artwork storage, autosave and kid profiles
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context
@@ -8,14 +8,15 @@ Artwork must never be lost, must be easy for parents to find and back up, and ea
 pictures.
 
 ## Decision
-- **Kid profiles:** each kid has a color and a picture symbol (star, heart, ...) instead of a name, plus their own
-  coloring-mode setting (free coloring by default, or stay in the lines). The family has several kids, so the
+- **Kid profiles:** each kid has a color and a picture symbol (star, heart, ...) instead of a name, plus the
+  coloring mode their new pictures start in (free coloring by default, or stay in the lines). The mode itself is
+  switched on each picture and saved with it (ADR 0004). The family has several kids, so the
   page picker and gallery start with a big kid-picker; profiles are shared across all games (ADR 0012).
 - **Storage is split in two**, so autosave never fights OneDrive (the Pictures folder is often synced, and sync
   can lock a file in the middle of a save):
   - *Working copy*, in the app's data folder: `art\<kid>\<picture>\` holding `paint.png` (paint layer, for
-    continuing), `prev.png` (the previous version, see below) and `art.json` (page id from ADR 0005, created and
-    updated times). The gallery reads from here.
+    continuing), `prev.png` (the previous version, see below) and `art.json` (page id from ADR 0005, the picture's
+    coloring mode, created and updated times). The gallery reads from here.
   - *Finished picture*, for parents: `Pictures\Coloring Book\Art\<kid>\<page>-<yyyy-mm-dd-hhmmss>.png`, the
     flattened picture with lines. It is written when the kid leaves the page or the app quits, and overwritten
     each time that picture is changed. The Pictures folder is looked up from Windows.

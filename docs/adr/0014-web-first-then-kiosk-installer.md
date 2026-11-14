@@ -1,6 +1,6 @@
 # 0014. Web app first, then an installer with a kiosk lock
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context

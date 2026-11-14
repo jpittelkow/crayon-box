@@ -1,6 +1,6 @@
 # 0015. Testing approach
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
 
 ## Context
