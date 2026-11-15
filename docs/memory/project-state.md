@@ -15,7 +15,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    interface. Runs from the Vite dev server on the dev machine only (no container, ADR 0020). Never hosted
    online. Used to test with the kids early. Art made here is throwaway.
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
-   **Next up** (owner, 2026-11-14): milestone 1 is paused with the animal themes and the artifact updates left;
+   **Next up** (owner, 2026-11-14): milestone 1 is paused with only the animal themes left;
    milestone 2 is planned in eight phases in [milestone-2.md](../milestone-2.md) (A Tauri window, B files, C sync,
    D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A done 2026-11-14**
    (`src-tauri/`, the `windows-installer` CI job): the installer ran on Windows. A `v*` tag drafts a release
@@ -42,6 +42,12 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    self-hosted server on the family's Unraid machine (image published from this repo); the device stays the
    working copy and syncs in the background; Windows first. Order: storage groundwork (**done 2026-11-14**, see
    the code map), then the server and sync client right after the installer's file storage.
+6. **Letter practice** (asked by the owner 2026-11-14): a third game module (ADR 0012) where a kid traces big
+   letters with a finger or a stylus. Design: [ADR 0026](../adr/0026-letter-practice.md), **Accepted**
+   2026-11-14 (mockups on the canvas, boards 19–24). **Built 2026-11-14** in the web app: practice and the game
+   path, capitals, small letters and numbers, start dots, arrows and the finger, stroke order, pen palm
+   rejection, Windows speech or a parent's recordings, the parent Letters screen. Off until a parent turns on
+   "Show Letters" under Settings, Games. Not yet playtested with the kids or tried with a real pen.
 
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
 3D models and a lot of design; only its prototype came early. Deferred: printing and export (ADR 0010).
@@ -91,6 +97,10 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   start hidden (`GameEntry.startsHidden`) and a parent shows or hides each one under Settings, Games
   (`ShellSettings.games`).
 - `spikes/realism/`: the four-look grading samples behind ADR 0025 (`node spikes/realism/shoot.mjs`).
+- `src/games/letters/` (ADR 0026): `glyphs.ts` (the 62 letters and numbers as strokes, arrows), `trace.ts` (the
+  checker, no DOM), `progress.ts` (stars, the game path, prefs and settings, recordings under `voice/`),
+  `game.ts` (start, practice, path and tracing screens), `voice.ts` (speech and recording), `parentSection.ts`.
+  Unit tests in `letters.test.ts`, browser tests in `tests/e2e/letters.spec.ts`.
 - `pages/`: three original CC0 placeholder pages in the ADR 0005 format.
 
 ## Milestone 1: remaining phases (agreed with the owner 2026-11-14)
@@ -106,6 +116,8 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   needs a model picked (open questions).
 - **D. Polish:** done 2026-11-14: sounds with a Settings switch (`shell/sound.ts`, made from tones, no files),
   the optional gate PIN (stored as a hash), the reduce-motion check (browser test), and the two-finger undo limit
-  fixed (each stroke draws on its own layer until the finger lifts). Left: the design system and mockup
-  artifacts still show ADR 0016's first look (80 px swatches, no names or photos, the old page flow).
+  fixed (each stroke draws on its own layer until the finger lifts). The design system artifact was matched to
+  ADRs 0017–0025 and the code on 2026-11-14 (`kid-swatch` token, names and photos, start screen, theme strip,
+  driving tile and horn, gate PIN, parent nav). The mockup canvas was matched the same day (18 boards, 6 of them new:
+  coloring start, driving, kid editor, parent Driving, add from an idea, family sync).
 A and B can run in parallel; D fits anywhere.

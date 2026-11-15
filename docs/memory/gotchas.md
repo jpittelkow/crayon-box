@@ -17,7 +17,11 @@ _Last updated: 2026-11-14_
   Kid-screen artboards hold every style inline; a change to a shared value (a color, a button size) has to be
   made in each artboard and in the design system's `tokens.json` (found 2026-11-14).
 - Publishing artifact files from the session scratch folder on the dev machine only worked with absolute source
-  paths; relative ones were refused by a read-permission rule (found 2026-11-14).
+  paths; relative ones were refused by a read-permission rule (found 2026-11-14). The `root` must also use the
+  long user folder name (`C:\Users\<user>\...`), not the short `ABCDEF~1`-style one the session reports: with
+  the short name every file was refused the same way (found 2026-11-14). Reading only one file of a canvas
+  (`read` with `path`) is not enough before a publish: it is refused until the artifact itself is read (`read`
+  with just the `url`) in the session (found 2026-11-14).
 - Tooling resolved on 2026-11-14: Vite 8, Vitest 5, TypeScript 7, Playwright 1.65, Node 24. TypeScript 7 is
   strict about `Uint8ClampedArray<ArrayBuffer>` vs `ArrayBufferLike` when building `ImageData`.
 - In page SVGs, white fills count as paper (only dark pixels become lines), so a white fill can hide lines
@@ -83,6 +87,9 @@ _Last updated: 2026-11-14_
   script on 2026-11-14 (fill worked, nothing blocked).
 - No Rust on the dev machine means no `src-tauri/Cargo.lock` locally. CI uploads the one its build makes
   (`cargo-lock` artifact); commit it so later builds use the same crate versions (2026-11-14).
+- Several sessions share this folder and its git index. A plain `git commit` takes whatever anyone has staged:
+  one fix commit (941ad5d, local only) swept in another session's staged deletion. Commit your own files with
+  `git commit -- <paths>`, which ignores other staged changes (2026-11-14).
 - A release tag must match `package.json`'s version (`v0.1.0` for `0.1.0`); `release.yml` stops otherwise. Bump
   the version on main first, then tag (2026-11-14).
 - A PR can be merged while later commits are still being pushed to its branch; they then never reach main.
