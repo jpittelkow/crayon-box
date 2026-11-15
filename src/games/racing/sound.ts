@@ -1,7 +1,7 @@
 // The driving game's sounds (ADR 0025, 0032). Every vehicle has an engine of its own: a recorded idle loop (shipped
 // file) that plays faster, so higher, and brighter as the vehicle speeds up; traffic is heard only nearby. Effects
-// are shipped files too: bumps per prop kind, splashes, the horn, and the police car's siren. The tyre squeal and the
-// brake squeak are still made as they play (none was picked as a file).
+// are shipped files too: bumps per prop kind, splashes, the horn, the police car's siren, the tyre squeal and the
+// brake squeak.
 import { soundUrl } from '../../shell/soundFiles';
 import { MAX_SPEED, type Input, type VehicleKind, type World } from './sim/sim';
 
@@ -36,6 +36,8 @@ export const EFFECTS = {
   boing: 'drive/boing.wav',
   puddle: 'drive/puddle.wav',
   splash: 'drive/splash.wav',
+  squeal: 'drive/squeal.wav',
+  brake: 'drive/brake.wav',
 } as const;
 
 /** The horn's pitch per vehicle: the same bicycle horn, lower for the big ones. The police car sounds its siren. */
@@ -67,11 +69,12 @@ export class DrivingSound {
   private master: GainNode | null = null;
   private engines: Running[] = [];
   private squeal: GainNode | null = null;
-  private noise: AudioBuffer | null = null;
   private lastBump = 0;
   private braking = false;
   /** Decoded sound files by path; null while loading or when a file could not load. */
   private readonly files = new Map<string, AudioBuffer | null>();
+  /** The same files as they finish loading, for sounds that wait for theirs (the squeal loop). */
+  private readonly loaded = new Map<string, Promise<AudioBuffer | null>>();
   private kidKind: VehicleKind = 'car';
   private siren: AudioBufferSourceNode | null = null;
 
@@ -96,13 +99,15 @@ export class DrivingSound {
       this.files.set(path, null);
       const url = soundUrl(path);
       if (!url) continue;
-      void fetch(url)
+      const loading = fetch(url)
         .then((r) => r.arrayBuffer())
         .then((data) => ctx.decodeAudioData(data))
         .then((buf) => {
           if (this.ctx === ctx) this.files.set(path, buf);
+          return buf;
         })
-        .catch(() => {});
+        .catch(() => null);
+      this.loaded.set(path, loading);
     }
   }
 
@@ -132,15 +137,6 @@ export class DrivingSound {
       this.master.connect(ctx.destination);
     }
     return this.master;
-  }
-
-  private noiseBuffer(ctx: AudioContext): AudioBuffer {
-    if (!this.noise) {
-      this.noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-      const d = this.noise.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    }
-    return this.noise;
   }
 
   /** A vehicle's engine: its idle loop, through a filter that opens with speed. Null until the loop has loaded. */
@@ -180,44 +176,32 @@ export class DrivingSound {
       e.gain.gain.setTargetAtTime(engineLoudness(world, i), t, 0.1);
     });
 
-    // Tyre squeal: a hiss through a narrow band, only on a hard turn at speed.
+    // Tyre squeal: a recorded squeal loop, faded in only on a hard turn at speed.
     const kid = world.cars[0]!;
     if (!this.squeal) {
-      const src = ctx.createBufferSource();
-      src.buffer = this.noiseBuffer(ctx);
-      src.loop = true;
-      const band = ctx.createBiquadFilter();
-      band.type = 'bandpass';
-      band.frequency.value = 2600;
-      band.Q.value = 8;
-      this.squeal = ctx.createGain();
-      this.squeal.gain.value = 0;
-      src.connect(band).connect(this.squeal).connect(this.out(ctx));
-      src.start();
+      const squeal = ctx.createGain();
+      squeal.gain.value = 0;
+      // The loop is levelled like every file; this lifts it to sit with the engines at the fade-in level below.
+      const lift = ctx.createGain();
+      lift.gain.value = 6;
+      lift.connect(squeal).connect(this.out(ctx));
+      this.squeal = squeal;
+      void this.loaded.get(EFFECTS.squeal)?.then((buf) => {
+        if (!buf || this.squeal !== squeal) return;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        src.connect(lift);
+        src.start();
+      });
     }
     const squealing = kid.speed > 10 && Math.abs(input.steer) > 0.7 && world.assist === 'free';
     this.squeal.gain.setTargetAtTime(squealing ? 0.09 : 0, t, 0.06);
 
     // Brakes: one squeak when a quick stop starts.
     const braking = input.brake && kid.speed > 6;
-    if (braking && !this.braking) this.tone('triangle', 1900, 1300, 0.35, 0.06);
+    if (braking && !this.braking) this.effect(EFFECTS.brake, 0.6);
     this.braking = braking;
-  }
-
-  private tone(type: OscillatorType, from: number, to: number, length: number, volume: number, delay = 0): void {
-    const ctx = this.running();
-    if (!ctx) return;
-    const start = ctx.currentTime + delay;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(from, start);
-    osc.frequency.exponentialRampToValueAtTime(to, start + length);
-    gain.gain.setValueAtTime(volume, start);
-    gain.gain.exponentialRampToValueAtTime(0.001, start + length);
-    osc.connect(gain).connect(this.out(ctx));
-    osc.start(start);
-    osc.stop(start + length + 0.02);
   }
 
   /**
@@ -260,5 +244,6 @@ export class DrivingSound {
     this.squeal = null;
     this.siren = null;
     this.files.clear();
+    this.loaded.clear();
   }
 }

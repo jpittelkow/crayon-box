@@ -13,7 +13,7 @@ Third-party assets that ship with the app (ADR 0011). Code dependencies are list
 | Driving: bumps (box), beach-ball boing | [100 CC0 SFX](https://opengameart.org/content/100-cc0-sfx) | CC0 |
 | Driving: flood splash | [40 CC0 water / splash / slime SFX](https://opengameart.org/content/40-cc0-water-splash-slime-sfx) | CC0 |
 | Driving: horn | [Bicycle Horn](https://opengameart.org/content/bicycle-horn) | CC0 |
-| Engines, police siren, puddle splash, crayon on paper | Made with Seed Audio 1.0 (ByteDance) through OpenRouter for this project ([ADR 0032](docs/adr/0032-sounds-as-files.md)) | Owned by the project (BytePlus General Terms for AI Services); released as CC0 |
+| Engines, police siren, tyre squeal, brake squeak, puddle splash, crayon on paper | Made with Seed Audio 1.0 (ByteDance) through OpenRouter for this project ([ADR 0032](docs/adr/0032-sounds-as-files.md)) | Owned by the project (BytePlus General Terms for AI Services); released as CC0 |
 | Narrator: letters, numbers, praise | Made with ElevenLabs v4 (voice Matilda) through OpenRouter for this project ([ADR 0032](docs/adr/0032-sounds-as-files.md)) | Owned by the project; released as CC0 |
 
 Every sound file is listed with its source in `assets/sounds/sounds.json`; `tools/sounds/` remakes them.

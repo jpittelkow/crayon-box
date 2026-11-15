@@ -140,6 +140,33 @@
    "bytes": 62442
   },
   {
+   "file": "drive/squeal.wav",
+   "kind": "loop",
+   "source": "Made with Seed Audio 1.0 (ByteDance) through OpenRouter for this project",
+   "url": "https://openrouter.ai/bytedance-seed/seed-audio-1-0",
+   "license": "Owned by the project (BytePlus General Terms for AI Services); released as CC0",
+   "model": "bytedance-seed/seed-audio-1-0",
+   "original": "squeal-1.mp3",
+   "prompt": "A steady tyre squeal of a small car cornering on smooth tarmac, a continuous high screech, no engine, no crash, no music, about 3 seconds.",
+   "note": "Take 1 of 3; not yet picked by ear.",
+   "seconds": 1.2,
+   "bytes": 105918,
+   "loopFrom": 1
+  },
+  {
+   "file": "drive/brake.wav",
+   "kind": "ui",
+   "source": "Made with Seed Audio 1.0 (ByteDance) through OpenRouter for this project",
+   "url": "https://openrouter.ai/bytedance-seed/seed-audio-1-0",
+   "license": "Owned by the project (BytePlus General Terms for AI Services); released as CC0",
+   "model": "bytedance-seed/seed-audio-1-0",
+   "original": "brake-1.mp3",
+   "prompt": "A short squeak of a toy car braking, a single bright brake squeal, no engine, no crash, no music, about half a second.",
+   "note": "Take 1 of 3; not yet picked by ear.",
+   "seconds": 0.69,
+   "bytes": 60966
+  },
+  {
    "file": "drive/bump.wav",
    "kind": "ui",
    "source": "100 CC0 SFX",
@@ -184,7 +211,7 @@
   {
    "file": "voice/letter-A.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -195,7 +222,7 @@
   {
    "file": "voice/letter-B.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -206,7 +233,7 @@
   {
    "file": "voice/letter-C.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -217,7 +244,7 @@
   {
    "file": "voice/letter-D.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -228,7 +255,7 @@
   {
    "file": "voice/letter-E.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -239,7 +266,7 @@
   {
    "file": "voice/letter-F.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -250,7 +277,7 @@
   {
    "file": "voice/letter-G.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -261,7 +288,7 @@
   {
    "file": "voice/letter-H.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -272,7 +299,7 @@
   {
    "file": "voice/letter-I.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -283,7 +310,7 @@
   {
    "file": "voice/letter-J.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -294,7 +321,7 @@
   {
    "file": "voice/letter-K.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -305,7 +332,7 @@
   {
    "file": "voice/letter-L.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -316,7 +343,7 @@
   {
    "file": "voice/letter-M.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -327,7 +354,7 @@
   {
    "file": "voice/letter-N.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -338,7 +365,7 @@
   {
    "file": "voice/letter-O.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -349,7 +376,7 @@
   {
    "file": "voice/letter-P.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -360,7 +387,7 @@
   {
    "file": "voice/letter-Q.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -371,7 +398,7 @@
   {
    "file": "voice/letter-R.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -382,7 +409,7 @@
   {
    "file": "voice/letter-S.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -393,7 +420,7 @@
   {
    "file": "voice/letter-T.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -404,7 +431,7 @@
   {
    "file": "voice/letter-U.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -415,7 +442,7 @@
   {
    "file": "voice/letter-V.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -426,7 +453,7 @@
   {
    "file": "voice/letter-W.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -437,7 +464,7 @@
   {
    "file": "voice/letter-X.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -448,7 +475,7 @@
   {
    "file": "voice/letter-Y.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -459,7 +486,7 @@
   {
    "file": "voice/letter-Z.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -470,7 +497,7 @@
   {
    "file": "voice/number-0.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -481,7 +508,7 @@
   {
    "file": "voice/number-1.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -492,7 +519,7 @@
   {
    "file": "voice/number-2.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -503,7 +530,7 @@
   {
    "file": "voice/number-3.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -514,7 +541,7 @@
   {
    "file": "voice/number-4.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -525,7 +552,7 @@
   {
    "file": "voice/number-5.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -536,7 +563,7 @@
   {
    "file": "voice/number-6.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -547,7 +574,7 @@
   {
    "file": "voice/number-7.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -558,7 +585,7 @@
   {
    "file": "voice/number-8.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -569,7 +596,7 @@
   {
    "file": "voice/number-9.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -580,7 +607,7 @@
   {
    "file": "voice/praise-great-job.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -591,7 +618,7 @@
   {
    "file": "voice/praise-wow.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -602,7 +629,7 @@
   {
    "file": "voice/praise-yay.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",
@@ -613,7 +640,7 @@
   {
    "file": "voice/praise-you-did-it.mp3",
    "kind": "voice",
-   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)",
+   "source": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)",
    "url": "https://openrouter.ai/elevenlabs/eleven-v4",
    "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0",
    "model": "elevenlabs/eleven-v4",

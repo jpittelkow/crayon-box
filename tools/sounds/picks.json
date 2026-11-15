@@ -7,7 +7,7 @@
     "water": { "title": "40 CC0 water / splash / slime SFX", "url": "https://opengameart.org/content/40-cc0-water-splash-slime-sfx", "license": "CC0" },
     "bicycle-horn": { "title": "Bicycle Horn", "url": "https://opengameart.org/content/bicycle-horn", "license": "CC0" },
     "seed-audio": { "title": "Made with Seed Audio 1.0 (ByteDance) through OpenRouter for this project", "url": "https://openrouter.ai/bytedance-seed/seed-audio-1-0", "license": "Owned by the project (BytePlus General Terms for AI Services); released as CC0", "model": "bytedance-seed/seed-audio-1-0" },
-    "matilda": { "title": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)", "url": "https://openrouter.ai/elevenlabs/eleven-v4", "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0", "model": "elevenlabs/eleven-v4", "voice": "matilda" }
+    "matilda": { "title": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate.mjs)", "url": "https://openrouter.ai/elevenlabs/eleven-v4", "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0", "model": "elevenlabs/eleven-v4", "voice": "matilda" }
   },
   "sounds": [
     { "out": "ui/tap.wav", "from": "kenney-ui", "file": "UI_SFX_Set/click1.wav", "kind": "ui" },
@@ -22,6 +22,8 @@
     { "out": "drive/engine-bus.wav", "from": "seed-audio", "file": "seed/engine-bus-1.mp3", "kind": "loop", "prompt": "A diesel school bus engine idling with a clattering diesel knock, no music, no voices, about 4 seconds." },
     { "out": "drive/siren.mp3", "from": "seed-audio", "file": "seed/siren-toy-1.mp3", "kind": "ui", "prompt": "A friendly toy police car siren going wee-woo wee-woo, two tones, bright and cheerful, not scary, no engine, no music, about 2 seconds.", "note": "Placeholder take until the owner picks one of the six." },
     { "out": "drive/horn.wav", "from": "bicycle-horn", "file": "bicycle-horn/bicycle-horn-1.wav", "kind": "ui" },
+    { "out": "drive/squeal.wav", "from": "seed-audio", "file": "seed/squeal-1.mp3", "kind": "loop", "prompt": "A steady tyre squeal of a small car cornering on smooth tarmac, a continuous high screech, no engine, no crash, no music, about 3 seconds.", "note": "Take 1 of 3; not yet picked by ear." },
+    { "out": "drive/brake.wav", "from": "seed-audio", "file": "seed/brake-1.mp3", "kind": "ui", "prompt": "A short squeak of a toy car braking, a single bright brake squeal, no engine, no crash, no music, about half a second.", "note": "Take 1 of 3; not yet picked by ear." },
     { "out": "drive/bump.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/wooded_box_open.ogg", "kind": "ui" },
     { "out": "drive/boing.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/spring_03.ogg", "kind": "ui" },
     { "out": "drive/puddle.wav", "from": "seed-audio", "file": "seed/puddle-2.mp3", "kind": "ui", "prompt": "A toy car driving through a small puddle with a light splash, no music, about 1 second." },
