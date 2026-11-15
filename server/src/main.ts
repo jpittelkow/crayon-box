@@ -1,0 +1,33 @@
+// Crayon Box's family sync server (ADR 0024). Runs with Node 24's own TypeScript support: `node src/main.ts`.
+//
+// Environment:
+//   PORT          where to listen (default 8787)
+//   DATA_DIR      the data folder (default ./data; /data in the container)
+//   PAIRING_CODE  a fixed pairing code instead of the one the server makes on first start
+import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { handler } from './http.ts';
+import { Store } from './store.ts';
+
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+const port = Number(process.env.PORT ?? 8787);
+const dataDir = process.env.DATA_DIR ?? './data';
+
+const store = Store.open(dataDir);
+const code = store.pairingCode(process.env.PAIRING_CODE);
+const server = createServer(handler({ store, version: pkg.version, pairingCode: process.env.PAIRING_CODE }));
+
+server.listen(port, () => {
+  console.log(`Crayon Box sync ${pkg.version} on port ${port}, data in ${dataDir}`);
+  console.log(`Pairing code: ${code}`);
+});
+
+const stop = () => {
+  server.close(() => {
+    store.close();
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(0), 5000).unref();
+};
+process.on('SIGTERM', stop);
+process.on('SIGINT', stop);

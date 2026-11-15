@@ -45,6 +45,13 @@ at the end; anything that changes an accepted ADR gets a new ADR first (ADR 0001
 
 ### C. Family sync (ADR 0024)
 Two parts; the server part can start any time, even alongside phase A.
+- **C1 status (2026-11-14):** built on branch `milestone-2/phase-c1-server`: `server/` with no npm dependencies
+  (Node 24 runs the TypeScript and has `node:sqlite`), the API in `server/src/api.ts` (shared with the client),
+  14 tests (`npm --prefix server test`), a Dockerfile, `server.yml` (tests, then on main publishes
+  `ghcr.io/jpittelkow/crayon-box-sync`), the Unraid template `server/unraid/crayon-box-sync.xml` and
+  `server/README.md`. Writes carry the revision they were based on; the server answers 409 when its copy moved on,
+  and the client applies ADR 0024's rules. **Picked for the owner to confirm:** port 8787, Unraid data folder
+  `/mnt/user/appdata/crayon-box-sync`, the container runs as 99:100.
 - **C1, the server:** `server/`, TypeScript on Node with SQLite and the files on disk, API under `/api/v1`, a
   pairing code on first start, a one-page status screen. A Dockerfile; CI publishes the image to GitHub's
   container registry; an Unraid template in the repo. Its own tests.

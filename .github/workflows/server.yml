@@ -1,0 +1,60 @@
+name: Sync server
+
+# The family sync server (ADR 0024, milestone 2 phase C1): typecheck and test on every change to server/, and on
+# main publish the container image to GitHub's container registry as ghcr.io/<owner>/crayon-box-sync, tagged
+# `latest`, the server's version from server/package.json, and the commit.
+
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', '.github/workflows/server.yml']
+  pull_request:
+    paths: ['server/**', '.github/workflows/server.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc -p server
+      - run: npm --prefix server test
+      - name: Build the image and check it answers
+        run: |
+          docker build -t crayon-box-sync:ci server
+          docker run -d --name sync -p 8787:8787 -e PAIRING_CODE=CI-CODE crayon-box-sync:ci
+          for i in $(seq 1 20); do curl -fs localhost:8787/api/v1/info && break; sleep 1; done
+          curl -fs localhost:8787/api/v1/info | grep -q crayon-box-sync
+          docker logs sync
+          docker rm -f sync
+
+  publish:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and push to ghcr.io
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/crayon-box-sync"
+          version=$(node -p "require('./server/package.json').version")
+          echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -t "$image:latest" -t "$image:$version" -t "$image:sha-${GITHUB_SHA::7}" server
+          docker push --all-tags "$image"
