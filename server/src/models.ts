@@ -12,7 +12,7 @@ const RETRY_MS = 5 * 60_000;
 export interface OpenRouterModel {
   id: string;
   name?: string;
-  architecture?: { input_modalities?: string[]; output_modalities?: string[] };
+  architecture?: { input_modalities?: string[]; output_modalities?: string[]; tokenizer?: string };
   pricing?: Record<string, string | unknown>;
 }
 
@@ -56,8 +56,17 @@ export function priceLabel(m: OpenRouterModel): string | undefined {
   return out ? `${money(out)} per million tokens out` : undefined;
 }
 
+/**
+ * OpenRouter's routers (Auto Router and the like) list every modality their models have, image output included, but
+ * pass a page to a text model and fail with "No endpoints found that support the requested output modalities"
+ * (owner, 2026-11-15). They pick the model themselves anyway, which is the opposite of a picker; leave them out.
+ */
+export function isRouter(m: OpenRouterModel): boolean {
+  return m.id.startsWith('openrouter/') || m.architecture?.tokenizer === 'Router';
+}
+
 export function toAiModel(m: OpenRouterModel): AiModel | null {
-  if (typeof m.id !== 'string' || !m.id) return null;
+  if (typeof m.id !== 'string' || !m.id || isRouter(m)) return null;
   const ways = waysOf(m);
   if (ways.length === 0) return null;
   const model: AiModel = { id: m.id, name: (typeof m.name === 'string' && m.name) || m.id, ways, output: m.architecture?.output_modalities ?? [] };

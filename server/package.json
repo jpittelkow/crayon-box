@@ -1,6 +1,6 @@
 {
   "name": "crayon-box-sync",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "The family sync server for Crayon Box (ADR 0024). No dependencies: Node 24 with its own TypeScript and SQLite.",
   "license": "MIT",

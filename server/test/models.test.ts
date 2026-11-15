@@ -213,6 +213,18 @@ describe('Model list pieces', () => {
     assert.equal(toAiModel(LIST[4]), null);
   });
 
+  it("leaves out OpenRouter's routers, which claim image output but can't make a page", () => {
+    const auto: OpenRouterModel = {
+      id: 'openrouter/auto',
+      name: 'Auto Router',
+      architecture: { input_modalities: ['text', 'image'], output_modalities: ['text', 'image'], tokenizer: 'Router' },
+    };
+    assert.equal(toAiModel(auto), null);
+    assert.equal(toAiModel({ ...auto, id: 'someone/router' }), null);
+    assert.equal(toAiModel({ ...auto, id: 'openrouter/auto-beta', architecture: { output_modalities: ['image'] } }), null);
+    assert.notEqual(toAiModel(LIST[0]), null);
+  });
+
   it('labels prices in plain words', () => {
     assert.equal(priceLabel(LIST[0]), '$30 per million image tokens');
     assert.equal(priceLabel(LIST[1]), '$1.9 per million image tokens');
