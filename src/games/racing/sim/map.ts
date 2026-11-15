@@ -1,5 +1,6 @@
 // A driving map as data (milestone-3 phase B; driving-assets.md). The simulation and the look both read a map, so
 // another map is another file. Plain TypeScript, no three.js.
+import type { AnimalId } from './assets/animals';
 import type { DecorId, SceneryId } from './assets/scenery';
 import type { ToyId } from './assets/toys';
 import type { LandDef } from './land';
@@ -64,4 +65,6 @@ export interface MapDef {
   props: { kinds: { id: ToyId; share: number }[]; nearRoad: number; spread: number; edgeGap: number; spawnGap: number };
   /** Decor scattered in clumps, off the roads and out of the water (drawn only; the car drives through it). */
   decor: { id: DecorId; clumps: number; perClump: number }[];
+  /** Herds of animals (driving-assets.md category 8): `count` of one kind wandering within `roam` metres of a spot. */
+  animals?: { id: AnimalId; x: number; z: number; count: number; roam: number }[];
 }

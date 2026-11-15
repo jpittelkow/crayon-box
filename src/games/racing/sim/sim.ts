@@ -5,6 +5,8 @@
 import { ISLAND } from '../maps/island';
 import { SCENERY, type SceneryId } from './assets/scenery';
 import { TOYS, type ToyId } from './assets/toys';
+import { makeAnimals, stepAnimals, type Animal } from './animals';
+import type { AnimalCall } from './assets/animals';
 import { buildGuards, buildSand, guardAt, hillReach, onSand, type Guard } from './ground';
 import { buildLand, keepInland, randomInland, shore, type Land } from './land';
 import type { MapDef, OnRoad, ZoneKind } from './map';
@@ -181,6 +183,12 @@ export interface World {
   followTurn: number;
   /** What is under the kid's car this step, for the sounds (milestone-3 B6): sand, a bridge, a tunnel. */
   under: { sand: boolean; bridge: boolean; tunnel: boolean };
+  /** The map's animals (milestone-3 B3). */
+  animals: Animal[];
+  /** The kid sounded the horn since the last step (see `honk`). */
+  honked: boolean;
+  /** Animals that answered the horn in the last step, by their call, for the sounds. */
+  calls: AnimalCall[];
 }
 
 /** A map's zone, placed on the ground, and the way it faces. */
@@ -221,7 +229,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   const w: World = {
     map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [], bubbles: [], bubbleNext: 0,
     junctions: buildJunctions(roads), guards: buildGuards(map.guards, roads), sand: buildSand(map.sand),
-    follow: null, turnNext: true, followAt: '', followTurn: 0, under: { sand: false, bridge: false, tunnel: false },
+    follow: null, turnNext: true, followAt: '', followTurn: 0, under: { sand: false, bridge: false, tunnel: false }, animals: [], honked: false, calls: [],
     rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
@@ -309,6 +317,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
       scale: 1, state: HOME, timer: 0, cool: 0,
     });
   }
+  w.animals = makeAnimals(map.animals, () => rand(w));
   for (let i = 0; i < 60; i++) w.bubbles.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 48; i++) w.puffs.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 160; i++) w.drops.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
@@ -530,6 +539,9 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   }
 }
 
+/** How far before its stopping point traffic starts to slow for the kid's car in its lane, to give way. */
+const GIVE_WAY = 8;
+
 /** How often traffic takes the other road at a junction. */
 const TURN_CHANCE = 0.5;
 
@@ -614,6 +626,15 @@ function stepTraffic(w: World, dt: number): void {
     want = clamp(want, 3, MAX_SPEED + 4);
     if (c.wet === 2) want = Math.min(want, FLOOD_SPEED - 1);
     if (inWash(w, c, 5)) want = Math.min(want, WASH_SPEED);
+    // Traffic gives way (driving-assets.md): the kid's car just ahead in its lane, at a junction, on a bridge or
+    // anywhere, and it slows and waits rather than drive into it.
+    if (c.mode === CRUISE) {
+      const dx = kid.x - c.x, dz = kid.z - c.z;
+      const ahead = dx * Math.sin(c.heading) + dz * Math.cos(c.heading), across = -dx * Math.cos(c.heading) + dz * Math.sin(c.heading);
+      // It stops with its front a few metres short of the kid's car, however long it is.
+      const stop = VEHICLE_SIZE[c.kind].half + VEHICLE_SIZE[kid.kind].half + 2.5;
+      if (ahead > 0 && ahead < stop + GIVE_WAY && Math.abs(across) < 2.6) want = Math.min(want, Math.max(0, (ahead - stop) * 1.5));
+    }
     // Brakes harder than it speeds up, so it keeps pace when the kid slows for the flood or a car wash.
     c.speed += clamp(want - c.speed, -16 * dt, 8 * dt);
 
@@ -869,17 +890,25 @@ function stepZones(w: World): void {
   }
 }
 
+/** The kid sounded the horn: animals nearby answer it (milestone-3 B3). */
+export function honk(w: World): void {
+  w.honked = true;
+}
+
 export function step(w: World, input: Input, dt: number): void {
   w.time += dt;
   w.knocks.length = 0;
   w.splashes.length = 0;
   w.zoneEvents.length = 0;
   w.landings.length = 0;
+  w.calls.length = 0;
   stepKidCar(w, input, dt);
   stepZones(w);
   stepTraffic(w, dt);
   stepHops(w, dt);
   stepWash(w, dt);
+  stepAnimals(w.animals, w.cars[0]!, w.honked, dt, () => rand(w), w.calls);
+  w.honked = false;
   stepWater(w, dt);
   stepProps(w, dt);
   for (const p of w.puffs) {

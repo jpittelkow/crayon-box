@@ -85,5 +85,15 @@ export const ISLAND: MapDef = {
     nearRoad: 0.55, spread: 4, edgeGap: 5, spawnGap: 7,
   },
   decor: [{ id: 'decor/bush', clumps: 70, perClump: 3 }],
+  // Animals that answer the horn, in the field north-east of the hill, as in the layout picture (milestone-3 B3).
+  animals: [
+    { id: 'animal/sheep', ...at(east([20, 18])), count: 3, roam: 6 },
+    { id: 'animal/duck', ...at(east([12, 25])), count: 2, roam: 3 },
+  ],
 };
+
+/** A place as an object, for a herd. */
+function at([x, z]: [number, number]): { x: number; z: number } {
+  return { x, z };
+}
 

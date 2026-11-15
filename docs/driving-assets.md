@@ -205,10 +205,10 @@ Rules for roads:
 | Id | Status | Notes |
 |---|---|---|
 | `road/curve` | built | any stretch between junctions; the ring is one closed curve |
-| `road/junction` | built (three-way, 2026-11-15) | an open road joins another at its ends (`from`, `to`); traffic and "follows the road" pick a way there. Four-way and traffic giving way are still to do |
+| `road/junction` | built (three-way, 2026-11-15) | an open road joins another at its ends (`from`, `to`); traffic and "follows the road" pick a way there, and traffic gives way to the kid's car. Four-way is still to do |
 | `road/roundabout` | idea | town; a toy or fountain in the middle |
 | `road/bridge-deck` | built (2026-11-15, a `bridge` guard) | a wooden deck over the water with white rails the car slides along; the shore doesn't turn the car back on or near it |
-| `road/tunnel-floor` | built (2026-11-15, a `tunnel` guard) | walls keep the car on the road; stone portals at both ends. Lamps are still to do; the hill around it is a map `hill` |
+| `road/tunnel-floor` | built (2026-11-15, a `tunnel` guard) | walls keep the car on the road; stone portals at both ends; the hill around it is a map `hill`. Lamps were tried and dropped: with no tunnel walls drawn, they float when the hill fades |
 | `road/ford` | idea | a shallow stretch across a river: puddle splash, never deep |
 | `road/ramp` | planned (ADR 0021) | the slope; the jump is the set piece |
 
@@ -257,10 +257,10 @@ sails); see Border cases.
 ### 8. Animals
 | Id | Status | Maps | Answer to the horn |
 |---|---|---|---|
-| `animal/cow` | idea | country | moo, turns its head |
-| `animal/sheep` | idea | country | baa, small hop |
+| `animal/cow` | built (2026-11-15) | building site, later maps | moo (stand-in), a hop |
+| `animal/sheep` | built (2026-11-15) | island | baa (stand-in), small hop |
 | `animal/chicken` | idea | country | cluck, flaps |
-| `animal/duck` | idea | island, country | quack, paddles away on the pond |
+| `animal/duck` | built (2026-11-15) | island | quack (stand-in), a hop; paddling on a pond is still to do |
 | `animal/seagull` | idea | island | flies up and lands again |
 | `animal/dog` | idea | town | woof, wags |
 

@@ -4,6 +4,7 @@
 // brake squeak. The set pieces (milestone-3 B6) reuse them for now: plank knocks on a bridge, a whoosh and popping
 // bubbles at the car wash; the tunnel's echo and the sand's hiss are made by the app.
 import { soundUrl } from '../../shell/soundFiles';
+import type { AnimalCall } from './sim/assets/animals';
 import type { BumpSound } from './sim/assets/toys';
 import { MAX_SPEED, type Input, type VehicleKind, type World } from './sim/sim';
 
@@ -56,6 +57,16 @@ const BUMP: Record<Exclude<BumpSound, 'boing'>, { rate: number; volume: number }
 
 /** The horn's pitch per vehicle: the same bicycle horn, lower for the big ones. The police car sounds its siren. */
 const HORN_RATE: Record<VehicleKind, number> = { car: 1, police: 1, monster: 0.7, bus: 0.8 };
+
+/**
+ * Animals answering the horn (milestone-3 B3): stand-ins until takes of their own, the horn file at a pitch for
+ * each call. Rates and loudness.
+ */
+const CALL: Record<AnimalCall, { rate: number; volume: number }> = {
+  baa: { rate: 0.62, volume: 0.45 },
+  quack: { rate: 1.45, volume: 0.4 },
+  moo: { rate: 0.42, volume: 0.55 },
+};
 
 /** Traffic further away than this is not heard. */
 const HEARING_M = 40;
@@ -303,6 +314,12 @@ export class DrivingSound {
     this.lastBump = ctx.currentTime;
     if (kind === 'boing') this.effect(EFFECTS.boing, 0.8);
     else this.effect(EFFECTS.bump, BUMP[kind].volume, BUMP[kind].rate);
+  }
+
+  /** An animal answering the horn; each a little different, so a herd doesn't sound like one. */
+  call(kind: AnimalCall): void {
+    const c = CALL[kind];
+    this.effect(EFFECTS.horn, c.volume, c.rate * (0.92 + Math.random() * 0.16));
   }
 
   /** A puddle splash, or a big one for the flood. */

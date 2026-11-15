@@ -3,6 +3,7 @@
 // Loaded only when the game opens.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { ANIMAL_LOOKS } from './look/animals';
 import { buildGround } from './look/island';
 import { buildSetPieces } from './look/setpieces';
 import { sceneryPieces } from './look/scenery';
@@ -100,6 +101,16 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const placed = new Map<string, number>();
 
   // Vehicles: the kid's car in their colour, traffic in its own colours.
+  // Animals (milestone-3 B3): few, each its own little model.
+  const animals = world.animals.map((a) => {
+    const model = ANIMAL_LOOKS[a.id]();
+    model.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
+    });
+    scene.add(model);
+    return model;
+  });
+
   const vehicles: VehicleModel[] = world.cars.map((c, i) => {
     // The kid's vehicle in their colour, or with their flag (milestone-3 B5); traffic in its own colours.
     const v = i === 0 ? buildKidVehicle(c.kind, kidColor) : buildVehicle(c.kind, OWN_COLOR[c.kind]);
@@ -164,6 +175,14 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
       place(toyBatches.get(p.toy)!, next(p.toy), p.scale > 0 ? m : zero);
     }
     toyBatches.forEach(dirty);
+
+    // Animals: a little bob in their step as they walk, and their hop.
+    w.animals.forEach((a, i) => {
+      const model = animals[i]!;
+      const bob = a.speed > 0.1 ? Math.abs(Math.sin(w.time * 9 + i)) * 0.06 : 0;
+      model.position.set(a.x, a.h + bob, a.z);
+      model.rotation.y = a.heading;
+    });
 
     // Vehicles
     w.cars.forEach((c, i) => {
