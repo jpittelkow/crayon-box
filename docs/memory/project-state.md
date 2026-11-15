@@ -42,6 +42,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    designed yet): a choice of vehicles (monster trucks, school buses, emergency vehicles with working lights, and
    more); two or three maps, much bigger than the prototype's island, with more of the same things and more
    water. Needs a new ADR, since ADR 0021 has one small island and a few cars.
+   **Draft plan (2026-11-15):** [milestone-3-driving.md](../milestone-3-driving.md), waiting on the owner's choices.
 5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
    of the family's own area, made from real map and terrain data, with the roads, the family's house and a few
    neighbours' houses. It must never be committed: it lives in a folder kept out of the repo that can be dropped
