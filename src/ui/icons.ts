@@ -72,6 +72,14 @@ export const icons = {
         '<circle cx="14" cy="34" r="5" fill="#2b2b2b"/><circle cx="35" cy="34" r="5" fill="#2b2b2b"/>',
       size,
     ),
+  /** The letters game's home tile: a big A with a crayon line along one leg (ADR 0026). Original, CC0. */
+  letters: (size = 120) =>
+    svg(
+      '<path d="M24 6L10 42M24 6l14 36M15.5 29h17" stroke-width="7"/>' +
+        '<path d="M24 6L10 42M24 6l14 36M15.5 29h17" stroke="#ffffff" stroke-width="3"/>' +
+        '<path d="M23 9L13 36" stroke="#ff9f1c" stroke-width="3"/>',
+      size,
+    ),
   /** A squeeze-bulb horn, not a speaker, so it never reads as a sound setting. */
   horn: (size = 58) =>
     svg(

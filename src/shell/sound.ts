@@ -21,6 +21,7 @@ export async function saveSoundSettings(shell: GameStorage, settings: SoundSetti
 /** A sound that does nothing: for tests, and before the setting has loaded. */
 export const silentSound: Sound = {
   play() {},
+  enabled: false,
 };
 
 interface Note {
@@ -51,6 +52,12 @@ export const SOUNDS: Record<SoundKind, Note[]> = {
   ],
   // A soft low note when a touch had nothing to do. Quiet on purpose.
   nothing: [{ f: 262, at: 0, len: 0.12, gain: 0.08, wave: 'triangle' }],
+  // Three rising notes when a letter is done (ADR 0026).
+  cheer: [
+    { f: 523, at: 0, len: 0.1, gain: 0.14 },
+    { f: 659, at: 0.08, len: 0.1, gain: 0.14 },
+    { f: 784, at: 0.16, len: 0.13, gain: 0.15 },
+  ],
 };
 
 /** The longest sound, in seconds. ADR 0016 keeps every sound under 300 ms. */
@@ -67,6 +74,10 @@ export class WebAudioSound implements Sound {
   private on = true;
 
   constructor(private readonly shell: GameStorage) {}
+
+  get enabled(): boolean {
+    return this.on;
+  }
 
   async refresh(): Promise<void> {
     this.on = (await loadSoundSettings(this.shell)).on;

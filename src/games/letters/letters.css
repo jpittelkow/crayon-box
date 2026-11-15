@@ -1,0 +1,317 @@
+/* Letter practice (ADR 0026). Back is always top-left (ADR 0016 rule 5). */
+.letters-screen {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.letters-corner {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--space-6);
+  z-index: 3;
+}
+.letters-badge {
+  position: absolute;
+  box-sizing: border-box;
+  border: 4px solid var(--ink);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.letters-star {
+  width: 48px;
+  height: 48px;
+  right: -12px;
+  top: -12px;
+  background: var(--crayon-yellow);
+}
+.letters-lock {
+  width: 46px;
+  height: 46px;
+  right: -10px;
+  bottom: -10px;
+  background: var(--paper);
+}
+
+/* ---- Start: practice or the game ---- */
+.letters-start-row {
+  display: flex;
+  gap: 64px;
+}
+.letters-big.cb-paper {
+  --big-w: min(calc((100cqw - 2 * 152px - 64px) / 2), calc((100cqh - 2 * 120px) * 4 / 3), 520px);
+  width: var(--big-w);
+  height: calc(var(--big-w) * 0.75);
+  border-width: 6px;
+  border-radius: 40px;
+  box-shadow: 0 10px 0 var(--ink);
+}
+.letters-mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  width: 58%;
+  aspect-ratio: 1;
+}
+.letters-mini-grid span {
+  box-sizing: border-box;
+  border: 5px solid var(--ink);
+  border-radius: 26px;
+  padding: 8%;
+  background: #fff4d6;
+}
+.letters-mini-grid span:nth-child(2) {
+  background: #e3f6ff;
+}
+.letters-mini-grid span:nth-child(3) {
+  background: #ffe3ee;
+}
+.letters-mini-grid span:nth-child(4) {
+  background: #e6f7df;
+}
+
+/* ---- Practice: set buttons and the letter grid ---- */
+.letters-screen[data-screen='letters-practice'] {
+  padding: 140px 40px 32px;
+}
+.letters-tabs {
+  position: absolute;
+  top: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 60px;
+  gap: 16px;
+}
+.letters-tab.cb-choice {
+  width: auto;
+  height: 88px;
+  padding: 0 18px;
+  border-radius: 44px;
+  gap: 2px;
+  background: var(--paper);
+}
+.letters-tab.cb-choice.is-picked {
+  background: var(--pick);
+}
+.letters-tab span {
+  display: block;
+  width: 38px;
+  height: 56px;
+}
+.letters-grid {
+  --cols: 7;
+  --rows: 4;
+  --gap: 20px;
+  --t: min(
+    calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)),
+    calc((100cqh - (var(--rows) - 1) * var(--gap)) / var(--rows))
+  );
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--t));
+  gap: var(--gap);
+}
+.letters-grid[data-count='10'] {
+  --cols: 5;
+  --rows: 2;
+  --gap: 28px;
+}
+.letters-tile.cb-paper {
+  width: var(--t);
+  height: var(--t);
+  border-radius: 32px;
+  overflow: visible;
+  padding: 12%;
+  box-shadow: 0 6px 0 var(--ink);
+}
+.letters-tile:nth-child(5n + 2) {
+  background: #fff4d6;
+}
+.letters-tile:nth-child(5n + 3) {
+  background: #e3f6ff;
+}
+.letters-tile:nth-child(5n + 4) {
+  background: #ffe3ee;
+}
+.letters-tile:nth-child(5n + 5) {
+  background: #e6f7df;
+}
+
+/* ---- The game path ---- */
+.letters-stage {
+  position: relative;
+  width: min(100cqw, 160cqh);
+  aspect-ratio: 16 / 10;
+}
+.letters-road {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.letters-stop.cb-choice {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  padding: 20px;
+  border-width: 5px;
+  box-shadow: 0 6px 0 var(--ink);
+  overflow: visible;
+}
+.letters-stop.is-done {
+  background: var(--kid-paint);
+}
+.letters-stop.is-now {
+  width: 148px;
+  height: 148px;
+  margin: -74px 0 0 -74px;
+  box-shadow:
+    0 0 0 8px #2fa35f,
+    0 0 0 13px var(--ink);
+  animation: lt-beat 1.2s ease-in-out infinite;
+}
+.letters-stop.is-locked {
+  background: #e4e1dc;
+}
+.letters-stop.is-locked .letters-stop-glyph {
+  opacity: 0.35;
+}
+.letters-stop-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.letters-stop .letters-star {
+  width: 50px;
+  height: 50px;
+  right: -14px;
+  top: -14px;
+}
+
+/* ---- Tracing ---- */
+.letters-card {
+  position: relative;
+  box-sizing: border-box;
+  height: calc(100cqh - 80px);
+  aspect-ratio: 132 / 156;
+  max-width: calc(100cqw - 2 * 180px);
+  background: var(--paper);
+  border: 5px solid var(--ink);
+  border-radius: 48px;
+  box-shadow: 0 8px 0 var(--ink);
+  touch-action: none;
+}
+.letters-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.letters-wipe {
+  position: absolute;
+  left: var(--space-6);
+  bottom: var(--space-6);
+}
+.letters-next.cb-action {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  margin-top: -76px;
+  width: 152px;
+  height: 152px;
+  border-radius: 48px;
+  background: var(--crayon-yellow);
+  animation: lt-beat 1.2s ease-in-out infinite;
+}
+.letters-done-star {
+  width: 120px;
+  height: 120px;
+  right: -34px;
+  top: -34px;
+  border-width: 5px;
+  background: var(--crayon-yellow);
+  box-shadow: 0 6px 0 var(--ink);
+  transform: rotate(-12deg);
+}
+.letters-speaker {
+  width: 80px;
+  height: 80px;
+  right: 24px;
+  bottom: 24px;
+  border-width: 5px;
+  background: var(--paper);
+}
+.letters-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lt-pulse 1.2s ease-in-out infinite;
+}
+.letters-poke {
+  animation: lt-poke 1.2s ease-in-out infinite;
+}
+.letters-march {
+  animation: lt-march 0.9s linear infinite;
+}
+.letters-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.letters-confetti i {
+  position: absolute;
+  top: -40px;
+  width: 18px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 3px solid var(--ink);
+  border-radius: 5px;
+  animation: lt-fall 1.8s ease-in forwards;
+}
+
+@keyframes lt-pulse {
+  50% {
+    transform: scale(1.18);
+  }
+}
+@keyframes lt-beat {
+  50% {
+    scale: 1.06;
+  }
+}
+@keyframes lt-poke {
+  0%,
+  100% {
+    transform: translate(4px, 0);
+  }
+  50% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes lt-march {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+@keyframes lt-fall {
+  to {
+    transform: translateY(900px) rotate(var(--spin));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .letters-pulse,
+  .letters-poke,
+  .letters-march,
+  .letters-stop.is-now,
+  .letters-next.cb-action {
+    animation: none;
+  }
+}

@@ -1,0 +1,223 @@
+// The letters and numbers as stroke data (ADR 0026): a simple print style of straight sticks and round balls.
+// Original work, CC0 (ADR 0011). Not a font: the strokes carry their order and direction, which give the guide,
+// the start dots, the arrows and the hint.
+//
+// Every glyph sits in a 100 x 140 box. Capitals and numbers run from y 10 (top) to y 110 (the baseline). Small
+// letters have their middle line at y 60 and descenders down to y 135. Angles are in degrees, 0 pointing right and
+// 90 pointing down (screen coordinates), so a rising angle turns clockwise on screen.
+
+export type Pt = { x: number; y: number };
+/** One stroke: the points along it, about one unit apart, in the order it is drawn. */
+export type Stroke = Pt[];
+export interface Glyph {
+  ch: string;
+  strokes: Stroke[];
+}
+
+export type SetId = 'capitals' | 'small' | 'numbers';
+export const SET_ORDER: readonly SetId[] = ['capitals', 'small', 'numbers'];
+export const SET_CHARS: Record<SetId, string> = {
+  capitals: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  small: 'abcdefghijklmnopqrstuvwxyz',
+  numbers: '0123456789',
+};
+
+export const BOX = { w: 100, h: 140 };
+
+type Seg = Pt[];
+
+function line(x1: number, y1: number, x2: number, y2: number): Seg {
+  const n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1)));
+  return Array.from({ length: n + 1 }, (_, i) => ({ x: x1 + ((x2 - x1) * i) / n, y: y1 + ((y2 - y1) * i) / n }));
+}
+
+function arc(cx: number, cy: number, rx: number, ry: number, from: number, to: number): Seg {
+  const span = ((to - from) * Math.PI) / 180;
+  const n = Math.max(2, Math.ceil(Math.abs(span) * Math.max(rx, ry)));
+  const a0 = (from * Math.PI) / 180;
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const a = a0 + (span * i) / n;
+    return { x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) };
+  });
+}
+
+/** Joins segments into one stroke, dropping the repeated point where two segments meet. */
+function s(...segs: Seg[]): Stroke {
+  const out: Pt[] = [];
+  for (const seg of segs) {
+    for (const p of seg) {
+      const last = out.at(-1);
+      if (last && Math.hypot(last.x - p.x, last.y - p.y) < 0.01) continue;
+      out.push({ x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100 });
+    }
+  }
+  return out;
+}
+
+/** A dot (on i and j): a very short stroke. */
+const dot = (x: number, y: number) => s(line(x, y, x, y + 2));
+
+const DATA: Record<string, Stroke[]> = {
+  // ---- Capitals ----
+  A: [s(line(50, 10, 15, 110)), s(line(50, 10, 85, 110)), s(line(27, 75, 73, 75))],
+  B: [
+    s(line(25, 10, 25, 110)),
+    s(line(25, 10, 55, 10), arc(55, 35, 22, 25, -90, 90), line(55, 60, 25, 60)),
+    s(line(25, 60, 58, 60), arc(58, 85, 24, 25, -90, 90), line(58, 110, 25, 110)),
+  ],
+  C: [s(arc(55, 60, 38, 50, -40, -320))],
+  D: [s(line(25, 10, 25, 110)), s(line(25, 10, 42, 10), arc(42, 60, 38, 50, -90, 90), line(42, 110, 25, 110))],
+  E: [s(line(25, 10, 25, 110)), s(line(25, 10, 80, 10)), s(line(25, 60, 70, 60)), s(line(25, 110, 80, 110))],
+  F: [s(line(25, 10, 25, 110)), s(line(25, 10, 80, 10)), s(line(25, 60, 70, 60))],
+  G: [s(arc(55, 60, 38, 50, -40, -360)), s(line(65, 60, 93, 60))],
+  H: [s(line(20, 10, 20, 110)), s(line(80, 10, 80, 110)), s(line(20, 60, 80, 60))],
+  I: [s(line(50, 10, 50, 110)), s(line(30, 10, 70, 10)), s(line(30, 110, 70, 110))],
+  J: [s(line(70, 10, 70, 85), arc(47, 85, 23, 25, 0, 180))],
+  K: [s(line(25, 10, 25, 110)), s(line(80, 10, 25, 65)), s(line(43, 47, 80, 110))],
+  L: [s(line(25, 10, 25, 110), line(25, 110, 80, 110))],
+  M: [s(line(15, 10, 15, 110)), s(line(15, 10, 50, 80), line(50, 80, 85, 10), line(85, 10, 85, 110))],
+  N: [s(line(20, 10, 20, 110)), s(line(20, 10, 80, 110), line(80, 110, 80, 10))],
+  O: [s(arc(50, 60, 38, 50, -90, -450))],
+  P: [s(line(25, 10, 25, 110)), s(line(25, 10, 55, 10), arc(55, 35, 25, 25, -90, 90), line(55, 60, 25, 60))],
+  Q: [s(arc(50, 60, 38, 50, -90, -450)), s(line(60, 85, 85, 115))],
+  R: [
+    s(line(25, 10, 25, 110)),
+    s(line(25, 10, 55, 10), arc(55, 35, 25, 25, -90, 90), line(55, 60, 25, 60)),
+    s(line(50, 60, 82, 110)),
+  ],
+  S: [s(arc(50, 35, 30, 25, -30, -270), arc(50, 85, 30, 25, -90, 150))],
+  T: [s(line(50, 10, 50, 110)), s(line(15, 10, 85, 10))],
+  U: [s(line(20, 10, 20, 80), arc(50, 80, 30, 30, 180, 0), line(80, 80, 80, 10))],
+  V: [s(line(15, 10, 50, 110), line(50, 110, 85, 10))],
+  W: [s(line(10, 10, 30, 110), line(30, 110, 50, 40), line(50, 40, 70, 110), line(70, 110, 90, 10))],
+  X: [s(line(20, 10, 80, 110)), s(line(80, 10, 20, 110))],
+  Y: [s(line(15, 10, 50, 60)), s(line(85, 10, 50, 60), line(50, 60, 50, 110))],
+  Z: [s(line(20, 10, 80, 10), line(80, 10, 20, 110), line(20, 110, 80, 110))],
+
+  // ---- Small letters ----
+  a: [s(arc(50, 85, 25, 25, -30, -390)), s(line(75, 60, 75, 110))],
+  b: [s(line(25, 10, 25, 110)), s(arc(50, 85, 25, 25, 180, 540))],
+  c: [s(arc(55, 85, 27, 25, -40, -320))],
+  d: [s(arc(50, 85, 25, 25, -30, -390)), s(line(75, 10, 75, 110))],
+  e: [s(line(25, 85, 77, 85), arc(51, 85, 26, 25, 0, -310))],
+  f: [s(arc(65, 30, 17, 20, -30, -180), line(48, 30, 48, 110)), s(line(32, 60, 68, 60))],
+  g: [s(arc(50, 85, 25, 25, -30, -390)), s(line(75, 60, 75, 120), arc(52, 120, 23, 15, 0, 160))],
+  h: [s(line(25, 10, 25, 110)), s(arc(50, 82, 25, 22, 180, 360), line(75, 82, 75, 110))],
+  i: [s(line(50, 60, 50, 110)), dot(50, 40)],
+  j: [s(line(55, 60, 55, 120), arc(35, 120, 20, 15, 0, 160)), dot(55, 40)],
+  k: [s(line(25, 10, 25, 110)), s(line(72, 60, 25, 90)), s(line(40, 81, 75, 110))],
+  l: [s(line(50, 10, 50, 110))],
+  m: [
+    s(line(15, 60, 15, 110)),
+    s(arc(31, 78, 16, 18, 180, 360), line(47, 78, 47, 110)),
+    s(arc(63, 78, 16, 18, 180, 360), line(79, 78, 79, 110)),
+  ],
+  n: [s(line(25, 60, 25, 110)), s(arc(50, 82, 25, 22, 180, 360), line(75, 82, 75, 110))],
+  o: [s(arc(50, 85, 25, 25, -90, -450))],
+  p: [s(line(25, 60, 25, 135)), s(arc(50, 85, 25, 25, 180, 540))],
+  q: [s(arc(50, 85, 25, 25, -30, -390)), s(line(75, 60, 75, 135))],
+  r: [s(line(30, 60, 30, 110)), s(arc(52, 82, 22, 22, 180, 300))],
+  s: [s(arc(50, 72, 20, 12, -30, -270), arc(50, 97, 20, 13, -90, 150))],
+  t: [s(line(50, 20, 50, 110)), s(line(32, 60, 68, 60))],
+  u: [s(line(25, 60, 25, 88), arc(50, 88, 25, 22, 180, 0), line(75, 88, 75, 60), line(75, 60, 75, 110))],
+  v: [s(line(20, 60, 50, 110), line(50, 110, 80, 60))],
+  w: [s(line(10, 60, 30, 110), line(30, 110, 50, 70), line(50, 70, 70, 110), line(70, 110, 90, 60))],
+  x: [s(line(25, 60, 75, 110)), s(line(75, 60, 25, 110))],
+  y: [s(line(25, 60, 50, 105)), s(line(75, 60, 36, 135))],
+  z: [s(line(25, 60, 75, 60), line(75, 60, 25, 110), line(25, 110, 75, 110))],
+
+  // ---- Numbers ----
+  '0': [s(arc(50, 60, 32, 50, -90, -450))],
+  '1': [s(line(50, 10, 50, 110))],
+  '2': [s(arc(50, 37, 28, 27, -160, 20), line(76.31, 46.23, 20, 110), line(20, 110, 82, 110))],
+  '3': [s(arc(48, 34, 27, 24, -150, 90), arc(48, 84, 30, 26, -90, 150))],
+  '4': [s(line(55, 10, 18, 78), line(18, 78, 85, 78)), s(line(65, 10, 65, 110))],
+  '5': [s(line(28, 10, 28, 57), arc(48, 78, 28, 30, -136, 150)), s(line(28, 10, 78, 10))],
+  '6': [s(arc(55, 60, 33, 50, -70, -180), line(22, 60, 22, 83), arc(50, 83, 28, 27, 180, -180))],
+  '7': [s(line(20, 10, 80, 10), line(80, 10, 40, 110))],
+  '8': [s(arc(50, 35, 22, 25, -90, -270), arc(50, 85, 27, 25, -90, 270), arc(50, 35, 22, 25, 90, -90))],
+  '9': [s(arc(50, 37, 25, 27, 0, -360), line(75, 37, 75, 110))],
+};
+
+const GLYPHS = new Map<string, Glyph>(Object.entries(DATA).map(([ch, strokes]) => [ch, { ch, strokes }]));
+
+export function glyph(ch: string): Glyph {
+  const g = GLYPHS.get(ch);
+  if (!g) throw new Error(`No glyph for ${ch}`);
+  return g;
+}
+
+export function allChars(): string[] {
+  return SET_ORDER.flatMap((set) => [...SET_CHARS[set]]);
+}
+
+export function setOf(ch: string): SetId {
+  return SET_ORDER.find((set) => SET_CHARS[set].includes(ch)) ?? 'capitals';
+}
+
+export function strokeLength(stroke: Stroke): number {
+  let len = 0;
+  for (let i = 1; i < stroke.length; i++) len += Math.hypot(stroke[i].x - stroke[i - 1].x, stroke[i].y - stroke[i - 1].y);
+  return len;
+}
+
+/** SVG path data for a stroke. */
+export function pathData(stroke: Stroke): string {
+  return stroke.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join('');
+}
+
+/** The middle of all the glyph's points: arrows go on the side of a stroke away from it. */
+function centre(g: Glyph): Pt {
+  const pts = g.strokes.flat();
+  return {
+    x: pts.reduce((a, p) => a + p.x, 0) / pts.length,
+    y: pts.reduce((a, p) => a + p.y, 0) / pts.length,
+  };
+}
+
+/** How far an arrow sits from its stroke's centre line, in glyph units. The guide is 20 wide. */
+const ARROW_GAP = 16;
+
+/**
+ * An arrow beside a stroke, pointing the way it is drawn: the shaft follows the stroke from 20 % to 60 % of its
+ * length, shifted to the outside of the letter. Strokes too short for one (the dots) get none.
+ */
+export function arrowFor(g: Glyph, index: number): { shaft: string; head: string } | null {
+  const stroke = g.strokes[index];
+  const total = strokeLength(stroke);
+  if (total < 12) return null;
+  const c = centre(g);
+  // Walk to the part of the stroke the arrow covers.
+  const part: Pt[] = [];
+  let run = 0;
+  for (let i = 1; i < stroke.length; i++) {
+    run += Math.hypot(stroke[i].x - stroke[i - 1].x, stroke[i].y - stroke[i - 1].y);
+    if (run >= total * 0.2 && run <= total * 0.6) part.push(stroke[i]);
+  }
+  if (part.length < 3) return null;
+  const normalAt = (i: number) => {
+    const a = part[Math.max(0, i - 1)];
+    const b = part[Math.min(part.length - 1, i + 1)];
+    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    return { x: -(b.y - a.y) / len, y: (b.x - a.x) / len };
+  };
+  // Pick the side away from the letter's middle, judged at the arrow's midpoint.
+  const mid = part[Math.floor(part.length / 2)];
+  const n = normalAt(Math.floor(part.length / 2));
+  const plus = Math.hypot(mid.x + n.x * ARROW_GAP - c.x, mid.y + n.y * ARROW_GAP - c.y);
+  const minus = Math.hypot(mid.x - n.x * ARROW_GAP - c.x, mid.y - n.y * ARROW_GAP - c.y);
+  const side = plus >= minus ? 1 : -1;
+  const shifted = part.map((p, i) => {
+    const m = normalAt(i);
+    return { x: p.x + m.x * ARROW_GAP * side, y: p.y + m.y * ARROW_GAP * side };
+  });
+  const tip = shifted.at(-1)!;
+  const before = shifted[Math.max(0, shifted.length - 4)];
+  const len = Math.hypot(tip.x - before.x, tip.y - before.y) || 1;
+  const d = { x: (tip.x - before.x) / len, y: (tip.y - before.y) / len };
+  const back = { x: tip.x - d.x * 6, y: tip.y - d.y * 6 };
+  const r = (v: number) => Math.round(v * 10) / 10;
+  const head =
+    `M${r(back.x - d.y * 4)} ${r(back.y + d.x * 4)}L${r(tip.x)} ${r(tip.y)}` + `L${r(back.x + d.y * 4)} ${r(back.y - d.x * 4)}`;
+  return { shaft: pathData(shifted.map((p) => ({ x: r(p.x), y: r(p.y) }))), head };
+}

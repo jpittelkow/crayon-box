@@ -31,6 +31,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0023](0023-ai-pages-from-a-prompt.md) | The AI page maker also makes pages from a typed idea | Accepted |
 | [0024](0024-family-sync-server.md) | Family sync: a small self-hosted server the app syncs to | Accepted |
 | [0025](0025-driving-game-toy-look-and-engine-sounds.md) | Driving game: a polished toy look and an engine sound for every vehicle | Accepted |
+| [0026](0026-letter-practice.md) | Letter practice: trace big letters with a finger or a stylus | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H

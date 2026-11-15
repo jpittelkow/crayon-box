@@ -22,10 +22,12 @@ export interface KidProfile {
   created: string;
 }
 
-export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing';
+export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer';
 
 export interface Sound {
   play(kind: SoundKind): void;
+  /** False when a parent turned sounds off. Games that make other sounds (a voice) follow it too. */
+  readonly enabled?: boolean;
 }
 
 /**
