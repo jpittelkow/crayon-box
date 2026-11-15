@@ -39,10 +39,16 @@ data folder.
 |---|---|---|
 | `OPENROUTER_API_KEY` | none (AI off) | The family's OpenRouter key |
 | `AI_DAILY_LIMIT` | `20` | Pages a day, for everyone together |
-| `AI_IMAGE_MODEL` | `google/gemini-2.5-flash-image` | Image output: pages from a photo or an idea |
+| `AI_IMAGE_MODEL` | `openai/gpt-5-image-mini` | Image output: pages from a photo or an idea |
+| `AI_SECOND_MODEL` | `google/gemini-3.1-flash-image` | The other model when a parent asks for two pages to choose from |
 | `AI_DRAW_MODEL` | `google/gemini-2.5-flash` | Writes a page as SVG line art |
 
-The models are starting points: try a few on the same ideas and photos, and keep the one whose pages look best.
+The two model settings are the family's defaults. A parent can pick another model for a page in the app
+([ADR 0033](../docs/adr/0033-pick-the-ai-model-in-the-app.md)): the **Model** dropdown lists what OpenRouter offers
+for that way of making a page (fetched from OpenRouter's public model list, kept for six hours), with a search box
+and a price for each. The ★ button keeps a model in the family's favorites, which live in the data folder and
+show at the top of the list on every device. Try a few on the same ideas and photos; the app says which model made
+each page. When one is clearly best, make it the default here.
 
 ## Running it without Docker
 Node 24 or newer, no install step: `npm start` in this folder (data goes to `./data`). `npm test` runs its tests.

@@ -43,7 +43,7 @@ const imageReply = () => ({
 async function start(ai?: Partial<AiConfig>, now = () => Date.parse('2026-11-14T12:00:00Z')): Promise<void> {
   dir = mkdtempSync(join(tmpdir(), 'cb-ai-'));
   store = Store.open(dir);
-  const config: AiConfig | undefined = ai ? { key: 'sk-test', imageModel: 'img/model', drawModel: 'draw/model', dailyLimit: 3, ...ai } : undefined;
+  const config: AiConfig | undefined = ai ? { key: 'sk-test', imageModel: 'img/model', secondModel: 'img/second', drawModel: 'draw/model', dailyLimit: 3, ...ai } : undefined;
   server = createServer(handler({ store, version: 't', pairingCode: 'ABCD-EFGH', ai: config, now }));
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -103,6 +103,8 @@ describe('AI pages (ADR 0029)', () => {
     const content = sent[0].body.messages[0].content;
     assert.equal(content[1].image_url?.url, photo);
     assert.match(content[0].text!, /photo/);
+    assert.match(content[0].text!, /in focus/);
+    assert.match(content[0].text!, /No letters, words or numbers/);
     assert.doesNotMatch(content[0].text!, /fewer than 15/);
   });
 

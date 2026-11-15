@@ -10,6 +10,11 @@ src-tauri/gen/
 # Updater signing keys (ADR 0009) never go in the repo; keep them in the password manager.
 *.key
 
+<<<<<<< HEAD
 # Vehicle sources spike: the AI model (unclear licence chain, 5 MB) and screenshots stay local.
 spikes/vehicle-sources/models/ai-*
 spikes/vehicle-sources/shots/
+=======
+# AI sample sheets (server/tools/ai-samples.ts): may hold family photos, never committed
+.ai-samples/
+>>>>>>> driving/steer-and-traffic

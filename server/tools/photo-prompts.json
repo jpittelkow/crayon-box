@@ -1,0 +1,32 @@
+[
+  {
+    "id": "server",
+    "note": "What the server sends now (ADR 0034): {base} {detail} {photo} are filled from server/src/ai.ts, so this row always tests the live prompt.",
+    "text": "{base} {detail} {photo}"
+  },
+  {
+    "id": "main-subject",
+    "note": "The first prompt (ADR 0029). On busy photos models invented a subject (a dinosaur for a family at a table).",
+    "text": "{style} {detail} Turn the main subject of this photo into such a coloring page. Keep its pose and what makes it recognizable; leave out the background."
+  },
+  {
+    "id": "everyone-v1",
+    "note": "Round 2 (2026-11-15). Better on every group photo; invented blurry background people and copied words, kept patterns. Fixed in 'server'.",
+    "text": "{style} {detail} Turn this photo into such a coloring page. Draw every person (and pet) in the photo, up to four, with whole bodies and a clear white margin around them: nothing cut off at the edges. Keep their poses, hairstyles and the shapes of their clothes so they are recognizable, but draw clothes as plain shapes with no knit, stripes or patterns. Faces are simple and friendly: eyes, nose and a smile, never left blank. Keep one or two big objects they hold or sit at (a cake, a balloon, a basket). Leave out the rest of the background. If there are no people, draw the main objects instead."
+  },
+  {
+    "id": "cartoon",
+    "note": "Round 1. A cute cartoon of the subject; Nano Banana colored it in, GPT-5 Image Mini dropped a child.",
+    "text": "{style} {detail} Redraw the main subject of this photo as a friendly cartoon for a coloring book: simplified, rounded shapes and a slightly bigger head, with the same pose, clothes and hairstyle so it is clearly them. No background, or at most a simple ground line."
+  },
+  {
+    "id": "trace",
+    "note": "Round 1. Faithful to the photo, like tracing it; Nano Banana 2 left the faces blank.",
+    "text": "Make a black-and-white coloring-book line drawing traced from this photo. Use only clean, thick, even black outlines around each main shape; every area inside the outlines is plain white. Remove all shading, shadows, textures, patterns and the background. Close every outline so each area can be filled with one crayon color. Keep the subject's pose and proportions true to the photo. {detail} Landscape 4:3, no text, no border."
+  },
+  {
+    "id": "storybook",
+    "note": "Round 1. The subject plus big background shapes; heads got cut off.",
+    "text": "{style} {detail} Turn this photo into a page from a children's coloring book: the main subject drawn as a simple, cute illustration, with two or three big, simple background shapes taken from the photo (like a tree, the sun or a house), each a large closed shape."
+  }
+]
