@@ -38,12 +38,21 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   await page.getByRole('button', { name: 'Driving', exact: true }).tap();
   const picker = page.locator('.driving-picker');
   await expect(picker).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
-  // Fourteen vehicles (ADR 0035): five a page and a "more" tile, each with a picture; the car is picked to begin with.
+  // Fourteen vehicles (ADR 0035) on three pages: "more" to go on, "back a page" to go back (playtest, 2026-11-15).
+  const more = page.getByRole('button', { name: 'More', exact: true });
+  const less = page.getByRole('button', { name: 'Back a page', exact: true });
   await expect(picker.locator('.vehicle-tile')).toHaveCount(6);
-  await page.getByRole('button', { name: 'More', exact: true }).tap();
+  await expect(less).toHaveCount(0);
+  await more.tap();
   await expect(page.getByRole('button', { name: 'Ambulance', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'More', exact: true }).tap();
-  await page.getByRole('button', { name: 'More', exact: true }).tap();
+  await expect(less).toBeVisible();
+  await more.tap();
+  await expect(page.getByRole('button', { name: 'Race car', exact: true })).toBeVisible();
+  await expect(more).toHaveCount(0);
+  await less.tap();
+  await less.tap();
+  // The pictures are drawn after the picker shows, one at a time; the car is picked to begin with.
+  await expect(picker).toHaveAttribute('data-pictures', 'true', { timeout: 60_000 });
   await expect(picker.locator('.vehicle-tile img').first()).toHaveAttribute('src', /^data:image\/png/);
   await expect(page.getByRole('button', { name: 'Car', exact: true })).toHaveAttribute('aria-pressed', 'true');
 
@@ -58,12 +67,13 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   expect(kinds.slice(1)).not.toContain('bus');
   expect(kinds.slice(1)).toContain('car');
 
-  // Back goes home; coming back in, the bus is picked.
+  // Back returns to the picker (playtest, 2026-11-15), with the bus picked; the picker's Back goes home.
+  await page.getByRole('button', { name: 'Back', exact: true }).tap();
+  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
+  await expect(page.locator('.driving')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'School bus', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Back', exact: true }).tap();
   await expect(page.locator('[data-screen="home"]')).toBeVisible();
-  await page.getByRole('button', { name: 'Driving', exact: true }).tap();
-  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
-  await expect(page.getByRole('button', { name: 'School bus', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('the driving game shows on the home screen by default, and a parent can hide it', async ({ page }) => {
@@ -110,7 +120,7 @@ test('a touch drives the car to that spot and it stops there; lifting early stop
   await expect.poll(async () => (await car(page)).speed, { timeout: 60_000 }).toBe(0);
 });
 
-test('arrow keys and WASD drive; back returns to the home screen', async ({ page }) => {
+test('arrow keys and WASD drive; back returns to the picker, then home', async ({ page }) => {
   await turnOnDriving(page);
   await openDriving(page);
 
@@ -128,6 +138,8 @@ test('arrow keys and WASD drive; back returns to the home screen', async ({ page
   await page.keyboard.up('ArrowLeft');
   await page.keyboard.up('ArrowUp');
 
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true');
   await page.getByRole('button', { name: 'Back' }).tap();
   await expect(page.locator('[data-screen="home"]')).toBeVisible();
 });
@@ -167,7 +179,6 @@ test('the picker has the maps along the top: a tap rings one, and a vehicle driv
 
   // Coming back in, the building site is ringed.
   await page.getByRole('button', { name: 'Back', exact: true }).tap();
-  await page.getByRole('button', { name: 'Driving', exact: true }).tap();
   await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true', { timeout: 60_000 });
   await expect(page.getByRole('button', { name: 'Building site', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });

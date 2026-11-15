@@ -1,6 +1,7 @@
 // Pictures of the vehicles for the picker's tiles (milestone-3 B5): each one drawn in the toy look, in the kid's
-// colour or with their flag, on a little patch of grass. Drawn once when the picker opens, with a renderer that is
-// thrown away straight after, so the game's own renderer is the only one left running.
+// colour or with their flag, on a little patch of grass. Drawn one at a time while the picker is already showing
+// (pictureCache.ts keeps them), with a renderer that is thrown away straight after, so the game's own renderer is
+// the only one left running.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createRenderer } from '../render';
@@ -9,13 +10,18 @@ import { makeWorld, type VehicleKind } from '../sim/sim';
 import { CAMERA_FOV } from '../sim/view';
 import { buildKidVehicle } from './vehicles';
 
-/** One picture per vehicle, as image URLs, `width` by `height` pixels. */
-export function vehicleTiles(kinds: readonly VehicleKind[], kidColor: THREE.ColorRepresentation, width = 480, height = 360): string[] {
+/** Draws vehicle pictures, `width` by `height` pixels, as image URLs, until it is disposed. */
+export interface VehiclePainter {
+  draw(kind: VehicleKind, kidColor: THREE.ColorRepresentation): string;
+  dispose(): void;
+}
+
+export function vehiclePainter(width = 480, height = 360): VehiclePainter {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
-  try {
+  {
     renderer.setClearColor(0x000000, 0);
     renderer.shadowMap.enabled = true;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -24,7 +30,7 @@ export function vehicleTiles(kinds: readonly VehicleKind[], kidColor: THREE.Colo
     const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     pmrem.dispose();
 
-    return kinds.map((kind) => {
+    const draw = (kind: VehicleKind, kidColor: THREE.ColorRepresentation): string => {
       const scene = new THREE.Scene();
       scene.environment = env;
       scene.environmentIntensity = 0.45;
@@ -68,19 +74,24 @@ export function vehicleTiles(kinds: readonly VehicleKind[], kidColor: THREE.Colo
         }
       });
       return url;
-    });
-  } finally {
-    renderer.dispose();
-    renderer.forceContextLoss();
+    };
+    return {
+      draw,
+      dispose() {
+        env.dispose();
+        renderer.dispose();
+        renderer.forceContextLoss();
+      },
+    };
   }
 }
 
 /**
- * A picture of each map from high above (milestone-3 E), for the picker's map tiles: the whole land in view, as the
- * game draws it, `width` by `height` pixels. Each is drawn with a renderer thrown away straight after.
+ * A picture of a map from high above (milestone-3 E), for the picker's map tiles: the whole land in view, as the
+ * game draws it, `width` by `height` pixels, as an image URL. Drawn with a renderer thrown away straight after.
  */
-export function mapTiles(maps: readonly MapDef[], kidColor: THREE.ColorRepresentation, width = 640, height = 300): string[] {
-  return maps.map((map) => {
+export function mapPicture(map: MapDef, kidColor: THREE.ColorRepresentation, width = 640, height = 300): string {
+  {
     const world = makeWorld(7, Math.min(map.propCount ?? 150, 150), 'free', map);
     const canvas = document.createElement('canvas');
     const renderer = createRenderer(canvas, world, kidColor);
@@ -94,7 +105,7 @@ export function mapTiles(maps: readonly MapDef[], kidColor: THREE.ColorRepresent
       renderer.render(world, { eye: [cx, up, cz - up * 0.35], target: [cx, 0, cz] });
       return canvas.toDataURL('image/png');
     } finally {
-      renderer.dispose();
+      renderer.dispose(true);
     }
-  });
+  }
 }
