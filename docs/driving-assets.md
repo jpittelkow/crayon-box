@@ -305,6 +305,7 @@ the registry, and a place on a map. `src/games/racing/assets.test.ts` checks eve
 look builds within its category's triangle budget, and that a map uses only registered ids.
 
 ## How a new asset gets made
+The full steps, with sounds, patterns and anti-recipes, are in [docs/recipes](recipes/README.md).
 1. Add its row here (or move it from idea to planned).
 2. Definition and look, with the category's budget.
 3. Shown in the **asset gallery**: `/tools/driving-gallery.html` on the dev server (built 2026-11-15). It lays
