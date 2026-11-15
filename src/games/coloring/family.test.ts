@@ -47,7 +47,8 @@ describe('the Pages folder', () => {
     expect(themeForFolder('')).toBe(OUR_THEME);
     expect(themeForFolder('Under the sea')).toBe('under-the-sea');
     expect(themeForFolder('under-the-sea')).toBe('under-the-sea');
-    expect(themeForFolder('Dinosaurs')).toBe(OUR_THEME);
+    expect(themeForFolder('Dinosaurs')).toBe('dinosaurs');
+    expect(themeForFolder('Dragons')).toBe(OUR_THEME);
   });
 
   it('turns each waiting file into a page and moves it out of the way', async () => {
