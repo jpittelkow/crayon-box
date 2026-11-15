@@ -73,7 +73,8 @@ describe('the kid car', () => {
       expect(Math.hypot(w.cars[0].x, w.cars[0].z)).toBeLessThan(LAND_R);
       expect(travelled).toBeGreaterThan(200);
     }
-  });
+    // Three simulated minutes: about 2 s here, but 6 s on CI's Windows runner, past Vitest's 5 s default.
+  }, 30_000);
 
   it('a car held against a tree gets steered back to the road', () => {
     const w = makeWorld(7, 0);
