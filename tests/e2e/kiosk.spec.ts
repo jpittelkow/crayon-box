@@ -44,11 +44,11 @@ test('a parent turns the lock off and on, and the choice is kept', async ({ page
   expect((await log(page)).mode).toBe('off');
 });
 
-test('Quit in the parent area quits the app', async ({ page }) => {
+test("Quit is on the parent area's first screen and quits the app", async ({ page }) => {
   await page.goto('/?fake-kiosk');
   await openParentArea(page);
-  await laptop(page).click();
-  await page.getByRole('button', { name: 'Quit the app' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible();
+  await page.locator('.pw-nav').getByRole('button', { name: 'Quit the app' }).click();
   await expect.poll(async () => (await log(page)).quits).toBe(1);
 });
 

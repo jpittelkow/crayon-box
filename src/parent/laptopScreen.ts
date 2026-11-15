@@ -1,10 +1,10 @@
-// The parent area's "This laptop" screen (ADR 0014, milestone 2 phase D), Windows app only: Quit, the kiosk lock's
+// The parent area's "This laptop" screen (ADR 0014, milestone 2 phase D), Windows app only: the kiosk lock's
 // switches, start at sign-in, and the one-time laptop setup guide. These settings stay on this laptop.
 import type { KioskControl } from '../shell/kiosk';
 import type { GameStorage } from '../storage/types';
-import { button, card, h, switchRow } from '../ui/parent';
+import { card, h, switchRow } from '../ui/parent';
 
-export async function renderLaptop(main: HTMLElement, kiosk: KioskControl, shell: GameStorage, quit: () => void): Promise<void> {
+export async function renderLaptop(main: HTMLElement, kiosk: KioskControl, shell: GameStorage): Promise<void> {
   const settings = kiosk.current;
   const startOn = await kiosk.startAtSignIn().catch(() => false);
   const startStatus = h('p', { class: 'pw-muted', role: 'status' });
@@ -12,16 +12,11 @@ export async function renderLaptop(main: HTMLElement, kiosk: KioskControl, shell
   main.append(
     h('h1', {}, 'This laptop'),
     card(
-      h('h2', {}, 'Quit'),
-      h('p', {}, 'Closes the app. Anything open is saved first. From the kids’ screens, Ctrl+Shift+Q does the same.'),
-      h('div', { class: 'pw-row' }, button('Quit the app', quit, 'danger')),
-    ),
-    card(
       h('h2', {}, 'Lock'),
       h('p', { class: 'pw-muted' }, 'These stay on this laptop. The parent area is never locked.'),
       switchRow(
         'Keep the app full screen',
-        'It can’t be resized, minimized or closed except from here. Off: an ordinary window with a close button.',
+        'It can’t be resized, minimized or closed except from the parent area. Off: an ordinary window with a close button.',
         settings.keepFullScreen,
         (on) => void kiosk.update(shell, { keepFullScreen: on }),
       ),
