@@ -48,6 +48,9 @@ _Last confirmed: 2026-11-14_
   noise from every car, and each vehicle its own engine sound. Wanted before the next step. Changes ADR 0021's
   flat Crayon Box look, so it needs a new ADR.
 
+- **Milestone 3, worked through without stopping** (asked 2026-11-15): each step's PR may be merged into main
+  by Claude once its checks pass; the owner reviews afterwards. Nothing merges on red.
+
 ## Tooling and hosting
 - The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to
   `crayon-box` on 2026-11-14; the local checkout folder may still be called `kidsapp`.
