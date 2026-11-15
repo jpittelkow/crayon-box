@@ -194,3 +194,24 @@ test('while a page is being made, a working panel shows with the seconds going u
   await expect(busy).toBeHidden();
   await expect(page.getByRole('button', { name: 'Make it' })).toBeEnabled();
 });
+
+test('two to choose from, when one model fails: the page that came back, and a plain notice of why (playtest, 2026-11-15)', async ({ page }) => {
+  // The second model answers with no picture.
+  const oneFails = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (!String(url).endsWith('/api/v1/models') && (JSON.parse(String(init?.body)) as { model: string }).model === 'other/image') {
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'I can only describe it.' } }] }), { headers: { 'content-type': 'application/json' } });
+    }
+    return fakeOpenRouter(url, init);
+  }) as typeof fetch;
+  await startServer({ key: 'sk-test', imageModel: 'img/model', secondModel: 'other/image', drawModel: 'draw/model', dailyLimit: 5, fetchFn: oneFails });
+  await connectAndOpenAddPages(page);
+  await page.getByRole('group', { name: 'How many' }).getByRole('button', { name: 'Two to choose from' }).click();
+  await page.getByLabel('What should it be?').fill('a kite');
+  await page.getByRole('button', { name: 'Make it' }).click();
+  await expect(aiStatus(page)).toHaveAttribute('data-ai-status', 'ready', { timeout: 30_000 });
+  const notice = page.locator('[data-ai-other]');
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('Only one page came back. Other Image had a problem:');
+  await expect(notice).toContainText('didn’t send a picture back');
+  await expect(page.getByRole('button', { name: 'Add to the library' })).toBeVisible();
+});

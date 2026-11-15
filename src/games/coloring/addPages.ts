@@ -183,13 +183,19 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
           used.textContent = usage();
           const pages = made.flatMap((m) => (m.status === 'fulfilled' ? [m.value] : []));
           const failed = made.flatMap((m) => (m.status === 'rejected' ? [m.reason instanceof Error ? m.reason.message : String(m.reason)] : []));
+          // Which model each failure came from, by name, for the notice below.
+          const failedBy = made.flatMap((m, i) => (m.status === 'rejected' ? [picker?.nameOf(requests[i]!.model ?? '') || requests[i]!.model || 'The other model'] : []));
           if (!pages.length) throw new Error(failed[0] ?? 'No page came back.');
           if (pages.length === 1) {
             const by = pages[0]!.by ? ` Made by ${pages[0]!.by}.` : '';
-            const other = failed.length ? ` (The other model had a problem: ${failed[0]})` : '';
-            status.textContent = `Here it is.${by}${other} Not quite right? Make it again, or try another model.`;
+            status.textContent = `Here it is.${by} Not quite right? Make it again, or try another model.`;
             status.dataset.aiStatus = 'ready';
             showResult(result, 'ai', name, pages[0]!.page, 'ai', added);
+            // Two were asked for and one failed: say so plainly, above the page, with why (playtest, 2026-11-15:
+            // tucked into the status line in brackets, it read as "two to choose from shows one").
+            if (failed.length) {
+              result.prepend(h('p', { class: 'pw-problem', role: 'alert', 'data-ai-other': '' }, `Only one page came back. ${failedBy[0]} had a problem: ${failed[0]}`));
+            }
           } else {
             status.textContent = 'Here are two. Pick the one to keep, or make them again.';
             status.dataset.aiStatus = 'choose';
