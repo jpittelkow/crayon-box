@@ -190,6 +190,8 @@ One new ADR before any vehicle or map work, superseding ADR 0021's "one small is
   laptop keeps its frame rate everywhere on it.
 
 ### F. Ready for the kids
+**Status (2026-11-15):** the per-map tests (`maps/maps.test.ts`) and the browser tests for the picker are built; `CREDITS.md` says the 3D models are original. Left for the owner: the playtest and the laptop check (B7), whether Driving shows on the home screen by default, and accepting ADRs 0031 and 0035. Left for later: the design system artifact's 3D section (the look's rules are in `driving-assets.md` for now), and real sound files to replace the stand-ins.
+
 - Unit tests for each map (the car never leaves it; random input for a minute leaves the car on land and
   moving; traffic follows every road), and the browser tests for the pickers and the garage (ADR 0015).
 - A playtest of vehicles and maps; fixes.
