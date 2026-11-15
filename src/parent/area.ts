@@ -10,6 +10,7 @@ import {
   saveShellSettings,
 } from '../shell/profiles';
 import type { FinishedPictures, GameEntry, GameModule, KidProfile, SettingsSection } from '../shell/types';
+import type { KioskControl } from '../shell/kiosk';
 import type { UpdateController } from '../shell/updates';
 import type { SyncService } from '../sync/service';
 import type { AppStorage } from '../storage/types';
@@ -29,6 +30,10 @@ export interface ParentAreaOptions {
   updates?: UpdateController;
   /** Family sync (ADR 0024), in the browser too. */
   sync?: SyncService;
+  /** Present in the Windows app only (ADR 0014). */
+  kiosk?: KioskControl;
+  /** Quits the Windows app, saving first. */
+  quit?(): void;
   onExit(): void;
 }
 
@@ -81,6 +86,11 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     main.replaceChildren();
     main.scrollTop = 0;
     if (id === 'settings') return renderSettings();
+    if (id === 'laptop' && opts.kiosk) {
+      const { renderLaptop } = await import('./laptopScreen');
+      await renderLaptop(main, opts.kiosk, storage.shell, () => opts.quit?.());
+      return;
+    }
     if (id === 'sync' && opts.sync) {
       const { renderSync } = await import('./syncScreen');
       stopScreen = await renderSync(main, opts.sync);
@@ -109,6 +119,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   addNav('settings', 'Settings');
   for (const s of sections) addNav(`${s.game.id}:${s.section.id}`, s.section.title);
   if (opts.sync) addNav('sync', 'Family sync');
+  if (opts.kiosk) addNav('laptop', 'This laptop');
   let stopDot: (() => void) | null = null;
   if (opts.updates) {
     const updates = opts.updates;

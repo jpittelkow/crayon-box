@@ -16,7 +16,10 @@
         "title": "Crayon Box",
         "width": 1280,
         "height": 800,
-        "center": true
+        "center": true,
+        "fullscreen": true,
+        "resizable": false,
+        "minimizable": false
       }
     ],
     "security": {

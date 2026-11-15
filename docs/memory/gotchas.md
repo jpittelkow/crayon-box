@@ -85,8 +85,12 @@ _Last updated: 2026-11-14_
   new that loads from elsewhere (OpenRouter in phase G, a sync server in phase C) must be added to it or it works
   in the browser and fails only in the installed app. The built app was checked under that policy with a one-off
   script on 2026-11-14 (fill worked, nothing blocked).
-- No Rust on the dev machine means no `src-tauri/Cargo.lock` locally. CI uploads the one its build makes
-  (`cargo-lock` artifact); commit it so later builds use the same crate versions (2026-11-14).
+- Rust 1.94 (MSVC) is on the dev machine now, used only for `cargo check` and `cargo test` in `src-tauri/`
+  (builds and installers still come from CI). Point `CARGO_TARGET_DIR` at one shared folder outside the repo so
+  worktrees reuse it; a first check takes about 1.5 minutes. `cargo check` also updates `Cargo.lock`, which can be
+  committed; before, CI's `cargo-lock` artifact was the only source (2026-11-14).
+- Device-only settings (the kiosk lock, sync's own settings) go under `local/` in a namespace: ADR 0024's rule,
+  which the storage layer already keeps out of sync (`types.ts`). Don't invent another prefix (2026-11-14).
 - Several sessions share this folder and its git index. A plain `git commit` takes whatever anyone has staged:
   one fix commit (941ad5d, local only) swept in another session's staged deletion. Commit your own files with
   `git commit -- <paths>`, which ignores other staged changes (2026-11-14).

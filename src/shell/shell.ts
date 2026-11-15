@@ -10,6 +10,7 @@ import { GAMES } from './registry';
 import { WebAudioSound } from './sound';
 import type { FinishedPictures, GameEntry, KidProfile } from './types';
 import type { UpdateController } from './updates';
+import { screenKind, type KioskControl } from './kiosk';
 import type { SyncService } from '../sync/service';
 
 export class Shell {
@@ -24,7 +25,7 @@ export class Shell {
     private readonly storage: AppStorage,
     private readonly games: readonly GameEntry[] = GAMES,
     /** What only the Windows app has (milestone 2); empty in the browser. */
-    private readonly platform: { finished?: FinishedPictures; updates?: UpdateController; sync?: SyncService } = {},
+    private readonly platform: { finished?: FinishedPictures; updates?: UpdateController; kiosk?: KioskControl; sync?: SyncService } = {},
   ) {}
 
   async start(): Promise<void> {
@@ -46,6 +47,17 @@ export class Shell {
     this.frame.parentElement?.style.setProperty('--ground', ground);
     screen.classList.add('slide-in');
     this.frame.replaceChildren(screen);
+    // The keyboard lock follows the screen: off in the parent area, driving keys in the driving game (ADR 0014).
+    void this.platform.kiosk?.showing(screenKind(screen.dataset.screen));
+  }
+
+  /** Quits the Windows app (the parent area's Quit, or Ctrl+Shift+Q): the open picture is saved first. */
+  async quit(): Promise<void> {
+    try {
+      await this.leave();
+    } finally {
+      await this.platform.kiosk?.quit();
+    }
   }
 
   private revokeUrls(): void {
@@ -167,7 +179,9 @@ export class Shell {
       games: this.games,
       finished: this.platform.finished,
       updates: this.platform.updates,
+      kiosk: this.platform.kiosk,
       sync: this.platform.sync,
+      quit: () => void this.quit(),
       onExit: () => void this.showKidPicker(),
     });
     this.stopParent = area.stop;

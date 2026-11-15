@@ -1,6 +1,6 @@
 // Phase D: sounds with a parent switch, the optional gate PIN, and "reduce motion" (ADR 0008, 0016).
 import { expect, test, type Page } from '@playwright/test';
-import { RED, SHAPES, expectPaint, openShapesPage, pick, tapPage } from './helpers';
+import { RED, SHAPES, expectPaint, holdLock as holdTheLock, openShapesPage, pick, tapPage } from './helpers';
 
 // The parent area's way back. Its label is being reworded in another branch of work, so both are accepted.
 const BACK_TO_KIDS = /^Back to (coloring|the kids)$/;
@@ -8,11 +8,7 @@ const BACK_TO_KIDS = /^Back to (coloring|the kids)$/;
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 
 async function holdLock(page: Page): Promise<void> {
-  const box = (await page.getByRole('button', { name: 'Grown-ups: press and hold' }).boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.waitForTimeout(1200);
-  await page.mouse.up();
+  await holdTheLock(page);
   await expect(page.locator('[data-screen="parent-gate"]')).toBeVisible();
 }
 
