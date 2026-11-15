@@ -208,7 +208,7 @@ describe('sync server (ADR 0024)', () => {
     assert.equal((await changes(t)).rev, 1);
   });
 
-  it('lets the app's pages call it from their own origin (CORS)', async () => {
+  it('lets the app’s pages call it from their own origin (CORS)', async () => {
     const pre = await fetch(item('shell/a.json'), {
       method: 'OPTIONS',
       headers: { origin: 'http://tauri.localhost', 'access-control-request-method': 'PUT' },
