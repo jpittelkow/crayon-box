@@ -141,3 +141,36 @@ test('a parent restores the previous version of a picture, and deletes one', asy
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.getByText('Star has no pictures yet.')).toBeVisible();
 });
+
+test('a parent can paste into a text box (the sync server address), but browser shortcuts stay blocked', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  await openParentArea(page);
+  await page.locator('.pw-nav').getByRole('button', { name: 'Family sync' }).click();
+  const field = page.getByLabel('Server address');
+  await page.evaluate(() => navigator.clipboard.writeText('192.168.1.20:8787'));
+  await field.click();
+  await page.keyboard.press('Control+V');
+  await expect(field).toHaveValue('192.168.1.20:8787');
+  // Select all and cut work too.
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Control+X');
+  await expect(field).toHaveValue('');
+  // A browser shortcut is still stopped before the browser sees it.
+  const blocked = await page.evaluate(() => {
+    const e = new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, bubbles: true, cancelable: true });
+    document.querySelector('#sync-server')!.dispatchEvent(e);
+    return e.defaultPrevented;
+  });
+  expect(blocked).toBe(true);
+  // The right-click menu (with Paste) on a text box, not elsewhere.
+  const menu = await page.evaluate(() => {
+    const at = (el: Element) => {
+      const e = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      el.dispatchEvent(e);
+      return !e.defaultPrevented;
+    };
+    return { field: at(document.querySelector('#sync-server')!), heading: at(document.querySelector('h1')!) };
+  });
+  expect(menu).toEqual({ field: true, heading: false });
+});

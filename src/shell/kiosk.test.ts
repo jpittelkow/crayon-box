@@ -75,4 +75,33 @@ describe('kiosk lock (ADR 0014)', () => {
     await c.update(shell, { lockKeyboard: false });
     expect(calls).toEqual(['locked:false', 'keys:off']);
   });
+
+  it('unlocks the window from the parent area for this visit only', async () => {
+    const shell = appStorage(memoryBackend()).shell;
+    const { calls, bridge } = recorder();
+    const c = new KioskControl(bridge, DEFAULT_KIOSK);
+    await c.start();
+    await c.showing('parent');
+    calls.length = 0;
+    expect(c.windowLocked).toBe(true);
+    await c.setWindowUnlocked(true);
+    expect(c.windowLocked).toBe(false);
+    await c.showing('parent'); // moving between parent screens keeps it unlocked
+    await c.showing('kid'); // back to the kids: locked again, and the setting never changed
+    expect(calls).toEqual(['locked:false', 'locked:true', 'keys:kid']);
+    expect(c.windowLocked).toBe(true);
+    expect((await loadKioskSettings(shell)).keepFullScreen).toBe(true);
+  });
+
+  it('has nothing to unlock when the app is not kept full screen', async () => {
+    const { calls, bridge } = recorder();
+    const c = new KioskControl(bridge, { ...DEFAULT_KIOSK, keepFullScreen: false });
+    await c.start();
+    calls.length = 0;
+    await c.setWindowUnlocked(true);
+    await c.showing('parent');
+    await c.showing('kid');
+    expect(calls).toEqual(['keys:off', 'keys:kid']); // the keyboard only: the window was never locked
+    expect(c.windowLocked).toBe(false);
+  });
 });
