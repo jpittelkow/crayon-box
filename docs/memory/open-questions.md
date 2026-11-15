@@ -27,3 +27,4 @@ _Last updated: 2026-11-14_
 - **Search for AI pages from an idea** (ADR 0023): which search service, its key and cost. Settle before building
   that part.
 - **AI model for the animal themes' built-in pages** (ADR 0022): pick with the default model test of ADR 0006.
+  The clean-up step and the dev tool to turn its images into pages exist; only the model choice is missing.

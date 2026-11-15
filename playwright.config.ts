@@ -8,6 +8,9 @@ const PORT = 5391;
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
+  // Opening a page builds its region map (2048 x 1536) in a worker; with every test running at once that can take
+  // longer than the default 5 s.
+  expect: { timeout: 10_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',

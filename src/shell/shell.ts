@@ -6,7 +6,7 @@ import { el, kidButton } from '../ui/kid';
 import { kidPickerScreen, lockButton } from './kidPicker';
 import { enabledGames, getPhoto, kidTintVar, loadProfiles, loadShellSettings } from './profiles';
 import { GAMES } from './registry';
-import { silentSound } from './sound';
+import { WebAudioSound } from './sound';
 import type { GameEntry, KidProfile } from './types';
 
 export class Shell {
@@ -14,6 +14,7 @@ export class Shell {
   private stopParent: (() => void) | null = null;
   private busy = false;
   private urls: string[] = [];
+  private sound: WebAudioSound | null = null;
 
   constructor(
     private readonly frame: HTMLElement,
@@ -46,9 +47,15 @@ export class Shell {
     this.urls.splice(0).forEach((u) => URL.revokeObjectURL(u));
   }
 
+  /** Sounds for every kid touch (ADR 0016), following the parent's on/off setting. */
+  private sounds(): WebAudioSound {
+    return (this.sound ??= new WebAudioSound(this.storage.shell));
+  }
+
   async showKidPicker(): Promise<void> {
     await this.leave();
     this.revokeUrls();
+    await this.sounds().refresh();
     const kids = await loadProfiles(this.storage.shell);
     const settings = await loadShellSettings(this.storage.shell);
     const photos = new Map<string, string>();
@@ -65,7 +72,10 @@ export class Shell {
         kids,
         photos,
         showNames: settings.showNames,
-        onPick: (kid) => void this.afterKidPicked(kid),
+        onPick: (kid) => {
+          this.sounds().play('tap');
+          void this.afterKidPicked(kid);
+        },
         onUnlock: () => void this.showGate(),
       }),
     );
@@ -113,7 +123,7 @@ export class Shell {
       this.unmount = module.mount(screen, {
         kid,
         storage: this.storage.game(entry.id),
-        sound: silentSound,
+        sound: this.sounds(),
         exitToHome: () => void this.afterGame(kid),
       });
     } finally {
@@ -132,10 +142,11 @@ export class Shell {
   /** The read-and-tap gate (ADR 0008). The parent world's code loads only from here. */
   private async showGate(): Promise<void> {
     await this.leave();
-    const { gateScreen } = await import('../parent/gate');
+    const { gateScreen, loadGateSettings } = await import('../parent/gate');
     const gate = gateScreen(
       () => void this.showParentArea(),
       () => void this.showKidPicker(),
+      (await loadGateSettings(this.storage.shell)).pinHash,
     );
     this.stopParent = gate.stop;
     document.body.dataset.world = 'parent';

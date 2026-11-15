@@ -24,7 +24,7 @@ test('the kid picker opens the pages, then a page, on the kid’s color', async 
   // No pictures yet, so the game opens straight on the page library (ADR 0017).
   await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
   // The theme strip: one button per theme with pages, in theme order, then the blank page (ADR 0016).
-  await expect(page.locator('[data-theme]')).toHaveCount(3);
+  await expect(page.locator('[data-theme]')).toHaveCount(5);
   await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'race-cars');
   await expect(page.getByRole('button', { name: 'Blank page' })).toBeVisible();
   await expect(page.locator('[data-page]')).toHaveCount(6); // Race cars: six pages, so no "more" arrow yet
@@ -251,4 +251,63 @@ test('the blank page is one big area to fill', async ({ page }) => {
   await pick(page, 'Back');
   await pick(page, 'My pictures');
   await expect(page.getByRole('button', { name: 'Blank page picture' })).toBeVisible();
+});
+
+test('undo after two fingers removes the last stroke whole, even when they overlapped in time', async ({ page }) => {
+  await openShapesPage(page);
+  // Finger A draws a diagonal; finger B a vertical line. A lifts first while B is still drawing, then B lifts.
+  const A0 = { x: 300, y: 300 };
+  const A1 = { x: 900, y: 900 };
+  const B0 = { x: 800, y: 200 };
+  const B1 = { x: 800, y: 1000 };
+  const B2 = { x: 800, y: 1300 };
+  const cdp = await page.context().newCDPSession(page);
+  const pt = async (p: { x: number; y: number }, id: number) => ({ ...(await toScreen(page, p)), id, radiusX: 4, radiusY: 4 });
+  const lerp = (a: { x: number; y: number }, b: { x: number; y: number }, t: number) => ({
+    x: a.x + (b.x - a.x) * t,
+    y: a.y + (b.y - a.y) * t,
+  });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [await pt(A0, 0), await pt(B0, 1)] });
+  for (let i = 1; i <= 10; i++) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [await pt(lerp(A0, A1, i / 10), 0), await pt(lerp(B0, B1, i / 10), 1)],
+    });
+  }
+  // A lifts; B stays down and keeps going. (The protocol lifts a finger by leaving it out of a touchMove; a
+  // touchEnd must carry no points and lifts them all.)
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [await pt(B1, 1)] });
+  for (let i = 1; i <= 5; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [await pt(lerp(B1, B2, i / 5), 1)] });
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await cdp.detach();
+
+  const onA = { x: 600, y: 600 };
+  const onBInsideABox = { x: 800, y: 400 }; // on B's line, inside A's bounding box, far from A's line
+  await expectPaint(page, onA, SKY);
+  await expectPaint(page, onBInsideABox, SKY);
+
+  await pick(page, 'Undo');
+  await expectBlank(page, onBInsideABox);
+  await expectBlank(page, { x: 800, y: 1200 });
+  await expectPaint(page, onA, SKY);
+
+  await pick(page, 'Undo');
+  await expectBlank(page, onA);
+});
+
+test('the eraser only takes paint away for real when the finger lifts, and undo brings it back', async ({ page }) => {
+  await openShapesPage(page);
+  await pick(page, 'Paint bucket');
+  await pick(page, 'Red');
+  await tapPage(page, SHAPES.inCircle);
+  await expectPaint(page, SHAPES.inCircle, RED);
+  await pick(page, 'Eraser');
+  await touchStrokes(page, [[{ x: 400, y: 800 }, { x: 720, y: 800 }]]);
+  await expectBlank(page, SHAPES.inCircle);
+  // No stroke layers are left behind once fingers lift.
+  await expect(page.locator('.layer-stroke')).toHaveCount(0);
+  await pick(page, 'Undo');
+  await expectPaint(page, SHAPES.inCircle, RED);
 });

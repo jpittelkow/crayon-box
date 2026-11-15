@@ -28,9 +28,6 @@ _Last updated: 2026-11-14_
   before the worker answered", dispatch the pointer events in one `page.evaluate` (found 2026-11-14).
 - Canvas compositing can be off by one or two per color channel, so browser tests compare pixels with a
   tolerance of 3 (found 2026-11-14).
-- Undo with two fingers at once: if one finger lifts while the other is still painting, undoing the second
-  stroke later can leave a bit of it behind inside the first stroke's box. Accepted for now; noted in
-  `engine.ts` (2026-11-14).
 - A parent-world button styled `display: inline-flex` ignores the `hidden` attribute unless CSS restores it;
   `parent.css` has a `[hidden]` rule for that (found 2026-11-14).
 - The keyboard is blocked app-wide (ADR 0003) except while `body[data-world="parent"]`, so the name field can be
@@ -72,3 +69,11 @@ _Last updated: 2026-11-14_
   delete the last kid on one device (2026-11-14).
 - Playwright's `reuseExistingServer` reuses whatever answers on its port. Another session's dev server on 5180
   made all 27 browser tests fail by serving a different page. The tests now use port 5391 (found 2026-11-14).
+- Chrome's DevTools protocol lifts one finger by leaving it out of a `touchMove`; a `touchEnd` must carry no touch
+  points and lifts every finger (found 2026-11-14, two-finger undo test).
+- In the clean-up step, pick the ink/paper threshold from the picture before adding the white margin; the margin
+  pulls the automatic threshold toward the paper and turns gray paper into ink (found 2026-11-14).
+- Settings that change independently get their own file (`sounds.json`, `gate.json`), because sync settles
+  conflicts per file (ADR 0024).
+- This dev machine often runs at about 70% CPU before tests start. The full browser suite can then time out in a
+  random test; `npx playwright test --workers=4` is steady. CI is the reference (2026-11-14).

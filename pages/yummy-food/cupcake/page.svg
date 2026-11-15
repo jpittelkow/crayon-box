@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A cupcake with frosting, sprinkles and a cherry. -->
+  <defs><clipPath id="wrap"><path d="M720 900 L1328 900 L1240 1360 L808 1360 Z"/></clipPath></defs>
+  <path d="M720 900 L1328 900 L1240 1360 L808 1360 Z" fill="#ffffff"/>
+  <g clip-path="url(#wrap)"><path d="M800 880 L780 1380 M890 880 L870 1380 M980 880 L960 1380 M1070 880 L1050 1380 M1160 880 L1140 1380 M1250 880 L1230 1380"/></g>
+  <path d="M720 900 L1328 900 L1240 1360 L808 1360 Z"/>
+  <path d="M680 920 A100 100 0 0 1 760 760 A120 120 0 0 1 940 620 A150 150 0 0 1 1110 600 A130 130 0 0 1 1290 760 A100 100 0 0 1 1370 920 Z" fill="#ffffff"/>
+  <path d="M820 820 L850 800 M960 720 L995 735 M1130 700 L1160 720 M1220 820 L1250 840 M1050 820 L1080 805"/>
+  <circle cx="1024" cy="520" r="60" fill="#ffffff"/>
+  <path d="M1024 460 Q1030 400 1080 370"/>
+</svg>

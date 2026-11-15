@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A sailboat on the waves. -->
+  <circle cx="300" cy="260" r="110"/>
+  <path d="M1450 250 A60 60 0 0 1 1510 190 A80 80 0 0 1 1650 170 A70 70 0 0 1 1750 220 A50 50 0 0 1 1770 290 L1470 290 A40 40 0 0 1 1450 250 Z" fill="#ffffff"/>
+  <path d="M1500 520 Q1550 480 1600 520 Q1650 480 1700 520"/>
+  <path d="M0 1150 Q128 1110 256 1150 T512 1150 T768 1150 T1024 1150 T1280 1150 T1536 1150 T1792 1150 T2048 1150"/>
+  <path d="M200 1330 Q260 1300 320 1330 M760 1330 Q820 1300 880 1330 M1500 1330 Q1560 1300 1620 1330 M480 1440 Q540 1410 600 1440 M1180 1440 Q1240 1410 1300 1440 M1760 1440 Q1820 1410 1880 1440"/>
+  <rect x="1030" y="280" width="30" height="720" fill="#ffffff"/>
+  <path d="M1060 280 L1180 310 L1060 340 Z" fill="#ffffff"/>
+  <path d="M1030 320 L1030 960 L590 960 Z" fill="#ffffff"/>
+  <path d="M1060 360 L1060 940 L1400 940 Z" fill="#ffffff"/>
+  <path d="M560 1000 L1560 1000 L1420 1220 L700 1220 Z" fill="#ffffff"/>
+  <circle cx="900" cy="1100" r="32"/>
+  <circle cx="1060" cy="1100" r="32"/>
+  <circle cx="1220" cy="1100" r="32"/>
+</svg>

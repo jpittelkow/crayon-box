@@ -44,6 +44,12 @@ interface Stroke {
   distance: number;
   bbox: Rect | null;
   ready: Promise<void>;
+  /**
+   * The stroke's own layer, between the paint and the lines, until the finger lifts. Each finger draws on its own
+   * layer, so one stroke's undo step never holds part of another stroke still being drawn.
+   */
+  layer: HTMLCanvasElement;
+  layerCtx: CanvasRenderingContext2D;
 }
 
 export interface EngineEvents {
@@ -163,6 +169,7 @@ export class ColoringEngine {
 
   destroy(): void {
     this.regions.destroy();
+    for (const stroke of this.strokes.values()) stroke.layer.remove();
     this.strokes.clear();
     this.history.clear();
   }
@@ -196,7 +203,11 @@ export class ColoringEngine {
       // Not capturable (synthetic events): moves still arrive while the finger stays on the page.
     }
 
+    const layer = canvas('layer layer-stroke');
+    this.root.insertBefore(layer, this.lines);
     const stroke: Stroke = {
+      layer,
+      layerCtx: ctx2d(layer),
       tool: this.tool,
       color: this.color,
       size: this.size,
@@ -243,9 +254,7 @@ export class ColoringEngine {
     const stroke = this.strokes.get(e.pointerId);
     if (!stroke) return;
     this.strokes.delete(e.pointerId);
-    void stroke.ready.then(() => {
-      if (stroke.bbox) this.commit(stroke.bbox);
-    });
+    void stroke.ready.then(() => this.commitStroke(stroke));
   }
 
   // ---- Drawing ----
@@ -256,7 +265,9 @@ export class ColoringEngine {
   }
 
   private strokeColor(stroke: Stroke): string {
-    if (stroke.tool === 'eraser') return '#000000';
+    // On its own layer the eraser paints paper white, which looks the same as erasing; it erases for real when the
+    // finger lifts (commitStroke).
+    if (stroke.tool === 'eraser') return '#ffffff';
     if (stroke.color !== RAINBOW) return stroke.color;
     // Rainbow cycles hue along the stroke (ADR 0004).
     const hue = Math.round(stroke.distance / 4) % 360;
@@ -286,14 +297,10 @@ export class ColoringEngine {
     stroke.bbox = union(stroke.bbox, rect);
 
     const color = this.strokeColor(stroke);
-    const op: GlobalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
 
     if (!mask) {
-      // Free coloring: straight onto the paint layer.
-      this.paintCtx.save();
-      this.paintCtx.globalCompositeOperation = op;
-      line(this.paintCtx, a, p, stroke.size, color);
-      this.paintCtx.restore();
+      // Free coloring: straight onto the stroke's layer.
+      line(stroke.layerCtx, a, p, stroke.size, color);
       return;
     }
 
@@ -309,10 +316,26 @@ export class ColoringEngine {
     s.globalCompositeOperation = 'destination-in';
     s.drawImage(mask.bitmap, mask.x - rect.x0, mask.y - rect.y0);
     s.restore();
-    this.paintCtx.save();
-    this.paintCtx.globalCompositeOperation = op;
-    this.paintCtx.drawImage(this.scratch, 0, 0, w, h, rect.x0, rect.y0, w, h);
-    this.paintCtx.restore();
+    stroke.layerCtx.drawImage(this.scratch, 0, 0, w, h, rect.x0, rect.y0, w, h);
+  }
+
+  /** The finger lifted: merge the stroke's layer into the picture as one undo step, then drop the layer. */
+  private commitStroke(stroke: Stroke): void {
+    stroke.layer.remove();
+    const rect = stroke.bbox;
+    if (!rect) return;
+    const w = rect.x1 - rect.x0;
+    const h = rect.y1 - rect.y0;
+    const before = this.committedCtx.getImageData(rect.x0, rect.y0, w, h);
+    this.history.push(makeStep(rect.x0, rect.y0, w, h, before.data));
+    const op: GlobalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
+    for (const ctx of [this.paintCtx, this.committedCtx]) {
+      ctx.save();
+      ctx.globalCompositeOperation = op;
+      ctx.drawImage(stroke.layer, rect.x0, rect.y0, w, h, rect.x0, rect.y0, w, h);
+      ctx.restore();
+    }
+    this.events.onChange?.();
   }
 
   private async fillAt(p: Point): Promise<void> {
@@ -358,10 +381,9 @@ export class ColoringEngine {
   }
 
   /**
-   * Records the before pixels of `rect` as one undo step, then brings the committed copy up to date.
-   * Known limit: when two fingers paint at once and the first lifts while the second is still down, the copy
-   * taken here includes the part of the second stroke inside the first one's box, so undoing the second stroke
-   * later leaves that part behind.
+   * Records the before pixels of `rect` as one undo step, then brings the committed copy up to date. Used by fills
+   * and start over, which draw on the paint layer directly; strokes still being drawn are on their own layers, so
+   * the paint layer holds only finished actions here.
    */
   private commit(rect: Rect): void {
     const w = rect.x1 - rect.x0;

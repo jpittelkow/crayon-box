@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A rocket among stars, with a ringed planet. -->
+  <path d="M300 230 L318 276 L367 278 L329 309 L341 357 L300 330 L259 357 L271 309 L233 278 L282 276 Z"/>
+  <path d="M1720 320 L1735 359 L1777 361 L1745 388 L1755 429 L1720 406 L1685 429 L1695 388 L1663 361 L1705 359 Z"/>
+  <path d="M1680 1110 L1698 1156 L1747 1158 L1709 1189 L1721 1237 L1680 1210 L1639 1237 L1651 1189 L1613 1158 L1662 1156 Z"/>
+  <path d="M1500 716 L1511 745 L1542 746 L1518 766 L1526 796 L1500 779 L1474 796 L1482 766 L1458 746 L1489 745 Z"/>
+  <ellipse cx="380" cy="900" rx="220" ry="55"/>
+  <circle cx="380" cy="900" r="130" fill="#ffffff"/>
+  <path d="M250 900 A130 130 0 0 0 510 900"/>
+  <path d="M160 900 Q380 990 600 900"/>
+  <path d="M880 1060 Q900 1200 960 1260 Q990 1200 1024 1330 Q1058 1200 1088 1260 Q1148 1200 1168 1060 Z" fill="#ffffff"/>
+  <path d="M828 820 L680 1000 L680 1140 L828 1060 Z" fill="#ffffff"/>
+  <path d="M1220 820 L1368 1000 L1368 1140 L1220 1060 Z" fill="#ffffff"/>
+  <path d="M1024 200 Q1220 380 1220 760 L1220 1060 L828 1060 L828 760 Q828 380 1024 200 Z" fill="#ffffff"/>
+  <circle cx="1024" cy="600" r="90"/>
+  <circle cx="1024" cy="600" r="60"/>
+  <path d="M828 900 L1220 900"/>
+</svg>

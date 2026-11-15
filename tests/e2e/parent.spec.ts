@@ -101,7 +101,7 @@ test('a hidden page leaves the library', async ({ page }) => {
   await page.getByRole('button', { name: 'Back to the kids' }).click();
   await page.getByRole('button', { name: 'Star kid' }).tap();
   // Under the sea had only the fish, so its theme button goes too.
-  await expect(page.locator('[data-theme]')).toHaveCount(2);
+  await expect(page.locator('[data-theme]')).toHaveCount(4);
   await expect(page.getByRole('button', { name: 'Under the sea' })).toHaveCount(0);
 });
 

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A two-tier birthday cake with three candles. -->
+  <path d="M0 1380 L2048 1380"/>
+  <ellipse cx="1020" cy="1280" rx="620" ry="60" fill="#ffffff"/>
+  <rect x="520" y="900" width="1000" height="360" rx="30" fill="#ffffff"/>
+  <path d="M520 980 Q570 1040 620 980 Q670 1040 720 980 Q770 1040 820 980 Q870 1040 920 980 Q970 1040 1020 980 Q1070 1040 1120 980 Q1170 1040 1220 980 Q1270 1040 1320 980 Q1370 1040 1420 980 Q1470 1040 1520 980"/>
+  <rect x="700" y="640" width="640" height="260" rx="30" fill="#ffffff"/>
+  <path d="M700 710 Q740 760 780 710 Q820 760 860 710 Q900 760 940 710 Q980 760 1020 710 Q1060 760 1100 710 Q1140 760 1180 710 Q1220 760 1260 710 Q1300 760 1340 710"/>
+  <circle cx="640" cy="1150" r="30"/>
+  <circle cx="820" cy="1150" r="30"/>
+  <circle cx="1000" cy="1150" r="30"/>
+  <circle cx="1180" cy="1150" r="30"/>
+  <circle cx="1360" cy="1150" r="30"/>
+  <rect x="850" y="480" width="40" height="160" fill="#ffffff"/>
+  <rect x="1000" y="480" width="40" height="160" fill="#ffffff"/>
+  <rect x="1150" y="480" width="40" height="160" fill="#ffffff"/>
+  <path d="M870 476 Q830 420 870 360 Q910 420 870 476 Z"/>
+  <path d="M1020 476 Q980 420 1020 360 Q1060 420 1020 476 Z"/>
+  <path d="M1170 476 Q1130 420 1170 360 Q1210 420 1170 476 Z"/>
+</svg>

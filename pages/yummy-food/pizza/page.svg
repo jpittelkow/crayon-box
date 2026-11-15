@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A slice of pizza with pepperoni and olives. -->
+  <path d="M520 300 L1528 300 L1024 1350 Z" fill="#ffffff"/>
+  <path d="M480 220 Q1024 120 1568 220 L1528 320 L520 320 Z" fill="#ffffff"/>
+  <circle cx="850" cy="560" r="80"/>
+  <circle cx="1200" cy="520" r="80"/>
+  <circle cx="1020" cy="820" r="80"/>
+  <circle cx="1024" cy="1080" r="60"/>
+  <circle cx="700" cy="430" r="30"/>
+  <circle cx="700" cy="430" r="12" fill="#23201c"/>
+  <circle cx="1250" cy="700" r="30"/>
+  <circle cx="1250" cy="700" r="12" fill="#23201c"/>
+</svg>

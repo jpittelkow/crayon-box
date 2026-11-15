@@ -77,10 +77,13 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   get fixed or recorded (swatch size, brush sizes, touch-down or lift).
 - **B. Page pipeline:** done 2026-11-14: [page guide](../../pages/README.md), the rendered page check in CI
   (`tests/e2e/pages.spec.ts`, ADR 0005), the theme strip and blank page. Still open for C: who draws the pages.
-- **C. The real page library:** about 48 pages in 8 themes, in batches, each through the check. Sources decided
-  in [ADR 0022](../adr/0022-where-built-in-pages-come-from.md): SVG drawn by Claude for Race cars, Things that go,
-  Shapes and Yummy food; AI-made (with the clean-up step) for the animal themes. Race cars done 2026-11-14
-  (6 pages). Next SVG batch: Things that go. The shapes placeholder stays as a real Shapes page.
-- **D. Polish:** sounds with a Settings switch, optional gate PIN, reduce-motion check, design system and mockups
-  updated to ADRs 0017–0020, optionally the two-finger undo limit.
+- **C. The real page library:** sources in [ADR 0022](../adr/0022-where-built-in-pages-come-from.md). Drawn as
+  SVG and done 2026-11-14: Race cars, Things that go, Shapes, Yummy food (six pages each), plus the fish. The
+  clean-up step for AI-made pages is built (`cleanup.ts`, dev tool `tools/clean-page.html`). Left: the four
+  animal themes (Farm and pets, Wild animals, Under the sea, Outside), made with an AI image model and cleaned up;
+  needs a model picked (open questions).
+- **D. Polish:** done 2026-11-14: sounds with a Settings switch (`shell/sound.ts`, made from tones, no files),
+  the optional gate PIN (stored as a hash), the reduce-motion check (browser test), and the two-finger undo limit
+  fixed (each stroke draws on its own layer until the finger lifts). Left: the design system and mockup
+  artifacts still show ADR 0016's first look (80 px swatches, no names or photos, the old page flow).
 A and B can run in parallel; D fits anywhere.

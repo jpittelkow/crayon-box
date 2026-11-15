@@ -13,6 +13,7 @@ import type { GameEntry, GameModule, KidProfile, SettingsSection } from '../shel
 import type { AppStorage } from '../storage/types';
 import { button, card, h, segmented, switchRow } from '../ui/parent';
 import { kidEditor } from './kidEditor';
+import { moreSettingsCards } from './moreSettings';
 
 export const AUTO_LOCK_MS = 3 * 60 * 1000;
 
@@ -163,6 +164,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
         ),
       ),
     );
+    main.append(...(await moreSettingsCards(storage)));
   }
 
   async function editKid(id: string | null): Promise<void> {

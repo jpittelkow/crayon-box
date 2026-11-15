@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. An airplane among the clouds. -->
+  <path d="M120 270 A66 66 0 0 1 186 204 A88 88 0 0 1 340 182 A77 77 0 0 1 450 237 A55 55 0 0 1 472 314 L142 314 A44 44 0 0 1 120 270 Z" fill="#ffffff"/>
+  <path d="M1450 210 A54 54 0 0 1 1504 156 A72 72 0 0 1 1630 138 A63 63 0 0 1 1720 183 A45 45 0 0 1 1738 246 L1468 246 A36 36 0 0 1 1450 210 Z" fill="#ffffff"/>
+  <path d="M200 1280 A60 60 0 0 1 260 1220 A80 80 0 0 1 400 1200 A70 70 0 0 1 500 1250 A50 50 0 0 1 520 1320 L220 1320 A40 40 0 0 1 200 1280 Z" fill="#ffffff"/>
+  <path d="M1500 1310 A66 66 0 0 1 1566 1244 A88 88 0 0 1 1720 1222 A77 77 0 0 1 1830 1277 A55 55 0 0 1 1852 1354 L1522 1354 A44 44 0 0 1 1500 1310 Z" fill="#ffffff"/>
+  <path d="M980 660 L1180 660 L1020 480 L920 480 Z" fill="#ffffff"/>
+  <path d="M360 660 L260 400 L420 400 L560 660 Z" fill="#ffffff"/>
+  <path d="M300 760 Q300 640 480 640 L1580 640 Q1800 640 1860 760 Q1800 880 1580 880 L480 880 Q300 880 300 760 Z" fill="#ffffff"/>
+  <circle cx="700" cy="730" r="34"/>
+  <circle cx="830" cy="730" r="34"/>
+  <circle cx="960" cy="730" r="34"/>
+  <circle cx="1090" cy="730" r="34"/>
+  <circle cx="1220" cy="730" r="34"/>
+  <circle cx="1350" cy="730" r="34"/>
+  <path d="M1640 710 L1750 710 Q1790 730 1800 765 L1640 765 Z"/>
+  <rect x="1470" y="700" width="80" height="150" rx="16"/>
+  <path d="M360 820 L560 820 L470 930 L380 930 Z" fill="#ffffff"/>
+  <path d="M860 800 L1260 800 L980 1120 L820 1120 Z" fill="#ffffff"/>
+</svg>

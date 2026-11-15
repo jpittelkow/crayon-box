@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A bus. -->
+  <path d="M0 1220 L2048 1220"/>
+  <circle cx="1790" cy="230" r="100"/>
+  <rect x="1760" y="1000" width="70" height="70" rx="12" fill="#ffffff"/>
+  <rect x="260" y="520" width="1520" height="560" rx="60" fill="#ffffff"/>
+  <rect x="360" y="600" width="200" height="220" rx="20"/>
+  <rect x="610" y="600" width="200" height="220" rx="20"/>
+  <rect x="860" y="600" width="200" height="220" rx="20"/>
+  <rect x="1110" y="600" width="200" height="220" rx="20"/>
+  <rect x="1340" y="600" width="120" height="440" rx="12"/>
+  <path d="M1400 600 L1400 1040"/>
+  <rect x="1560" y="600" width="160" height="220" rx="20"/>
+  <path d="M260 900 L1340 900 M1460 900 L1780 900"/>
+  <circle cx="560" cy="1080" r="140" fill="#ffffff"/>
+  <circle cx="560" cy="1080" r="60"/>
+  <circle cx="1620" cy="1080" r="140" fill="#ffffff"/>
+  <circle cx="1620" cy="1080" r="60"/>
+</svg>

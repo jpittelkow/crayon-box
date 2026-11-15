@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A friendly robot made of rectangles and circles. -->
+  <path d="M0 1420 L2048 1420"/>
+  <path d="M1020 260 L1020 160"/>
+  <circle cx="1020" cy="130" r="30"/>
+  <rect x="560" y="660" width="160" height="70" rx="30" fill="#ffffff"/>
+  <rect x="1320" y="660" width="160" height="70" rx="30" fill="#ffffff"/>
+  <circle cx="540" cy="695" r="60" fill="#ffffff"/>
+  <circle cx="1500" cy="695" r="60" fill="#ffffff"/>
+  <rect x="800" y="1140" width="120" height="220" fill="#ffffff"/>
+  <rect x="1120" y="1140" width="120" height="220" fill="#ffffff"/>
+  <rect x="760" y="1340" width="200" height="80" rx="30" fill="#ffffff"/>
+  <rect x="1080" y="1340" width="200" height="80" rx="30" fill="#ffffff"/>
+  <rect x="980" y="560" width="80" height="60" fill="#ffffff"/>
+  <rect x="820" y="260" width="400" height="300" rx="40" fill="#ffffff"/>
+  <circle cx="930" cy="390" r="44"/>
+  <circle cx="940" cy="395" r="18" fill="#23201c"/>
+  <circle cx="1110" cy="390" r="44"/>
+  <circle cx="1120" cy="395" r="18" fill="#23201c"/>
+  <rect x="900" y="470" width="240" height="50" rx="20"/>
+  <rect x="720" y="620" width="600" height="520" rx="30" fill="#ffffff"/>
+  <rect x="820" y="700" width="400" height="220" rx="20"/>
+  <circle cx="900" cy="810" r="30"/>
+  <circle cx="1020" cy="810" r="30"/>
+  <circle cx="1140" cy="810" r="30"/>
+  <path d="M1020 1098.5 C942 1049 939 981 981 975 C1004 971 1020 985 1020 1001 C1020 985 1036 971 1059 975 C1101 981 1098 1049 1020 1098.5 Z"/>
+</svg>

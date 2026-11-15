@@ -51,6 +51,13 @@ Run it locally on every page:
 npx playwright test tests/e2e/pages.spec.ts
 ```
 
+## Cleaning up a picture
+For line art from elsewhere (an AI-made page, a scan, a photo of a drawing): with `npm run dev` running, open
+`http://localhost:5173/tools/clean-page.html`, pick the image, and download the result as `page.png`. It turns gray
+into black or white, removes dust, closes gaps up to 6 px, fits the picture to 2048 × 1536, and runs the page check
+on the result. The same clean-up ([`cleanup.ts`](../src/games/coloring/engine/cleanup.ts)) will serve import and the
+AI page maker in the installer (ADR 0005, 0006, 0023).
+
 ## Before adding a page
 1. Open it in the app (`npm run dev`), fill every area with the bucket, and look for white edges or leaks.
 2. Run the page check.
