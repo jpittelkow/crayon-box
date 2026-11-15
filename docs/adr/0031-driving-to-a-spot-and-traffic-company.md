@@ -1,6 +1,6 @@
 # 0031. Driving game: a touch picks a spot to drive to; traffic rides alongside, then leaves
 
-- Status: Proposed (built 2026-11-15 on the owner's go-ahead; to accept after a playtest)
+- Status: Accepted (owner, 2026-11-15)
 - Date: 2026-11-15
 - Supersedes, in [ADR 0021](0021-racing-game.md):
   - under Controls, "the further the finger is to one side, the sharper the turn": a touch now picks a spot.

@@ -36,11 +36,11 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0028](0028-letter-tracing-whole-letter-and-confirm.md) | Letter tracing: letters formed as taught in school, the whole letter traced, then a check to finish | Accepted |
 | [0029](0029-ai-pages-through-the-family-server.md) | AI pages through the family server: one OpenRouter key, kept off the laptops | Accepted |
 | [0030](0030-ipad-home-screen-web-app.md) | An iPad version as a Home Screen web app, with Apple Pencil | Proposed (draft) |
-| [0031](0031-driving-to-a-spot-and-traffic-company.md) | Driving game: a touch picks a spot to drive to; traffic rides alongside, then leaves | Proposed (built) |
+| [0031](0031-driving-to-a-spot-and-traffic-company.md) | Driving game: a touch picks a spot to drive to; traffic rides alongside, then leaves | Accepted |
 | [0032](0032-sounds-as-files.md) | Sounds ship as files: recorded CC0 sounds, AI-made gaps, one AI narrator | Accepted |
 | [0033](0033-pick-the-ai-model-in-the-app.md) | Pick the AI model in the app, from OpenRouter's list, with family favorites on the server | Accepted |
 | [0034](0034-photo-prompt-and-two-to-choose-from.md) | AI pages: a photo prompt for everyone in the picture, and two pages to choose from | Accepted |
-| [0035](0035-driving-vehicles-maps-picker-garage.md) | Driving game: fourteen vehicles, two big maps, one picker screen and a garage | Proposed |
+| [0035](0035-driving-vehicles-maps-picker-garage.md) | Driving game: fourteen vehicles, two big maps, one picker screen and a garage | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H
