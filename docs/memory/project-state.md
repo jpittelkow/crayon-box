@@ -28,8 +28,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    Release 0.3.0 has all of it. **G (AI page maker) built 2026-11-14 through the family server** ([ADR 0029](../adr/0029-ai-pages-through-the-family-server.md)).
    **Left in milestone 2:** the model test, and trying
    it all on Windows: install 0.2.1, update to 0.3.0 from the parent area, the checklist, the server on Unraid.
-   Next with the owner (2026-11-14): sync server on Unraid, sound design choices, then the racing game's maps,
-   vehicle choice and customizing (the main focus after that).
+   Next with the owner (2026-11-14): sync server on Unraid, sound design choices (done and built 2026-11-15,
+   ADR 0032), then the racing game's maps, vehicle choice and customizing (the main focus after that).
 3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
    **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
    knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,
@@ -57,7 +57,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    letters with a finger or a stylus. Design: [ADR 0026](../adr/0026-letter-practice.md), **Accepted**
    2026-11-14 (mockups on the canvas, boards 19–24). **Built 2026-11-14** in the web app: practice and the game
    path, capitals, small letters and numbers, start dots, arrows and the finger, stroke order, pen palm
-   rejection, Windows speech or a parent's recordings, the parent Letters screen. Off until a parent turns on
+   rejection, the app's narrator (shipped clips since 2026-11-15, ADR 0032) or a parent's recordings, the parent
+   Letters screen. Off until a parent turns on
    "Show Letters" under Settings, Games. Not yet playtested with the kids or tried with a real pen. Since
    2026-11-14 the whole letter must be traced and the kid taps a check to finish
    ([ADR 0028](../adr/0028-letter-tracing-whole-letter-and-confirm.md)), and the strokes follow how US schools
@@ -116,14 +117,17 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   input, camera and tree rules in `view.ts`) with unit tests; `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the
   game; `game.ts` (screen, touch and keys, loop), `settings.ts` (per-kid assist, sounds), `parentSection.ts`,
-  `sound.ts` (an engine voice per vehicle kind in `ENGINES`, effects; made by the browser, no files). Games can
+  `sound.ts` (an engine loop per vehicle kind in `ENGINES`, effect files in `EFFECTS`, ADR 0032). Games can
   start hidden (`GameEntry.startsHidden`) and a parent shows or hides each one under Settings, Games
   (`ShellSettings.games`).
 - `spikes/realism/`: the four-look grading samples behind ADR 0025 (`node spikes/realism/shoot.mjs`).
 - `src/games/letters/` (ADR 0026): `glyphs.ts` (the 62 letters and numbers as strokes, arrows), `trace.ts` (the
   checker, no DOM), `progress.ts` (stars, the game path, prefs and settings, recordings under `voice/`),
-  `game.ts` (start, practice, path and tracing screens), `voice.ts` (speech and recording), `parentSection.ts`.
-  Unit tests in `letters.test.ts`, browser tests in `tests/e2e/letters.spec.ts`.
+  `game.ts` (start, practice, path and tracing screens), `voice.ts` (narrator clips, praise, a parent's
+  recordings), `parentSection.ts`. Unit tests in `letters.test.ts`, browser tests in `tests/e2e/letters.spec.ts`.
+- Sounds (ADR 0032): every sound is a file in `assets/sounds/` (`sounds.json` lists each one's source and
+  license), loaded through `src/shell/soundFiles.ts`. `tools/sounds/` remakes them: `generate.mjs` (AI clips, run
+  inside the sync container) and `prepare.mjs` (trim, level, cut loops; needs ffmpeg) from `picks.json`.
 - `pages/`: three original CC0 placeholder pages in the ADR 0005 format.
 
 ## Milestone 1: remaining phases (agreed with the owner 2026-11-14)
@@ -137,7 +141,7 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   clean-up step for AI-made pages is built (`cleanup.ts`, dev tool `tools/clean-page.html`). Left: the four
   animal themes (Farm and pets, Wild animals, Under the sea, Outside), made with an AI image model and cleaned up;
   needs a model picked (open questions).
-- **D. Polish:** done 2026-11-14: sounds with a Settings switch (`shell/sound.ts`, made from tones, no files),
+- **D. Polish:** done 2026-11-14: sounds with a Settings switch (`shell/sound.ts`; files since ADR 0032),
   the optional gate PIN (stored as a hash), the reduce-motion check (browser test), and the two-finger undo limit
   fixed (each stroke draws on its own layer until the finger lifts). The design system artifact was matched to
   ADRs 0017–0025 and the code on 2026-11-14 (`kid-swatch` token, names and photos, start screen, theme strip,
