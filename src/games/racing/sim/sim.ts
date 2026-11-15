@@ -5,10 +5,11 @@
 import { ISLAND } from '../maps/island';
 import { SCENERY, type SceneryId } from './assets/scenery';
 import { TOYS, type ToyId } from './assets/toys';
+import { buildGuards, buildSand, guardAt, hillReach, onSand, type Guard } from './ground';
 import { buildLand, keepInland, randomInland, shore, type Land } from './land';
 import type { MapDef, OnRoad, ZoneKind } from './map';
 import { HOP_GRAVITY, groundHeight } from './ramps';
-import { buildRoad, nearestOn, nearestRoad, pointAt, wrapAlong, type Road } from './roads';
+import { buildJunctions, buildRoad, nearestOn, nearestRoad, passes, pointAt, wrapAlong, type Junction, type Road } from './roads';
 
 export const MAX_SPEED = 17;
 export const FLOOD_SPEED = 8;
@@ -16,6 +17,8 @@ export const FLOOD_SPEED = 8;
 export const WASH_SPEED = 5;
 /** Seconds for the bubbles to rinse off after a car wash. */
 export const RINSE = 3.5;
+/** Top speed on sand (milestone-3 B4). */
+export const SAND_SPEED = 11;
 
 
 const HOME = 0, FLYING = 1, AWAY = 2, SHRINK = 3, GROW = 4;
@@ -81,6 +84,8 @@ export interface Car {
    * centre line), and its own pace.
    */
   road: number; s: number; lane: number; home: number; cruise: number;
+  /** Traffic only: which way along its road it drives (1 forward, -1 back). Its lanes are right of that way. */
+  dir: 1 | -1;
   /** Traffic only: CRUISE, JOIN, ALONG or LEAVE; time left in it; time before it may join the kid again. */
   mode: number; timer: number; cool: number;
 }
@@ -157,6 +162,23 @@ export interface World {
   zoneEvents: { zone: number; kind: ZoneKind; entered: boolean }[];
   /** Vehicles that came down from a hop in the last step: 0 is the kid's car. For the sounds and dust. */
   landings: number[];
+  /** Each road's junctions (milestone-3 B4). */
+  junctions: Junction[][];
+  /** Bridges and tunnels, placed. */
+  guards: Guard[];
+  /** The map's sandy places. */
+  sand: Land[];
+  /**
+   * "Follows the road": the road the kid's car is following, and which way. Null until it is needed, or when the
+   * car is far from that road.
+   */
+  follow: { road: number; dir: 1 | -1 } | null;
+  /** At the next junction, does "follows the road" take the other road? It takes turns, so both get driven. */
+  turnNext: boolean;
+  /** The junction "follows the road" has already decided about, until it is behind the car ('' for none). */
+  followAt: string;
+  /** How sharply "follows the road" wants to turn (radians off the way ahead), to slow for a bend. */
+  followTurn: number;
 }
 
 /** A map's zone, placed on the ground, and the way it faces. */
@@ -173,11 +195,16 @@ function rand(w: World): number {
 const wrap = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 
-function trafficPose(w: World, c: Car): void {
-  const p = pointAt(w.roads[c.road]!, c.s, c.lane);
+/**
+ * Puts a traffic car on its road: its lane is right of the way it drives. With `dt`, it turns toward the road's
+ * heading instead of snapping, so a turn at a junction is a quick swing rather than a jump.
+ */
+function trafficPose(w: World, c: Car, dt = 0): void {
+  const p = pointAt(w.roads[c.road]!, c.s, c.lane * c.dir);
   c.x = p.x;
   c.z = p.z;
-  c.heading = p.heading;
+  const heading = c.dir > 0 ? p.heading : p.heading + Math.PI;
+  c.heading = dt > 0 ? c.heading + clamp(wrap(heading - c.heading), -5 * dt, 5 * dt) : heading;
 }
 
 /** Distance along a road for a map's `OnRoad` place. */
@@ -187,6 +214,8 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   const roads = map.roads.map(buildRoad);
   const w: World = {
     map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [], bubbles: [], bubbleNext: 0,
+    junctions: buildJunctions(roads), guards: buildGuards(map.guards, roads), sand: buildSand(map.sand),
+    follow: null, turnNext: true, followAt: '', followTurn: 0,
     rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
@@ -199,7 +228,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
     const c: Car = {
       kind, x: 0, z: 0, heading: 0, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, h: 0, vy: 0, soap: 0,
       road: on.road, s: along(w, on), lane: on.offset ?? 0, home: on.offset ?? 0, cruise,
-      mode: CRUISE, timer: 0, cool: 0,
+      dir: 1, mode: CRUISE, timer: 0, cool: 0,
     };
     trafficPose(w, c);
     return c;
@@ -229,6 +258,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   const onLand = (gap: number): [number, number] => randomInland(w.land, () => rand(w), gap);
   const offRoad = (x: number, z: number, gap: number) =>
     roads.every((road, i) => nearestOn(road, i, x, z).dist > road.def.width / 2 + gap);
+  const onHill = (x: number, z: number, pad: number) => (map.hills ?? []).some((h) => hillReach(h, x, z, pad) < 1);
 
   // One of a map's kinds, chosen by their shares.
   const pick = <T>(kinds: { id: T; share: number }[]): T => {
@@ -243,6 +273,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
     const [x, z] = onLand(trees.edgeGap);
     if (!offRoad(x, z, trees.roadGap)) continue;
     if (w.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + trees.waterGap)) continue;
+    if (onHill(x, z, 2) || onSand(w.sand, x, z)) continue;
     w.trees.push({ kind: pick(trees.kinds), x, z, scale: trees.scale[0] + rand(w) * trees.scale[1] });
   }
 
@@ -263,6 +294,9 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
     if (w.trees.some((t) => Math.hypot(x - t.x, z - t.z) < 1.6 * t.scale)) continue;
     if (waterAt(w, x, z) === 2) continue;
     if (w.zones.some((zone) => Math.hypot(x - zone.x, z - zone.z) < zone.r + 1)) continue;
+    // Not inside a hill (unless on its tunnel's road), and not out over the water on a bridge.
+    if (onHill(x, z, 1) && !guardAt(w.guards, roads, x, z)) continue;
+    if (guardAt(w.guards, roads, x, z)?.guard.kind === 'bridge') continue;
     w.props.push({
       toy, homeX: x, homeZ: z, homeYaw: yaw, x, y: TOYS[toy].half, z, vx: 0, vy: 0, vz: 0,
       qx: 0, qy: Math.sin(yaw / 2), qz: 0, qw: Math.cos(yaw / 2), wx: 0, wy: 0, wz: 0,
@@ -294,14 +328,53 @@ export function waterAt(w: World, x: number, z: number): number {
  */
 export function roadSteer(w: World): number {
   const car = w.cars[0]!;
-  const spot = nearestRoad(w.roads, car.x, car.z);
-  if (!spot) return 0;
-  // Aim at a point on the centre line a little way ahead, in whichever direction the car already faces.
-  const forward = Math.cos(car.heading - spot.heading) >= 0 ? 1 : -1;
-  const ahead = pointAt(w.roads[spot.road]!, spot.s + forward * ROAD_LOOKAHEAD);
-  const want = Math.atan2(ahead.x - car.x, ahead.z - car.z);
-  return clamp(-wrap(want - car.heading) * 2.5, -1, 1);
+  const near = nearestRoad(w.roads, car.x, car.z);
+  if (!near) return 0;
+  // Keep following the same road; pick it up afresh (the nearest, in the direction the car faces) when there is
+  // none yet or the car has wandered far from it.
+  let f = w.follow;
+  if (!f || nearestOn(w.roads[f.road]!, f.road, car.x, car.z).dist > w.roads[f.road]!.def.width / 2 + 8) {
+    f = w.follow = { road: near.road, dir: Math.cos(car.heading - near.heading) >= 0 ? 1 : -1 };
+  }
+  let road = w.roads[f.road]!;
+  let spot = nearestOn(road, f.road, car.x, car.z);
+  const key = (on: number, s: number) => `${on}:${s.toFixed(1)}`;
+  // A junction just ahead (milestone-3 B4): decide once, before reaching it, so the car can start the turn in
+  // time. Every other time it takes the other road, so both get driven.
+  const coming = w.junctions[f.road]!.find((j) => passes(road, spot.s, JUNCTION_AHEAD, f!.dir, j.s));
+  if (!coming) w.followAt = '';
+  else if (w.followAt !== key(f.road, coming.s)) {
+    w.followAt = key(f.road, coming.s);
+    w.turnNext = !w.turnNext;
+    if (!w.turnNext) {
+      f = w.follow = { road: coming.road, dir: coming.dir };
+      road = w.roads[f.road]!;
+      spot = nearestOn(road, f.road, car.x, car.z);
+    }
+  }
+  // Near the end of an open road, carry on along the road it joins, whichever way the car faces. That junction is
+  // already decided, so it doesn't turn straight back in.
+  if (!road.def.closed) {
+    const parent = f.dir > 0 && spot.s > road.length - JUNCTION_AHEAD ? road.def.to
+      : f.dir < 0 && spot.s < JUNCTION_AHEAD ? road.def.from : undefined;
+    if (parent !== undefined) {
+      const from = f.road, junction = w.junctions[parent]!.find((j) => j.road === from && j.dir === (f!.dir > 0 ? -1 : 1));
+      road = w.roads[parent]!;
+      const at = junction ? pointAt(road, junction.s) : nearestOn(road, parent, car.x, car.z);
+      f = w.follow = { road: parent, dir: Math.cos(car.heading - at.heading) >= 0 ? 1 : -1 };
+      if (junction) w.followAt = key(parent, junction.s);
+      spot = nearestOn(road, parent, car.x, car.z);
+    }
+  }
+  // Aim at a point on the centre line a little way ahead.
+  const ahead = pointAt(road, spot.s + f.dir * ROAD_LOOKAHEAD);
+  const err = wrap(Math.atan2(ahead.x - car.x, ahead.z - car.z) - car.heading);
+  w.followTurn = Math.abs(err);
+  return clamp(-err * 2.5, -1, 1);
 }
+
+/** How far ahead of a junction "follows the road" decides which way to go, in metres. */
+const JUNCTION_AHEAD = 10;
 
 /** How far ahead along the road the assist aims, in metres. */
 const ROAD_LOOKAHEAD = 11.4;
@@ -339,6 +412,11 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     // Arrived: a short, firm stop on the spot.
     if (!to.go) { go = false; brake = true; }
   } else w.goal = null;
+  // Following the road round a sharp bend (a junction): slow down so the turn stays close to the road.
+  if ((w.assist === 'road' || w.rescue > 0) && w.followTurn > 0.5) cap = Math.min(cap, 8);
+  // Sand holds it to a slower top speed (milestone-3 B4).
+  const sandy = onSand(w.sand, car.x, car.z);
+  if (sandy) cap = Math.min(cap, SAND_SPEED);
 
   if (brake) car.speed = Math.max(0, car.speed - 24 * dt);
   else if (go && car.speed > cap) car.speed = Math.max(cap, car.speed - 12 * dt);
@@ -354,10 +432,12 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   car.heading -= steer * turn * dt;
   w.steer = steer;
 
-  // The shore turns the car back inland, harder the closer it gets (ADR 0021: can't get lost).
+  // The shore turns the car back inland, harder the closer it gets (ADR 0021: can't get lost). Not on a bridge or
+  // close to one, where the road itself crosses the water.
   const near = shore(w.land, car.x, car.z);
-  if (near.depth < 10) {
-    const k = Math.min(1, (10 - near.depth) / 8);
+  const bridged = guardAt(w.guards, w.roads, car.x, car.z, 12) !== null;
+  if (near.depth < 6 && !bridged) {
+    const k = Math.min(1, (6 - near.depth) / 4.5);
     const diff = wrap(Math.atan2(near.nx, near.nz) - car.heading);
     car.heading += clamp(diff * 2, -1, 1) * 3.2 * k * dt * Math.min(1, car.speed / 3);
   }
@@ -366,8 +446,12 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   car.z += Math.cos(car.heading) * car.speed * dt;
   car.spin += (car.speed / 0.45) * dt;
 
-  // Never past 1.5 m from the shore.
-  if (near.depth < 4) ({ x: car.x, z: car.z } = keepInland(w.land, car.x, car.z, 1.5));
+  // Never past 1.5 m from the shore (a bridge's rails keep it on the bridge instead).
+  if (near.depth < 4 && !bridged) ({ x: car.x, z: car.z } = keepInland(w.land, car.x, car.z, 1.5));
+  // Sand flies up behind the wheels.
+  if (sandy && car.speed > 4 && rand(w) < 0.35) {
+    puff(w, car.x - Math.sin(car.heading) * 1.8, 0.25, car.z - Math.cos(car.heading) * 1.8);
+  }
 
   // Trees and traffic are round and never stop the car: it is pushed out and slides along (can't get stuck).
   // Returns the shove the car got, or null if it didn't touch.
@@ -400,14 +484,85 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     }
   }
 
+  // Hills are too steep to drive up: the car slides round one like a big tree, unless it is in the tunnel.
+  for (const h of w.map.hills ?? []) {
+    const e = hillReach(h, car.x, car.z, 1.2);
+    if (e >= 1 || guardAt(w.guards, w.roads, car.x, car.z)) continue;
+    const dx = car.x - h.x, dz = car.z - h.z, k = 1 / Math.sqrt(Math.max(e, 1e-6));
+    car.x = h.x + dx * k;
+    car.z = h.z + dz * k;
+    car.speed *= 0.985;
+    const side = Math.sin(car.heading) * dz - Math.cos(car.heading) * dx;
+    car.heading += (side > 0 ? -1 : 1) * 1.6 * dt;
+  }
+  // On a bridge or in a tunnel, its sides keep the car on the road: it slides along them (milestone-3 B4).
+  const held = guardAt(w.guards, w.roads, car.x, car.z);
+  if (held) {
+    const { spot } = held, limit = w.roads[spot.road]!.def.width / 2 - 0.8;
+    if (Math.abs(spot.offset) > limit) {
+      const back = spot.offset - Math.sign(spot.offset) * limit;
+      // Right of the road is (−cos h, sin h).
+      car.x += Math.cos(spot.heading) * back;
+      car.z -= Math.sin(spot.heading) * back;
+      const along = Math.cos(car.heading - spot.heading) >= 0 ? spot.heading : spot.heading + Math.PI;
+      car.heading += clamp(wrap(along - car.heading), -2 * dt, 2 * dt);
+      car.speed *= 0.995;
+    }
+  }
+
   // A car that is being driven but has made no progress for a while is steered back to the road (ADR 0021).
   if (w.rescue > 0) w.rescue -= dt;
   if (!go || brake) {
     w.mark = { x: car.x, z: car.z, t: 0 };
   } else if ((w.mark.t += dt) >= 2.5) {
-    if (Math.hypot(car.x - w.mark.x, car.z - w.mark.z) < 2) w.rescue = 1.5;
+    if (Math.hypot(car.x - w.mark.x, car.z - w.mark.z) < 2) {
+      w.rescue = 1.5;
+      w.follow = null; // pick the nearest road afresh
+    }
     w.mark = { x: car.x, z: car.z, t: 0 };
   }
+}
+
+/** How often traffic takes the other road at a junction. */
+const TURN_CHANCE = 0.5;
+
+/**
+ * Moves a traffic car `dist` metres along its road (milestone-3 B4). At a junction it sometimes turns onto the
+ * other road, never while keeping the kid company. At the end of an open road it joins the road there; at a dead
+ * end it turns round. Its lane is matched to where it is, then eases back to its own.
+ */
+function moveTraffic(w: World, c: Car, dist: number): void {
+  const road = w.roads[c.road]!;
+  const switchTo = (to: number, dir: 1 | -1, s: number) => {
+    const next = w.roads[to]!;
+    c.road = to;
+    c.dir = dir;
+    c.s = s;
+    const room = next.def.width / 2 - 0.5;
+    c.lane = clamp(nearestOn(next, to, c.x, c.z).offset * dir, -room, room);
+  };
+  for (const j of w.junctions[c.road]!) {
+    if (!passes(road, c.s, dist, c.dir, j.s)) continue;
+    if (c.mode === JOIN || c.mode === ALONG || rand(w) >= TURN_CHANCE) continue;
+    switchTo(j.road, j.dir, j.dir > 0 ? 0 : w.roads[j.road]!.length);
+    return;
+  }
+  const s = c.s + c.dir * dist;
+  if (!road.def.closed && (s > road.length || s < 0)) {
+    const atEnd = s > road.length;
+    const parent = atEnd ? road.def.to : road.def.from;
+    const junction = parent === undefined ? undefined : w.junctions[parent]!.find((j) => j.road === c.road && j.dir === (atEnd ? -1 : 1));
+    if (parent !== undefined && junction) {
+      // Join the other road just past the junction, going forward along it.
+      switchTo(parent, 1, wrapAlong(w.roads[parent]!, junction.s + 0.01));
+      return;
+    }
+    // A dead end: turn round.
+    c.dir = c.dir > 0 ? -1 : 1;
+    c.s = clamp(s, 0, road.length);
+    return;
+  }
+  c.s = wrapAlong(road, s);
 }
 
 /**
@@ -426,8 +581,12 @@ function stepTraffic(w: World, dt: number): void {
     const kidOn = nearestOn(road, c.road, kid.x, kid.z);
     let gap = kidOn.s - c.s;
     if (road.def.closed) gap -= Math.round(gap / road.length) * road.length;
-    // Company: the kid's car is on this road, moving, and heading the way traffic goes.
-    const company = kidOn.dist < road.def.width / 2 + 1.5 && kid.speed > 3 && Math.cos(kid.heading - kidOn.heading) > 0.6;
+    gap *= c.dir;
+    // The kid's car's place across the road, measured to the right of the way this car drives.
+    const kidLane = kidOn.offset * c.dir;
+    // Company: the kid's car is on this road, moving, and heading the way this car goes.
+    const company = kidOn.dist < road.def.width / 2 + 1.5 && kid.speed > 3 &&
+      Math.cos(kid.heading - kidOn.heading - (c.dir > 0 ? 0 : Math.PI)) > 0.6;
     const busy = w.cars.some((o, j) => j > 0 && j !== i && (o.mode === JOIN || o.mode === ALONG));
     if (c.mode === CRUISE && company && c.cool === 0 && !busy && Math.abs(gap) < 20) {
       c.mode = JOIN;
@@ -455,14 +614,14 @@ function stepTraffic(w: World, dt: number): void {
     let lane = c.home;
     if (Math.hypot(c.x - kid.x, c.z - kid.z) < 9) {
       const room = road.def.width / 2 - 0.5;
-      const right = kidOn.offset + 3.4 <= room, left = kidOn.offset - 3.4 >= -room;
-      const toRight = right && (c.lane >= kidOn.offset || !left);
-      lane = clamp(kidOn.offset + (toRight ? 3.4 : -3.4), -room, room);
+      const right = kidLane + 3.4 <= room, left = kidLane - 3.4 >= -room;
+      const toRight = right && (c.lane >= kidLane || !left);
+      lane = clamp(kidLane + (toRight ? 3.4 : -3.4), -room, room);
     }
     c.lane += clamp(lane - c.lane, -3 * dt, 3 * dt);
-    c.s = wrapAlong(road, c.s + c.speed * dt);
+    moveTraffic(w, c, c.speed * dt);
     c.spin += (c.speed / 0.45) * dt;
-    trafficPose(w, c);
+    trafficPose(w, c, dt);
   }
 }
 

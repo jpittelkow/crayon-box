@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { buildLand, shore } from './land';
-import { ISLAND, ROAD_R } from '../maps/island';
+import { RING, ROAD_R } from '../maps/ring';
 import type { MapDef } from './map';
 import { buildRoad, circlePath, nearestOn, nearestRoad, pointAt, smoothPath, wrapAlong } from './roads';
-import { makeWorld, step, type Input, type World } from './sim';
+import { makeWorld as makeOn, step, type Input, type World, type Assist } from './sim';
+
+/** Worlds on the ring map unless a test says otherwise (the game itself drives the island of layout A). */
+const makeWorld = (seed: number, props: number, assist: Assist = 'free', map: MapDef = RING) => makeOn(seed, props, assist, map);
 
 const DT = 1 / 60;
 
@@ -16,7 +19,7 @@ function run(w: World, seconds: number, input: (w: World, i: number) => Input): 
  * simulation only worked on the prototype's ring road, these tests would fail.
  */
 const OVAL: MapDef = {
-  ...ISLAND,
+  ...RING,
   id: 'oval-test',
   // A lopsided shoreline around the road, 20 m or more from it.
   land: { outline: smoothPath([[-55, -10], [0, 55], [95, 25], [90, -50], [30, -85], [-35, -60]], true, 2), beach: 8 },
@@ -81,7 +84,7 @@ describe('a map that is not the ring island', () => {
     expect(nearestOn(road, 0, w.cars[0].x, w.cars[0].z).dist).toBeLessThan(0.01);
     expect(w.cars.map((c) => c.kind)).toEqual(['car', 'bus', 'police']);
     expect(w.waters.filter((p) => p.deep)).toHaveLength(1);
-    expect(w.trees.length).toBe(ISLAND.trees.count);
+    expect(w.trees.length).toBe(RING.trees.count);
     expect(w.props.length).toBe(120);
     for (const t of w.trees) expect(nearestOn(road, 0, t.x, t.z).dist).toBeGreaterThan(4.5 + 2.5);
   });

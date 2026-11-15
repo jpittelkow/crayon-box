@@ -12,6 +12,12 @@ export interface OnRoad { road: number; at: number; offset?: number }
 /** The kinds of zone a set piece can have (milestone-3 phase B3). */
 export type ZoneKind = 'ramp' | 'car-wash' | 'garage';
 
+/** A stretch of road, from one fraction along it to another, that the car is held on. */
+export interface GuardDef { kind: 'bridge' | 'tunnel'; road: number; from: number; to: number }
+
+/** A hill: a low dome, `rx` by `rz` metres across its base (half-widths), `height` metres high. */
+export interface HillDef { x: number; z: number; rx: number; rz: number; height: number }
+
 /** A zone: a round area of radius `r`, placed on a road or by its middle. */
 export interface ZoneDef {
   kind: ZoneKind;
@@ -30,6 +36,15 @@ export interface MapDef {
    */
   zones?: ZoneDef[];
   roads: RoadDef[];
+  /**
+   * Stretches of road with sides the car can't leave (milestone-3 B4): a bridge over water, or a tunnel through a
+   * hill. Given as fractions along the road. On and near a bridge the shore doesn't turn the car back.
+   */
+  guards?: GuardDef[];
+  /** Hills the car can't climb: it slides round them, or goes through one in a tunnel. */
+  hills?: HillDef[];
+  /** Sandy places (a beach): drawn as sand; wheels kick up sand and the car slows a little. */
+  sand?: [number, number][][];
   /** Where the kid's car starts, facing along the road. */
   spawn: OnRoad;
   /** Traffic: each vehicle starts on a road, keeps to its lane and drives at its own pace. */

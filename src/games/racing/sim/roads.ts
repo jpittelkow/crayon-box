@@ -12,9 +12,22 @@ export interface RoadDef {
   width: number;
   /** The centre line, in order. Close points (about 1.5 m apart) follow a curve well; see `smoothPath`. */
   points: [number, number][];
-  /** A loop joins its last point back to its first. Traffic needs loops until junctions exist. */
+  /** A loop joins its last point back to its first. */
   closed: boolean;
+  /**
+   * An open road can join others at its ends (milestone-3 B4): `from` is the road its first point sits on, `to`
+   * the road its last point sits on. Those are junctions: traffic and "follows the road" can turn there. An open
+   * end that joins nothing is a dead end, where traffic turns round.
+   */
+  from?: number;
+  to?: number;
 }
+
+/**
+ * A junction on a road: at distance `s` along it, road `road` branches off. A car turning there enters the branch
+ * at its start going forward (`dir` 1) or at its end going backward (`dir` -1).
+ */
+export interface Junction { s: number; road: number; dir: 1 | -1 }
 
 /** A road ready for the simulation: its points with the distance along the road to each. */
 export interface Road {
@@ -145,4 +158,27 @@ export function circlePath(r: number, count = 160): [number, number][] {
     const a = (i / count) * Math.PI * 2;
     return [Math.sin(a) * r, Math.cos(a) * r] as [number, number];
   });
+}
+
+/** Every road's junctions, from the open roads' `from` and `to`: one list per road. */
+export function buildJunctions(roads: Road[]): Junction[][] {
+  const out: Junction[][] = roads.map(() => []);
+  roads.forEach((road, i) => {
+    const pts = road.def.points;
+    for (const [on, [x, z], dir] of [[road.def.from, pts[0]!, 1], [road.def.to, pts[pts.length - 1]!, -1]] as const) {
+      if (on === undefined) continue;
+      out[on]!.push({ s: nearestOn(roads[on]!, on, x, z).s, road: i, dir });
+    }
+  });
+  return out;
+}
+
+/** Whether going `dist` metres from `s0` in direction `dir` passes the point `s` on the road (just past it counts). */
+export function passes(road: Road, s0: number, dist: number, dir: 1 | -1, s: number): boolean {
+  if (dist <= 0) return false;
+  if (road.def.closed) {
+    const d = wrapAlong(road, dir > 0 ? s - s0 : s0 - s);
+    return d > 0 && d <= dist;
+  }
+  return dir > 0 ? s > s0 && s <= s0 + dist : s < s0 && s >= s0 - dist;
 }

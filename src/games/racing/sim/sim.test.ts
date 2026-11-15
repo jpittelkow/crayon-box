@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { DRIVE_KEYS, driveInput } from './input';
 import { FAR_SPOT, chaseView, groundPoint, stepTreeSizes } from './view';
-import { LAND_R, ROAD_R, ROAD_W } from '../maps/island';
+import { LAND_R, RING, ROAD_R, ROAD_W } from '../maps/ring';
 import { TOYS } from './assets/toys';
 import { nearestOn, pointAt } from './roads';
-import { ALONG, CRUISE, JOIN, LEAVE, FLOOD_SPEED, VEHICLE_SIZE, bodyPoints, MAX_SPEED, makeWorld, step, waterAt, type Input, type World } from './sim';
+import type { MapDef } from './map';
+import { ALONG, CRUISE, JOIN, LEAVE, FLOOD_SPEED, VEHICLE_SIZE, bodyPoints, MAX_SPEED, makeWorld as makeOn, step, waterAt, type Input, type World, type Assist } from './sim';
+
+/** Worlds on the ring map unless a test says otherwise (the game itself drives the island of layout A). */
+const makeWorld = (seed: number, props: number, assist: Assist = 'free', map: MapDef = RING) => makeOn(seed, props, assist, map);
 
 const DT = 1 / 60;
 const GO: Input = { go: true, brake: false, steer: 0 };
