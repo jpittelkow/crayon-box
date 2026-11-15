@@ -81,7 +81,9 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 200 });
   scene.add(sun, sun.target);
 
-  scene.add(buildGround(world), buildSetPieces(world));
+  const setPieces = buildSetPieces(world);
+  scene.add(buildGround(world), setPieces.group);
+  let lastTime = world.time;
 
   // Trees: one batch per kind on this map; each tree can shrink away from the camera (ADR 0021).
   const treeBatches = new Map<SceneryId, THREE.InstancedMesh[]>();
@@ -120,6 +122,12 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const puffs = effect(new THREE.IcosahedronGeometry(1, 1), 0xffffff, world.puffs.length);
   const drops = effect(new THREE.SphereGeometry(1, 8, 6), 0xd6efff, world.drops.length);
   const ripples = effect(new THREE.RingGeometry(0.9, 1, 32).rotateX(-Math.PI / 2), 0xffffff, world.ripples.length);
+  // Car wash bubbles: pale, see-through and shiny.
+  const bubbles = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8),
+    new THREE.MeshPhysicalMaterial({ color: 0xffffff, emissive: 0x9ab8cc, roughness: 0.05, clearcoat: 1, transparent: true, opacity: 0.8 }), world.bubbles.length);
+  bubbles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  bubbles.frustumCulled = false;
+  scene.add(bubbles);
 
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.5, 900);
   const m = new THREE.Matrix4();
@@ -176,7 +184,13 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
       const size = r.size * (1 + 2.2 * (1 - r.life / RIPPLE_LIFE));
       ripples.setMatrixAt(i, r.life > 0 ? m.compose(v.set(r.x, WATER_Y + 0.012, r.z), q.identity(), s.setScalar(size)) : zero);
     });
-    for (const e of [puffs, drops, ripples]) e.instanceMatrix.needsUpdate = true;
+    // Bubbles swell a little, then shrink away as they rise.
+    w.bubbles.forEach((b, i) => bubbles.setMatrixAt(i, b.life > 0 ? m.compose(v.set(b.x, b.y, b.z), q.identity(), s.setScalar(0.12 + 0.16 * Math.min(1, b.life))) : zero));
+    for (const e of [puffs, drops, ripples, bubbles]) e.instanceMatrix.needsUpdate = true;
+
+    // Moving set pieces (car wash brushes).
+    setPieces.animate(w, Math.max(0, Math.min(0.1, w.time - lastTime)));
+    lastTime = w.time;
 
     // Camera, and the sun's shadow centred on the car.
     camera.position.set(...view.eye);

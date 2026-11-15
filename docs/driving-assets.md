@@ -130,7 +130,7 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 |---|---|---|---|
 | wet | built (drips, wading) | puddles, the flood | time |
 | muddy | idea | `ground/mud` | `setpiece/car-wash`, deep water |
-| bubbly | planned | `setpiece/car-wash` | its rinse |
+| bubbly | built (`Car.soap`) | `setpiece/car-wash` | its rinse |
 
 ### 2. Toys
 | Id | Status | Maps | Behaviour |
@@ -244,7 +244,7 @@ sails); see Border cases.
 | Id | Status | Maps | What happens |
 |---|---|---|---|
 | `setpiece/ramp` | built (2026-11-15, `sim/ramps.ts`, `look/setpieces.ts`) | all | a yellow hump across the road, either way; cars follow its height and a fast one hops off the top and lands (a thump); traffic hops too |
-| `setpiece/car-wash` | planned (ADR 0021) | all | bubbles cover the car, then rinse; washes off mud |
+| `setpiece/car-wash` | built (2026-11-15, `look/setpieces.ts`) | all | an open arch over the road with spinning brushes; cars crawl through, come out soapy and shed bubbles while they rinse (3.5 s); the roof fades while the camera passes; traffic uses it too. Washing off mud comes with `ground/mud` |
 | `setpiece/tunnel` | planned (ADR 0021) | island, country | on a `road/tunnel-floor`: echo on the engine and horn, lamps light up |
 | `setpiece/bridge` | planned (ADR 0021) | island, country | on a `road/bridge-deck`: a boat passes under sometimes |
 | `setpiece/garage` | planned (phase D) | all | drive in, come out in the next vehicle |

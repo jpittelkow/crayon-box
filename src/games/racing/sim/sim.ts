@@ -12,6 +12,10 @@ import { buildRoad, nearestOn, nearestRoad, pointAt, wrapAlong, type Road } from
 
 export const MAX_SPEED = 17;
 export const FLOOD_SPEED = 8;
+/** How fast a car goes through a car wash (milestone-3 B3): slow enough to see the brushes and the bubbles. */
+export const WASH_SPEED = 5;
+/** Seconds for the bubbles to rinse off after a car wash. */
+export const RINSE = 3.5;
 
 
 const HOME = 0, FLYING = 1, AWAY = 2, SHRINK = 3, GROW = 4;
@@ -70,6 +74,8 @@ export interface Car {
   wake: number;
   /** Height above the ground under it (ramps), and how fast that is changing; 0 and 0 on flat ground. */
   h: number; vy: number;
+  /** How soapy it is from a car wash: 1 just out of it, falling to 0 as it rinses off. */
+  soap: number;
   /**
    * Traffic only: the road it drives, how far along it, its lane now and its usual lane (metres right of the
    * centre line), and its own pace.
@@ -114,6 +120,9 @@ export interface World {
   trees: Tree[];
   props: Prop[];
   puffs: Puff[];
+  /** Bubbles floating off a soapy kid's car (a car wash), pooled like the puffs. */
+  bubbles: Puff[];
+  bubbleNext: number;
   puffNext: number;
   waters: Water[];
   /** Water drops thrown up by splashes and wheel spray. */
@@ -177,7 +186,7 @@ const along = (w: World, on: OnRoad): number => on.at * w.roads[on.road]!.length
 export function makeWorld(seed: number, propCount: number, assist: Assist = 'free', map: MapDef = ISLAND): World {
   const roads = map.roads.map(buildRoad);
   const w: World = {
-    map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [],
+    map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [], bubbles: [], bubbleNext: 0,
     rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
@@ -188,7 +197,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   }
   const car = (kind: VehicleKind, on: OnRoad, cruise: number): Car => {
     const c: Car = {
-      kind, x: 0, z: 0, heading: 0, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, h: 0, vy: 0,
+      kind, x: 0, z: 0, heading: 0, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, h: 0, vy: 0, soap: 0,
       road: on.road, s: along(w, on), lane: on.offset ?? 0, home: on.offset ?? 0, cruise,
       mode: CRUISE, timer: 0, cool: 0,
     };
@@ -260,6 +269,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
       scale: 1, state: HOME, timer: 0, cool: 0,
     });
   }
+  for (let i = 0; i < 60; i++) w.bubbles.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 48; i++) w.puffs.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 160; i++) w.drops.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 40; i++) w.ripples.push({ x: 0, z: 0, life: 0, size: 1 });
@@ -336,6 +346,8 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   else car.speed = Math.max(0, car.speed - 6 * dt);
   // Deep water holds the car back to a wade.
   if (car.wet === 2 && car.speed > FLOOD_SPEED) car.speed = Math.max(FLOOD_SPEED, car.speed - 30 * dt);
+  // A car wash slows it to a crawl from just before it, so the brushes and the bubbles show.
+  if (inWash(w, car, 5) && car.speed > WASH_SPEED) car.speed = Math.max(WASH_SPEED, car.speed - 30 * dt);
 
   const turn = 2.1 * Math.min(1, car.speed / 5) * (1 - 0.35 * (car.speed / MAX_SPEED));
   if (w.assist === 'road' || w.rescue > 0) steer = roadSteer(w);
@@ -435,7 +447,9 @@ function stepTraffic(w: World, dt: number): void {
     else if (c.mode === LEAVE) want = Math.max(c.cruise, kid.speed + 5);
     want = clamp(want, 3, MAX_SPEED + 4);
     if (c.wet === 2) want = Math.min(want, FLOOD_SPEED - 1);
-    c.speed += clamp(want - c.speed, -8 * dt, 8 * dt);
+    if (inWash(w, c, 5)) want = Math.min(want, WASH_SPEED);
+    // Brakes harder than it speeds up, so it keeps pace when the kid slows for the flood or a car wash.
+    c.speed += clamp(want - c.speed, -16 * dt, 8 * dt);
 
     // Near the kid's car, move over a lane to whichever side has road, then drift back to its own lane.
     let lane = c.home;
@@ -614,6 +628,38 @@ function stepProps(w: World, dt: number): void {
   }
 }
 
+/** Whether a car is inside a car wash's arch, or within `approach` metres of it. */
+function inWash(w: World, c: Car, approach = 0): boolean {
+  return w.zones.some((z) => z.kind === 'car-wash' && Math.hypot(c.x - z.x, c.z - z.z) < z.r + approach);
+}
+
+/**
+ * Car washes (milestone-3 B3): a car inside one soaps up; once out, it rinses off over a few seconds. The kid's
+ * car sheds bubbles while it is soapy, more the soapier it is.
+ */
+function stepWash(w: World, dt: number): void {
+  for (const c of w.cars) c.soap = inWash(w, c) ? Math.min(1, c.soap + dt * 1.5) : Math.max(0, c.soap - dt / RINSE);
+  const kid = w.cars[0]!;
+  if (kid.soap > 0 && rand(w) < kid.soap * 0.9) {
+    const b = w.bubbles[w.bubbleNext]!;
+    w.bubbleNext = (w.bubbleNext + 1) % w.bubbles.length;
+    const side = (rand(w) - 0.5) * 2, along = (rand(w) - 0.5) * 3;
+    const fx = Math.sin(kid.heading), fz = Math.cos(kid.heading);
+    b.x = kid.x + fx * along - fz * side;
+    b.z = kid.z + fz * along + fx * side;
+    b.y = kid.y + kid.h + 0.6 + rand(w) * 0.9;
+    b.vx = (rand(w) - 0.5) * 0.8;
+    b.vy = 0.6 + rand(w) * 0.8;
+    b.vz = (rand(w) - 0.5) * 0.8;
+    b.life = 1.2 + rand(w) * 0.8;
+  }
+  for (const b of w.bubbles) {
+    if (b.life <= 0) continue;
+    b.life -= dt;
+    b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
+  }
+}
+
 /**
  * Cars follow the ground's height over ramps (milestone-3 B3). Climbing a ramp gives a car upward speed; past the
  * top the ground drops away, so a fast car leaves it, flies under gravity and lands. Only the height changes: the
@@ -667,6 +713,7 @@ export function step(w: World, input: Input, dt: number): void {
   stepZones(w);
   stepTraffic(w, dt);
   stepHops(w, dt);
+  stepWash(w, dt);
   stepWater(w, dt);
   stepProps(w, dt);
   for (const p of w.puffs) {
