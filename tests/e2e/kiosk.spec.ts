@@ -76,3 +76,34 @@ test('with the lock off, Ctrl+Shift+Q reaches the page and still quits', async (
   await page.keyboard.press('Control+Shift+Q');
   await expect.poll(async () => (await log(page)).quits).toBe(1);
 });
+
+test('a parent unlocks the window for a visit, and it locks again on the way back to the kids', async ({ page }) => {
+  await page.goto('/?fake-kiosk');
+  await expect.poll(async () => (await log(page)).locked).toBe(true);
+  await openParentArea(page);
+  const unlock = page.locator('.pw-nav').getByRole('button', { name: 'Unlock the window' });
+  await unlock.click();
+  await expect.poll(async () => (await log(page)).locked).toBe(false);
+  // The keyboard is all a parent's too, here as always.
+  expect((await log(page)).mode).toBe('off');
+  await expect(page.locator('.pw-nav').getByRole('button', { name: 'Lock the window again' })).toHaveAttribute('aria-pressed', 'true');
+  // Moving between parent screens keeps it unlocked.
+  await page.locator('.pw-nav').getByRole('button', { name: 'Family sync' }).click();
+  expect((await log(page)).locked).toBe(false);
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await expect.poll(async () => (await log(page)).locked).toBe(true);
+  expect((await log(page)).mode).toBe('kid');
+  // Only for that visit: the next visit starts locked.
+  await openParentArea(page);
+  await expect(page.locator('.pw-nav').getByRole('button', { name: 'Unlock the window' })).toBeVisible();
+});
+
+test('with "Keep the app full screen" off there is nothing to unlock', async ({ page }) => {
+  await page.goto('/?fake-kiosk');
+  await openParentArea(page);
+  await laptop(page).click();
+  await page.getByRole('switch', { name: /Keep the app full screen/ }).click();
+  await expect(page.locator('.pw-nav').getByRole('button', { name: 'Unlock the window' })).toBeHidden();
+  await page.getByRole('switch', { name: /Keep the app full screen/ }).click();
+  await expect(page.locator('.pw-nav').getByRole('button', { name: 'Unlock the window' })).toBeVisible();
+});
