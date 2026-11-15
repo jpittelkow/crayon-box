@@ -43,9 +43,15 @@ _Last updated: 2026-11-14_
   1280 × 800 screen). A guess, to check in the first playtest (2026-11-14).
 - **64 px color buttons:** smaller than every other kid target since ADR 0019. Check in a playtest that the kids
   hit the color they mean; if not, fewer colors before smaller buttons (2026-11-14).
-- **Sounds** ([ADR 0032](../adr/0032-sounds-as-files.md), Accepted 2026-11-15): before building, confirm that Seed
-  Audio's output terms allow its files in the public repo (no ByteDance/BytePlus terms found on 2026-11-15). Make
-  Matilda's full letter set before 2026-12-31. Make a police siren and let the owner pick a take by ear.
+- **Sounds, part 2** ([ADR 0032](../adr/0032-sounds-as-files.md)):
+  - **Seed Audio's terms:** BytePlus's
+    [General Terms for AI Services](https://docs.byteplus.com/en/docs/legal/AI-Services-terms) say the user owns the
+    output (found 2026-11-15). Only the ModelArk *Playground* terms bar publishing outputs, and the API was used, not
+    the Playground. The owner should confirm this is enough to commit the Seed Audio files.
+  - **Narrator:** the owner checks the full Matilda set and flags clips to redo.
+  - **Siren:** the owner picks one of the six takes.
+  - **Driving sounds** wait for the other driving branch (`driving/steer-and-traffic`), since both change
+    `src/games/racing/sound.ts`.
 - **Search for AI pages from an idea** (ADR 0023): which search service, its key and cost. Settle before building
   that part.
 - **AI model for the animal themes' built-in pages** (ADR 0022): pick with the default model test of ADR 0006.

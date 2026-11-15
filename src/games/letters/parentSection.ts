@@ -93,7 +93,7 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
       segmented<Voice>(
         'Letter voice',
         [
-          ['windows', 'Windows voice'],
+          ['windows', "The app's voice"],
           ['own', 'Your own voice'],
         ],
         settings.voice,
@@ -106,7 +106,7 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
       recorder,
     ),
     card(
-      switchRow('Sounds', "The letter's name and the cheer when a letter is done.", settings.sounds, (on) => {
+      switchRow('Sounds', "The letter's name, and the cheer and a word of praise when a letter is done.", settings.sounds, (on) => {
         settings.sounds = on;
         void saveLettersSettings(storage, settings);
       }),
@@ -119,7 +119,7 @@ async function recordingGrid(ctx: ParentSectionContext): Promise<HTMLElement> {
   const { storage } = ctx;
   const recorded = new Set((await storage.list(VOICE_DIR)).map((p) => p.slice(VOICE_DIR.length).replace(/\.[a-z0-9]+$/, '')));
   const status = h('p', { class: 'pw-muted', 'aria-live': 'polite' });
-  const count = () => `${recorded.size} of ${allChars().length} recorded. Letters without a recording use the Windows voice.`;
+  const count = () => `${recorded.size} of ${allChars().length} recorded. Letters without a recording use the app's voice.`;
   status.textContent = count();
   const grid = h('div', {
     style: 'display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; max-height: 320px; overflow: auto',

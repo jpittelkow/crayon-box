@@ -574,7 +574,8 @@ class LettersGame {
       confirm.remove();
       this.progress = await finishLetter(this.ctx.storage, this.ctx.kid.id, ch, mode === 'game');
       this.ctx.sound.play('cheer');
-      void this.voice.say(ch);
+      // The bell first, then the letter's name and a word of praise (ADR 0032).
+      void this.voice.sayAndPraise(ch);
       screen.dataset.said = ch;
       wipe.remove();
       card.append(this.badge('letters-done-star', STAR), this.badge('letters-speaker', SPEAKER));
