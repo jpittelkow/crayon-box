@@ -15,7 +15,7 @@ pages/
 ```
 - Folder names are lowercase words joined by dashes (`farm-and-pets/sleepy-cat`). The page id becomes
   `builtin:farm-and-pets/sleepy-cat`.
-- The eight themes are Race cars, Farm and pets, Wild animals, Under the sea, Things that go, Yummy food,
+- The nine themes are Race cars, Farm and pets, Wild animals, Dinosaurs, Under the sea, Things that go, Yummy food,
   Outside and Shapes. `icon` is one of those names in lowercase; `order` sets their place in the theme strip.
 - `page.json`: `title` (for parents and tests, never shown to kids), `tags`, `source` (`original`, `ai` or
   `third-party`), `license` (required), `detail` (`simple` or `more`). AI pages also record `model`; third-party
@@ -55,7 +55,9 @@ npx playwright test tests/e2e/pages.spec.ts
 For line art from elsewhere (an AI-made page, a scan, a photo of a drawing): with `npm run dev` running, open
 `http://localhost:5173/tools/clean-page.html`, pick the image, and download the result as `page.png`. It turns gray
 into black or white, removes dust, closes gaps up to 6 px, fits the picture to 2048 × 1536, and runs the page check
-on the result. The same clean-up ([`cleanup.ts`](../src/games/coloring/engine/cleanup.ts)) will serve import and the
+on the result. For a whole folder at once, `node tools/clean-pages.mjs <in> <out>` does the same in a browser it
+starts itself, writes a `report.json`, trims the faint frame AI images often have at the edge, and closes shapes
+that a tail or claw running off the picture left open. The same clean-up ([`cleanup.ts`](../src/games/coloring/engine/cleanup.ts)) will serve import and the
 AI page maker in the installer (ADR 0005, 0006, 0023).
 
 ## Before adding a page

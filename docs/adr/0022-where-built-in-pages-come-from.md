@@ -30,3 +30,11 @@ A mix, chosen by what suits each theme:
   (`pages/README.md`) keep them close.
 - The animal themes wait for the clean-up step, which moves into the web milestone's page work rather than the
   installer.
+
+## Update (2026-11-15): the first animal pages, and a Dinosaurs theme
+- The owner asked for the animal pages, "dinos and other animals". They were made with OpenAI's GPT-5 Image Mini
+  through OpenRouter, whose terms give the output to the user, from the app's own idea prompt (no franchise,
+  character or artist named). Each one went through the clean-up with `tools/clean-pages.mjs` (the batch version
+  of `tools/clean-page.html`) and was looked at by a person before it was added.
+- Dinosaurs became a ninth theme, between Wild animals and Under the sea, with its own icon. Kids that age
+  love them, and a theme of their own is easier to find than dinosaurs mixed in with lions.

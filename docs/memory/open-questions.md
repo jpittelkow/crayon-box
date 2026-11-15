@@ -60,8 +60,6 @@ _Last updated: 2026-11-14_
     confirm.
 - **Search for AI pages from an idea** (ADR 0023): which search service, its key and cost. Settle before building
   that part.
-- **AI model for the animal themes' built-in pages** (ADR 0022): pick with the default model test of ADR 0006.
-  The clean-up step and the dev tool to turn its images into pages exist; only the model choice is missing.
 - **iPad version** ([ADR 0030](../adr/0030-ipad-home-screen-web-app.md), a draft the owner is keeping for later,
   2026-11-14): accept or not; which iPad and Pencil model the family has (hover needs an M2 iPad Pro or later).
   The family's server can have HTTPS, which the ADR requires (owner, 2026-11-14).
