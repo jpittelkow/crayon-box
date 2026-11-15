@@ -12,6 +12,7 @@ import { detailWatcher } from './detail';
 import type { MapDef } from './sim/map';
 import { carColors, forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving, shownVehicles, type KidDriving } from './settings';
 import type { VehiclePainter } from './look/thumbs';
+import { mapFile, vehicleFile } from './look/shippedPictures';
 import { DRIVE_KEYS, driveInput, stickAt } from './sim/input';
 import { TOYS } from './sim/assets/toys';
 import { honk, makeWorld, step, swapVehicle, type Assist, type VehicleKind, type World } from './sim/sim';
@@ -120,7 +121,7 @@ class DrivingGame {
         },
       });
       tile.dataset.map = m.id;
-      jobs.push({ key: () => `map-${m.id}-${ownColor}`, img: picture(tile), draw: () => thumbs.mapPicture(m, ownColor), first: false });
+      jobs.push({ key: () => mapFile(m.id), img: picture(tile), draw: () => thumbs.mapPicture(m, ownColor), first: false });
       return tile;
     });
     setPicked(mapTilesEls, mapTilesEls[MAPS.indexOf(map)]);
@@ -131,7 +132,7 @@ class DrivingGame {
     const tiles = shown.map((vehicle) => {
       const tile = kidButton({ kind: 'paper', label: VEHICLE_NAMES[vehicle], className: 'vehicle-tile', onTap: () => void choose(vehicle) });
       tile.dataset.vehicle = vehicle;
-      jobs.push({ key: () => `vehicle-${vehicle}-${color}`, img: picture(tile), draw: (painter) => painter().draw(vehicle, color), first: false });
+      jobs.push({ key: () => vehicleFile(vehicle, color), img: picture(tile), draw: (painter) => painter().draw(vehicle, color), first: false });
       return tile;
     });
     const last = Math.max(0, shown.indexOf(prefs.vehicle));
@@ -377,7 +378,7 @@ class DrivingGame {
     this.driving.push(() => painter?.dispose());
     const pictureOf = async (kind: VehicleKind) => {
       const { cachedPicture } = await import('./look/pictureCache');
-      return cachedPicture(`vehicle-${kind}-${color}`, () => (painter ??= thumbs.vehiclePainter()).draw(kind, color), dev ? undefined : storage, APP_VERSION);
+      return cachedPicture(vehicleFile(kind, color), () => (painter ??= thumbs.vehiclePainter()).draw(kind, color), dev ? undefined : storage, APP_VERSION);
     };
     const button = kidButton({ kind: 'paper', label: 'Change vehicle', className: 'driving-swap', onTap: () => open() });
     const now = Object.assign(document.createElement('img'), { alt: '' });

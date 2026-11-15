@@ -34,8 +34,11 @@ picker, for Back in the game to go back to the picker, and for a quick way to ch
   crayon box's brightest and black, leaving out any too like the kid's own. A tap paints the vehicles' pictures
   in it at once; the colour goes on the paint or the flag as before (ADR 0035), and is saved per kid.
 - **Back a page** after the first page of vehicles; the pages no longer wrap round.
-- The picker shows at once and draws its pictures one at a time after it; they are kept on the device by app
-  version, so it opens with them from then on (it froze for about 6 s each time before).
+- **The picker's pictures ship with the app** (owner, 2026-11-15): every vehicle in every colour it can be drawn in
+  (the six kid colours and the picker's, 12 in all) and both maps, 170 WebP files, about 1.9 MB, in
+  `assets/pictures/driving/`. `npm run pictures:driving` draws them on the dev machine with the game's own code;
+  a unit test fails while one is missing. The laptop draws nothing; drawing stays only as a fallback (one at a
+  time after the picker shows, kept on the device by app version). The picker froze for about 6 s each time before.
 
 ### In the game
 - **Back returns to the picker**, whose Back goes home.

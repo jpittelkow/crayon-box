@@ -51,9 +51,9 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   await expect(more).toHaveCount(0);
   await less.tap();
   await less.tap();
-  // The pictures are drawn after the picker shows, one at a time; the car is picked to begin with.
+  // The pictures ship with the app (drawn only if one were missing); the car is picked to begin with.
   await expect(picker).toHaveAttribute('data-pictures', 'true', { timeout: 60_000 });
-  await expect(picker.locator('.vehicle-tile img').first()).toHaveAttribute('src', /^data:image\/png/);
+  await expect(picker.locator('.vehicle-tile img').first()).toHaveAttribute('src', /vehicle-car-[0-9a-f]{6}\.webp/);
   await expect(page.getByRole('button', { name: 'Car', exact: true })).toHaveAttribute('aria-pressed', 'true');
 
   await page.getByRole('button', { name: 'School bus', exact: true }).tap();

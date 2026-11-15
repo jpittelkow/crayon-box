@@ -25,6 +25,17 @@ export interface KidDriving {
 /** The colours on the picker after the kid's own (playtest, 2026-11-15): the crayon box's brightest, and black. */
 export const CAR_COLORS: readonly string[] = ['#f23b2f', '#ff8a1f', '#ffd23f', '#2fa35f', '#3a86ff', '#9b5de5', '#ff70a6', '#2b2b2b'];
 
+/** The kid colours' values, as in `src/ui/tokens.css` (a test keeps the two the same). */
+export const KID_HEX: Readonly<Record<string, string>> = {
+  orange: '#ff9f1c', pink: '#ff6b9d', purple: '#9b5de5', green: '#44b87b', blue: '#3a86ff', teal: '#12b5b0',
+};
+
+/**
+ * Every colour a vehicle can be drawn in: the kids' own and the picker's. The app ships a picture of every vehicle
+ * in each (`npm run pictures:driving`), so the laptop never has to draw one.
+ */
+export const PICTURE_COLORS: readonly string[] = [...new Set([...Object.values(KID_HEX), ...CAR_COLORS])];
+
 /** The picker's colours: the kid's own first, then the others that don't look like it, eight at most. */
 export function carColors(own: string): string[] {
   const rgb = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
