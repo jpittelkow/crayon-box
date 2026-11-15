@@ -25,7 +25,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "REPLACE_WITH_UPDATER_PUBLIC_KEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNERERBMjRCRjBBNzJCOTIKUldTU0s2ZndTNkxkUGFlaGlQc3Z5OER3alkxa0xjVC9zUTFyRFdyWU1qZ0RHVlEvVVdzdC9HaHUK",
       "endpoints": ["https://github.com/jpittelkow/crayon-box/releases/latest/download/latest.json"],
       "windows": { "installMode": "passive" }
     }
