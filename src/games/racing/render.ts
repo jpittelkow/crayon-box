@@ -6,7 +6,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildGround, propShapes, treeShapes, type Pieces } from './look/island';
 import { buildVehicle, type VehicleModel } from './look/vehicles';
 import { DROP_LIFE, PROP_KINDS, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
-import { chaseView, stepTreeSizes } from './sim/view';
+import { CAMERA_FOV, chaseView, stepTreeSizes } from './sim/view';
 
 /** The most real pixels drawn per CSS pixel. Built-in laptop graphics (ADR 0021) get no more than this. */
 export const MAX_PIXEL_RATIO = 1.5;
@@ -113,7 +113,7 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const drops = effect(new THREE.SphereGeometry(1, 8, 6), 0xd6efff, world.drops.length);
   const ripples = effect(new THREE.RingGeometry(0.9, 1, 32).rotateX(-Math.PI / 2), 0xffffff, world.ripples.length);
 
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 900);
+  const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.5, 900);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const v = new THREE.Vector3();

@@ -37,6 +37,11 @@ few cars. The choices it needs are listed under each phase and at the end. Sound
 
 ## Steering feel (small, can come any time)
 Asked for by the owner on 2026-11-15 while testing.
+> **Changed by [ADR 0031](adr/0031-driving-to-a-spot-and-traffic-company.md) (2026-11-15, Proposed):** a touch
+> now picks a spot on the ground and the car drives there and stops, so "how far to the side" no longer sets the
+> turn for a finger. A sensitivity setting would now scale the turn rate (keys, and how tightly the car swings
+> toward a spot), not soften small touches. The steering wheel can read `World.steer`, the steering the car
+> really used, which already includes the road assist and the rescue.
 - **Steering sensitivity, a parent setting per kid.**
   - Today a finger at the screen's edge turns at a fixed top rate (`turn` in `sim.ts`, about 2.1 radians a second
     at low speed, less at full speed). A small sideways touch turns in proportion.

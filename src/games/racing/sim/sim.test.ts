@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DRIVE_KEYS, driveInput } from './input';
-import { chaseView, stepTreeSizes } from './view';
-import { FLOOD_SPEED, LAND_R, VEHICLE_SIZE, bodyPoints, MAX_SPEED, ROAD_R, ROAD_W, makeWorld, step, waterAt, type Input, type World } from './sim';
+import { FAR_SPOT, chaseView, groundPoint, stepTreeSizes } from './view';
+import { ALONG, CRUISE, JOIN, LEAVE, FLOOD_SPEED, LAND_R, VEHICLE_SIZE, bodyPoints, MAX_SPEED, ROAD_R, ROAD_W, makeWorld, step, waterAt, type Input, type World } from './sim';
 
 const DT = 1 / 60;
 const GO: Input = { go: true, brake: false, steer: 0 };
@@ -18,10 +18,10 @@ function randomStream(seed: number): () => number {
 }
 
 describe('driving input (ADR 0021)', () => {
-  it('a finger makes the car go and steers toward its side', () => {
+  it('a finger makes the car go to its spot; a steering key takes over from the spot', () => {
     expect(driveInput(undefined, new Set())).toEqual({ go: false, brake: false, steer: 0 });
-    expect(driveInput(0.5, new Set())).toMatchObject({ go: true, steer: 0.65 });
-    expect(driveInput(-1, new Set()).steer).toBe(-1);
+    expect(driveInput({ x: 3, z: 4 }, new Set())).toEqual({ go: true, brake: false, steer: 0, spot: { x: 3, z: 4 } });
+    expect(driveInput({ x: 3, z: 4 }, new Set(['ArrowLeft']))).toEqual({ go: true, brake: false, steer: -1 });
   });
 
   it('arrow keys and WASD drive the same', () => {
@@ -34,15 +34,58 @@ describe('driving input (ADR 0021)', () => {
 });
 
 describe('the kid car', () => {
-  it('goes when touched, turns toward the finger, and rolls to a stop when let go', () => {
+  it('goes when steered with keys, and rolls to a stop when let go', () => {
     const w = makeWorld(7, 0);
     const start = w.cars[0].heading;
-    run(w, 1, driveInput(0.8, new Set()));
+    run(w, 1, driveInput(undefined, new Set(['ArrowUp', 'ArrowRight'])));
     expect(w.cars[0].speed).toBeGreaterThan(5);
-    // Positive steer turns right, which lowers the heading.
+    // Steering right lowers the heading.
     expect(w.cars[0].heading).toBeLessThan(start);
     run(w, 4, driveInput(undefined, new Set()));
     expect(w.cars[0].speed).toBe(0);
+  });
+
+  it('drives to a touched spot and stops on it (ADR 0031)', () => {
+    for (const [ahead, right] of [[25, 0], [12, 10], [6, -12], [-8, 3]]) {
+      const w = makeWorld(7, 0);
+      const car = w.cars[0];
+      // Right of the heading is (-cos, sin) in x, z (steering right lowers the heading).
+      const spot = {
+        x: car.x + Math.sin(car.heading) * ahead - Math.cos(car.heading) * right,
+        z: car.z + Math.cos(car.heading) * ahead + Math.sin(car.heading) * right,
+      };
+      run(w, 8, driveInput(spot, new Set()));
+      expect(Math.hypot(car.x - spot.x, car.z - spot.z), `spot ${ahead} ahead, ${right} right`).toBeLessThan(4);
+      expect(car.speed).toBe(0);
+    }
+  });
+
+  it('gives up on a spot inside its turning circle instead of circling it forever', () => {
+    const w = makeWorld(7, 0);
+    const car = w.cars[0];
+    car.speed = 10;
+    // Just to the right, closer than the car can turn.
+    const spot = { x: car.x - Math.cos(car.heading) * 3.2, z: car.z + Math.sin(car.heading) * 3.2 };
+    run(w, 6, driveInput(spot, new Set()));
+    expect(car.speed).toBe(0);
+    expect(w.goal?.done).toBe(true);
+  });
+
+  it('a spot out at sea is pulled back onto the island', () => {
+    const w = makeWorld(7, 0);
+    run(w, 10, driveInput({ x: 0, z: 200 }, new Set()));
+    expect(Math.hypot(w.cars[0].x, w.cars[0].z)).toBeLessThan(LAND_R - 1.5);
+    expect(w.cars[0].speed).toBe(0);
+  });
+
+  it('a new spot starts the car again after it arrived', () => {
+    const w = makeWorld(7, 0);
+    const car = w.cars[0];
+    const ahead = (d: number) => ({ x: car.x + Math.sin(car.heading) * d, z: car.z + Math.cos(car.heading) * d });
+    run(w, 6, driveInput(ahead(10), new Set()));
+    expect(car.speed).toBe(0);
+    run(w, 0.5, driveInput(ahead(15), new Set()));
+    expect(car.speed).toBeGreaterThan(2);
   });
 
   it('never leaves the island, however it is driven', () => {
@@ -151,27 +194,87 @@ describe('things to knock around', () => {
   });
 });
 
-describe('traffic', () => {
-  it('drives along with a nearby kid car, never blocks it, and goes back to its own pace', () => {
-    const w = makeWorld(7, 0);
+describe('traffic keeps the kid company (ADR 0031)', () => {
+  /** The kid's car on the road, `behind` metres back from traffic car `i`, heading the way traffic goes. */
+  function kidBehind(w: World, i: number, behind: number): void {
+    const a = w.cars[i].angle - behind / ROAD_R;
     const kid = w.cars[0];
-    const other = w.cars[1];
-    // Park the kid right next to a traffic car, then drive along the road at a steady speed.
-    kid.x = Math.sin(other.angle) * ROAD_R;
-    kid.z = Math.cos(other.angle) * ROAD_R;
-    kid.heading = other.angle + Math.PI / 2;
-    let closest = Infinity;
-    run(w, 3, (world, i) => {
-      // They start side by side; after the first second traffic has made room and stays clear.
-      if (i > 60) closest = Math.min(closest, Math.hypot(world.cars[1].x - world.cars[0].x, world.cars[1].z - world.cars[0].z));
-      return { go: true, brake: false, steer: 0 };
+    kid.x = Math.sin(a) * ROAD_R;
+    kid.z = Math.cos(a) * ROAD_R;
+    kid.heading = a + Math.PI / 2;
+    kid.speed = 10;
+  }
+  const gapTo = (w: World, i: number) => {
+    const d = Math.atan2(w.cars[0].x, w.cars[0].z) - w.cars[i].angle;
+    return Math.atan2(Math.sin(d), Math.cos(d)) * ROAD_R;
+  };
+
+  it('one car catches up, rides alongside for a while, then drives off ahead', () => {
+    const w = makeWorld(7, 0, 'road');
+    kidBehind(w, 2, 12);
+    let alongFor = 0, most = 0, closest = Infinity, joined = -1, ahead = 0;
+    run(w, 20, (world) => {
+      const busy = world.cars.filter((c, j) => j > 0 && (c.mode === JOIN || c.mode === ALONG));
+      most = Math.max(most, busy.length);
+      if (busy[0] && joined < 0) joined = world.cars.indexOf(busy[0]);
+      if (joined > 0 && world.cars[joined].mode === ALONG) {
+        alongFor += DT;
+        expect(Math.abs(gapTo(world, joined))).toBeLessThan(4);
+        closest = Math.min(closest, Math.hypot(world.cars[joined].x - world.cars[0].x, world.cars[joined].z - world.cars[0].z));
+      }
+      // After riding along, it leaves: how far ahead of the kid it got.
+      if (alongFor > 0 && joined > 0 && world.cars[joined].mode === LEAVE) ahead = Math.max(ahead, -gapTo(world, joined));
+      return GO;
     });
-    expect(Math.abs(other.speed - kid.speed)).toBeLessThan(3);
-    expect(closest).toBeGreaterThan(3);
-    // Kid stops; traffic drives off and settles back to its own pace and lane.
-    run(w, 12, { go: false, brake: true, steer: 0 });
-    expect(other.speed).toBeCloseTo(other.cruise, 0);
-    expect(other.lane).toBeCloseTo(other.home, 1);
+    expect(joined).toBeGreaterThan(0);
+    expect(most).toBe(1);
+    expect(alongFor).toBeGreaterThan(3.5);
+    expect(alongFor).toBeLessThan(6.5);
+    // Alongside means the next lane over, not in the kid's way.
+    expect(closest).toBeGreaterThan(2.5);
+    expect(ahead).toBeGreaterThan(8);
+
+    // The kid stops: all traffic goes back to its own pace and lane.
+    run(w, 15, { go: false, brake: true, steer: 0 });
+    for (const c of w.cars.slice(1)) {
+      expect(c.mode).toBe(CRUISE);
+      expect(c.speed).toBeCloseTo(c.cruise, 0);
+      expect(c.lane).toBeCloseTo(c.home, 1);
+    }
+  }, 30_000);
+
+  it('a kid driving against the traffic gets no company, and the road stays clear', () => {
+    const w = makeWorld(7, 0, 'road');
+    kidBehind(w, 1, -20);
+    w.cars[0].heading += Math.PI;
+    let closest = Infinity;
+    run(w, 15, (world) => {
+      expect(world.cars.slice(1).every((c) => c.mode === CRUISE)).toBe(true);
+      for (const c of world.cars.slice(1)) closest = Math.min(closest, Math.hypot(c.x - world.cars[0].x, c.z - world.cars[0].z));
+      return GO;
+    });
+    expect(closest).toBeGreaterThan(2.3);
+  });
+
+  it('a bump shoves both cars apart and barely slows the kid', () => {
+    const w = makeWorld(7, 0);
+    const other = w.cars[3];
+    const kid = w.cars[0];
+    // Side on, from outside the road, nose toward the traffic car.
+    const r = other.lane + 4;
+    kid.x = Math.sin(other.angle) * r;
+    kid.z = Math.cos(other.angle) * r;
+    kid.heading = other.angle + Math.PI;
+    kid.speed = 12;
+    other.cruise = other.speed = 0;
+    const lane = other.lane;
+    let touched = false;
+    run(w, 0.6, (world) => {
+      touched ||= Math.abs(world.cars[3].lane - lane) > 0.3;
+      return GO;
+    });
+    expect(touched).toBe(true);
+    expect(kid.speed).toBeGreaterThan(10);
   });
 });
 
@@ -193,6 +296,29 @@ describe('vehicles and the camera', () => {
     run(w, 1.5, GO);
     const nearest = Math.min(...bodyPoints(bus).map(([x, z]) => Math.hypot(kid.x - x, kid.z - z)));
     expect(nearest).toBeGreaterThan(VEHICLE_SIZE.car.side + VEHICLE_SIZE.bus.side);
+  });
+
+  it('maps a touch on the picture to the ground the camera shows there', () => {
+    const w = makeWorld(7, 0);
+    const car = w.cars[0];
+    w.camHeading = car.heading;
+    const fx = Math.sin(car.heading), fz = Math.cos(car.heading);
+    /** Metres ahead of the car and to its right. */
+    const local = (p: { x: number; z: number }) => [(p.x - car.x) * fx + (p.z - car.z) * fz, -(p.x - car.x) * fz + (p.z - car.z) * fx];
+    // The camera aims 1.2 m above the ground 5 m ahead of the car, so the middle of the picture lands on the
+    // ground further on: 15 × 5.5 / 4.3 m from the camera, which sits 10 m behind the car.
+    const [midAhead, midRight] = local(groundPoint(w, 0, 0, 1.6));
+    expect(midAhead).toBeCloseTo((15 * 5.5) / 4.3 - 10, 3);
+    expect(midRight).toBeCloseTo(0, 5);
+    // Right on the picture is right of the car; higher is further ahead; the bottom edge is just behind it.
+    expect(local(groundPoint(w, 0.7, -0.2, 1.6))[1]).toBeGreaterThan(4);
+    expect(local(groundPoint(w, -0.7, -0.2, 1.6))[1]).toBeLessThan(-4);
+    expect(local(groundPoint(w, 0, 0.3, 1.6))[0]).toBeGreaterThan(midAhead + 5);
+    expect(local(groundPoint(w, 0, -1, 1.6))[0]).toBeLessThan(0);
+    // The sky: a spot FAR_SPOT from the car, straight ahead.
+    const [skyAhead, skyRight] = local(groundPoint(w, 0, 0.95, 1.6));
+    expect(Math.hypot(skyAhead, skyRight)).toBeCloseTo(FAR_SPOT, 3);
+    expect(Math.abs(skyRight)).toBeLessThan(0.01);
   });
 
   it('keeps the camera behind the car', () => {

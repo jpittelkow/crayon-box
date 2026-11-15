@@ -43,24 +43,31 @@ test('the driving game stays hidden until a parent turns it on', async ({ page }
   await expect(page.getByRole('button', { name: 'Driving', exact: true })).toBeVisible();
 });
 
-test('a touch drives the car toward the finger, and lifting stops it', async ({ page }) => {
+test('a touch drives the car to that spot and it stops there; lifting early stops it too', async ({ page }) => {
   await turnOnDriving(page);
   await openDriving(page);
   const start = await car(page);
   const box = (await page.locator('.driving-canvas').boundingBox())!;
-
-  // Hold a finger on the right of the picture.
   const cdp = await page.context().newCDPSession(page);
-  const finger = { x: box.x + box.width * 0.85, y: box.y + box.height * 0.6, id: 1, radiusX: 4, radiusY: 4 };
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [finger] });
+  const at = (x: number, y: number) => ({ x: box.x + box.width * x, y: box.y + box.height * y, id: 1, radiusX: 4, radiusY: 4 });
+
+  // Hold a finger on the road ahead and to the right (ADR 0031): the car turns right, goes, and stops on the spot
+  // while the finger is still down.
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [at(0.7, 0.45)] });
   await expect.poll(async () => (await car(page)).speed).toBeGreaterThan(4);
-  const moving = await car(page);
-  expect(Math.hypot(moving.x - start.x, moving.z - start.z)).toBeGreaterThan(1);
-  expect(moving.heading).toBeLessThan(start.heading); // turning right
+  expect((await car(page)).heading).toBeLessThan(start.heading); // turning right
+  // With software WebGL (CI) frames are slow and the loop catches up at most five steps a frame, so game time runs
+  // well behind the clock: allow plenty.
+  await expect.poll(async () => (await car(page)).speed, { timeout: 30_000 }).toBe(0);
+  const there = await car(page);
+  expect(Math.hypot(there.x - start.x, there.z - start.z)).toBeGreaterThan(5);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+
+  // Touch the sky far ahead, then lift before it gets there: it rolls to a stop.
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [at(0.5, 0.1)] });
+  await expect.poll(async () => (await car(page)).speed).toBeGreaterThan(4);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await cdp.detach();
-  // Coasting from top speed takes about 3 s of game time. With software WebGL (CI) frames are slow and the loop
-  // catches up at most five steps a frame, so game time runs well behind the clock: allow plenty.
   await expect.poll(async () => (await car(page)).speed, { timeout: 30_000 }).toBe(0);
 });
 

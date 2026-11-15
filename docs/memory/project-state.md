@@ -112,8 +112,9 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   world kit with bundled fonts (ADR 0016).
 - `src/games/coloring/`: the game (lazy-loaded): `game.ts` (start, library, My pictures), `session.ts` (the
   coloring screen), `engine/` (ADR 0004), `pictures.ts`, `pages.ts`, `parentSections.ts` (its parent screens).
-- `src/games/racing/` (ADR 0021, 0025): `sim/` is plain TypeScript (the world with vehicle kinds and sizes,
-  input, camera and tree rules in `view.ts`) with unit tests; `look/` builds the toy-look vehicles, island, trees
+- `src/games/racing/` (ADR 0021, 0025, 0031): `sim/` is plain TypeScript (the world with vehicle kinds and sizes,
+  driving to a touched spot, traffic modes CRUISE/JOIN/ALONG/LEAVE, `World.steer`; input; camera, tree rules and
+  `groundPoint` (picture to ground) in `view.ts`) with unit tests; `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the
   game; `game.ts` (screen, touch and keys, loop), `settings.ts` (per-kid assist, sounds), `parentSection.ts`,
   `sound.ts` (an engine voice per vehicle kind in `ENGINES`, effects; made by the browser, no files). Games can

@@ -158,7 +158,8 @@ export class DrivingSound {
       src.connect(band).connect(this.squeal).connect(this.out(ctx));
       src.start();
     }
-    const squealing = kid.speed > 10 && Math.abs(input.steer) > 0.7 && world.assist === 'free';
+    // The steering the car really used: a finger's spot steers in the simulation, not in the input.
+    const squealing = kid.speed > 10 && Math.abs(world.steer) > 0.7 && world.assist === 'free';
     this.squeal.gain.setTargetAtTime(squealing ? 0.09 : 0, t, 0.06);
 
     // Brakes: one squeak when a quick stop starts.

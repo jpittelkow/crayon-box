@@ -31,6 +31,9 @@ _Last updated: 2026-11-14_
   registry id stay `racing` now that there are no races (kept as `racing` in the prototype, shown as
   "Driving"). Also: the prototype paints the whole car in the kid's color, where ADR 0021 says a flag on the
   car; fine with one car, to settle with the vehicle choice.
+- **Driving to a spot, traffic company** ([ADR 0031](../adr/0031-driving-to-a-spot-and-traffic-company.md),
+  Proposed, built 2026-11-15): accept after a playtest. Watch whether a finger held still ending in a stop reads
+  as "got there", what a resting hand low on the screen does (U-turn, then stop), and the guessed numbers.
 - **After the driving MVP** (see project state, milestones 3 and 5): which vehicles, how many maps and how big,
   and how the home map's private folder gets onto the device or the family's server.
 - **Letter practice** ([ADR 0026](../adr/0026-letter-practice.md), built 2026-11-14): for a playtest, tracing

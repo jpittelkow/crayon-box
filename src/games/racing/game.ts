@@ -1,5 +1,5 @@
 // The driving game (ADR 0021), prototype: one car on a small island with traffic, things to knock around, puddles
-// and a flood. Touch to go and the car heads toward the finger, or drive with the arrow keys or W, A, S, D.
+// and a flood. Touch a spot and the car drives there (ADR 0031), or drive with the arrow keys or W, A, S, D.
 // three.js loads only when the game opens; the parent area can load this file without it.
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
@@ -7,6 +7,7 @@ import { el, kidButton } from '../../ui/kid';
 import { forgetKid, loadDrivingSettings, loadKidDriving } from './settings';
 import { DRIVE_KEYS, driveInput } from './sim/input';
 import { makeWorld, step, type World } from './sim/sim';
+import { groundPoint } from './sim/view';
 import { DrivingSound } from './sound';
 import './racing.css';
 
@@ -98,11 +99,15 @@ class DrivingGame {
       canvas.removeEventListener('webglcontextrestored', onRestored);
     });
 
-    // ---- Fingers: the car follows the newest one still down ----
-    const fingers = new Map<number, number>();
-    const across = (e: PointerEvent) => {
+    // ---- Fingers: the car drives to the spot under the newest one still down (ADR 0031) ----
+    // The spot is picked when the finger lands or moves, then stays put on the ground while the finger rests, so
+    // the car arrives and stops instead of chasing a point that moves with the camera.
+    const fingers = new Map<number, { x: number; z: number }>();
+    const spotUnder = (e: PointerEvent) => {
       const r = canvas.getBoundingClientRect();
-      return Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
+      const nx = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
+      const ny = Math.max(-1, Math.min(1, 1 - ((e.clientY - r.top) / r.height) * 2));
+      return groundPoint(world, nx, ny, r.width / Math.max(1, r.height));
     };
     const isPalm = (e: PointerEvent) => e.pointerType === 'touch' && Math.max(e.width, e.height) > PALM_CSS_PX;
     canvas.addEventListener('pointerdown', (e) => {
@@ -114,10 +119,10 @@ class DrivingGame {
         // Synthetic events in tests can't be captured; driving still works.
       }
       fingers.delete(e.pointerId);
-      fingers.set(e.pointerId, across(e));
+      fingers.set(e.pointerId, spotUnder(e));
     });
     canvas.addEventListener('pointermove', (e) => {
-      if (fingers.has(e.pointerId)) fingers.set(e.pointerId, across(e));
+      if (fingers.has(e.pointerId)) fingers.set(e.pointerId, spotUnder(e));
     });
     const lift = (e: PointerEvent) => fingers.delete(e.pointerId);
     canvas.addEventListener('pointerup', lift);
