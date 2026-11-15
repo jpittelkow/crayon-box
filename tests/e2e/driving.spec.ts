@@ -59,7 +59,9 @@ test('a touch drives the car toward the finger, and lifting stops it', async ({ 
   expect(moving.heading).toBeLessThan(start.heading); // turning right
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await cdp.detach();
-  await expect.poll(async () => (await car(page)).speed, { timeout: 6000 }).toBe(0);
+  // Coasting from top speed takes about 3 s of game time. With software WebGL (CI) frames are slow and the loop
+  // catches up at most five steps a frame, so game time runs well behind the clock: allow plenty.
+  await expect.poll(async () => (await car(page)).speed, { timeout: 30_000 }).toBe(0);
 });
 
 test('arrow keys and WASD drive; back returns to the home screen', async ({ page }) => {
