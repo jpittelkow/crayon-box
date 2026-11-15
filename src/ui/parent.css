@@ -434,3 +434,18 @@
   border-left: 4px solid var(--danger);
   background: #fff4f2;
 }
+
+/* ---- Add pages (phase F) ---- */
+.pw-page-preview {
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 4 / 3;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.pw-ok {
+  font-weight: 700;
+  color: var(--ok, #2f8a57);
+}

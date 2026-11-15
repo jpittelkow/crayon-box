@@ -42,6 +42,23 @@ export interface FinishedPictures {
   openFolder(): Promise<void>;
 }
 
+/** A file waiting in the Windows app's Pages folder (`Pictures\Coloring Book\Pages`, ADR 0005). */
+export interface PagesFolderFile {
+  /** The folder it is in, inside Pages; '' for Pages itself. A theme's name puts the page in that theme. */
+  folder: string;
+  name: string;
+  path: string;
+}
+
+/** The Windows app's Pages folder: files dropped there become family pages at the next start (phase F). */
+export interface PagesFolder {
+  list(): Promise<PagesFolderFile[]>;
+  read(path: string): Promise<Blob>;
+  /** Moves a file out of the way once handled: into `Added`, or `Not added` when it couldn't be made a page. */
+  done(path: string, added: boolean): Promise<void>;
+  openFolder(): Promise<void>;
+}
+
 export interface GameContext {
   kid: KidProfile;
   storage: GameStorage;
@@ -59,6 +76,8 @@ export interface ParentSectionContext {
   kidLabel(kid: KidProfile): string;
   /** Present in the Windows app only. */
   finished?: FinishedPictures;
+  /** Present in the Windows app only. */
+  pagesFolder?: PagesFolder;
 }
 
 /** A screen a game adds to the parent area (ADR 0008, 0012). */

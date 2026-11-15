@@ -5,7 +5,7 @@ import { memoryBackend, openIdbBackend } from './storage/idb';
 import { deviceInfo } from './storage/ids';
 import { appStorage } from './storage/namespaced';
 import type { Backend } from './storage/types';
-import type { FinishedPictures } from './shell/types';
+import type { FinishedPictures, PagesFolder } from './shell/types';
 import { UpdateController, loadUpdateSettings } from './shell/updates';
 import { KioskControl, loadKioskSettings, type KioskBridge } from './shell/kiosk';
 import { SyncService } from './sync/service';
@@ -27,11 +27,13 @@ async function boot(): Promise<void> {
   // The Windows app keeps everything as files (milestone 2, phase B); the browser keeps it in IndexedDB.
   let backend: Backend | undefined;
   let finished: FinishedPictures | undefined;
+  let pagesFolder: PagesFolder | undefined;
   if (inTauri()) {
     try {
       const files = await import('./shell/tauriFiles');
       backend = await files.openTauriBackend();
       finished = files.tauriFinishedPictures();
+      pagesFolder = files.tauriPagesFolder();
     } catch (err) {
       console.error('App files unavailable; using browser storage instead', err);
     }
@@ -57,11 +59,24 @@ async function boot(): Promise<void> {
   const kiosk = await openKiosk(storage.shell);
   // Family sync runs in the background when a parent has set it up (ADR 0024); kid screens never wait for it.
   const sync = new SyncService({ backend, shell: storage.shell });
-  const shell = new Shell(frame, storage, undefined, { finished, updates, kiosk, sync });
+  const shell = new Shell(frame, storage, undefined, { finished, pagesFolder, updates, kiosk, sync });
   kiosk?.onQuitRequested(() => void shell.quit());
   if (kiosk) window.addEventListener(QUIT_KEYS_EVENT, () => void shell.quit());
   await shell.start();
   sync.start();
+  // Files waiting in the Pages folder become family pages (phase F), in the background after start.
+  if (pagesFolder) {
+    const folder = pagesFolder;
+    setTimeout(() => {
+      void (async () => {
+        const [{ importPagesFolder }, { importFile }] = await Promise.all([
+          import('./games/coloring/folderImport'),
+          import('./games/coloring/importPage'),
+        ]);
+        await importPagesFolder(storage.game('coloring'), folder, importFile);
+      })().catch((err) => console.error('Pages folder import failed', err));
+    }, 3000);
+  }
   // Look for a newer version in the background (ADR 0009). It only shows in the parent area; nothing installs on
   // its own, and a failed check is only reported there too.
   if (updates && (await loadUpdateSettings(storage.shell)).checkOnStart) void updates.check();
