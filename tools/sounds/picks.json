@@ -1,0 +1,17 @@
+{
+  "_about": "The sounds the app ships (ADR 0032) and where each came from. tools/sounds/prepare.mjs reads this, finds each source file in a local folder of downloads and generated clips, and writes assets/sounds/ plus assets/sounds/sounds.json.",
+  "sources": {
+    "kenney-ui": { "title": "51 UI sound effects (buttons, switches and clicks), Kenney's UI SFX Set", "url": "https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks", "author": "Kenney", "license": "CC0" },
+    "pops": { "title": "3 Pop Sounds", "url": "https://opengameart.org/content/3-pop-sounds", "license": "CC0" },
+    "cc0-sfx-100": { "title": "100 CC0 SFX", "url": "https://opengameart.org/content/100-cc0-sfx", "license": "CC0" },
+    "matilda": { "title": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)", "url": "https://openrouter.ai/elevenlabs/eleven-v4", "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0", "model": "elevenlabs/eleven-v4", "voice": "matilda" }
+  },
+  "sounds": [
+    { "out": "ui/tap.wav", "from": "kenney-ui", "file": "UI_SFX_Set/click1.wav", "kind": "ui" },
+    { "out": "ui/fill.wav", "from": "pops", "file": "3pops/pop1.ogg", "kind": "ui" },
+    { "out": "ui/undo.wav", "from": "kenney-ui", "file": "UI_SFX_Set/rollover1.wav", "kind": "ui" },
+    { "out": "ui/cheer.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/bell_01.ogg", "kind": "ui" },
+    { "out": "ui/page.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/paper_02.ogg", "kind": "ui" }
+  ],
+  "narrator": { "from": "matilda", "dir": "narrator", "kind": "voice" }
+}

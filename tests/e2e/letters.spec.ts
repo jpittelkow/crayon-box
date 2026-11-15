@@ -96,6 +96,31 @@ test('practice: every letter is open; tracing one gives it a star and the arrow 
   await expect(page.getByRole('button', { name: 'Letter L, has a star' })).toBeVisible();
 });
 
+test("a finished letter: the narrator says its name, then a word of praise (ADR 0032)", async ({ page }) => {
+  // Records every clip the app plays through an audio element (the narrator and parent recordings).
+  await page.addInitScript(() => {
+    const w = window as unknown as { __clips: string[] };
+    w.__clips = [];
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function () {
+      w.__clips.push(this.currentSrc || this.src);
+      return play.call(this);
+    };
+  });
+  await turnOnLetters(page);
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
+  await traceAndConfirm(page, 'L');
+  const clips = () => page.evaluate(() => (window as unknown as { __clips: string[] }).__clips);
+  await expect.poll(async () => (await clips()).some((c) => /praise-[a-z-]+\.mp3/.test(c))).toBe(true);
+  const said = await clips();
+  const name = said.findIndex((c) => c.includes('/assets/sounds/voice/letter-L.mp3'));
+  const praise = said.findIndex((c) => /praise-[a-z-]+\.mp3/.test(c));
+  expect(name).toBeGreaterThanOrEqual(0);
+  expect(praise).toBeGreaterThan(name);
+});
+
 test('the game opens one letter at a time', async ({ page }) => {
   await turnOnLetters(page);
   await openLetters(page);

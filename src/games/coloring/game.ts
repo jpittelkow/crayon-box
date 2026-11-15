@@ -258,5 +258,7 @@ class ColoringGame {
     this.revokeUrls();
     this.session = new ColoringSession(this.root, this.ctx, page, picture, back);
     await this.session.start(paint);
+    // A paper sound as the page appears (ADR 0032).
+    this.ctx.sound.play('page');
   }
 }
