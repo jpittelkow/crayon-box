@@ -102,5 +102,13 @@ _Last updated: 2026-11-14_
   (2026-11-14).
 - A new folder the Windows app writes to must be added to `fs:scope` in `src-tauri/capabilities/default.json`, or
   the fs plugin refuses it only in the installed app (2026-11-14).
+- The repo on GitHub is `jpittelkow/crayon-box`; the local folder is still called `kidsapp`. The updater's
+  endpoint in `tauri.conf.json` uses the GitHub name (2026-11-14).
+- `bundle.createUpdaterArtifacts` makes `tauri build` fail without `TAURI_SIGNING_PRIVATE_KEY`, so it is only
+  turned on in `release.yml` (`--config`), never in `tauri.conf.json`; ordinary CI builds have no key
+  (2026-11-14).
+- Node 24 runs `.ts` files directly (type stripping), which is how `release.yml` runs
+  `src/tools/releaseManifest.ts`; keep that file to erasable TypeScript (no enums, no parameter properties)
+  (2026-11-14).
 - The browser tests draw WebGL in software; the driving game's toy look takes seconds to start there, so
   `driving.spec.ts` runs its tests one at a time with longer timeouts (2026-11-14).

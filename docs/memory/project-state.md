@@ -19,8 +19,10 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    milestone 2 is planned in eight phases in [milestone-2.md](../milestone-2.md) (A Tauri window, B files, C sync,
    D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A done 2026-11-14**
    (`src-tauri/`, the `windows-installer` CI job): the installer ran on Windows. A `v*` tag drafts a release
-   with the unsigned installer (`release.yml`). **Phase B (files) built 2026-11-14** on branch
-   `milestone-2/phase-b-files`: unit- and browser-tested, not yet tried in the installed app; see milestone-2.md.
+   with the unsigned installer (`release.yml`). **Phase B (files) merged 2026-11-14** (PR #3):
+   unit- and browser-tested, not yet tried in the installed app. **Phase E (updates) built 2026-11-14** on
+   branch `milestone-2/phase-e-updates`, ahead of C and D (owner's call): waits on the updater signing key, then
+   a real release; see milestone-2.md.
 3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
    **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
    knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,

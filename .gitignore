@@ -6,3 +6,6 @@ src-tauri/target/
 test-results/
 playwright-report/
 src-tauri/gen/
+
+# Updater signing keys (ADR 0009) never go in the repo; keep them in the password manager.
+*.key

@@ -23,6 +23,13 @@
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' ipc: http://ipc.localhost"
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNERERBMjRCRjBBNzJCOTIKUldTU0s2ZndTNkxkUGFlaGlQc3Z5OER3alkxa0xjVC9zUTFyRFdyWU1qZ0RHVlEvVVdzdC9HaHUK",
+      "endpoints": ["https://github.com/jpittelkow/crayon-box/releases/latest/download/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["nsis"],
