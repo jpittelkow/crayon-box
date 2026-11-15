@@ -210,7 +210,11 @@ function trafficPose(w: World, c: Car, dt = 0): void {
 /** Distance along a road for a map's `OnRoad` place. */
 const along = (w: World, on: OnRoad): number => on.at * w.roads[on.road]!.length;
 
-export function makeWorld(seed: number, propCount: number, assist: Assist = 'free', map: MapDef = ISLAND): World {
+/**
+ * A world to drive. `kidKind` is the vehicle the kid picked (milestone-3 B5); traffic keeps the others, with the
+ * plain car standing in for the one the kid is driving.
+ */
+export function makeWorld(seed: number, propCount: number, assist: Assist = 'free', map: MapDef = ISLAND, kidKind: VehicleKind = 'car'): World {
   const roads = map.roads.map(buildRoad);
   const w: World = {
     map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [], bubbles: [], bubbleNext: 0,
@@ -233,11 +237,11 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
     trafficPose(w, c);
     return c;
   };
-  const kid = car('car', map.spawn, 0);
+  const kid = car(kidKind, map.spawn, 0);
   w.cars.push(kid);
   w.camHeading = kid.heading;
   w.mark = { x: kid.x, z: kid.z, t: 0 };
-  for (const t of map.traffic) w.cars.push(car(t.kind, t.on, t.cruise));
+  for (const t of map.traffic) w.cars.push(car(t.kind === kidKind ? 'car' : t.kind, t.on, t.cruise));
 
   // Water: pools placed by hand (the flood), then puddles along the roads, each with a smaller lobe.
   for (const pool of map.water.pools) {

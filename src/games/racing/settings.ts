@@ -1,10 +1,16 @@
-// What the driving game keeps (ADR 0021): per kid, the assist level; for the game, whether its sounds play.
+// What the driving game keeps (ADR 0021): per kid, the assist level and the last vehicle picked (milestone-3 B5);
+// for the game, whether its sounds play.
 import type { GameStorage } from '../../storage/types';
-import type { Assist } from './sim/sim';
+import type { Assist, VehicleKind } from './sim/sim';
+
+/** The vehicles a kid can pick, in the picker's order. */
+export const VEHICLES: readonly VehicleKind[] = ['car', 'police', 'monster', 'bus'];
 
 export interface KidDriving {
   /** Steers freely (the default) or follows the road. Set by a parent. */
   assist: Assist;
+  /** The vehicle picked last time; the picker shows it picked. */
+  vehicle: VehicleKind;
 }
 
 export interface DrivingSettings {
@@ -17,7 +23,10 @@ const SETTINGS = 'settings.json';
 
 export async function loadKidDriving(storage: GameStorage, kidId: string): Promise<KidDriving> {
   const raw = await storage.getJson<Partial<KidDriving>>(kidPath(kidId));
-  return { assist: raw?.assist === 'road' ? 'road' : 'free' };
+  return {
+    assist: raw?.assist === 'road' ? 'road' : 'free',
+    vehicle: VEHICLES.includes(raw?.vehicle as VehicleKind) ? (raw!.vehicle as VehicleKind) : 'car',
+  };
 }
 
 export async function saveKidDriving(storage: GameStorage, kidId: string, value: KidDriving): Promise<void> {

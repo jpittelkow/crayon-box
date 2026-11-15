@@ -122,7 +122,7 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   scenery and decor are registered by id (`sim/assets/` definitions, `look/toys.ts` and `look/scenery.ts` looks;
   dev gallery at `/tools/driving-gallery.html`); `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the
-  game; `game.ts` (screen, touch and keys, loop), `settings.ts` (per-kid assist, sounds), `parentSection.ts`,
+  game; `game.ts` (screen, touch and keys, loop), `settings.ts` (per-kid assist and last vehicle, sounds), the vehicle picker in `game.ts` with tile pictures from `look/thumbs.ts`, `parentSection.ts`,
   `sound.ts` (an engine loop per vehicle kind in `ENGINES`, effect files in `EFFECTS`, ADR 0032). Games can
   start hidden (`GameEntry.startsHidden`) and a parent shows or hides each one under Settings, Games
   (`ShellSettings.games`).

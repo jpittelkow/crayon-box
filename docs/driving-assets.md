@@ -110,7 +110,7 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 ### 1. Vehicles
 | Id | Status | Maps | Notes |
 |---|---|---|---|
-| `vehicle/car` | built | all | the kid's colour |
+| `vehicle/car` | built | all | the kid's colour when the kid drives it (painted, like the monster truck; the police car and bus fly the kid's flag instead, B5) |
 | `vehicle/police` | built | all, town | flashing lamps; horn becomes a siren (phase D) |
 | `vehicle/monster` | built | all, country | pushes toys furthest, wades fastest |
 | `vehicle/bus` | built | all, town | flashing top lamps |

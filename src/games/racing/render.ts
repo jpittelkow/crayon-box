@@ -7,17 +7,15 @@ import { buildGround } from './look/island';
 import { buildSetPieces } from './look/setpieces';
 import { sceneryPieces } from './look/scenery';
 import { toyPieces, type Pieces } from './look/toys';
-import { buildVehicle, type VehicleModel } from './look/vehicles';
+import { OWN_COLOR, buildKidVehicle, buildVehicle, type VehicleModel } from './look/vehicles';
 import type { SceneryId } from './sim/assets/scenery';
 import type { ToyId } from './sim/assets/toys';
-import { DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
+import { DROP_LIFE, RIPPLE_LIFE, type World } from './sim/sim';
 import { CAMERA_FOV, chaseView, stepTreeSizes, type View } from './sim/view';
 
 /** The most real pixels drawn per CSS pixel. Built-in laptop graphics (ADR 0021) get no more than this. */
 export const MAX_PIXEL_RATIO = 1.5;
 
-/** Traffic colours: none is a kid profile colour, so the kid's own car is never mistaken for another. */
-const TRAFFIC_COLOR: Record<VehicleKind, number> = { car: 0xe8402c, police: 0x16181d, monster: 0xd8342c, bus: 0xf7b500 };
 const WATER_Y = 0.09;
 
 export interface Renderer {
@@ -103,7 +101,8 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
 
   // Vehicles: the kid's car in their colour, traffic in its own colours.
   const vehicles: VehicleModel[] = world.cars.map((c, i) => {
-    const v = buildVehicle(c.kind, i === 0 ? kidColor : TRAFFIC_COLOR[c.kind]);
+    // The kid's vehicle in their colour, or with their flag (milestone-3 B5); traffic in its own colours.
+    const v = i === 0 ? buildKidVehicle(c.kind, kidColor) : buildVehicle(c.kind, OWN_COLOR[c.kind]);
     v.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
     });

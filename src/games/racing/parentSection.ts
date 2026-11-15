@@ -24,7 +24,8 @@ export async function renderDriving(el: HTMLElement, ctx: ParentSectionContext):
             ['road', 'Follows the road'],
           ],
           prefs.assist,
-          (assist) => void saveKidDriving(ctx.storage, kid.id, { assist }),
+          // Change only the assist level: the kid's last vehicle is kept too.
+          async (assist) => saveKidDriving(ctx.storage, kid.id, { ...(await loadKidDriving(ctx.storage, kid.id)), assist }),
         ),
       ),
     );
