@@ -4,8 +4,10 @@
 //   PORT          where to listen (default 8787)
 //   DATA_DIR      the data folder (default ./data; /data in the container)
 //   PAIRING_CODE  a fixed pairing code instead of the one the server makes on first start
+//   OPENROUTER_API_KEY, AI_IMAGE_MODEL, AI_DRAW_MODEL, AI_DAILY_LIMIT   AI pages (ADR 0029)
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
+import { aiConfigFromEnv } from './ai.ts';
 import { handler } from './http.ts';
 import { Store } from './store.ts';
 
@@ -15,11 +17,13 @@ const dataDir = process.env.DATA_DIR ?? './data';
 
 const store = Store.open(dataDir);
 const code = store.pairingCode(process.env.PAIRING_CODE);
-const server = createServer(handler({ store, version: pkg.version, pairingCode: process.env.PAIRING_CODE }));
+const ai = aiConfigFromEnv(process.env);
+const server = createServer(handler({ store, version: pkg.version, pairingCode: process.env.PAIRING_CODE, ai }));
 
 server.listen(port, () => {
   console.log(`Crayon Box sync ${pkg.version} on port ${port}, data in ${dataDir}`);
   console.log(`Pairing code: ${code}`);
+  console.log(ai.key ? `AI pages: on (${ai.imageModel}, ${ai.drawModel}; ${ai.dailyLimit} a day)` : 'AI pages: off (no OPENROUTER_API_KEY)');
 });
 
 const stop = () => {

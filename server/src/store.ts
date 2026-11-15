@@ -125,6 +125,19 @@ export class Store {
     return code;
   }
 
+  // ---- AI pages: the day's count (ADR 0029) ----
+
+  /** Pages made on `day` (YYYY-MM-DD, server time). */
+  aiUsed(day: string): number {
+    return this.setting('ai_day') === day ? Number(this.setting('ai_count') ?? 0) : 0;
+  }
+
+  countAi(day: string): void {
+    const used = this.aiUsed(day);
+    this.setSetting('ai_day', day);
+    this.setSetting('ai_count', String(used + 1));
+  }
+
   newPairingCode(): string {
     const code = newPairingCode();
     this.setSetting('pairing_code', code);

@@ -20,7 +20,8 @@ _Last updated: 2026-11-14_
 - **Enough colors?** The coloring screen now has 23 plus rainbow, which is all that fits at full button size on
   a 1280 × 800 screen. If the owner wants more still, it costs page size or needs a second page of colors
   (ADR 0016).
-- **Default AI model** for the page maker: pick after a quality test with a few photos (ADR 0006).
+- **Default AI models** for the page maker (ADR 0029: server settings `AI_IMAGE_MODEL`, `AI_DRAW_MODEL`): pick after
+  a quality test with a few photos and ideas. Starting with `google/gemini-2.5-flash-image` and `google/gemini-2.5-flash`.
 - **Target laptop screen:** resolution and shape are not recorded; the 4:3 canvas layout depends on them
   (ADR 0004). The mockups assume 1280 × 800 (ADR 0016).
 - **Buttons on touch-down or lift:** to settle in playtests (ADR 0003).

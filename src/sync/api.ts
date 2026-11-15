@@ -2,6 +2,7 @@
 // `SyncApi`, so its tests run against an in-memory server.
 import {
   API_VERSIONS,
+  type AiPageRequest,
   type ChangesResponse,
   type ConflictResponse,
   type PairResponse,
@@ -28,6 +29,8 @@ export interface SyncApi {
   get(key: string): Promise<RemoteValue | null>;
   /** A value, or null for a deletion. */
   write(key: string, value: StoredValue | null, modified: number, base: number, force: boolean): Promise<WriteResult>;
+  /** A page made by AI on the server (ADR 0029): the raw image. Problems come back as SyncProblem, in words. */
+  aiPage(req: AiPageRequest): Promise<Blob>;
 }
 
 /** A problem a parent can act on, said in words (ADR 0024: the parent area shows problems in words). */
@@ -142,6 +145,23 @@ export function httpApi(server: string, token: string, fetchFn: typeof fetch = f
       if (res.status === 409) return { conflict: ((await res.json()) as ConflictResponse).conflict };
       if (!res.ok) await fail(res);
       return { rev: ((await res.json()) as WriteResponse).rev };
+    },
+    async aiPage(req) {
+      const res = await call(fetchFn, `${base}/api/v1/ai/page`, {
+        method: 'POST',
+        headers: { ...auth, 'content-type': 'application/json' },
+        body: JSON.stringify(req),
+      });
+      if (!res.ok) {
+        let message = `The family server answered ${res.status}.`;
+        try {
+          message = ((await res.json()) as { error?: string }).error ?? message;
+        } catch {
+          // not JSON
+        }
+        throw new SyncProblem('server', message);
+      }
+      return res.blob();
     },
   };
 }

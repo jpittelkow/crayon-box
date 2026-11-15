@@ -11,7 +11,7 @@ export interface FamilyPageMeta {
   /** When it was added, ms since 1970. */
   added: number;
   /** Where it came from: the parent area, or the Pages folder (with the file's name). */
-  source: 'import' | 'folder';
+  source: 'import' | 'folder' | 'ai';
   file?: string;
 }
 

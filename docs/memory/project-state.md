@@ -25,7 +25,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    **Overnight 2026-11-14** (owner's plan: the letters fix, then D, C, F, H, then a published release), all
    merged: D kiosk lock (PR #8), C1 sync server (PR #9, image `ghcr.io/jpittelkow/crayon-box-sync`, public), C2
    sync client (PR #10), F family pages (PR #11), H the [release checklist](../release-checklist.md) (PR #12).
-   Release 0.3.0 has all of it. **Left in milestone 2:** G (AI page maker, waits on the image model), and trying
+   Release 0.3.0 has all of it. **G (AI page maker) built 2026-11-14 through the family server** ([ADR 0029](../adr/0029-ai-pages-through-the-family-server.md)).
+   **Left in milestone 2:** the model test, and trying
    it all on Windows: install 0.2.1, update to 0.3.0 from the parent area, the checklist, the server on Unraid.
    Next with the owner (2026-11-14): sync server on Unraid, sound design choices, then the racing game's maps,
    vehicle choice and customizing (the main focus after that).

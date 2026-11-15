@@ -11,6 +11,8 @@ import {
   type WriteResponse,
 } from './api.ts';
 import type { Store } from './store.ts';
+import { AiError, makePage, type AiConfig } from './ai.ts';
+import { MAX_IDEA, type AiPageRequest } from './api.ts';
 
 export interface ServerOptions {
   store: Store;
@@ -20,6 +22,8 @@ export interface ServerOptions {
   /** Largest request body, in bytes. */
   maxBody?: number;
   now?: () => number;
+  /** AI pages (ADR 0029); without a key there are none. */
+  ai?: AiConfig;
 }
 
 class HttpError extends Error {
@@ -43,7 +47,7 @@ const CORS: Record<string, string> = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'access-control-allow-headers': 'authorization, content-type, x-kind',
-  'access-control-expose-headers': 'x-rev, x-modified, x-kind',
+  'access-control-expose-headers': 'x-rev, x-modified, x-kind, x-ai-model',
   'access-control-max-age': '600',
 };
 
@@ -78,6 +82,8 @@ function intParam(url: URL, name: string, required = true): number {
 export function handler(opts: ServerOptions): (req: IncomingMessage, res: ServerResponse) => void {
   const { store } = opts;
   const now = opts.now ?? Date.now;
+  /** The server's day, for the AI page count. */
+  const today = () => new Date(now()).toISOString().slice(0, 10);
   const maxBody = opts.maxBody ?? MAX_BODY;
   let pairWindow = { start: 0, tries: 0 };
 
@@ -100,6 +106,14 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
     }
     if (path === '/api/v1/info' && method === 'GET') {
       const info: ServerInfo = { app: 'crayon-box-sync', versions: [...API_VERSIONS], server: opts.version, rev: store.rev };
+      if (opts.ai?.key) {
+        info.ai = {
+          imageModel: opts.ai.imageModel,
+          drawModel: opts.ai.drawModel,
+          dailyLimit: opts.ai.dailyLimit,
+          usedToday: store.aiUsed(today()),
+        };
+      }
       return send(res, 200, info);
     }
     if (path === '/api/v1/pair' && method === 'POST') {
@@ -130,6 +144,41 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
       const { changes, more } = store.changes(since, limit);
       const out: ChangesResponse = { rev: store.rev, changes, more };
       return send(res, 200, out);
+    }
+
+    if (path === '/api/v1/ai/page' && method === 'POST') {
+      const ai = opts.ai;
+      if (!ai?.key) throw new HttpError(503, 'AI pages aren’t set up on the family server (no OpenRouter key).');
+      const day = today();
+      if (store.aiUsed(day) >= ai.dailyLimit) {
+        throw new HttpError(429, `Today’s ${ai.dailyLimit} AI pages are used up. More tomorrow (the limit is AI_DAILY_LIMIT on the server).`);
+      }
+      let ask: AiPageRequest;
+      try {
+        ask = JSON.parse((await readBody(req, 20 * 1024 * 1024)).toString('utf8')) as AiPageRequest;
+      } catch (err) {
+        if (err instanceof HttpError) throw err;
+        throw new HttpError(400, 'Expected JSON');
+      }
+      const detail = ask.detail === 'more' ? 'more' : 'simple';
+      if (ask.kind === 'photo') {
+        if (typeof ask.image !== 'string' || !/^data:image\/(png|jpeg|webp);base64,/.test(ask.image)) throw new HttpError(400, 'Expected a PNG, JPEG or WebP photo');
+      } else if (ask.kind === 'idea' || ask.kind === 'draw') {
+        if (typeof ask.idea !== 'string' || !ask.idea.trim()) throw new HttpError(400, 'Expected an idea');
+        if (ask.idea.length > MAX_IDEA) throw new HttpError(400, `Keep the idea under ${MAX_IDEA} characters`);
+      } else {
+        throw new HttpError(400, 'Expected photo, idea or draw');
+      }
+      try {
+        const page = await makePage(ai, { ...ask, detail } as AiPageRequest);
+        store.countAi(day);
+        res.writeHead(200, { ...CORS, 'content-type': page.type, 'x-ai-model': page.model, 'cache-control': 'no-store' });
+        res.end(page.bytes);
+        return;
+      } catch (err) {
+        if (err instanceof AiError) throw new HttpError(err.status, err.message);
+        throw err;
+      }
     }
 
     if (path.startsWith('/api/v1/items/')) {

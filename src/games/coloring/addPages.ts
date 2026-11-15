@@ -1,62 +1,192 @@
 // The parent area's "Add pages" screen (ADR 0005, milestone 2 phase F): a file becomes a page. It is cleaned up
-// and checked, previewed, named and given a theme, then added to the library on every device (it syncs).
+// and checked, previewed, named and given a theme, then added to the library on every device (it syncs). With a
+// family server that has AI set up (ADR 0029), a page can also be made from a photo or a typed idea.
 import type { ParentSectionContext } from '../../shell/types';
-import { button, card, h } from '../../ui/parent';
+import type { AiPageMaker } from '../../sync/service';
+import { button, card, h, segmented } from '../../ui/parent';
 import { OUR_THEME_META } from './catalog';
-import { addFamilyPage, OUR_THEME } from './family';
+import { addFamilyPage, OUR_THEME, type FamilyPageMeta } from './family';
 import { IMPORT_ACCEPT, ImportProblem, importFile, titleFromName, type CleanedPage } from './importPage';
 import { builtinThemes } from './pages';
 
 export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext): Promise<void> {
-  const file = h('input', { type: 'file', accept: IMPORT_ACCEPT, id: 'add-page-file', class: 'pw-file' });
-  const status = h('p', { class: 'pw-muted', role: 'status', 'data-add-status': '' });
-  const result = h('div', { style: 'display: flex; flex-direction: column; gap: 14px' });
-
   const themes = builtinThemes();
   const themeOptions: [string, string][] = [
     [OUR_THEME, OUR_THEME_META.name],
     ...[...themes.entries()].sort((a, b) => a[1].order - b[1].order).map(([id, meta]): [string, string] => [id, meta.name]),
   ];
 
-  const showResult = (name: string, page: CleanedPage) => {
+  /**
+   * The preview, what the page check found, a name and a theme, and *Add to the library*. `prefix` keeps the
+   * field ids apart when the AI and file results are both on screen.
+   */
+  const showResult = (
+    into: HTMLElement,
+    prefix: string,
+    name: string,
+    page: CleanedPage,
+    source: FamilyPageMeta['source'],
+    done: (message: string) => void,
+    extra: HTMLElement | null = null,
+  ) => {
     const preview = h('canvas', { width: '2048', height: '1536', class: 'pw-page-preview', 'aria-label': 'The page as the kids will see it' });
     preview.getContext('2d')!.putImageData(new ImageData(page.rgba, 2048, 1536), 0, 0);
-    const title = h('input', { class: 'pw-input', id: 'add-page-title', type: 'text', maxlength: '40', value: titleFromName(name) });
-    const theme = h('select', { class: 'pw-input', id: 'add-page-theme' });
+    const title = h('input', { class: 'pw-input', id: `${prefix}-title`, type: 'text', maxlength: '40', value: titleFromName(name) });
+    const theme = h('select', { class: 'pw-input', id: `${prefix}-theme` });
     for (const [id, label] of themeOptions) theme.append(h('option', { value: id }, label));
     const open = page.check.openShapes.length;
-    result.replaceChildren(
+    into.replaceChildren(
       preview,
       h('p', {}, `${page.check.regions} areas to color.`),
       open
         ? h(
             'p',
             { class: 'pw-problem', role: 'alert' },
-            `${open === 1 ? 'One shape has' : `${open} shapes have`} a gap, so color can spill out of it. A darker or cleaner scan usually fixes that; the page still works.`,
+            `${open === 1 ? 'One shape has' : `${open} shapes have`} a gap, so color can spill out of it. A darker or cleaner picture usually fixes that; the page still works.`,
           )
         : h('p', { class: 'pw-ok' }, 'Every shape is closed: color stays inside the lines.'),
-      h('div', { class: 'pw-field' }, h('label', { for: 'add-page-title' }, 'Name'), title),
-      h('div', { class: 'pw-field' }, h('label', { for: 'add-page-theme' }, 'Theme'), theme),
+      h('div', { class: 'pw-field' }, h('label', { for: `${prefix}-title` }, 'Name'), title),
+      h('div', { class: 'pw-field' }, h('label', { for: `${prefix}-theme` }, 'Theme'), theme),
       h(
         'div',
         { class: 'pw-row' },
         button(
           'Add to the library',
           async () => {
-            const name = title.value.trim() || titleFromName(file.files?.[0]?.name ?? '');
-            await addFamilyPage(ctx.storage, page.png, { title: name, theme: theme.value, added: Date.now(), source: 'import' });
+            const pageName = title.value.trim() || titleFromName(name);
+            await addFamilyPage(ctx.storage, page.png, { title: pageName, theme: theme.value, added: Date.now(), source });
             const where = themeOptions.find(([id]) => id === theme.value)?.[1] ?? OUR_THEME_META.name;
-            result.replaceChildren();
-            file.value = '';
-            status.textContent = `Added “${name}” to ${where}.`;
-            status.dataset.addStatus = 'added';
+            into.replaceChildren();
+            done(`Added “${pageName}” to ${where}.`);
           },
           'primary',
         ),
-        button('Choose another file', () => file.click()),
+        extra,
       ),
     );
   };
+
+  // ---- Make a page with AI (ADR 0029) ----
+  if (ctx.ai) {
+    const maker = await ctx.ai();
+    el.append(maker ? aiCard(maker) : aiOffCard());
+  }
+
+  function aiOffCard(): HTMLElement {
+    return card(
+      h('h2', {}, 'Make a page with AI'),
+      h(
+        'p',
+        { class: 'pw-muted', 'data-ai-off': '' },
+        'Pages from a photo or a typed idea, made through the family server. It needs this device connected (Family sync) and an OpenRouter key set on the server (see server/README.md).',
+      ),
+    );
+  }
+
+  function aiCard(ai: AiPageMaker): HTMLElement {
+    type Way = 'idea' | 'draw' | 'photo';
+    let way: Way = 'idea';
+    let detail: 'simple' | 'more' = 'simple';
+    const status = h('p', { class: 'pw-muted', role: 'status', 'data-ai-status': '' });
+    const result = h('div', { style: 'display: flex; flex-direction: column; gap: 14px' });
+    const idea = h('input', { class: 'pw-input', id: 'ai-idea', type: 'text', maxlength: '300', placeholder: 'a fire truck with a ladder' });
+    const photo = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', id: 'ai-photo', class: 'pw-file' });
+    const ideaField = h('div', { class: 'pw-field' }, h('label', { for: 'ai-idea' }, 'What should it be?'), idea);
+    const photoField = h('div', { class: 'pw-field', hidden: true }, h('label', { for: 'ai-photo' }, 'Photo'), photo);
+    const usage = () => `Today: ${ai.info.usedToday} of ${ai.info.dailyLimit} AI pages used.`;
+    const used = h('p', { class: 'pw-muted' }, usage());
+
+    const make = button(
+      'Make it',
+      async () => {
+        let name: string;
+        let request: Parameters<AiPageMaker['make']>[0];
+        if (way === 'photo') {
+          const chosen = photo.files?.[0];
+          if (!chosen) {
+            status.textContent = 'Choose a photo first.';
+            return;
+          }
+          name = chosen.name;
+          request = { kind: 'photo', image: await photoDataUrl(chosen), detail };
+        } else {
+          const text = idea.value.trim();
+          if (!text) {
+            status.textContent = 'Type what the page should show.';
+            return;
+          }
+          name = text.slice(0, 40);
+          request = { kind: way, idea: text, detail };
+        }
+        make.disabled = true;
+        result.replaceChildren();
+        status.textContent = 'Making a page… this can take up to a minute.';
+        status.dataset.aiStatus = 'working';
+        try {
+          const image = await ai.make(request);
+          const ext = image.type === 'image/svg+xml' ? 'svg' : image.type === 'image/jpeg' ? 'jpg' : 'png';
+          const page = await importFile(`${name.replace(/\.[^.]+$/, '')}.${ext}`, image);
+          ai.info.usedToday++;
+          used.textContent = usage();
+          status.textContent = 'Here it is. Not quite right? Make it again.';
+          status.dataset.aiStatus = 'ready';
+          showResult(result, 'ai', name, page, 'ai', (message) => {
+            status.textContent = message;
+            status.dataset.aiStatus = 'added';
+          });
+        } catch (err) {
+          status.textContent = err instanceof Error ? err.message : String(err);
+          status.dataset.aiStatus = 'problem';
+        } finally {
+          make.disabled = false;
+        }
+      },
+      'primary',
+    );
+
+    return card(
+      h('h2', {}, 'Make a page with AI'),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        'The family server asks an AI model through OpenRouter. What you type, or the photo, goes to OpenRouter and the model’s provider; nothing is kept on the server.',
+      ),
+      segmented<Way>(
+        'How to make it',
+        [
+          ['idea', 'From an idea'],
+          ['draw', 'Drawn simply'],
+          ['photo', 'From a photo'],
+        ],
+        way,
+        (w) => {
+          way = w;
+          ideaField.hidden = w === 'photo';
+          photoField.hidden = w !== 'photo';
+        },
+      ),
+      ideaField,
+      photoField,
+      segmented<'simple' | 'more'>(
+        'Detail',
+        [
+          ['simple', 'Very simple'],
+          ['more', 'More detail'],
+        ],
+        detail,
+        (d) => (detail = d),
+      ),
+      h('div', { class: 'pw-row' }, make),
+      used,
+      status,
+      result,
+    );
+  }
+
+  // ---- Add a page from a file ----
+  const file = h('input', { type: 'file', accept: IMPORT_ACCEPT, id: 'add-page-file', class: 'pw-file' });
+  const status = h('p', { class: 'pw-muted', role: 'status', 'data-add-status': '' });
+  const result = h('div', { style: 'display: flex; flex-direction: column; gap: 14px' });
 
   file.addEventListener('change', async () => {
     const chosen = file.files?.[0];
@@ -70,7 +200,19 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
       const page = await importFile(chosen.name, chosen);
       status.textContent = 'Here it is, cleaned up into a page.';
       status.dataset.addStatus = 'ready';
-      showResult(chosen.name, page);
+      showResult(
+        result,
+        'add-page',
+        chosen.name,
+        page,
+        'import',
+        (message) => {
+          file.value = '';
+          status.textContent = message;
+          status.dataset.addStatus = 'added';
+        },
+        button('Choose another file', () => file.click()),
+      );
     } catch (err) {
       status.textContent = err instanceof ImportProblem ? err.message : 'That file couldn’t be made into a page.';
       status.dataset.addStatus = 'problem';
@@ -106,4 +248,16 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
       ),
     );
   }
+}
+
+/** A photo as a JPEG data URL, at most 1600 px on its longest side: enough for the model, small to send. */
+async function photoDataUrl(file: Blob): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return canvas.toDataURL('image/jpeg', 0.88);
 }

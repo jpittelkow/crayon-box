@@ -1,5 +1,6 @@
 // Contracts between the app shell and the games (ADR 0012).
 import type { GameStorage } from '../storage/types';
+import type { AiPageMaker } from '../sync/service';
 
 export type KidColor = 'orange' | 'pink' | 'purple' | 'green' | 'blue' | 'teal';
 export type KidSymbol = 'star' | 'heart' | 'moon' | 'flower' | 'sun' | 'leaf';
@@ -78,6 +79,8 @@ export interface ParentSectionContext {
   finished?: FinishedPictures;
   /** Present in the Windows app only. */
   pagesFolder?: PagesFolder;
+  /** Family sync's AI page maker (ADR 0029): resolves to null unless a connected server has AI set up. */
+  ai?: () => Promise<AiPageMaker | null>;
 }
 
 /** A screen a game adds to the parent area (ADR 0008, 0012). */

@@ -26,6 +26,24 @@ start; an older server refuses a data folder from a newer one rather than damage
 | `DATA_DIR` | `/data` in the container | The database (`sync.sqlite`) and the pictures (`blobs/`) |
 | `PAIRING_CODE` | made on first start | A fixed pairing code, if you'd rather choose one |
 
+## AI pages (optional, [ADR 0029](../docs/adr/0029-ai-pages-through-the-family-server.md))
+With an OpenRouter key the server makes coloring pages from a photo or an idea for paired devices (Parent area ›
+Add pages › Make a page with AI). The key stays in the container's settings: never on a laptop, never in the
+data folder.
+1. At openrouter.ai, make a key just for this app and give it a credit limit. In the account's privacy settings,
+   turn off providers that train on inputs.
+2. Set `OPENROUTER_API_KEY` in the container (the Unraid template has the field) and restart it. The log says
+   `AI pages: on`, and the app shows *Make a page with AI*.
+
+| Variable | Default | |
+|---|---|---|
+| `OPENROUTER_API_KEY` | none (AI off) | The family's OpenRouter key |
+| `AI_DAILY_LIMIT` | `20` | Pages a day, for everyone together |
+| `AI_IMAGE_MODEL` | `google/gemini-2.5-flash-image` | Image output: pages from a photo or an idea |
+| `AI_DRAW_MODEL` | `google/gemini-2.5-flash` | Writes a page as SVG line art |
+
+The models are starting points: try a few on the same ideas and photos, and keep the one whose pages look best.
+
 ## Running it without Docker
 Node 24 or newer, no install step: `npm start` in this folder (data goes to `./data`). `npm test` runs its tests.
 

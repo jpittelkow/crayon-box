@@ -115,6 +115,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
       kidLabel,
       finished: opts.finished,
       pagesFolder: opts.pagesFolder,
+      ai: opts.sync ? () => opts.sync!.aiMaker() : undefined,
     });
   };
 

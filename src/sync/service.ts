@@ -3,7 +3,14 @@
 // parent area. The settings live under `local/` (this device only).
 import { deviceInfo } from '../storage/ids';
 import type { Backend, GameStorage } from '../storage/types';
+import type { AiInfo, AiPageRequest } from '../../server/src/api';
 import { httpApi, normalizeServer, pairWith, SyncProblem, type SyncApi } from './api';
+
+/** AI pages through the family server (ADR 0029), for Parent area › Add pages. */
+export interface AiPageMaker {
+  info: AiInfo;
+  make(req: AiPageRequest): Promise<Blob>;
+}
 import { SyncEngine } from './engine';
 
 const PATH = 'local/sync.json';
@@ -102,6 +109,20 @@ export class SyncService {
   private scheduleNext(): void {
     const wait = this.failures === 0 ? EVERY_MS : Math.min(MAX_BACKOFF_MS, EVERY_MS * 2 ** this.failures);
     this.schedule(wait);
+  }
+
+  /** The server's AI page maker, when this device is connected and the server has AI set up; else null. */
+  async aiMaker(): Promise<AiPageMaker | null> {
+    const s = await this.settings();
+    if (!s.server || !s.token) return null;
+    const api = this.api(s.server, s.token);
+    try {
+      const info = await api.info();
+      if (!info.ai) return null;
+      return { info: info.ai, make: (req) => api.aiPage(req) };
+    } catch {
+      return null;
+    }
   }
 
   /** Pairs with a server and runs a first round. Throws a SyncProblem the parent area shows. */

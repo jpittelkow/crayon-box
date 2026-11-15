@@ -138,6 +138,13 @@ Two parts; the server part can start any time, even alongside phase A.
   them means keeping them (or a copy) under the app's storage.
 
 ### G. AI page maker (ADR 0006, 0023)
+- **Status (2026-11-14):** built through the family server instead
+  ([ADR 0029](adr/0029-ai-pages-through-the-family-server.md), the owner's call): the server holds the OpenRouter
+  key (`OPENROUTER_API_KEY` in the container) and has `POST /api/v1/ai/page` (photo, idea, or drawn as SVG; a
+  daily cap, `AI_DAILY_LIMIT`). Parent area › Add pages › Make a page with AI shows when the connected server has
+  AI; results go through the clean-up, page check and preview like any file, and become family pages. No
+  Credential Manager code. Search (ADR 0023) still waits on a search service. Models are starting defaults
+  (`google/gemini-2.5-flash-image`, `google/gemini-2.5-flash`) until the owner's quality test.
 - The OpenRouter key, stored in Windows Credential Manager through a small Rust command, never in a file.
 - The AI setup screen: key, model (from OpenRouter's list), the account privacy settings.
 - *From a photo* (ADR 0006) and *From an idea*: generate, or draw as SVG (ADR 0023). Every result goes through the
