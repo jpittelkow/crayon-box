@@ -1,6 +1,6 @@
 # 0025. Driving game: a polished toy look and an engine sound for every vehicle
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); engine voices built from oscillators superseded by [0032](0032-sounds-as-files.md)
 - Date: 2026-11-14
 - Supersedes: in ADR 0021, "The look" (flat palette colours, ink outlines, blob shadows, no real-time shadows)
   and the short list of sounds (engine, horn, splash).

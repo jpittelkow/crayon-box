@@ -1,4 +1,4 @@
-# 0032. Pick the AI model in the app, from OpenRouter's list, with family favorites on the server
+# 0033. Pick the AI model in the app, from OpenRouter's list, with family favorites on the server
 
 - Status: Accepted (by the owner, 2026-11-15: "Yes, ADR and build")
 - Date: 2026-11-15

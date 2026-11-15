@@ -96,9 +96,9 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
     const photoField = h('div', { class: 'pw-field', hidden: true }, h('label', { for: 'ai-photo' }, 'Photo'), photo);
     const usage = () => `Today: ${ai.info.usedToday} of ${ai.info.dailyLimit} AI pages used.`;
     const used = h('p', { class: 'pw-muted' }, usage());
-    // The model to use (ADR 0032); absent with an older server, which uses its own setting.
+    // The model to use (ADR 0033); absent with an older server, which uses its own setting.
     const picker = await modelPicker(ai, ctx.storage, way);
-    // One page, or two from different models to choose from (ADR 0033). Remembered on this device.
+    // One page, or two from different models to choose from (ADR 0034). Remembered on this device.
     let count: Count = (await ctx.storage.getJson<{ count?: Count }>(MAKE_PATH))?.count === 'two' ? 'two' : 'one';
     const howMany = h(
       'div',
@@ -143,7 +143,7 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
         }
         const model = picker?.chosen();
         if (model) request.model = model;
-        // Two to choose from (ADR 0033): the same request to a second model, at the same time.
+        // Two to choose from (ADR 0034): the same request to a second model, at the same time.
         const second = count === 'two' ? picker?.second() : undefined;
         const requests = second ? [request, { ...request, model: second }] : [request];
         make.disabled = true;

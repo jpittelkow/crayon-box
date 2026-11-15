@@ -138,7 +138,7 @@ export class Store {
     this.setSetting('ai_count', String(used + 1));
   }
 
-  // ---- AI pages: the family's favorite models (ADR 0032) ----
+  // ---- AI pages: the family's favorite models (ADR 0033) ----
 
   aiFavorites(): string[] {
     try {

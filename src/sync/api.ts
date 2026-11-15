@@ -35,7 +35,7 @@ export interface SyncApi {
    * SyncProblem, in words.
    */
   aiPage(req: AiPageRequest): Promise<AiPageResult>;
-  /** The models a parent can pick and the family's favorites (ADR 0032); null from a server too old to have them. */
+  /** The models a parent can pick and the family's favorites (ADR 0033); null from a server too old to have them. */
   aiModels(): Promise<AiModelsResponse | null>;
   /** Saves the family's favorite models on the server; answers with the list it kept. */
   setAiFavorites(ids: string[]): Promise<string[]>;

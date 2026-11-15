@@ -8,8 +8,8 @@
 //   PUT    /api/v1/items/<key>?modified=&base=[&force=1]   store a value (JSON or bytes)
 //   DELETE /api/v1/items/<key>?modified=&base=[&force=1]   remember a deletion
 //   POST   /api/v1/ai/page  AiPageRequest      a coloring page made by AI (ADR 0029); answers with the image
-//   GET    /api/v1/ai/models                  the models a parent can pick from, and the favorites (ADR 0032)
-//   PUT    /api/v1/ai/favorites { favorites } the family's favorite models (ADR 0032)
+//   GET    /api/v1/ai/models                  the models a parent can pick from, and the favorites (ADR 0033)
+//   PUT    /api/v1/ai/favorites { favorites } the family's favorite models (ADR 0033)
 //
 // Every request but info and pair carries `Authorization: Bearer <token>`. A write names the revision its change
 // was based on (`base`, 0 for "never seen"); when the server's copy has moved on since, it answers 409 with that
@@ -40,17 +40,17 @@ export type Detail = 'simple' | 'more';
 
 /**
  * What to make (ADR 0029): from a photo (a data URL), from an idea, or drawn as SVG from an idea. `model` picks an
- * OpenRouter model from the list (ADR 0032); without it the server's setting for that way is used.
+ * OpenRouter model from the list (ADR 0033); without it the server's setting for that way is used.
  */
 export type AiPageRequest =
   | { kind: 'photo'; image: string; detail: Detail; model?: string }
   | { kind: 'idea'; idea: string; detail: Detail; model?: string }
   | { kind: 'draw'; idea: string; detail: Detail; model?: string };
 
-/** The ways of making a page; a model can do some of them (ADR 0032). */
+/** The ways of making a page; a model can do some of them (ADR 0033). */
 export type AiWay = AiPageRequest['kind'];
 
-/** One model a parent can pick (ADR 0032). */
+/** One model a parent can pick (ADR 0033). */
 export interface AiModel {
   /** OpenRouter's id, e.g. `google/gemini-2.5-flash-image`. */
   id: string;
@@ -67,7 +67,7 @@ export interface AiModelsResponse {
   /** The family's favorite model ids, in the order they were starred. */
   favorites: string[];
   /** The server's settings, used when a request names no model. */
-  /** `second`: the other image model for "two to choose from" (ADR 0033); absent from older servers. */
+  /** `second`: the other image model for "two to choose from" (ADR 0034); absent from older servers. */
   defaults: { image: string; draw: string; second?: string };
   /** When the list was fetched from OpenRouter, ms since 1970; 0 when it never was. */
   fetched: number;

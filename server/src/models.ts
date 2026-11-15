@@ -1,4 +1,4 @@
-// The models a parent can pick for AI pages (ADR 0032): OpenRouter's public model list, sorted into the ways of
+// The models a parent can pick for AI pages (ADR 0033): OpenRouter's public model list, sorted into the ways of
 // making a page each model can do. Fetched without the key, kept for a while, and kept when a refresh fails.
 import type { AiModel, AiWay } from './api.ts';
 

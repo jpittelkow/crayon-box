@@ -1,7 +1,7 @@
 [
   {
     "id": "server",
-    "note": "What the server sends now (ADR 0033): {base} {detail} {photo} are filled from server/src/ai.ts, so this row always tests the live prompt.",
+    "note": "What the server sends now (ADR 0034): {base} {detail} {photo} are filled from server/src/ai.ts, so this row always tests the live prompt.",
     "text": "{base} {detail} {photo}"
   },
   {

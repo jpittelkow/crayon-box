@@ -1,9 +1,9 @@
-# 0033. AI pages: a photo prompt for everyone in the picture, and two pages to choose from
+# 0034. AI pages: a photo prompt for everyone in the picture, and two pages to choose from
 
 - Status: Accepted (by the owner, 2026-11-15: "Both")
 - Date: 2026-11-15
 - Amends: [ADR 0029](0029-ai-pages-through-the-family-server.md) (the photo prompt and the default image model)
-  and builds on [ADR 0032](0032-pick-the-ai-model-in-the-app.md) (picking the model).
+  and builds on [ADR 0033](0033-pick-the-ai-model-in-the-app.md) (picking the model).
 
 ## Context
 The owner wanted better pages from photos and asked to test prompts and models on real family photos. A sample

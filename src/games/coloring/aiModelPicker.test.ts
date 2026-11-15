@@ -13,7 +13,7 @@ const list: AiModelsResponse = {
   fetched: 1,
 };
 
-describe('model choices (ADR 0032)', () => {
+describe('model choices (ADR 0033)', () => {
   it('splits favorites from the rest, for the chosen way', () => {
     const idea = modelChoices(list, 'idea');
     expect(idea.defaultId).toBe('a/both');
@@ -48,7 +48,7 @@ describe('model choices (ADR 0032)', () => {
   });
 });
 
-describe('two to choose from (ADR 0033)', () => {
+describe('two to choose from (ADR 0034)', () => {
   it("asks the server's second model, or its default when the parent picked the second one", () => {
     const withSecond: AiModelsResponse = { ...list, defaults: { image: 'a/both', draw: 'c/text', second: 'b/only' } };
     expect(secondModelFor(withSecond, 'a/both')).toBe('b/only');

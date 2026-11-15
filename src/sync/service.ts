@@ -10,7 +10,7 @@ import { httpApi, normalizeServer, pairWith, SyncProblem, type AiPageResult, typ
 export interface AiPageMaker {
   info: AiInfo;
   make(req: AiPageRequest): Promise<AiPageResult>;
-  /** The models to pick from (ADR 0032); null from an older server. */
+  /** The models to pick from (ADR 0033); null from an older server. */
   models(): Promise<AiModelsResponse | null>;
   setFavorites(ids: string[]): Promise<string[]>;
 }

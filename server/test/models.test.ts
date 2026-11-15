@@ -1,4 +1,4 @@
-// Picking the AI model (ADR 0032): OpenRouter's model list, the family's favorites, and a model per page.
+// Picking the AI model (ADR 0033): OpenRouter's model list, the family's favorites, and a model per page.
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
@@ -92,7 +92,7 @@ const ask = (body: unknown) =>
   fetch(`${base}/api/v1/ai/page`, { method: 'POST', headers: { ...auth(), 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const errorOf = async (res: Response) => ((await res.json()) as { error: string }).error;
 
-describe('The model list (ADR 0032)', () => {
+describe('The model list (ADR 0033)', () => {
   it('lists the models that can make a page, sorted by name, with the defaults', async () => {
     await start();
     const list = await models();
@@ -142,7 +142,7 @@ describe('The model list (ADR 0032)', () => {
   });
 });
 
-describe('Favorites (ADR 0032)', () => {
+describe('Favorites (ADR 0033)', () => {
   it('are kept on the server, without repeats', async () => {
     await start();
     const res = await setFavorites(['img/only', 'txt/draw', 'img/only']);
@@ -159,7 +159,7 @@ describe('Favorites (ADR 0032)', () => {
   });
 });
 
-describe('A model per page (ADR 0032)', () => {
+describe('A model per page (ADR 0033)', () => {
   it('uses the picked model, and asks an image-only model for an image only', async () => {
     await start();
     await models();

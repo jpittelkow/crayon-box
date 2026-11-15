@@ -25,7 +25,7 @@ export interface ServerOptions {
   now?: () => number;
   /** AI pages (ADR 0029); without a key there are none. */
   ai?: AiConfig;
-  /** OpenRouter's model list (ADR 0032); made from `ai.fetchFn` when not given. */
+  /** OpenRouter's model list (ADR 0033); made from `ai.fetchFn` when not given. */
   models?: ModelCatalog;
 }
 
@@ -203,7 +203,7 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
       } else {
         throw new HttpError(400, 'Expected photo, idea or draw');
       }
-      // The model: the request's pick, if it is on OpenRouter's list for this way (ADR 0032), else the setting.
+      // The model: the request's pick, if it is on OpenRouter's list for this way (ADR 0033), else the setting.
       let model = defaultModel(ai, ask.kind);
       if (ask.model !== undefined) {
         if (!validModelId(ask.model)) throw new HttpError(400, 'Expected an OpenRouter model id');

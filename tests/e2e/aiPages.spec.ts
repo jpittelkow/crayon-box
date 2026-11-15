@@ -25,7 +25,7 @@ let server: Server;
 let address: string;
 const asked: string[] = [];
 
-/** OpenRouter's model list, for the Model dropdown (ADR 0032). */
+/** OpenRouter's model list, for the Model dropdown (ADR 0033). */
 const MODEL_LIST = [
   { id: 'img/model', name: 'Default Image', architecture: { input_modalities: ['text', 'image'], output_modalities: ['image', 'text'] }, pricing: { image_output: '0.00003' } },
   { id: 'other/image', name: 'Other Image', architecture: { input_modalities: ['text'], output_modalities: ['image'] }, pricing: { image_output: '0.000002' } },
@@ -122,7 +122,7 @@ test('a picked model makes the page, is remembered, and can be a family favorite
   await expect(page.getByLabel('Model', { exact: true }).locator('optgroup[label^="Matching"] option')).toHaveText(['Default Image ($30 per million image tokens)']);
 });
 
-test('two to choose from asks both models, and the picked page goes into the library (ADR 0033)', async ({ page }) => {
+test('two to choose from asks both models, and the picked page goes into the library (ADR 0034)', async ({ page }) => {
   await startServer({ key: 'sk-test', imageModel: 'img/model', secondModel: 'other/image', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
   await connectAndOpenAddPages(page);
   await page.getByRole('group', { name: 'How many' }).getByRole('button', { name: 'Two to choose from' }).click();

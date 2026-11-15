@@ -44,7 +44,7 @@ data folder.
 | `AI_DRAW_MODEL` | `google/gemini-2.5-flash` | Writes a page as SVG line art |
 
 The two model settings are the family's defaults. A parent can pick another model for a page in the app
-([ADR 0032](../docs/adr/0032-pick-the-ai-model-in-the-app.md)): the **Model** dropdown lists what OpenRouter offers
+([ADR 0033](../docs/adr/0033-pick-the-ai-model-in-the-app.md)): the **Model** dropdown lists what OpenRouter offers
 for that way of making a page (fetched from OpenRouter's public model list, kept for six hours), with a search box
 and a price for each. The ★ button keeps a model in the family's favorites, which live in the data folder and
 show at the top of the list on every device. Try a few on the same ideas and photos; the app says which model made

@@ -1,4 +1,4 @@
-// The Model dropdown on "Make a page with AI" (ADR 0032): the server's default first, then the family's
+// The Model dropdown on "Make a page with AI" (ADR 0033): the server's default first, then the family's
 // favorites, then every model OpenRouter lists for the chosen way, narrowed by a search box. A star adds the
 // chosen model to the favorites, which live on the server. Each device remembers its last pick per way.
 import type { AiModel, AiModelsResponse, AiWay } from '../../../server/src/api';
@@ -44,7 +44,7 @@ export function pickStillFits(list: AiModelsResponse, way: AiWay, id: string | u
 }
 
 /**
- * The other model for "two to choose from" (ADR 0033): the server's second model, or its default when the parent
+ * The other model for "two to choose from" (ADR 0034): the server's second model, or its default when the parent
  * picked the second one. Undefined when there is no different model to ask (an older server, or both the same).
  */
 export function secondModelFor(list: AiModelsResponse, chosenId: string): string | undefined {
@@ -55,7 +55,7 @@ export function secondModelFor(list: AiModelsResponse, chosenId: string): string
 }
 
 export interface ModelPicker {
-  /** The other model to ask for "two to choose from" (ADR 0033), for the image ways. */
+  /** The other model to ask for "two to choose from" (ADR 0034), for the image ways. */
   second(): string | undefined;
   el: HTMLElement;
   /** Shows the models for another way. */

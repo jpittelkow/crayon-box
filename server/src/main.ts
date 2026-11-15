@@ -5,7 +5,7 @@
 //   DATA_DIR      the data folder (default ./data; /data in the container)
 //   PAIRING_CODE  a fixed pairing code instead of the one the server makes on first start
 //   OPENROUTER_API_KEY, AI_IMAGE_MODEL, AI_DRAW_MODEL, AI_DAILY_LIMIT   AI pages (ADR 0029); the models are the
-//                 defaults, a parent can pick another in the app (ADR 0032)
+//                 defaults, a parent can pick another in the app (ADR 0033)
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { aiConfigFromEnv } from './ai.ts';
@@ -21,7 +21,7 @@ const store = Store.open(dataDir);
 const code = store.pairingCode(process.env.PAIRING_CODE);
 const ai = aiConfigFromEnv(process.env);
 const models = new ModelCatalog();
-// Fetch OpenRouter's model list early, so the first page already knows what its model gives back (ADR 0032).
+// Fetch OpenRouter's model list early, so the first page already knows what its model gives back (ADR 0033).
 if (ai.key) void models.list();
 const server = createServer(handler({ store, version: pkg.version, pairingCode: process.env.PAIRING_CODE, ai, models }));
 

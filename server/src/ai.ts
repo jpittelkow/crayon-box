@@ -7,7 +7,7 @@ export interface AiConfig {
   key?: string;
   /** An image-output model, for photos and ideas (ADR 0006, 0023 Generate). */
   imageModel: string;
-  /** The other image model when a parent asks for two pages to choose from (ADR 0033). */
+  /** The other image model when a parent asks for two pages to choose from (ADR 0034). */
   secondModel: string;
   /** A text model that writes SVG line art (ADR 0023 Draw). */
   drawModel: string;
@@ -18,7 +18,7 @@ export interface AiConfig {
   timeoutMs?: number;
 }
 
-// Chosen from side-by-side samples on 2026-11-15 (ADR 0033): GPT-5 Image Mini was the most consistent, Nano Banana 2
+// Chosen from side-by-side samples on 2026-11-15 (ADR 0034): GPT-5 Image Mini was the most consistent, Nano Banana 2
 // kept the best likeness. Nano Banana (gemini-2.5-flash-image), the first default, drew thin gray sketches.
 export const DEFAULT_IMAGE_MODEL = 'openai/gpt-5-image-mini';
 export const DEFAULT_SECOND_MODEL = 'google/gemini-3.1-flash-image';
@@ -57,7 +57,7 @@ export const BASE_STYLE = [
 export const STYLE = `${BASE_STYLE} One subject, centered, filling most of the page.`;
 
 /**
- * The photo prompt (ADR 0033), tuned on 2026-11-15 with server/tools/ai-samples.ts over a dozen family photos. The
+ * The photo prompt (ADR 0034), tuned on 2026-11-15 with server/tools/ai-samples.ts over a dozen family photos. The
  * old one asked for "the main subject", and on a busy photo models invented one (a dinosaur for a family at a
  * table). This one asks for everyone in focus, nothing cut off, plain clothes, faces never blank, and no words.
  */
@@ -134,7 +134,7 @@ export function defaultModel(cfg: AiConfig, kind: AiPageRequest['kind']): string
 
 /**
  * Makes a page. `model` is the model to use (default: the server's setting); `output` is what that model gives
- * back as OpenRouter lists it, so an image-only model isn't asked for text too (ADR 0032). `prompt` replaces the
+ * back as OpenRouter lists it, so an image-only model isn't asked for text too (ADR 0033). `prompt` replaces the
  * usual one, for the sample tool (server/tools/ai-samples.ts), which tries prompts side by side.
  */
 export async function makePage(

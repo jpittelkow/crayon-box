@@ -43,6 +43,9 @@ _Last updated: 2026-11-14_
   1280 × 800 screen). A guess, to check in the first playtest (2026-11-14).
 - **64 px color buttons:** smaller than every other kid target since ADR 0019. Check in a playtest that the kids
   hit the color they mean; if not, fewer colors before smaller buttons (2026-11-14).
+- **Sounds** ([ADR 0032](../adr/0032-sounds-as-files.md), Accepted 2026-11-15): before building, confirm that Seed
+  Audio's output terms allow its files in the public repo (no ByteDance/BytePlus terms found on 2026-11-15). Make
+  Matilda's full letter set before 2026-12-31. Make a police siren and let the owner pick a take by ear.
 - **Search for AI pages from an idea** (ADR 0023): which search service, its key and cost. Settle before building
   that part.
 - **AI model for the animal themes' built-in pages** (ADR 0022): pick with the default model test of ADR 0006.

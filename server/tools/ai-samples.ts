@@ -1,4 +1,4 @@
-// Tries AI coloring pages side by side (ADR 0033): one or more photos (or ideas) through several prompts and
+// Tries AI coloring pages side by side (ADR 0034): one or more photos (or ideas) through several prompts and
 // several image models, and writes a contact sheet to compare them. Run from the repo root:
 //
 //   node server/tools/ai-samples.ts --photo path/to/photo.jpg
