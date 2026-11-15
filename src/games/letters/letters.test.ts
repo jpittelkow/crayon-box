@@ -132,6 +132,27 @@ describe('tracing (ADR 0026, 0028)', () => {
     }
   });
 
+  it('stopping a little short of each end does not finish: the ends must be reached (2026-11-15)', () => {
+    for (const ch of ['L', 'S', 'C', 'J', '2', 'z']) {
+      for (const ordered of [false, true]) {
+        const g = glyph(ch);
+        const t = new Tracer(g, { ordered });
+        // Every stroke traced from start to 8 units (points are about 1 unit apart) before its end: within the
+        // finger's reach of the last checkpoint, but not at the end itself.
+        g.strokes.forEach((stroke, s) => {
+          stroke.slice(0, Math.max(1, stroke.length - 8)).forEach((p) => t.add(s, p, TOLERANCE.finger));
+          t.lift(s);
+        });
+        expect(t.done, `${ch} ${ordered ? 'in order' : 'lenient'}`).toBe(false);
+        // The unreached end shows in what is left.
+        expect(t.missing.length, ch).toBeGreaterThan(0);
+        // Reaching the ends finishes it.
+        g.strokes.forEach((s, i) => s.forEach((p) => t.add(20 + i, p, TOLERANCE.finger)));
+        expect(t.done, ch).toBe(true);
+      }
+    }
+  });
+
   it("a whole stroke can't be skipped, even a short one like A's bar", () => {
     const t = new Tracer(glyph('A'), { ordered: false });
     traceGlyph(t, glyph('A'), { skip: 2 });
@@ -156,7 +177,9 @@ describe('tracing (ADR 0026, 0028)', () => {
   it('a pen must be closer to the line than a finger', () => {
     const near = (tol: number) => {
       const t = new Tracer(glyph('l'), { ordered: false });
-      glyph('l').strokes[0].forEach((p, i) => t.add(1, { x: p.x + 14, y: p.y }, tol + 0 * i));
+      const stroke = glyph('l').strokes[0];
+      // Beside the line all the way, touching the line itself only at its two ends.
+      stroke.forEach((p, i) => t.add(1, { x: p.x + (i < 3 || i > stroke.length - 4 ? 0 : 9.5), y: p.y }, tol));
       return t.done;
     };
     expect(near(TOLERANCE.finger)).toBe(true);

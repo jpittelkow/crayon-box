@@ -35,6 +35,24 @@ few cars. The choices it needs are listed under each phase and at the end. Sound
 - **Done when:** both answers are written down. If the laptop is slow, the first change is turning down the look
   (ADR 0025 names shadows and clear-coat), not shrinking the plans.
 
+## Steering feel (small, can come any time)
+Asked for by the owner on 2026-11-15 while testing.
+- **Steering sensitivity, a parent setting per kid.**
+  - Today a finger at the screen's edge turns at a fixed top rate (`turn` in `sim.ts`, about 2.1 radians a second
+    at low speed, less at full speed). A small sideways touch turns in proportion.
+  - The setting has three steps, *gentle*, *normal* and *quick*. Each scales the turn rate, and gentle also
+    softens small touches (a curve on the input), so a resting or wobbly finger drifts less.
+  - It sits beside the assist level in the parent Driving screen and is saved per kid. A sim test checks that
+    gentle turns less than quick for the same touch.
+- **A steering wheel on screen** that turns as the car steers, so a kid (and a parent watching) can see how much
+  the wheel is turned.
+  - A round wheel in a bottom corner, opposite the horn, drawn in the Crayon Box style. It turns with the steering
+    the car actually uses, which includes the road assist and the rescue, so it never disagrees with the car.
+  - It is a display, not a control: touches on it steer like anywhere else on the picture, as ADR 0021 says.
+    Whether it becomes something a kid can grab and turn is a later question for a playtest.
+  - Optionally, the wheel could be drawn inside the car from a cockpit view later. For now it is a flat overlay.
+- **Size:** small. A changed setting and an overlay. It needs a short note in ADR 0021's controls when built.
+
 ## Phase A. Maps as data
 Groundwork, with nothing new to see yet. Do it first, because every map and every vehicle after it depends on it.
 - **Roads become a graph of curves:**
@@ -141,7 +159,9 @@ once the garage exists.
 6. **Garage:** which choices (paint, wheels, toppers, stickers)? Does the garage show every time, or only when
    tapped?
 7. **Coloring:** paint-by-part first, with coloring pages as a later goal? Or go straight to coloring pages?
-8. **Name:** keep "racing" in the code and "Driving" on screen (ADR 0021 left this open)?
+8. **Steering:** do the steering wheel and sensitivity setting first, before phase A? Three steps, or a
+   slider for the parent?
+9. **Name:** keep "racing" in the code and "Driving" on screen (ADR 0021 left this open)?
 
 ## Risks
 - **The laptop's frame rate** may cap how big a map can be or how much is on screen. Phase 0 answers this.

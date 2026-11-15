@@ -16,6 +16,10 @@ so a kid could stop well short of a stroke's end and still get the cheer.
   stroke, at least 92 % of each stroke's own checkpoints and 95 % of the letter's. In stroke order, the next stroke
   starts only once the current one reaches its end. Tolerances stay as in ADR 0026 (15 glyph units for a finger,
   9 for a pen); any direction still counts in lenient mode.
+- **Tightened 2026-11-15** (owner: tracing still finished too early on 0.4.0). A checkpoint counted within
+  15 units, so a finger could stop about 15 units short of every end and still "reach" it. Now: **98 %** of
+  the letter, a finger counts within **10** units (a pen stays at 9), and each end of every stroke must be reached
+  within **6** units (`END_REACH` in `trace.ts`). The per-stroke 92 % is unchanged.
 - **What is left is shown.** When the kid lifts their finger with at least half the letter traced but not all of
   it, small pulsing green dots mark the parts still to trace (in stroke order, only the current stroke's). They go
   as soon as the kid touches the letter again. The idle hint (a fingertip along the first unfinished stroke)
