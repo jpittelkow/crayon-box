@@ -9,4 +9,5 @@ _Last updated: 2026-11-14_
   sounds and the driving game's engine voices (ADR 0025). Options to weigh: recorded or pre-generated voice
   files instead of live browser speech, better sound assets (original or CC0, ADR 0011).
   Owner (2026-11-15): sounds ship as files made ahead of time. Picks are in
-  [ADR 0032](../adr/0032-sounds-as-files.md) (Accepted 2026-11-15); fixed once it is built.
+  [ADR 0032](../adr/0032-sounds-as-files.md) (Accepted 2026-11-15). Part 1 (touch sounds, narrator, praise, page
+  turn) is built; driving engines, effects and the crayon sound are part 2.

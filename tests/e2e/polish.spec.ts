@@ -23,13 +23,13 @@ async function openWithWords(page: Page): Promise<void> {
   await expect(page.locator('[data-screen="parent-area"]')).toBeVisible();
 }
 
-/** Counts the tones the app starts, by wrapping the Web Audio API before the app loads. */
+/** Counts the sounds the app starts (shipped files, ADR 0032), by wrapping the Web Audio API before the app loads. */
 async function countTones(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const w = window as unknown as { __tones: number };
     w.__tones = 0;
-    const start = OscillatorNode.prototype.start;
-    OscillatorNode.prototype.start = function (...args: Parameters<typeof start>) {
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args: Parameters<typeof start>) {
       w.__tones++;
       return start.apply(this, args);
     };

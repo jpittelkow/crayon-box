@@ -1,7 +1,9 @@
-// Sounds (ADR 0016): one short, soft, wordless sound per kind of touch, under 300 ms. Made with the browser's
-// audio engine from plain tones, so there are no sound files to license (ADR 0011). A parent can turn them off
-// (ADR 0016: sounds are a parent setting); the setting is its own file so it syncs on its own (ADR 0024).
+// Sounds (ADR 0016, 0032): one short, soft, wordless sound per kind of touch, played from the files the app ships
+// (recorded CC0 sounds, see assets/sounds/sounds.json). Touch sounds stay under 300 ms; the cheer and the page
+// turn are moments, not touches, and run longer. A parent can turn them off (ADR 0016: sounds are a parent
+// setting); the setting is its own file so it syncs on its own (ADR 0024).
 import type { GameStorage } from '../storage/types';
+import { soundUrl } from './soundFiles';
 import type { Sound, SoundKind } from './types';
 
 const PATH = 'sounds.json';
@@ -24,54 +26,38 @@ export const silentSound: Sound = {
   enabled: false,
 };
 
-interface Note {
-  /** Frequency in Hz. */
-  f: number;
-  /** Start, seconds after the touch. */
-  at: number;
-  /** Length in seconds. */
-  len: number;
-  /** Peak loudness, 0..1. */
+/** How each kind of sound plays: which file, how loud, and how fast (a lower rate is also a lower pitch). */
+export interface SoundSpec {
+  file: string;
   gain: number;
-  wave?: OscillatorType;
-}
-
-/** The notes for each kind of touch. Gentle sine tones; nothing buzzes or scolds (ADR 0016: no failure buzz). */
-export const SOUNDS: Record<SoundKind, Note[]> = {
-  // A light tick for picking something.
-  tap: [{ f: 880, at: 0, len: 0.07, gain: 0.12 }],
-  // Two rising notes for a fill: the most rewarding touch.
-  fill: [
-    { f: 523, at: 0, len: 0.1, gain: 0.14 },
-    { f: 784, at: 0.08, len: 0.16, gain: 0.14 },
-  ],
-  // Two falling notes for undo: taking a step back.
-  undo: [
-    { f: 784, at: 0, len: 0.09, gain: 0.12 },
-    { f: 587, at: 0.07, len: 0.12, gain: 0.12 },
-  ],
-  // A soft low note when a touch had nothing to do. Quiet on purpose.
-  nothing: [{ f: 262, at: 0, len: 0.12, gain: 0.08, wave: 'triangle' }],
-  // Three rising notes when a letter is done (ADR 0026).
-  cheer: [
-    { f: 523, at: 0, len: 0.1, gain: 0.14 },
-    { f: 659, at: 0.08, len: 0.1, gain: 0.14 },
-    { f: 784, at: 0.16, len: 0.13, gain: 0.15 },
-  ],
-};
-
-/** The longest sound, in seconds. ADR 0016 keeps every sound under 300 ms. */
-export function soundLength(kind: SoundKind): number {
-  return Math.max(...SOUNDS[kind].map((n) => n.at + n.len));
+  rate: number;
 }
 
 /**
- * Sounds through the Web Audio API. The audio context is made on the first play, which always comes from a touch,
- * as browsers require. `refresh` reloads the parent's on/off setting.
+ * The file for each kind (ADR 0032). The files are levelled to one loudness, so `gain` only sets the mix. Nothing
+ * buzzes or scolds (ADR 0016: no failure buzz): a touch with nothing to do is the tap, quieter and lower.
+ */
+export const SOUNDS: Record<SoundKind, SoundSpec> = {
+  tap: { file: 'ui/tap.wav', gain: 1, rate: 1 },
+  fill: { file: 'ui/fill.wav', gain: 1, rate: 1 },
+  undo: { file: 'ui/undo.wav', gain: 0.9, rate: 1 },
+  nothing: { file: 'ui/tap.wav', gain: 0.4, rate: 0.75 },
+  cheer: { file: 'ui/cheer.wav', gain: 1, rate: 1 },
+  page: { file: 'ui/page.wav', gain: 0.8, rate: 1 },
+};
+
+/** The kinds that answer a touch: they stay under 300 ms (ADR 0016). */
+export const TOUCH_SOUNDS: SoundKind[] = ['tap', 'fill', 'undo', 'nothing'];
+
+/**
+ * Sounds through the Web Audio API, from the shipped files. `refresh` reloads the parent's on/off setting and, with
+ * sounds on, decodes the files ahead of the first touch (decoding works before a touch; playing waits for one, as
+ * browsers require). A sound asked for before its file is ready plays as soon as it is.
  */
 export class WebAudioSound implements Sound {
   private ctx: AudioContext | null = null;
   private on = true;
+  private readonly buffers = new Map<string, Promise<AudioBuffer | null>>();
 
   constructor(private readonly shell: GameStorage) {}
 
@@ -81,30 +67,52 @@ export class WebAudioSound implements Sound {
 
   async refresh(): Promise<void> {
     this.on = (await loadSoundSettings(this.shell)).on;
+    if (!this.on) return;
+    try {
+      const ctx = this.context();
+      for (const spec of Object.values(SOUNDS)) void this.buffer(ctx, spec.file);
+    } catch {
+      // No audio here: stay silent.
+    }
   }
 
   play(kind: SoundKind): void {
     if (!this.on) return;
     try {
-      this.ctx ??= new AudioContext();
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
-      const now = this.ctx.currentTime;
-      for (const note of SOUNDS[kind]) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = note.wave ?? 'sine';
-        osc.frequency.value = note.f;
-        // A quick rise and a smooth fall, so no note clicks.
-        const start = now + note.at;
-        gain.gain.setValueAtTime(0, start);
-        gain.gain.linearRampToValueAtTime(note.gain, start + 0.008);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + note.len);
-        osc.connect(gain).connect(this.ctx.destination);
-        osc.start(start);
-        osc.stop(start + note.len + 0.02);
-      }
+      const ctx = this.context();
+      if (ctx.state === 'suspended') void ctx.resume();
+      const spec = SOUNDS[kind];
+      void this.buffer(ctx, spec.file).then((buf) => {
+        if (!buf) return;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.playbackRate.value = spec.rate;
+        const gain = ctx.createGain();
+        gain.gain.value = spec.gain;
+        src.connect(gain).connect(ctx.destination);
+        src.start();
+      });
     } catch {
       // No audio device, or audio blocked: stay silent. A kid screen never shows an error (ADR 0016 rule 6).
     }
+  }
+
+  private context(): AudioContext {
+    return (this.ctx ??= new AudioContext());
+  }
+
+  private buffer(ctx: AudioContext, file: string): Promise<AudioBuffer | null> {
+    let p = this.buffers.get(file);
+    if (!p) {
+      const url = soundUrl(file);
+      p = url
+        ? fetch(url)
+            .then((r) => r.arrayBuffer())
+            .then((data) => ctx.decodeAudioData(data))
+            .catch(() => null)
+        : Promise.resolve(null);
+      this.buffers.set(file, p);
+    }
+    return p;
   }
 }

@@ -22,6 +22,7 @@ export interface KidProgress {
   game: string[];
 }
 
+/** Who says the letters: the app's narrator (stored as 'windows', its name before ADR 0032), or a parent. */
 export type Voice = 'windows' | 'own';
 
 export interface LettersSettings {

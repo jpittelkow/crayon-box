@@ -23,7 +23,7 @@ export interface KidProfile {
   created: string;
 }
 
-export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer';
+export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer' | 'page';
 
 export interface Sound {
   play(kind: SoundKind): void;
