@@ -90,7 +90,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     if (id === 'settings') return renderSettings();
     if (id === 'laptop' && opts.kiosk) {
       const { renderLaptop } = await import('./laptopScreen');
-      await renderLaptop(main, opts.kiosk, storage.shell, () => opts.quit?.());
+      await renderLaptop(main, opts.kiosk, storage.shell);
       return;
     }
     if (id === 'sync' && opts.sync) {
@@ -140,9 +140,21 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   }
   const back = h('button', { type: 'button', class: 'pw-nav-back' }, 'Back to the kids');
   back.addEventListener('click', () => exit());
+  // Quit sits on every parent screen, just above Back, so it is easy to find (owner, 2026-11-15). Windows app only.
+  let quitButton: HTMLElement | null = null;
+  if (opts.kiosk && opts.quit) {
+    const quit = opts.quit;
+    quitButton = h(
+      'button',
+      { type: 'button', class: 'pw-nav-quit', title: 'Anything open is saved first. Ctrl+Shift+Q does the same from the kids’ screens.' },
+      'Quit the app',
+    );
+    quitButton.addEventListener('click', () => quit());
+  }
   nav.append(
     h('div', { class: 'pw-grow' }),
     h('p', { class: 'pw-nav-note' }, 'Locks itself after 3 minutes without a touch.'),
+    ...(quitButton ? [quitButton] : []),
     back,
   );
 

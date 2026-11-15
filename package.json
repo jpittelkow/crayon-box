@@ -1,7 +1,7 @@
 {
   "name": "crayon-box",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A touch-screen coloring app for kids aged 4 and under.",
   "license": "MIT",
   "type": "module",
