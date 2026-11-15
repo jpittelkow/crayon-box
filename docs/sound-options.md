@@ -1,7 +1,8 @@
-# Sound design: options (draft for the owner)
+# Sound design: options
 
-Drafted 2026-11-15 for the owner's sound choices. **Not a decision.** What the owner picks becomes an ADR that
-supersedes the "no sound files" parts of ADR 0016 (shell sounds), ADR 0025 (engines) and ADR 0026 (letter voice).
+Drafted 2026-11-15 for the owner's sound choices. The owner picked by ear the same day; the result is
+[ADR 0032](adr/0032-sounds-as-files.md) (Proposed). This file keeps the options and the sources behind it. The
+recommendation below came before the listening test and is superseded by ADR 0032.
 
 ## The ask
 The owner reported the audio isn't good enough (known bugs, 2026-11-14) and decided on 2026-11-15: **sounds are
@@ -123,6 +124,48 @@ sound needs it.
    louder than today?
 6. **Music:** none, home screen only, or per game? Off by default?
 7. **Extras:** a crayon-scribble loop while drawing? Animal answers (which animals)? A police siren?
+
+## Sources found for the listening test (2026-11-15)
+**Real recordings that can go in the public repo (CC0):**
+- **[OpenGameArt](https://opengameart.org)** CC0 packs used on the audition page:
+  - *51 UI sound effects* (Kenney's UI SFX Set)
+  - *100 CC0 SFX* and *30 CC0 SFX loops*
+  - *40 CC0 water / splash / slime SFX* and *6 Short water splashes*
+  - *3 Pop Sounds*, *Bell dings/chimes*, *Bicycle Horn* and *Sheep Baa*
+  - *[racing car engine sound loops](https://opengameart.org/content/racing-car-engine-sound-loops)*
+
+  Check every page's license: some uploads are CC-BY or CC-BY-SA. *Farm animals*, *Bubble Pop* and *Writing
+  Scribbles* were skipped for that reason.
+- **Kenney** (*Impact Sounds* and *Interface Sounds*, CC0) is still worth adding. His site only gives downloads
+  through the browser.
+- **Freesound** filtered to CC0 has the most real recordings (engines, farm animals, crayon on paper). Full-quality
+  downloads need an account (OAuth2 in the API).
+
+**Ruled out for files in a public repo:**
+- **Pixabay:** [no standalone redistribution](https://pixabay.com/service/terms/), apart from uploads published
+  before 2019-01-09.
+- **BBC Sound Effects:** free use is non-commercial only.
+- **Sonniss GDC bundles:** no standalone redistribution.
+
+**AI through OpenRouter** (one key, on the family server, ADR 0029):
+- **Voices:** the [speech endpoint](https://openrouter.ai/docs/guides/overview/multimodal/tts) works like
+  OpenAI's. Tried on 2026-11-15:
+  - ElevenLabs v4 (Matilda, Sarah, Lily, Charlie)
+  - Gemini 3.8 Flash TTS (Aoede, Kore, Achird, Puck; returns 24 kHz PCM only)
+  - MAI-Voice 2.1 (Harper, Olivia, Emily, Jasper)
+  - MiniMax 2.8 HD (Upbeat Woman, Friendly Person)
+  - Kokoro (Heart, Emma)
+  - Grok (Eve)
+
+  Gemini and ElevenLabs take delivery directions, as instructions and as tags like `[excited]`.
+- **Sound effects:** ByteDance's **Seed Audio 1.0** turns a description into audio. It made usable engines,
+  animals, crayon and water. Its output terms are not confirmed yet.
+- **Music:** Google's Lyria 3, if music is ever wanted.
+- **ElevenLabs retires its default voices**, Matilda among them, on 2026-12-31
+  ([ElevenLabs](https://elevenlabs.io/docs/help-center/product/voice-customization/my-voices/what-are-default-voices)).
+  Shipped files keep working.
+- **The key's credit limit** stopped some parallel requests (a 402 error for the in-flight budget). One request at
+  a time worked.
 
 ## Sources checked (2026-11-15)
 - **ElevenLabs:** [sound effects, commercial use](https://elevenlabs.io/sound-effects/commercial) and
