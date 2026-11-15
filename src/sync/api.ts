@@ -2,6 +2,7 @@
 // `SyncApi`, so its tests run against an in-memory server.
 import {
   API_VERSIONS,
+  type AiModelsResponse,
   type AiPageRequest,
   type ChangesResponse,
   type ConflictResponse,
@@ -29,8 +30,21 @@ export interface SyncApi {
   get(key: string): Promise<RemoteValue | null>;
   /** A value, or null for a deletion. */
   write(key: string, value: StoredValue | null, modified: number, base: number, force: boolean): Promise<WriteResult>;
-  /** A page made by AI on the server (ADR 0029): the raw image. Problems come back as SyncProblem, in words. */
-  aiPage(req: AiPageRequest): Promise<Blob>;
+  /**
+   * A page made by AI on the server (ADR 0029): the raw image and the model that made it. Problems come back as
+   * SyncProblem, in words.
+   */
+  aiPage(req: AiPageRequest): Promise<AiPageResult>;
+  /** The models a parent can pick and the family's favorites (ADR 0033); null from a server too old to have them. */
+  aiModels(): Promise<AiModelsResponse | null>;
+  /** Saves the family's favorite models on the server; answers with the list it kept. */
+  setAiFavorites(ids: string[]): Promise<string[]>;
+}
+
+export interface AiPageResult {
+  image: Blob;
+  /** The OpenRouter model that made it. */
+  model?: string;
 }
 
 /** A problem a parent can act on, said in words (ADR 0024: the parent area shows problems in words). */
@@ -161,7 +175,22 @@ export function httpApi(server: string, token: string, fetchFn: typeof fetch = f
         }
         throw new SyncProblem('server', message);
       }
-      return res.blob();
+      return { image: await res.blob(), model: res.headers.get('x-ai-model') ?? undefined };
+    },
+    async aiModels() {
+      const res = await call(fetchFn, `${base}/api/v1/ai/models`, { headers: auth });
+      if (res.status === 404) return null;
+      if (!res.ok) await fail(res);
+      return (await res.json()) as AiModelsResponse;
+    },
+    async setAiFavorites(ids) {
+      const res = await call(fetchFn, `${base}/api/v1/ai/favorites`, {
+        method: 'PUT',
+        headers: { ...auth, 'content-type': 'application/json' },
+        body: JSON.stringify({ favorites: ids }),
+      });
+      if (!res.ok) await fail(res);
+      return ((await res.json()) as { favorites: string[] }).favorites;
     },
   };
 }

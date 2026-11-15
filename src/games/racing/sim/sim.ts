@@ -22,7 +22,17 @@ export interface Input {
   brake: boolean;
   /** -1 is hard left, 1 is hard right. */
   steer: number;
+  /** A finger's spot on the ground: the car drives there and stops (ADR 0031). Steering keys leave it out. */
+  spot?: { x: number; z: number };
 }
+
+/** Closer than this to its spot, the car has arrived. */
+export const ARRIVE = 2.5;
+/** Within this distance of its spot, the car eases off so it stops there rather than overshooting. */
+const SLOW_FROM = 12;
+
+/** What a traffic car is doing about the kid's car (ADR 0031). */
+export const CRUISE = 0, JOIN = 1, ALONG = 2, LEAVE = 3;
 
 /** The kinds of vehicle (ADR 0025). Each has its own size, look and engine sound. */
 export type VehicleKind = 'car' | 'police' | 'monster' | 'bus';
@@ -58,6 +68,8 @@ export interface Car {
   wake: number;
   /** Traffic only: where on the ring road it is, the lane it is in now, its usual lane, and its own pace. */
   angle: number; lane: number; home: number; cruise: number;
+  /** Traffic only: CRUISE, JOIN, ALONG or LEAVE; time left in it; time before it may join the kid again. */
+  mode: number; timer: number; cool: number;
 }
 
 export interface Tree { x: number; z: number; scale: number }
@@ -108,6 +120,13 @@ export interface World {
   rescue: number;
   /** Where the car was when progress was last checked, and how long it has been driven since. */
   mark: { x: number; z: number; t: number };
+  /**
+   * The spot the kid's car is driving to (ADR 0031): the closest it has got, how long since it last got closer,
+   * and whether it is done (arrived, or gave up on a spot it kept circling).
+   */
+  goal: { x: number; z: number; best: number; t: number; done: boolean } | null;
+  /** The steering the kid's car used in the last step, -1 to 1, whether from keys, a spot or an assist. */
+  steer: number;
 }
 
 function rand(w: World): number {
@@ -131,10 +150,10 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   const w: World = {
     rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: Math.PI / 2, knocks: [],
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
-    assist, rescue: 0, mark: { x: 0, z: ROAD_R, t: 0 },
+    assist, rescue: 0, mark: { x: 0, z: ROAD_R, t: 0 }, goal: null, steer: 0,
   };
   const car = (kind: VehicleKind, angle: number, lane: number, cruise: number): Car =>
-    ({ kind, x: 0, z: ROAD_R, heading: Math.PI / 2, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, angle, lane, home: lane, cruise });
+    ({ kind, x: 0, z: ROAD_R, heading: Math.PI / 2, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, angle, lane, home: lane, cruise, mode: CRUISE, timer: 0, cool: 0 });
   w.cars.push(car('car', 0, ROAD_R, 0));
   // Traffic: a school bus, a police car and a monster truck, each at its own pace.
   ([['bus', 1.3, ROAD_R - 2.2, 6.5], ['police', 3.1, ROAD_R + 2.2, 9.5], ['monster', 4.7, ROAD_R - 2.2, 8]] as const).forEach(([kind, angle, lane, cruise]) => {
@@ -211,17 +230,51 @@ export function roadSteer(w: World): number {
   return clamp(-wrap(want - car.heading) * 2.5, -1, 1);
 }
 
+/**
+ * Drives the kid's car toward a finger's spot (ADR 0031): steer at it, ease off near it, stop on it. A spot it
+ * gets no closer to for 2 s (one inside its turning circle) is given up, so the car never circles a spot forever.
+ */
+function towardSpot(w: World, spot: { x: number; z: number }, dt: number): { go: boolean; steer: number; cap: number } {
+  const car = w.cars[0]!;
+  const r = Math.hypot(spot.x, spot.z), edge = LAND_R - 5;
+  const sx = r > edge ? (spot.x * edge) / r : spot.x, sz = r > edge ? (spot.z * edge) / r : spot.z;
+  let g = w.goal;
+  if (!g || Math.hypot(sx - g.x, sz - g.z) > 1.5) g = w.goal = { x: sx, z: sz, best: Infinity, t: 0, done: false };
+  const dist = Math.hypot(g.x - car.x, g.z - car.z);
+  if (dist < ARRIVE) g.done = true;
+  if (dist < g.best - 0.5) {
+    g.best = dist;
+    g.t = 0;
+  } else if ((g.t += dt) > 2) g.done = true;
+  if (g.done) return { go: false, steer: 0, cap: 0 };
+  const err = wrap(Math.atan2(g.x - car.x, g.z - car.z) - car.heading);
+  let cap = Math.max(3, MAX_SPEED * Math.min(1, dist / SLOW_FROM));
+  // A spot well off to the side: slow down to turn tightly toward it.
+  if (Math.abs(err) > 1.2) cap = Math.min(cap, 6);
+  return { go: true, steer: clamp(-err * 2.5, -1, 1), cap };
+}
+
 function stepKidCar(w: World, input: Input, dt: number): void {
   const car = w.cars[0]!;
-  if (input.brake) car.speed = Math.max(0, car.speed - 24 * dt);
-  else if (input.go) car.speed = Math.min(MAX_SPEED, car.speed + 10 * dt);
+  let go = input.go, brake = input.brake, steer = clamp(input.steer, -1, 1), cap = MAX_SPEED;
+  if (input.spot && w.assist === 'free') {
+    const to = towardSpot(w, input.spot, dt);
+    ({ steer, cap } = to);
+    // Arrived: a short, firm stop on the spot.
+    if (!to.go) { go = false; brake = true; }
+  } else w.goal = null;
+
+  if (brake) car.speed = Math.max(0, car.speed - 24 * dt);
+  else if (go && car.speed > cap) car.speed = Math.max(cap, car.speed - 12 * dt);
+  else if (go) car.speed = Math.min(cap, car.speed + 10 * dt);
   else car.speed = Math.max(0, car.speed - 6 * dt);
   // Deep water holds the car back to a wade.
   if (car.wet === 2 && car.speed > FLOOD_SPEED) car.speed = Math.max(FLOOD_SPEED, car.speed - 30 * dt);
 
   const turn = 2.1 * Math.min(1, car.speed / 5) * (1 - 0.35 * (car.speed / MAX_SPEED));
-  const steer = w.assist === 'road' || w.rescue > 0 ? roadSteer(w) : clamp(input.steer, -1, 1);
+  if (w.assist === 'road' || w.rescue > 0) steer = roadSteer(w);
   car.heading -= steer * turn * dt;
+  w.steer = steer;
 
   // The island's edge turns the car back toward land, harder the closer it gets (ADR 0021: can't get lost).
   const d = Math.hypot(car.x, car.z);
@@ -242,26 +295,37 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   }
 
   // Trees and traffic are round and never stop the car: it is pushed out and slides along (can't get stuck).
-  const pushOut = (ox: number, oz: number, reach: number, drag: number) => {
+  // Returns the shove the car got, or null if it didn't touch.
+  const pushOut = (ox: number, oz: number, reach: number, drag: number): [number, number] | null => {
     const dx = car.x - ox, dz = car.z - oz, dist = Math.hypot(dx, dz);
-    if (dist >= reach || dist < 1e-6) return;
-    car.x = ox + (dx / dist) * reach;
-    car.z = oz + (dz / dist) * reach;
+    if (dist >= reach || dist < 1e-6) return null;
+    const nx = dx / dist, nz = dz / dist, over = reach - dist;
+    car.x += nx * over;
+    car.z += nz * over;
     car.speed *= drag;
     // Turn the nose away from the thing, toward the side it is already passing on.
     const side = Math.sin(car.heading) * dz - Math.cos(car.heading) * dx;
     car.heading += (side > 0 ? -1 : 1) * 1.6 * dt;
+    return [nx * over, nz * over];
   };
   for (const t of w.trees) pushOut(t.x, t.z, 0.45 * t.scale + 1.3, 0.985);
+  // A bump with traffic is a toy bump (ADR 0031): both cars shove apart and the kid's car barely slows.
   const own = VEHICLE_SIZE[car.kind].side;
   for (let i = 1; i < w.cars.length; i++) {
     const other = w.cars[i]!;
-    for (const [px, pz] of bodyPoints(other)) pushOut(px, pz, own + VEHICLE_SIZE[other.kind].side + 0.3, 0.96);
+    for (const [px, pz] of bodyPoints(other)) {
+      const shove = pushOut(px, pz, own + VEHICLE_SIZE[other.kind].side + 0.3, 0.997);
+      if (!shove) continue;
+      // The traffic car is shoved the other way across its lane; its lane rule then eases it back.
+      const across = shove[0] * Math.sin(other.angle) + shove[1] * Math.cos(other.angle);
+      other.lane = clamp(other.lane - across * 0.7, ROAD_R - 5, ROAD_R + 5);
+      trafficPose(other);
+    }
   }
 
   // A car that is being driven but has made no progress for a while is steered back to the road (ADR 0021).
   if (w.rescue > 0) w.rescue -= dt;
-  if (!input.go || input.brake) {
+  if (!go || brake) {
     w.mark = { x: car.x, z: car.z, t: 0 };
   } else if ((w.mark.t += dt) >= 2.5) {
     if (Math.hypot(car.x - w.mark.x, car.z - w.mark.z) < 2) w.rescue = 1.5;
@@ -269,20 +333,51 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   }
 }
 
+/**
+ * Traffic keeps the kid company (ADR 0031). When the kid's car drives the road the way traffic goes, one traffic
+ * car at a time catches up and pulls alongside in the next lane, rides there for 4 to 6 s, then speeds off ahead
+ * and won't come back for a while. Traffic never blocks the road: near the kid's car it moves over a lane.
+ */
 function stepTraffic(w: World, dt: number): void {
   const kid = w.cars[0]!;
+  const kidR = Math.hypot(kid.x, kid.z);
+  const kidAngle = Math.atan2(kid.x, kid.z);
+  // Company: the kid's car is on the road, moving, and heading the way traffic goes.
+  const company = Math.abs(kidR - ROAD_R) < ROAD_W / 2 + 1.5 && kid.speed > 3 &&
+    Math.cos(kid.heading - (kidAngle + Math.PI / 2)) > 0.6;
   for (let i = 1; i < w.cars.length; i++) {
     const c = w.cars[i]!;
-    // Near the kid's car, traffic matches its pace and drives along with it; otherwise it keeps its own.
-    const near = Math.hypot(c.x - kid.x, c.z - kid.z) < 16;
-    let want = near ? clamp(kid.speed, 5, MAX_SPEED - 1) : c.cruise;
+    c.cool = Math.max(0, c.cool - dt);
+    c.timer -= dt;
+    // How far along the road the kid's car is ahead of this one (negative: behind).
+    const gap = wrap(kidAngle - c.angle) * ROAD_R;
+    const busy = w.cars.some((o, j) => j > 0 && j !== i && (o.mode === JOIN || o.mode === ALONG));
+    if (c.mode === CRUISE && company && c.cool === 0 && !busy && Math.abs(gap) < 20) {
+      c.mode = JOIN;
+      c.timer = 8;
+    } else if ((c.mode === JOIN || c.mode === ALONG) && (!company || c.timer <= 0)) {
+      c.mode = LEAVE;
+      c.timer = 3;
+      c.cool = 12;
+    } else if (c.mode === JOIN && Math.abs(gap) < 1.5) {
+      c.mode = ALONG;
+      c.timer = 4 + rand(w) * 2;
+    } else if (c.mode === LEAVE && ((c.timer <= 0 && Math.abs(gap) > 12) || c.timer <= -4)) c.mode = CRUISE;
+
+    let want = c.cruise;
+    if (c.mode === JOIN) want = kid.speed + clamp(gap * 1.2, -5, 5);
+    else if (c.mode === ALONG) want = kid.speed + clamp(gap * 1.5, -3, 3);
+    else if (c.mode === LEAVE) want = Math.max(c.cruise, kid.speed + 5);
+    want = clamp(want, 3, MAX_SPEED + 4);
     if (c.wet === 2) want = Math.min(want, FLOOD_SPEED - 1);
     c.speed += clamp(want - c.speed, -8 * dt, 8 * dt);
-    // Traffic never blocks the road: it shifts over to leave the kid's car room, then drifts back to its lane.
+
+    // Near the kid's car, move over a lane to whichever side has road, then drift back to its own lane.
     let lane = c.home;
     if (Math.hypot(c.x - kid.x, c.z - kid.z) < 9) {
-      const kidR = Math.hypot(kid.x, kid.z);
-      lane = clamp(kidR + (c.lane >= kidR ? 3.4 : -3.4), ROAD_R - 3.6, ROAD_R + 3.6);
+      const outer = kidR + 3.4 <= ROAD_R + 4, inner = kidR - 3.4 >= ROAD_R - 4;
+      const outside = outer && (c.lane >= kidR || !inner);
+      lane = clamp(kidR + (outside ? 3.4 : -3.4), ROAD_R - 4, ROAD_R + 4);
     }
     c.lane += clamp(lane - c.lane, -3 * dt, 3 * dt);
     c.angle += (c.speed / c.lane) * dt;

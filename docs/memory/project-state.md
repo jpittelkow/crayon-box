@@ -25,11 +25,12 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    **Overnight 2026-11-14** (owner's plan: the letters fix, then D, C, F, H, then a published release), all
    merged: D kiosk lock (PR #8), C1 sync server (PR #9, image `ghcr.io/jpittelkow/crayon-box-sync`, public), C2
    sync client (PR #10), F family pages (PR #11), H the [release checklist](../release-checklist.md) (PR #12).
-   Release 0.3.0 has all of it. **G (AI page maker) built 2026-11-14 through the family server** ([ADR 0029](../adr/0029-ai-pages-through-the-family-server.md)).
-   **Left in milestone 2:** the model test, and trying
-   it all on Windows: install 0.2.1, update to 0.3.0 from the parent area, the checklist, the server on Unraid.
-   Next with the owner (2026-11-14): sync server on Unraid, sound design choices (done and built 2026-11-15,
-   ADR 0032), then the racing game's maps, vehicle choice and customizing (the main focus after that).
+   Release 0.3.0 has all of it. **G (AI page maker) built 2026-11-14 through the family server** ([ADR 0029](../adr/0029-ai-pages-through-the-family-server.md)); a parent picks the model in the app, with family favorites on the server ([ADR 0033](../adr/0033-pick-the-ai-model-in-the-app.md), built 2026-11-15, app 0.5.0 and server 1.2.0). The photo prompt was tuned on family photos and a parent can ask for two pages from two models to choose from ([ADR 0034](../adr/0034-photo-prompt-and-two-to-choose-from.md)); `server/tools/ai-samples.ts` compares prompts and models.
+   **Left in milestone 2:** the model test (now done by picking models in the app), and the checklist on
+   Windows. The in-app update was tested by the owner (2026-11-15). The sync server runs on the family's Unraid
+   machine with AI pages on (2026-11-15).
+   Next with the owner: the racing game's maps, vehicle choice and customizing (the main focus after that). The
+   sound design choices are done and built (2026-11-15, ADR 0032).
 3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
    **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
    knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,
@@ -52,7 +53,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    self-hosted server on the family's Unraid machine (image published from this repo); the device stays the
    working copy and syncs in the background; Windows first. Order: storage groundwork (**done 2026-11-14**, see
    the code map), then the server and sync client right after the installer's file storage. **Server and client
-   built 2026-11-14** (milestone 2 phase C); not yet run on Unraid.
+   built 2026-11-14** (milestone 2 phase C); running on Unraid since 2026-11-15, a device paired.
 6. **Letter practice** (asked by the owner 2026-11-14): a third game module (ADR 0012) where a kid traces big
    letters with a finger or a stylus. Design: [ADR 0026](../adr/0026-letter-practice.md), **Accepted**
    2026-11-14 (mockups on the canvas, boards 19–24). **Built 2026-11-14** in the web app: practice and the game
@@ -113,8 +114,9 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   world kit with bundled fonts (ADR 0016).
 - `src/games/coloring/`: the game (lazy-loaded): `game.ts` (start, library, My pictures), `session.ts` (the
   coloring screen), `engine/` (ADR 0004), `pictures.ts`, `pages.ts`, `parentSections.ts` (its parent screens).
-- `src/games/racing/` (ADR 0021, 0025): `sim/` is plain TypeScript (the world with vehicle kinds and sizes,
-  input, camera and tree rules in `view.ts`) with unit tests; `look/` builds the toy-look vehicles, island, trees
+- `src/games/racing/` (ADR 0021, 0025, 0031): `sim/` is plain TypeScript (the world with vehicle kinds and sizes,
+  driving to a touched spot, traffic modes CRUISE/JOIN/ALONG/LEAVE, `World.steer`; input; camera, tree rules and
+  `groundPoint` (picture to ground) in `view.ts`) with unit tests; `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the
   game; `game.ts` (screen, touch and keys, loop), `settings.ts` (per-kid assist, sounds), `parentSection.ts`,
   `sound.ts` (an engine loop per vehicle kind in `ENGINES`, effect files in `EFFECTS`, ADR 0032). Games can

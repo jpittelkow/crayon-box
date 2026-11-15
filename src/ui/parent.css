@@ -451,6 +451,18 @@
   border-radius: var(--radius-sm);
   background: #fff;
 }
+/* Two to choose from (ADR 0034): side by side when there is room. */
+.pw-ai-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.pw-ai-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
 .pw-ok {
   font-weight: 700;
   color: var(--ok, #2f8a57);

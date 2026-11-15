@@ -9,3 +9,6 @@ src-tauri/gen/
 
 # Updater signing keys (ADR 0009) never go in the repo; keep them in the password manager.
 *.key
+
+# AI sample sheets (server/tools/ai-samples.ts): may hold family photos, never committed
+.ai-samples/
