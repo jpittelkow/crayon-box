@@ -1,9 +1,11 @@
-// The island in the polished toy look (ADR 0025): ground, road, puddles and bushes that never move, plus the
-// shapes of trees and props, which the renderer draws in batches.
+// The island in the polished toy look (ADR 0025): ground, roads (look/roads.ts), puddles and bushes that never
+// move, plus the shapes of trees and props, which the renderer draws in batches.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { LAND_R, ROAD_R, ROAD_W, type World } from '../sim/sim';
+import { nearestRoad } from '../sim/roads';
+import type { World } from '../sim/sim';
 import { bake, part, plastic, rbox, ROUND } from './kit';
+import { buildRoads } from './roads';
 
 function flatRing(inner: number, outer: number, y: number, segs = 128, rings = 1): THREE.BufferGeometry {
   return new THREE.RingGeometry(inner, outer, segs, rings).rotateX(-Math.PI / 2).translate(0, y, 0);
@@ -32,10 +34,12 @@ export function buildGround(world: World): THREE.Group {
   const sea = new THREE.Mesh(new THREE.CircleGeometry(900, 64).rotateX(-Math.PI / 2).translate(0, -0.5, 0),
     new THREE.MeshStandardMaterial({ color: 0x3d9fe0, roughness: 0.12, metalness: 0.05 }));
   g.add(sea);
-  add(flatRing(LAND_R - 8, LAND_R + 2.5, -0.04, 160, 4), new THREE.MeshStandardMaterial({ color: 0xe6c98c, roughness: 0.95 }));
+  const land = world.map.land;
+  const onLand = (geo: THREE.BufferGeometry) => geo.translate(land.x, 0, land.z);
+  add(onLand(flatRing(land.r - land.beach, land.r + 2.5, -0.04, 160, 4)), new THREE.MeshStandardMaterial({ color: 0xe6c98c, roughness: 0.95 }));
 
   // Patchy grass: lighter and darker in places, as lawns are.
-  const grass = flatRing(0.01, LAND_R - 3, 0, 160, 40);
+  const grass = onLand(flatRing(0.01, land.r - 3, 0, 160, 40));
   const pos = grass.getAttribute('position');
   const colors = new Float32Array(pos.count * 3);
   for (let i = 0; i < pos.count; i++) {
@@ -47,18 +51,7 @@ export function buildGround(world: World): THREE.Group {
   grass.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   add(grass, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }));
 
-  add(flatRing(ROAD_R - ROAD_W / 2, ROAD_R + ROAD_W / 2, 0.04, 200, 6), new THREE.MeshStandardMaterial({ color: 0x5a5f66, roughness: 0.85 }));
-  const white = new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: 0.6 });
-  const dashes: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < 40; i++) {
-    const a = (i / 40) * Math.PI * 2;
-    dashes.push(new THREE.BoxGeometry(0.3, 0.03, 2.2).rotateY(a + Math.PI / 2).translate(Math.sin(a) * ROAD_R, 0.06, Math.cos(a) * ROAD_R));
-  }
-  for (const off of [-1, 1]) {
-    const r = ROAD_R + off * (ROAD_W / 2 - 0.45);
-    dashes.push(flatRing(r - 0.1, r + 0.1, 0.055, 200).toNonIndexed());
-  }
-  add(mergeGeometries(dashes.map((d) => (d.index ? d.toNonIndexed() : d)))!, white);
+  g.add(buildRoads(world.roads));
 
   // Puddles and the flood: shiny water inside a muddy rim.
   const water = new THREE.MeshPhysicalMaterial({ color: 0x2f8fd0, roughness: 0.04, metalness: 0.1, clearcoat: 1, transparent: true, opacity: 0.9 });
@@ -72,9 +65,10 @@ export function buildGround(world: World): THREE.Group {
   const r = rng(11);
   const bushes: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 70; i++) {
-    const a = r() * Math.PI * 2, d = 6 + r() * 48;
-    const x = Math.sin(a) * d, z = Math.cos(a) * d;
-    if (Math.abs(Math.hypot(x, z) - ROAD_R) < ROAD_W / 2 + 1.5) continue;
+    const a = r() * Math.PI * 2, d = 6 + r() * (land.r - 12);
+    const x = land.x + Math.sin(a) * d, z = land.z + Math.cos(a) * d;
+    const road = nearestRoad(world.roads, x, z);
+    if (road && road.dist < world.roads[road.road]!.def.width / 2 + 1.5) continue;
     if (world.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + 1)) continue;
     if (world.props.some((p) => Math.hypot(x - p.homeX, z - p.homeZ) < 1.5)) continue;
     for (let k = 0; k < 3; k++) {

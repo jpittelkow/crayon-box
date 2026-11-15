@@ -180,8 +180,9 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 Roads are the backbone of every map: the simulation follows them (traffic lanes, "follows the road", turning a
 stuck car toward the nearest road, toys placed in the car's way), so they are data first and a picture second.
 A map's road network is a set of **curves** joined at **junctions**; each stretch has a **kind** and may be a
-**piece** (bridge, tunnel, ford). Today it is one ring written into the code (`ROAD_R`, `ROAD_W` in `sim.ts`,
-drawn in `look/island.ts`); phase B moves it into the map file.
+**piece** (bridge, tunnel, ford). Since 2026-11-15 roads come from the map file (`maps/island.ts` has one ring
+road) as point paths: `sim/roads.ts` follows them and `look/roads.ts` draws them. Junctions and road kinds other
+than `street` are still to come.
 
 Rules for roads:
 - **No dead ends.** Every road joins another or ends in a loop, so a kid driving along a road is never stopped.
@@ -280,7 +281,8 @@ sails); see Border cases.
 | `sky/evening` | idea | a map variant with lamps lit |
 
 ## Where it goes in the code
-Proposed for phase B, when the world becomes data (a refactor of today's `look/` and `sim/`):
+Proposed for phase B, when the world becomes data (a refactor of today's `look/` and `sim/`). Built so far
+(2026-11-15): `sim/map.ts` (the map format), `sim/roads.ts`, `look/roads.ts` and `maps/island.ts`.
 ```
 src/games/racing/
   sim/assets/        definitions, one file per category: vehicles.ts, toys.ts, scenery.ts, setpieces.ts, animals.ts
