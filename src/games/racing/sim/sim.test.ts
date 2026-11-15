@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DRIVE_KEYS, driveInput } from './input';
+import { DRIVE_KEYS, driveInput, stickAt } from './input';
 import { FAR_SPOT, chaseView, groundPoint, stepTreeSizes } from './view';
 import { LAND_R, RING, ROAD_R, ROAD_W } from '../maps/ring';
 import { TOYS } from './assets/toys';
 import { nearestOn, pointAt } from './roads';
 import type { MapDef } from './map';
-import { ALONG, CRUISE, JOIN, LEAVE, FLOOD_SPEED, VEHICLE_SIZE, bodyPoints, MAX_SPEED, makeWorld as makeOn, step, waterAt, type Input, type World, type Assist } from './sim';
+import { ALONG, CRUISE, JOIN, LEAVE, FLOOD_SPEED, VEHICLE_SIZE, bodyPoints, MAX_SPEED, makeWorld as makeOn, step, waterAt, type Input, type World, type Assist, REVERSE_SPEED } from './sim';
 
 /** Worlds on the ring map unless a test says otherwise (the game itself drives the island of layout A). */
 const makeWorld = (seed: number, props: number, assist: Assist = 'free', map: MapDef = RING) => makeOn(seed, props, assist, map);
@@ -25,10 +25,19 @@ function randomStream(seed: number): () => number {
 }
 
 describe('driving input (ADR 0021)', () => {
-  it('a finger makes the car go to its spot; a steering key takes over from the spot', () => {
+  it('a finger is a joystick (ADR 0036); a key takes over from it', () => {
     expect(driveInput(undefined, new Set())).toEqual({ go: false, brake: false, steer: 0 });
-    expect(driveInput({ x: 3, z: 4 }, new Set())).toEqual({ go: true, brake: false, steer: 0, spot: { x: 3, z: 4 } });
-    expect(driveInput({ x: 3, z: 4 }, new Set(['ArrowLeft']))).toEqual({ go: true, brake: false, steer: -1 });
+    expect(driveInput({ x: 0.3, y: 0.8 }, new Set())).toEqual({ go: false, brake: false, steer: 0, stick: { x: 0.3, y: 0.8 } });
+    expect(driveInput({ x: 0.3, y: 0.8 }, new Set(['ArrowLeft']))).toEqual({ go: false, brake: false, steer: -1 });
+    expect(driveInput({ x: 0.3, y: 0.8 }, new Set(['ArrowUp']))).toEqual({ go: true, brake: false, steer: 0 });
+  });
+
+  it('a point on the screen is a joystick position from its middle', () => {
+    const box = { left: 100, top: 50, width: 800, height: 600 };
+    expect(stickAt(500, 350, box)).toEqual({ x: 0, y: 0 });
+    expect(stickAt(900, 50, box)).toEqual({ x: 1, y: 1 });
+    expect(stickAt(100, 650, box)).toEqual({ x: -1, y: -1 });
+    expect(stickAt(2000, -40, box)).toEqual({ x: 1, y: 1 });
   });
 
   it('arrow keys and WASD drive the same', () => {
@@ -61,7 +70,7 @@ describe('the kid car', () => {
         x: car.x + Math.sin(car.heading) * ahead - Math.cos(car.heading) * right,
         z: car.z + Math.cos(car.heading) * ahead + Math.sin(car.heading) * right,
       };
-      run(w, 8, driveInput(spot, new Set()));
+      run(w, 8, { ...GO, spot });
       expect(Math.hypot(car.x - spot.x, car.z - spot.z), `spot ${ahead} ahead, ${right} right`).toBeLessThan(4);
       expect(car.speed).toBe(0);
     }
@@ -73,14 +82,14 @@ describe('the kid car', () => {
     car.speed = 10;
     // Just to the right, closer than the car can turn.
     const spot = { x: car.x - Math.cos(car.heading) * 3.2, z: car.z + Math.sin(car.heading) * 3.2 };
-    run(w, 6, driveInput(spot, new Set()));
+    run(w, 6, { ...GO, spot });
     expect(car.speed).toBe(0);
     expect(w.goal?.done).toBe(true);
   });
 
   it('a spot out at sea is pulled back onto the island', () => {
     const w = makeWorld(7, 0);
-    run(w, 10, driveInput({ x: 0, z: 200 }, new Set()));
+    run(w, 10, { ...GO, spot: { x: 0, z: 200 } });
     expect(Math.hypot(w.cars[0].x, w.cars[0].z)).toBeLessThan(LAND_R - 1.5);
     expect(w.cars[0].speed).toBe(0);
   });
@@ -89,11 +98,66 @@ describe('the kid car', () => {
     const w = makeWorld(7, 0);
     const car = w.cars[0];
     const ahead = (d: number) => ({ x: car.x + Math.sin(car.heading) * d, z: car.z + Math.cos(car.heading) * d });
-    run(w, 6, driveInput(ahead(10), new Set()));
+    run(w, 6, { ...GO, spot: ahead(10) });
     expect(car.speed).toBe(0);
-    run(w, 0.5, driveInput(ahead(15), new Set()));
+    run(w, 0.5, { ...GO, spot: ahead(15) });
     expect(car.speed).toBeGreaterThan(2);
   });
+
+  it('drives as a joystick: higher is faster, to the side turns, the middle stops, below backs up (ADR 0036)', () => {
+    const stick = (x: number, y: number): Input => driveInput({ x, y }, new Set());
+    // Top edge: full speed, straight on, the same as holding the up arrow.
+    let w = makeWorld(7, 0);
+    let car = w.cars[0];
+    run(w, 3, stick(0, 1));
+    const keyed = makeWorld(7, 0);
+    run(keyed, 3, driveInput(undefined, new Set(['ArrowUp'])));
+    expect(car.speed).toBeGreaterThan(14);
+    expect(car.heading).toBeCloseTo(keyed.cars[0].heading, 2);
+    // A little above the middle: a crawl.
+    w = makeWorld(7, 0);
+    run(w, 3, stick(0, 0.25));
+    expect(w.cars[0].speed).toBeGreaterThan(2);
+    expect(w.cars[0].speed).toBeLessThan(8);
+    // Up and left: turns left (the heading grows).
+    w = makeWorld(7, 0);
+    car = w.cars[0];
+    const h1 = car.heading;
+    run(w, 1.5, stick(-0.9, 0.9));
+    expect(car.heading).toBeGreaterThan(h1 + 0.5);
+    // Back to the middle: it rolls to a stop.
+    run(w, 4, stick(0.05, 0.05));
+    expect(car.speed).toBe(0);
+    // Below the middle: it backs up, slowly.
+    const at = { x: car.x, z: car.z }, h2 = car.heading;
+    run(w, 2, stick(0, -1));
+    expect(car.speed).toBeCloseTo(-REVERSE_SPEED, 1);
+    const moved = { x: car.x - at.x, z: car.z - at.z };
+    expect(moved.x * Math.sin(h2) + moved.z * Math.cos(h2)).toBeLessThan(-4);
+    // From backing up, the top edge brakes it and drives forward again.
+    run(w, 2.5, stick(0, 1));
+    expect(car.speed).toBeGreaterThan(5);
+  });
+
+  it('a minute of random joystick driving stays on the island and goes somewhere, backing up too', () => {
+    for (const seed of [4, 5]) {
+      const w = makeWorld(seed, 150);
+      const next = randomStream(seed);
+      let input = GO;
+      let travelled = 0, backed = 0, px = w.cars[0].x, pz = w.cars[0].z;
+      run(w, 60, (world, i) => {
+        if (i % 50 === 0) input = driveInput({ x: next() * 2 - 1, y: next() * 2.4 - 1 }, new Set());
+        travelled += Math.hypot(world.cars[0].x - px, world.cars[0].z - pz);
+        if (world.cars[0].speed < 0) backed++;
+        px = world.cars[0].x;
+        pz = world.cars[0].z;
+        return input;
+      });
+      expect(Math.hypot(w.cars[0].x, w.cars[0].z)).toBeLessThan(LAND_R);
+      expect(travelled).toBeGreaterThan(150);
+      expect(backed).toBeGreaterThan(0);
+    }
+  }, 30_000);
 
   it('never leaves the island, however it is driven', () => {
     const w = makeWorld(7, 150);

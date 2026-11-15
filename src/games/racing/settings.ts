@@ -15,6 +15,21 @@ export interface KidDriving {
   vehicle: VehicleKind;
   /** The map picked last time, by id (ADR 0035). */
   map: string;
+  /**
+   * The vehicle's colour, picked on the picker (playtest, 2026-11-15), as #rrggbb; absent for the kid's own colour.
+   * Paint where the vehicle is painted, the flag where it flies one (ADR 0035).
+   */
+  color?: string;
+}
+
+/** The colours on the picker after the kid's own (playtest, 2026-11-15): the crayon box's brightest, and black. */
+export const CAR_COLORS: readonly string[] = ['#f23b2f', '#ff8a1f', '#ffd23f', '#2fa35f', '#3a86ff', '#9b5de5', '#ff70a6', '#2b2b2b'];
+
+/** The picker's colours: the kid's own first, then the others that don't look like it, eight at most. */
+export function carColors(own: string): string[] {
+  const rgb = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const near = (a: string, b: string) => Math.hypot(...rgb(a).map((v, i) => v - rgb(b)[i]!)) < 60;
+  return [own, ...CAR_COLORS.filter((c) => !near(c, own))].slice(0, 8);
 }
 
 export interface DrivingSettings {
@@ -33,6 +48,7 @@ export async function loadKidDriving(storage: GameStorage, kidId: string): Promi
     assist: raw?.assist === 'road' ? 'road' : 'free',
     vehicle: VEHICLES.includes(raw?.vehicle as VehicleKind) ? (raw!.vehicle as VehicleKind) : 'car',
     map: typeof raw?.map === 'string' ? raw.map : 'island',
+    ...(typeof raw?.color === 'string' && /^#[0-9a-f]{6}$/i.test(raw.color) ? { color: raw.color } : {}),
   };
 }
 
