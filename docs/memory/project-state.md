@@ -16,7 +16,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    interface. Runs from the Vite dev server on the dev machine only (no container, ADR 0020). Never hosted
    online. Used to test with the kids early. Art made here is throwaway.
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
-   **Next up** (owner, 2026-11-14): milestone 1 is paused with only the animal themes left;
+   **Next up** (owner, 2026-11-14): milestone 1 is paused with only the Outside theme left (the animal pages were added 2026-11-15);
    milestone 2 is planned in eight phases in [milestone-2.md](../milestone-2.md) (A Tauri window, B files, C sync,
    D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A done 2026-11-14**
    (`src-tauri/`, the `windows-installer` CI job): the installer ran on Windows. A `v*` tag drafts a release
@@ -146,9 +146,10 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   (`tests/e2e/pages.spec.ts`, ADR 0005), the theme strip and blank page. Still open for C: who draws the pages.
 - **C. The real page library:** sources in [ADR 0022](../adr/0022-where-built-in-pages-come-from.md). Drawn as
   SVG and done 2026-11-14: Race cars, Things that go, Shapes, Yummy food (six pages each), plus the fish. The
-  clean-up step for AI-made pages is built (`cleanup.ts`, dev tool `tools/clean-page.html`). Left: the four
-  animal themes (Farm and pets, Wild animals, Under the sea, Outside), made with an AI image model and cleaned up;
-  needs a model picked (open questions).
+  clean-up step for AI-made pages is built (`cleanup.ts`, dev tool `tools/clean-page.html`). Animal pages done
+  2026-11-15: Dinosaurs (a new ninth theme), Wild animals and Farm and pets (six each) and four more Under the sea
+  pages, made with GPT-5 Image Mini and cleaned up with `tools/clean-pages.mjs` (ADR 0022). Left: the Outside
+  theme.
 - **D. Polish:** done 2026-11-14: sounds with a Settings switch (`shell/sound.ts`; files since ADR 0032),
   the optional gate PIN (stored as a hash), the reduce-motion check (browser test), and the two-finger undo limit
   fixed (each stroke draws on its own layer until the finger lifts). The design system artifact was matched to
