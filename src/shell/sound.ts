@@ -49,6 +49,9 @@ export const SOUNDS: Record<SoundKind, SoundSpec> = {
 /** The kinds that answer a touch: they stay under 300 ms (ADR 0016). */
 export const TOUCH_SOUNDS: SoundKind[] = ['tap', 'fill', 'undo', 'nothing'];
 
+/** The crayon on paper while a finger draws: a seamless loop whose loudness follows the finger (ADR 0032). */
+export const CRAYON = { file: 'ui/crayon.wav', gain: 0.7 };
+
 /**
  * Sounds through the Web Audio API, from the shipped files. `refresh` reloads the parent's on/off setting and, with
  * sounds on, decodes the files ahead of the first touch (decoding works before a touch; playing waits for one, as
@@ -70,7 +73,7 @@ export class WebAudioSound implements Sound {
     if (!this.on) return;
     try {
       const ctx = this.context();
-      for (const spec of Object.values(SOUNDS)) void this.buffer(ctx, spec.file);
+      for (const spec of [...Object.values(SOUNDS), CRAYON]) void this.buffer(ctx, spec.file);
     } catch {
       // No audio here: stay silent.
     }
@@ -94,6 +97,54 @@ export class WebAudioSound implements Sound {
       });
     } catch {
       // No audio device, or audio blocked: stay silent. A kid screen never shows an error (ADR 0016 rule 6).
+    }
+  }
+
+  private crayon: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private crayonStop: ReturnType<typeof setTimeout> | undefined;
+  private crayonLevel = 0;
+
+  /** The crayon sound: `level` 0 fades it out, up to 1 for a fast scribble. Called on every move of a drawing finger. */
+  scratch(level: number): void {
+    this.crayonLevel = level;
+    try {
+      clearTimeout(this.crayonStop);
+      if (level <= 0) {
+        const c = this.crayon, ctx = this.ctx;
+        if (!c || !ctx) return;
+        c.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+        // Stop the loop once it has faded, rather than keep a silent one running.
+        this.crayonStop = setTimeout(() => {
+          try {
+            c.src.stop();
+          } catch {
+            // already stopped
+          }
+          if (this.crayon === c) this.crayon = null;
+        }, 400);
+        return;
+      }
+      if (!this.on) return;
+      const ctx = this.context();
+      if (ctx.state === 'suspended') void ctx.resume();
+      void this.buffer(ctx, CRAYON.file).then((buf) => {
+        // The finger may have lifted while the file was loading.
+        if (!buf || this.crayonLevel <= 0) return;
+        if (!this.crayon) {
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const gain = ctx.createGain();
+          gain.gain.value = 0;
+          src.connect(gain).connect(ctx.destination);
+          // Start somewhere new in the loop each time, so strokes don't all begin with the same scrape.
+          src.start(0, Math.random() * buf.duration);
+          this.crayon = { src, gain };
+        }
+        this.crayon.gain.gain.setTargetAtTime(CRAYON.gain * Math.min(1, this.crayonLevel), ctx.currentTime, 0.03);
+      });
+    } catch {
+      // No audio: stay silent.
     }
   }
 

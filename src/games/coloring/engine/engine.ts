@@ -58,6 +58,11 @@ export interface EngineEvents {
   /** A touch that had nothing to do: undo with an empty history, a fill on a line. */
   onNothing?: () => void;
   onFill?: () => void;
+  /**
+   * While a brush or eraser stroke paints: how fast the fastest finger is moving, in page pixels a second; 0 once
+   * every finger has lifted. For the crayon sound (ADR 0032).
+   */
+  onDraw?: (speed: number) => void;
 }
 
 function canvas(className: string): HTMLCanvasElement {
@@ -182,7 +187,9 @@ export class ColoringEngine {
   destroy(): void {
     this.regions.destroy();
     for (const stroke of this.strokes.values()) stroke.layer.remove();
+    if (this.strokes.size > 0) this.events.onDraw?.(0);
     this.strokes.clear();
+    this.moves.clear();
     this.history.clear();
   }
 
@@ -260,13 +267,33 @@ export class ColoringEngine {
     if (!stroke) return;
     const events = e.getCoalescedEvents?.() ?? [];
     for (const ev of events.length ? events : [e]) this.addPoint(stroke, this.toPage(ev));
+    this.reportSpeed(e.pointerId, stroke, this.toPage(e), e.timeStamp);
   }
 
   private onUp(e: PointerEvent): void {
     const stroke = this.strokes.get(e.pointerId);
     if (!stroke) return;
     this.strokes.delete(e.pointerId);
+    this.moves.delete(e.pointerId);
+    if (this.strokes.size === 0) this.events.onDraw?.(0);
     void stroke.ready.then(() => this.commitStroke(stroke));
+  }
+
+  /** The last position and time of each painting finger, for the crayon sound's speed. */
+  private readonly moves = new Map<number, { p: Point; t: number; speed: number }>();
+
+  private reportSpeed(id: number, stroke: Stroke, p: Point, t: number): void {
+    if (!this.events.onDraw) return;
+    const last = this.moves.get(id);
+    let speed = 0;
+    if (last && t > last.t) {
+      // Smoothed, so the sound doesn't flutter with every uneven move event.
+      const now = Math.hypot(p.x - last.p.x, p.y - last.p.y) / ((t - last.t) / 1000);
+      speed = last.speed * 0.6 + now * 0.4;
+    }
+    // A stroke outside the lines paints nothing, so it makes no sound either.
+    this.moves.set(id, { p, t, speed: stroke.state === 'blocked' ? 0 : speed });
+    this.events.onDraw(Math.max(...[...this.moves.values()].map((m) => m.speed)));
   }
 
   // ---- Drawing ----
