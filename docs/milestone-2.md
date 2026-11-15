@@ -139,6 +139,10 @@ Two parts; the server part can start any time, even alongside phase A.
 - **Needs:** the default image model (after a quality test with a few photos); the search service.
 
 ### H. Ready for the family
+- **Status (2026-11-14):** the checklist is [release-checklist.md](release-checklist.md) (fresh install, update,
+  kiosk lock, files and pages, sync, publish). Version 0.3.0 is the first release with everything but G; the owner
+  installs it on the family laptop and works through the checklist. The web version retires once the kids use the
+  installed app.
 - The manual release checklist (ADR 0015): install, update from the previous version, kiosk lock and keyboard
   hook, laptop setup.
 - The first real release, installed on the family laptop.
