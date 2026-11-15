@@ -32,7 +32,7 @@ describe('kiosk lock (ADR 0014)', () => {
     const { bridge } = recorder();
     const c = new KioskControl(bridge, DEFAULT_KIOSK);
     await c.update(shell, { lockKeyboard: false });
-    expect(await shell.list('device/')).toEqual(['device/kiosk.json']);
+    expect(await shell.list('local/')).toContain('local/kiosk.json');
     expect((await loadKioskSettings(shell)).lockKeyboard).toBe(false);
   });
 

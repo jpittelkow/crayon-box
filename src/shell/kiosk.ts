@@ -22,7 +22,7 @@ export interface KioskBridge {
 }
 
 /**
- * This laptop's kiosk settings. They stay on the device: kept under `device/`, which family sync leaves alone
+ * This laptop's kiosk settings. They stay on the device: kept under `local/`, which family sync leaves alone
  * (ADR 0024), since another laptop or the browser version may want them differently.
  */
 export interface KioskSettings {
@@ -32,7 +32,7 @@ export interface KioskSettings {
   lockKeyboard: boolean;
 }
 
-const PATH = 'device/kiosk.json';
+const PATH = 'local/kiosk.json';
 export const DEFAULT_KIOSK: KioskSettings = { keepFullScreen: true, lockKeyboard: true };
 
 export async function loadKioskSettings(shell: GameStorage): Promise<KioskSettings> {
