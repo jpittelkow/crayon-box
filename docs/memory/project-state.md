@@ -17,7 +17,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
    **Next up** (owner, 2026-11-14): milestone 1 is paused with the animal themes and the artifact updates left;
    milestone 2 is planned in eight phases in [milestone-2.md](../milestone-2.md) (A Tauri window, B files, C sync,
-   D kiosk lock, E updates, F family pages, G AI page maker, H family release). Not started.
+   D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A written 2026-11-14**
+   (`src-tauri/`, the `windows-installer` CI job); not yet built by CI or installed on a Windows machine.
 3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
    **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
    knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,
@@ -51,6 +52,10 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   [open question](open-questions.md).
 
 ## Code map
+- `src-tauri/`: the Windows shell (ADR 0002, milestone 2 phase A): Tauri 2 config, a `main.rs` that only opens the
+  window, the core-only capability, and the icons (made from `icons/source.svg` with `npx tauri icon`). Built only
+  by CI's `windows-installer` job, which keeps the NSIS installer as a run artifact. `src/shell/platform.ts`
+  (`inTauri`) is how web code tells the Windows app from a browser.
 - `spikes/engine-bakeoff/`: throwaway test for ADR 0021, not part of the app, with its own `package.json`: the
   same driving scene drawn by three.js and by Babylon.js. Run with `npm --prefix spikes/engine-bakeoff run dev`
   (port 5180). Kept as the record behind ADR 0021's library comparison; the app does not use it. Its

@@ -11,6 +11,7 @@ at the end; anything that changes an accepted ADR gets a new ADR first (ADR 0001
 ## Phases
 
 ### A. The app in a Tauri window
+- **Status (2026-11-14):** written, waiting on its first CI build and a test install.
 - `src-tauri/`: a Tauri 2 project that wraps the existing web app. One window, the app's own icon, the version
   taken from `package.json`.
 - The web app keeps working in a browser: code that needs Windows checks whether it runs inside Tauri.
