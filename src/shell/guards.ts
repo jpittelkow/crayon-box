@@ -11,7 +11,9 @@ export function installGuards(win: Window = window): void {
   const inParentWorld = () => doc.body.dataset.world === 'parent';
   const isField = (t: EventTarget | null) => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement;
 
-  doc.addEventListener('contextmenu', block);
+  // The right-click menu only on the parent area's text boxes, for Cut, Copy and Paste: elsewhere it offers Back,
+  // Reload and Print.
+  doc.addEventListener('contextmenu', (e) => !(inParentWorld() && isField(e.target)) && e.preventDefault());
   doc.addEventListener('selectstart', (e) => !isField(e.target) && !inParentWorld() && e.preventDefault());
   doc.addEventListener('dragstart', block);
   // Pinch-zoom on touchpads and Ctrl+wheel zoom
@@ -35,12 +37,30 @@ export function installGuards(win: Window = window): void {
       }
       // While developing, keep reload and the dev tools reachable.
       if (import.meta.env.DEV && (e.key === 'F5' || e.key === 'F12')) return;
-      // Parents type names in the parent area; browser shortcuts stay blocked even there.
-      if (inParentWorld() && !e.ctrlKey && !e.altKey && !e.metaKey) return;
+      // Parents type names, addresses and codes in the parent area: plain keys, and the editing shortcuts in a text
+      // box (paste the sync server's address, owner 2026-11-15). Other browser shortcuts stay blocked even there.
+      if (inParentWorld()) {
+        if (!e.ctrlKey && !e.altKey && !e.metaKey) return;
+        if (isEditingShortcut(e, isField(e.target))) return;
+      }
       e.preventDefault();
     },
     { capture: true },
   );
+}
+
+const FIELD_CTRL_KEYS = new Set(['a', 'c', 'v', 'x', 'z', 'y', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'home', 'end', 'backspace', 'delete', 'insert']);
+
+/**
+ * The Ctrl shortcuts the parent area lets through: Ctrl+C anywhere (copy a code shown on screen); in a text box
+ * also select all, cut, paste, undo, redo, word moves and deletes, and Ctrl+Insert. Never Alt or the Windows key.
+ * (Shift+Insert has no Ctrl, so it passes as a plain key.)
+ */
+export function isEditingShortcut(e: Pick<KeyboardEvent, 'ctrlKey' | 'altKey' | 'metaKey' | 'shiftKey' | 'key'>, inField: boolean): boolean {
+  if (e.altKey || e.metaKey) return false;
+  const key = e.key.toLowerCase();
+  if (e.ctrlKey && key === 'c') return true;
+  return inField && e.ctrlKey && FIELD_CTRL_KEYS.has(key);
 }
 
 /** Asks for full screen on the first touch. Browsers only allow it from a user gesture. */

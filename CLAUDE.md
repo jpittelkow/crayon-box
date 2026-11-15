@@ -9,7 +9,8 @@ in-app updates from GitHub Releases. Design lives in [docs/adr](docs/adr/README.
 
 ## Start of every session
 1. Read [docs/memory/README.md](docs/memory/README.md) and the memory files it lists. They are short.
-2. Skim the newest entry in [docs/journal](docs/journal/README.md) to see where the last session stopped.
+2. Skim the newest entry in [docs/journal](docs/journal/README.md) to see where the last session stopped, and
+   the ordered [to-do list](docs/todo.md) for what comes next.
 3. Check the ADR index before changing anything a decision covers.
 
 ## End of every session (or after a meaningful chunk of work)

@@ -53,6 +53,8 @@ export function keyboardModeFor(screen: ScreenKind, settings: KioskSettings): Ke
 export class KioskControl {
   private screen: ScreenKind = 'kid';
   private applied: KeyboardMode | null = null;
+  /** The window unlocked from the parent area for this visit only; locked again on the way back to the kids. */
+  private unlockedForParent = false;
 
   constructor(
     private readonly bridge: KioskBridge,
@@ -71,14 +73,36 @@ export class KioskControl {
 
   async showing(screen: ScreenKind): Promise<void> {
     this.screen = screen;
+    if (screen !== 'parent' && this.unlockedForParent) {
+      this.unlockedForParent = false;
+      await this.bridge.setLocked(this.settings.keepFullScreen);
+    }
     await this.apply();
+  }
+
+  /** True while the window is locked full screen (it never is with "Keep the app full screen" off). */
+  get windowLocked(): boolean {
+    return this.settings.keepFullScreen && !this.unlockedForParent;
+  }
+
+  /**
+   * From the parent area: an ordinary window (resizable, minimizable, closable) so a parent can use other apps,
+   * until they go back to the kids (owner, 2026-11-15). The saved setting doesn't change.
+   */
+  async setWindowUnlocked(unlocked: boolean): Promise<void> {
+    if (!this.settings.keepFullScreen) return;
+    this.unlockedForParent = unlocked;
+    await this.bridge.setLocked(!unlocked);
   }
 
   async update(shell: GameStorage, change: Partial<KioskSettings>): Promise<void> {
     const before = this.settings;
     this.settings = { ...this.settings, ...change };
     await saveKioskSettings(shell, this.settings);
-    if (before.keepFullScreen !== this.settings.keepFullScreen) await this.bridge.setLocked(this.settings.keepFullScreen);
+    if (before.keepFullScreen !== this.settings.keepFullScreen) {
+      this.unlockedForParent = false;
+      await this.bridge.setLocked(this.settings.keepFullScreen);
+    }
     await this.apply();
   }
 
