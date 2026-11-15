@@ -41,9 +41,29 @@ In this order; each one makes the next map richer or easier to build.
 - **Maps from a folder:** the game loads a map file from a folder outside the repo (dropped on the device or
   synced from the family server). Needed by the home map; the repo holds only the loading code.
 
-## 5. Letters: writing words
+## 5. Letters: sound, tips and how-to, then words
+Asked by the owner on 2026-11-15. Today a letter has its name said when finished, a word of praise, the app's
+touch sounds, start dots and arrows, a finger on the first dot, a fingertip hint after a pause, and dots on what
+is left (ADR 0026, 0028). Everything below is spoken or shown, never written (ADR 0003). One ADR for the three
+items first, with mockups.
+- **More sound:**
+  - the letter's name said when it opens, not only when it is done;
+  - its sound as well as its name ("B, buh"), a parent setting;
+  - a soft drawing sound while the finger is on the line, a chime as each stroke is finished, a gentle "boop"
+    when the finger wanders off the line;
+  - all as files, made like the narrator's clips ([sounds recipe](recipes/sounds.md)).
+- **Tips when a kid is stuck**, spoken and shown: "start at the dot", "follow the arrow", "now the next line",
+  "tap the check". They come after a pause, after a few tries off the line, or when a kid lifts too early. They
+  grow from a quiet one (the dot pulses) to a full one (the fingertip demo with the narrator). Each tip says less
+  once the kid has done that letter well before.
+- **How to trace, the first time:** a short demo before a kid's first letter. The narrator says what to do while
+  a hand traces an easy letter (an `L` or an `O`), then the kid tries the same letter. A parent can replay it from
+  the parent Letters screen, and it can come back for a kid who hasn't played for a while.
+- **Narrator deadline:** the new lines need the same voice as today's clips, and ElevenLabs retires it on
+  2026-12-31. Make every new line before then, or pick a new voice and remake the whole set. That is a reason to
+  do this section sooner; nothing above it depends on it.
 - **Tracing short words** letter by letter, the next level after single letters (owner, 2026-11-14). Needs its
-  own ADR (ADR 0026 covers single letters). Can move earlier if wanted; nothing above depends on it.
+  own ADR (ADR 0026 covers single letters). It uses the tips and sounds above.
 
 ## 6. More maps (last)
 - **New maps** made with the editor: ideas are a town (streets in blocks, a fire station garage, a park) and the
