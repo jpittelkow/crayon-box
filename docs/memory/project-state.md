@@ -38,11 +38,11 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    the polished toy look and an engine voice per vehicle ([ADR 0025](../adr/0025-driving-game-toy-look-and-engine-sounds.md));
    traffic is a school bus, a police car (flashing lamps) and a monster truck. Frame rate on the family laptop
    not measured yet.
-   **After the MVP** (asked by the owner 2026-11-14, "think through all of this after the mvp is done"; nothing
-   designed yet): a choice of vehicles (monster trucks, school buses, emergency vehicles with working lights, and
-   more); two or three maps, much bigger than the prototype's island, with more of the same things and more
-   water. Needs a new ADR, since ADR 0021 has one small island and a few cars.
-   **Draft plan (2026-11-15):** [milestone-3-driving.md](../milestone-3-driving.md), waiting on the owner's choices.
+   **Planned 2026-11-15 in [milestone-3.md](../milestone-3.md)**: A samples and laptop check, B the MVP (island
+   finished, world as data, vehicle picker), C an ADR for vehicles and maps, D vehicles (own horn each, garage),
+   E two or three bigger maps with a map picker, F ready for the kids. Phase A1 built 2026-11-15: a fire truck three
+   ways in `spikes/vehicle-sources/` (in code, Kenney CC0 kit, AI-made with TRELLIS.2); the owner chose
+   **built in code** the same day. A2 (laptop check) not started.
 5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
    of the family's own area, made from real map and terrain data, with the roads, the family's house and a few
    neighbours' houses. It must never be committed: it lives in a folder kept out of the repo that can be dropped

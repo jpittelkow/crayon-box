@@ -39,8 +39,10 @@ _Last confirmed: 2026-11-14_
 - **After the driving MVP** (asked 2026-11-14): a choice of vehicles (monster trucks, school buses, emergency
   vehicles with working lights, "a bunch of other options"); two or three maps, a lot bigger than the
   prototype, with more of everything the test had and more water. A map of the family's own area as its own
-  milestone, kept out of the repo in a folder for the family's server. The owner asked to think this through
-  only once the MVP is done, so don't start it unasked.
+  milestone, kept out of the repo in a folder for the family's server. Planned on the owner's request
+  2026-11-15 ([milestone-3.md](../milestone-3.md)): separate maps chosen from picker tiles, a vehicle picker
+  plus a garage on the map to swap vehicles. Chose vehicles **built in code** over a CC0 kit or AI-made
+  models after seeing all three (2026-11-15).
 - **More realism and more sound in the driving game** (asked 2026-11-14, after trying the prototype: "it looks
   great"): more realistic across the board, above all the vehicle models; many more sound effects, engine
   noise from every car, and each vehicle its own engine sound. Wanted before the next step. Changes ADR 0021's

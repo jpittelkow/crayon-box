@@ -43,6 +43,18 @@
         "--strictPort"
       ],
       "port": 5183
+    },
+    {
+      "name": "vehicles",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "spikes/vehicle-sources",
+        "--port",
+        "5184",
+        "--strictPort"
+      ],
+      "port": 5184
     }
   ]
 }
