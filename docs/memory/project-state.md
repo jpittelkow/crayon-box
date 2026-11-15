@@ -39,11 +39,11 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    the polished toy look and an engine voice per vehicle ([ADR 0025](../adr/0025-driving-game-toy-look-and-engine-sounds.md));
    traffic is a school bus, a police car (flashing lamps) and a monster truck. Frame rate on the family laptop
    not measured yet.
-   **After the MVP** (asked by the owner 2026-11-14, "think through all of this after the mvp is done"; nothing
-   designed yet): a choice of vehicles (monster trucks, school buses, emergency vehicles with working lights, and
-   more); two or three maps, much bigger than the prototype's island, with more of the same things and more
-   water. Needs a new ADR, since ADR 0021 has one small island and a few cars.
-   **Draft plan (2026-11-15):** [milestone-3-driving.md](../milestone-3-driving.md), waiting on the owner's choices.
+   **Planned 2026-11-15 in [milestone-3.md](../milestone-3.md)**: A samples and laptop check, B the MVP (island
+   finished, world as data, vehicle picker), C an ADR for vehicles and maps, D vehicles (own horn each, garage),
+   E two or three bigger maps with a map picker, F ready for the kids. Phase A1 built 2026-11-15: a fire truck three
+   ways in `spikes/vehicle-sources/` (in code, Kenney CC0 kit, AI-made with TRELLIS.2); the owner chose
+   **built in code** the same day. Asset categories and catalog: [driving-assets.md](../driving-assets.md). A2 (laptop check) not started.
 5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
    of the family's own area, made from real map and terrain data, with the roads, the family's house and a few
    neighbours' houses. It must never be committed: it lives in a folder kept out of the repo that can be dropped
@@ -115,7 +115,10 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   coloring screen), `engine/` (ADR 0004), `pictures.ts`, `pages.ts`, `parentSections.ts` (its parent screens).
 - `src/games/racing/` (ADR 0021, 0025, 0031): `sim/` is plain TypeScript (the world with vehicle kinds and sizes,
   driving to a touched spot, traffic modes CRUISE/JOIN/ALONG/LEAVE, `World.steer`; input; camera, tree rules and
-  `groundPoint` (picture to ground) in `view.ts`) with unit tests; `look/` builds the toy-look vehicles, island, trees
+  `groundPoint` (picture to ground) in `view.ts`) with unit tests; the world comes from a map (`sim/map.ts`: land as an
+  outline in `sim/land.ts`, roads, zones; the island in `maps/island.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
+  scenery and decor are registered by id (`sim/assets/` definitions, `look/toys.ts` and `look/scenery.ts` looks;
+  dev gallery at `/tools/driving-gallery.html`); `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the
   game; `game.ts` (screen, touch and keys, loop), `settings.ts` (per-kid assist, sounds), `parentSection.ts`,
   `sound.ts` (an engine voice per vehicle kind in `ENGINES`, effects; made by the browser, no files). Games can

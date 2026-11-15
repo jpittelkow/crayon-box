@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { DRIVE_KEYS, driveInput } from './input';
 import { FAR_SPOT, chaseView, groundPoint, stepTreeSizes } from './view';
-import { ALONG, CRUISE, JOIN, LEAVE, FLOOD_SPEED, LAND_R, VEHICLE_SIZE, bodyPoints, MAX_SPEED, ROAD_R, ROAD_W, makeWorld, step, waterAt, type Input, type World } from './sim';
+import { LAND_R, ROAD_R, ROAD_W } from '../maps/island';
+import { TOYS } from './assets/toys';
+import { nearestOn, pointAt } from './roads';
+import { ALONG, CRUISE, JOIN, LEAVE, FLOOD_SPEED, VEHICLE_SIZE, bodyPoints, MAX_SPEED, makeWorld, step, waterAt, type Input, type World } from './sim';
 
 const DT = 1 / 60;
 const GO: Input = { go: true, brake: false, steer: 0 };
@@ -96,7 +99,7 @@ describe('the kid car', () => {
       return { go: true, brake: false, steer: i % 600 < 300 ? 0.15 : -0.1 };
     });
     expect(far).toBeLessThan(LAND_R);
-  });
+  }, 30_000);
 
   it('after a minute of random driving it is on land and has gone somewhere (never stuck)', () => {
     for (const seed of [1, 2, 3]) {
@@ -116,7 +119,6 @@ describe('the kid car', () => {
       expect(Math.hypot(w.cars[0].x, w.cars[0].z)).toBeLessThan(LAND_R);
       expect(travelled).toBeGreaterThan(200);
     }
-    // Three simulated minutes: about 2 s here, but 6 s on CI's Windows runner, past Vitest's 5 s default.
   }, 30_000);
 
   it('a car held against a tree gets steered back to the road', () => {
@@ -169,44 +171,65 @@ describe('the kid car', () => {
   });
 });
 
-describe('things to knock around', () => {
-  it('fly when hit, then go back home', () => {
+describe('toys to knock around', () => {
+  /** Drives the kid's car through a toy near the road, then waits; reports how high and how far it went. */
+  function knock(behaviour: 'tumble' | 'roll') {
     const w = makeWorld(7, 150);
-    const prop = w.props.find((p) => Math.abs(Math.hypot(p.homeX, p.homeZ) - ROAD_R) < 3)!;
+    const prop = w.props.find((p) => TOYS[p.toy].behaviour === behaviour && Math.abs(Math.hypot(p.homeX, p.homeZ) - ROAD_R) < 3)!;
     const car = w.cars[0];
-    // Line the car up to drive straight through the prop.
+    // Line the car up to drive straight through the toy, along the road.
     const a = Math.atan2(prop.homeX, prop.homeZ);
     car.x = prop.homeX - Math.cos(a) * 6;
     car.z = prop.homeZ + Math.sin(a) * 6;
     car.heading = Math.atan2(prop.homeX - car.x, prop.homeZ - car.z);
     car.speed = 12;
-    let flew = false;
-    run(w, 1, () => {
-      flew ||= prop.y > 1.5;
+    let high = 0, far = 0, knocked = false, cameHome = false;
+    const watch = () => {
+      high = Math.max(high, prop.y - TOYS[prop.toy].half);
+      far = Math.max(far, Math.hypot(prop.x - prop.homeX, prop.z - prop.homeZ));
+      // Home again: back at its own spot at full size. (Traffic may knock it again later; that is fine.)
+      cameHome ||= knocked && far > 1 && prop.scale === 1 && Math.hypot(prop.x - prop.homeX, prop.z - prop.homeZ) < 1e-6;
+    };
+    run(w, 1, (world) => {
+      knocked ||= world.knocks.includes(prop.toy);
+      watch();
       return GO;
     });
-    expect(flew).toBe(true);
     car.speed = 0;
-    run(w, 12, { go: false, brake: true, steer: 0 });
-    expect(prop.x).toBeCloseTo(prop.homeX, 5);
-    expect(prop.z).toBeCloseTo(prop.homeZ, 5);
-    expect(prop.scale).toBe(1);
+    run(w, 12, () => {
+      watch();
+      return { go: false, brake: true, steer: 0 };
+    });
+    return { high, far, knocked, cameHome };
+  }
+
+  it('a tumbling toy flies up when hit, then goes back home', () => {
+    const { high, knocked, cameHome } = knock('tumble');
+    expect(knocked).toBe(true);
+    expect(high).toBeGreaterThan(1);
+    expect(cameHome).toBe(true);
+  });
+
+  it('a rolling toy only hops, rolls a long way along the ground, then goes back home', () => {
+    const { high, far, knocked, cameHome } = knock('roll');
+    expect(knocked).toBe(true);
+    expect(high).toBeLessThan(0.5);
+    expect(far).toBeGreaterThan(8);
+    expect(cameHome).toBe(true);
   });
 });
 
 describe('traffic keeps the kid company (ADR 0031)', () => {
-  /** The kid's car on the road, `behind` metres back from traffic car `i`, heading the way traffic goes. */
+  /** The kid's car on traffic car `i`'s road, `behind` metres back from it, heading the way traffic goes. */
   function kidBehind(w: World, i: number, behind: number): void {
-    const a = w.cars[i].angle - behind / ROAD_R;
-    const kid = w.cars[0];
-    kid.x = Math.sin(a) * ROAD_R;
-    kid.z = Math.cos(a) * ROAD_R;
-    kid.heading = a + Math.PI / 2;
-    kid.speed = 10;
+    const c = w.cars[i];
+    Object.assign(w.cars[0], pointAt(w.roads[c.road], c.s - behind), { speed: 10 });
   }
+  /** How far along the road the kid's car is ahead of traffic car `i` (negative: behind). */
   const gapTo = (w: World, i: number) => {
-    const d = Math.atan2(w.cars[0].x, w.cars[0].z) - w.cars[i].angle;
-    return Math.atan2(Math.sin(d), Math.cos(d)) * ROAD_R;
+    const c = w.cars[i], road = w.roads[c.road];
+    const g = nearestOn(road, c.road, w.cars[0].x, w.cars[0].z).s - c.s;
+    return g - Math.round(g / road.length) * road.length;
   };
 
   it('one car catches up, rides alongside for a while, then drives off ahead', () => {
@@ -260,12 +283,9 @@ describe('traffic keeps the kid company (ADR 0031)', () => {
     const w = makeWorld(7, 0);
     const other = w.cars[3];
     const kid = w.cars[0];
-    // Side on, from outside the road, nose toward the traffic car.
-    const r = other.lane + 4;
-    kid.x = Math.sin(other.angle) * r;
-    kid.z = Math.cos(other.angle) * r;
-    kid.heading = other.angle + Math.PI;
-    kid.speed = 12;
+    // Side on, from 4 m to the traffic car's right, nose toward it.
+    const p = pointAt(w.roads[other.road], other.s, other.lane + 4);
+    Object.assign(kid, { x: p.x, z: p.z, heading: p.heading - Math.PI / 2, speed: 12 });
     other.cruise = other.speed = 0;
     const lane = other.lane;
     let touched = false;

@@ -55,7 +55,7 @@ small.
     - Car wash bubbles.
     - The ramp: a jump and a landing.
     - An answer for each animal that replies to the horn.
-- **New vehicles** from the driving plan ([milestone-3-driving.md](milestone-3-driving.md)) each add an engine
+- **New vehicles** from the driving plan ([milestone-3.md](milestone-3.md)) each add an engine
   loop, a horn and one special sound.
 
 **Music (optional)**

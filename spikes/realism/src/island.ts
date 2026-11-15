@@ -2,7 +2,8 @@
 // shows the same place: same road, puddles, flood, trees and props.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { LAND_R, ROAD_R, ROAD_W, type World } from '../../../src/games/racing/sim/sim';
+import { LAND_R, ROAD_R, ROAD_W } from '../../../src/games/racing/maps/island';
+import type { World } from '../../../src/games/racing/sim/sim';
 import type { Kit } from './kit';
 
 /** Areas kept clear of trees and props (for the vehicle line-up). */
