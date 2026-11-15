@@ -44,6 +44,11 @@ jobs:
         with:
           workspaces: src-tauri
       - run: npm ci
+      # The Rust side's own tests (the keyboard lock's key rules, phase D). Needs the web build's folder to exist.
+      - run: |
+          mkdir -p dist
+          cargo test --manifest-path src-tauri/Cargo.toml
+        shell: bash
       - run: npx tauri build --bundles nsis
       - uses: actions/upload-artifact@v4
         with:

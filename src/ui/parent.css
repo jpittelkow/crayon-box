@@ -418,3 +418,12 @@
 .pw-gate-wordmark {
   margin-bottom: 12px;
 }
+
+/* ---- This laptop: the setup steps (ADR 0014) ---- */
+.pw-steps {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

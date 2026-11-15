@@ -58,6 +58,14 @@ Two parts; the server part can start any time, even alongside phase A.
 - **Needs:** the server's port and where it runs on Unraid; whether family pages (phase F) sync too.
 
 ### D. Kiosk lock (ADR 0014)
+- **Status (2026-11-14):** built on branch `milestone-2/phase-d-kiosk`; the key rules are unit-tested in Rust
+  (`cargo test`, now also run in CI) and the web side in the browser with a fake (`?fake-kiosk`). Not yet tried on
+  the family laptop. `src-tauri/src/kiosk.rs` (hook, ignored close, quit), `src/shell/kiosk.ts` (what applies
+  when; settings kept under `local/`, which sync skips, ADR 0024), `tauriKiosk.ts`, `src/parent/laptopScreen.ts`
+  (Parent area › This laptop: Quit, the switches, start at sign-in, the setup guide), and
+  [laptop-setup.md](laptop-setup.md) with the checklist. The hook only starts the first time the lock is needed,
+  so with the lock off there is no hook at all. Quitting leaves the open screen first, which writes the finished
+  picture (phase B's leftover). Defaults: full screen on, keyboard lock on, start at sign-in off.
 - Borderless full screen that can't be resized or minimized; the close request is ignored; *Quit app* in the
   parent area and `Ctrl+Shift+Q` close it.
 - The low-level keyboard hook (a small Rust module): swallows the Windows key, Alt+Tab, Alt+Esc, Ctrl+Esc, Alt+F4,

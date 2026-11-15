@@ -1,11 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the main window may ask of the shell: the core defaults, files in its own store and in the Coloring Book folder in Pictures only (phase B), opening that Pictures folder, and checking for and installing signed updates (phase E).",
+  "description": "What the main window may ask of the shell: the core defaults, files in its own store and in the Coloring Book folder in Pictures only (phase B), opening that Pictures folder, and checking for and installing signed updates (phase E), and the kiosk lock: full screen, start at sign-in (phase D).",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "updater:default",
+    "autostart:default",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-set-resizable",
+    "core:window:allow-set-minimizable",
     "fs:allow-read-file",
     "fs:allow-write-file",
     "fs:allow-rename",
