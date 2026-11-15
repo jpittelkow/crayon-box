@@ -2,7 +2,8 @@
 
 How to draw a built-in page so it colors well and passes the page check. The format is
 [ADR 0005](../docs/adr/0005-page-library-format.md); the licensing rules are
-[ADR 0011](../docs/adr/0011-line-art-licensing.md).
+[ADR 0011](../docs/adr/0011-line-art-licensing.md). The order to work in, and what to avoid, is the
+[coloring page recipe](../docs/recipes/coloring-pages.md).
 
 ## Folder layout
 ```

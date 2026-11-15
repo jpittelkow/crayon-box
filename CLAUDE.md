@@ -31,6 +31,8 @@ reach the repo, file names or any service (ADR 0018). Test data uses symbols and
 If you notice an identifier already in the repo, flag it to the owner rather than silently leaving it.
 
 ## Working conventions
+- Making a coloring page, vehicle, toy, scenery, set piece, map or sound: follow its recipe in
+  [docs/recipes](docs/recipes/README.md) (steps, patterns, anti-recipes).
 - Kid-facing screens follow the toddler rules in ADR 0003 (no text, big targets, one finger, no escape hatches).
 - Built-in art is original or CC0 only; no franchise characters (ADR 0011).
 - Secrets (OpenRouter key, updater signing key) never go in the repo (ADR 0006, 0009).
