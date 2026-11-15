@@ -1,7 +1,7 @@
 # Sound design: options
 
 Drafted 2026-11-15 for the owner's sound choices. The owner picked by ear the same day; the result is
-[ADR 0032](adr/0032-sounds-as-files.md) (Proposed). This file keeps the options and the sources behind it. The
+[ADR 0032](adr/0032-sounds-as-files.md) (Accepted). This file keeps the options and the sources behind it. The
 recommendation below came before the listening test and is superseded by ADR 0032.
 
 ## The ask

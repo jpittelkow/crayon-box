@@ -1,8 +1,8 @@
 # 0032. Sounds ship as files: recorded CC0 sounds, AI-made gaps, one AI narrator
 
-- Status: Proposed (drafted 2026-11-15 from the owner's picks; waiting on the owner to accept)
+- Status: Accepted (by the owner, 2026-11-15, after settling the open choices)
 - Date: 2026-11-15
-- Supersedes, once accepted: in [ADR 0016](0016-visual-design-language.md), sounds made from tones with no
+- Supersedes: in [ADR 0016](0016-visual-design-language.md), sounds made from tones with no
   files; in [ADR 0025](0025-driving-game-toy-look-and-engine-sounds.md), engine voices built from oscillators; in
   [ADR 0026](0026-letter-practice.md), letter names said by Windows speech. Everything else in those ADRs stands.
 
@@ -27,19 +27,24 @@ The owner starred recordings and AI takes and picked one voice. The page's first
   | Sound | File | From |
   |---|---|---|
   | tap | `click1` | Kenney's *UI SFX Set* (via OpenGameArt *51 UI sound effects*) |
+  | nothing | `click1`, played quieter and lower | as tap |
   | fill | `pop1` | *3 Pop Sounds* |
   | undo | `rollover1` | Kenney's *UI SFX Set* |
-  | cheer | `bell1` | *100 CC0 SFX* |
+  | cheer (finished letter or page) | `bell1` | *100 CC0 SFX* |
   | page turn | `paper2` | *100 CC0 SFX* |
 
 - **Narrator: ElevenLabs v4, voice Matilda**, through OpenRouter. Every letter A to Z, numbers 0 to 9 and the praise
-  words are made in one batch. Letters are asked for warm and slow, praise for excited. A parent's own recordings
-  still override it (ADR 0026). ElevenLabs retires its default voices, Matilda among them, on 2026-12-31, so the
+  words are made in one batch. Letters are asked for warm and slow, praise for excited. A finished letter plays
+  the cheer, then one praise word picked at random ("Yay!", "You did it!", "Great job!", "Wow!"). A parent's own
+  recordings still override the letter names (ADR 0026). ElevenLabs retires its default voices, Matilda among them, on 2026-12-31, so the
   full set is made before then. Shipped files keep working after that; any later additions use Matilda's named
   replacement (*Maisie*) or a new voice for the whole set.
-- **Engines are recorded loops**, one per vehicle, from the owner's starred Seed Audio takes (car, police, monster
-  truck, bus), cut to a seamless idle loop. OpenGameArt's CC0 *racing car engine sound loops* are the fallback for
-  the car. Speed still bends the pitch (playback rate) and opens a filter, as in ADR 0025.
+- **Engines are recorded loops**, one per vehicle, from Seed Audio: take 1 for the car, police car and bus, take 2
+  for the monster truck. Each is cut to a seamless idle loop. OpenGameArt's CC0 *racing car engine sound loops*
+  are the fallback for the car. Speed still bends the pitch (playback rate) and opens a filter, as in ADR 0025.
+  The kid's own engine stays as loud as today.
+- **The police car's horn button plays a short siren.** None of the samples was a police siren. One is made like
+  the other AI sounds (Seed Audio, or ElevenLabs Sound Effects), and the owner picks a take by ear.
 - **Driving effects:**
 
   | Sound | File | From |
@@ -68,14 +73,13 @@ The owner starred recordings and AI takes and picked one voice. The page's first
     where one is good enough, else with ElevenLabs Sound Effects, else from a private store CI fetches with a
     secret.
 
-## Still open (to settle before accepting)
-- **Tap:** `click1` or the AI wooden tap? Both were starred.
-- **Cheer:** `bell1` or the AI xylophone run? Both were starred.
-- **Nothing** (a touch that does nothing): not picked. Suggestion: `click1` played quieter and lower.
-- **Praise:** spoken by Matilda, a sound, or both? Picking a voice suggests spoken.
-- **Engines:** which take per vehicle where both were starred (car, police, bus). Also how loud the kid's own engine
-  is.
-- **Police siren:** wanted? Not picked.
+## Settled by the owner (2026-11-15)
+- **Tap:** `click1` (not the AI wooden tap).
+- **Cheer:** `bell1` (not the AI xylophone).
+- **Nothing:** `click1`, quieter and lower.
+- **Praise:** the cheer, then a spoken word.
+- **Engines:** take 1 for the car, police car and bus; take 2 for the monster truck. Loudness as today.
+- **Siren:** yes, for the police car.
 
 ## Consequences
 - The app sounds like real things, at the cost of about 3 to 5 MB of audio in the installer and the repo.

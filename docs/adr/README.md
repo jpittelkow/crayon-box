@@ -21,7 +21,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0013](0013-code-hosting.md) | Code hosting: GitHub (Gitea optional mirror) | Accepted |
 | [0014](0014-web-first-then-kiosk-installer.md) | Web app first, then installer with a kiosk lock | Accepted, partly superseded by 0020, 0021, 0024 |
 | [0015](0015-testing-approach.md) | Testing approach | Accepted |
-| [0016](0016-visual-design-language.md) | Visual design language: Crayon Box | Accepted, partly superseded by 0017–0019 |
+| [0016](0016-visual-design-language.md) | Visual design language: Crayon Box | Accepted, partly superseded by 0017–0019, sounds by 0032 |
 | [0017](0017-new-pictures-and-my-pictures.md) | New pictures from the page library, old ones from My pictures | Accepted |
 | [0018](0018-kid-names-and-photos.md) | Kid profiles with names and photos | Accepted, partly superseded by 0024 |
 | [0019](0019-bigger-coloring-page.md) | A bigger coloring page: fills the window, 64 px color buttons | Accepted |
@@ -30,12 +30,12 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0022](0022-where-built-in-pages-come-from.md) | Where the built-in pages come from | Accepted |
 | [0023](0023-ai-pages-from-a-prompt.md) | The AI page maker also makes pages from a typed idea | Accepted |
 | [0024](0024-family-sync-server.md) | Family sync: a small self-hosted server the app syncs to | Accepted |
-| [0025](0025-driving-game-toy-look-and-engine-sounds.md) | Driving game: a polished toy look and an engine sound for every vehicle | Accepted |
-| [0026](0026-letter-practice.md) | Letter practice: trace big letters with a finger or a stylus | Accepted |
+| [0025](0025-driving-game-toy-look-and-engine-sounds.md) | Driving game: a polished toy look and an engine sound for every vehicle | Accepted, engine voices superseded by 0032 |
+| [0026](0026-letter-practice.md) | Letter practice: trace big letters with a finger or a stylus | Accepted, letter voice superseded by 0032 |
 | [0027](0027-app-name-wordmark.md) | The app's name as a wordmark on a few screens | Accepted |
 | [0028](0028-letter-tracing-whole-letter-and-confirm.md) | Letter tracing: letters formed as taught in school, the whole letter traced, then a check to finish | Accepted |
 | [0029](0029-ai-pages-through-the-family-server.md) | AI pages through the family server: one OpenRouter key, kept off the laptops | Accepted |
-| [0032](0032-sounds-as-files.md) | Sounds ship as files: recorded CC0 sounds, AI-made gaps, one AI narrator | Proposed |
+| [0032](0032-sounds-as-files.md) | Sounds ship as files: recorded CC0 sounds, AI-made gaps, one AI narrator | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H
