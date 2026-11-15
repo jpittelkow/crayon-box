@@ -1,0 +1,23 @@
+[package]
+name = "crayon-box"
+version = "0.1.0"
+description = "A touch-screen coloring app for kids aged 4 and under."
+license = "MIT"
+edition = "2021"
+rust-version = "1.77.2"
+
+# The Windows shell around the web app (ADR 0002). Kept thin: window, installer, and later the OS bridge.
+# Built only in CI (docs/milestone-2.md, phase A); the dev machine has no Rust.
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

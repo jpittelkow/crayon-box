@@ -1,4 +1,5 @@
 import { fitFrame, fullscreenOnFirstTouch, installGuards } from './shell/guards';
+import { inTauri } from './shell/platform';
 import { Shell } from './shell/shell';
 import { memoryBackend, openIdbBackend } from './storage/idb';
 import { deviceInfo } from './storage/ids';
@@ -11,9 +12,11 @@ import './shell/shell.css';
 async function boot(): Promise<void> {
   document.body.dataset.world = 'kid';
   installGuards();
-  fullscreenOnFirstTouch();
+  // In the browser the page asks for full screen itself; the Windows app's window handles that (phase D, ADR 0014).
+  if (!inTauri()) fullscreenOnFirstTouch();
 
-  // Ask the browser to keep stored art (ADR 0014). Only granted on a secure origin such as localhost.
+  // Ask the browser to keep stored art (ADR 0014). Only granted on a secure origin such as localhost. Harmless in
+  // the Windows app, whose web storage lives in its own app data folder.
   void navigator.storage?.persist?.().catch(() => false);
 
   let backend;

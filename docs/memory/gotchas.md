@@ -77,3 +77,9 @@ _Last updated: 2026-11-14_
   conflicts per file (ADR 0024).
 - This dev machine often runs at about 70% CPU before tests start. The full browser suite can then time out in a
   random test; `npx playwright test --workers=4` is steady. CI is the reference (2026-11-14).
+- The Windows app has a Content Security Policy (`src-tauri/tauri.conf.json`), the browser version has none. Anything
+  new that loads from elsewhere (OpenRouter in phase G, a sync server in phase C) must be added to it or it works
+  in the browser and fails only in the installed app. The built app was checked under that policy with a one-off
+  script on 2026-11-14 (fill worked, nothing blocked).
+- No Rust on the dev machine means no `src-tauri/Cargo.lock` locally. CI uploads the one its build makes
+  (`cargo-lock` artifact); commit it so later builds use the same crate versions (2026-11-14).
