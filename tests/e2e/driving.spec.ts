@@ -146,3 +146,27 @@ test('a parent sets a kid to "follows the road"', async ({ page }) => {
   });
   expect(assist).toBe('road');
 });
+
+test('the picker has the maps along the top: a tap rings one, and a vehicle drives off there (ADR 0035)', async ({ page }) => {
+  await turnOnDriving(page);
+  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await page.getByRole('button', { name: 'Driving', exact: true }).tap();
+  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true', { timeout: 60_000 });
+  await expect(page.locator('.map-tile')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'Island', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Building site', exact: true }).tap();
+  await expect(page.getByRole('button', { name: 'Building site', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Car', exact: true }).tap();
+  await expect(page.locator('.driving')).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
+  const map = await page.evaluate(() => {
+    const canvas = document.querySelector('.driving-canvas') as HTMLCanvasElement & { drivingWorld?: { map: { id: string } } };
+    return canvas.drivingWorld!.map.id;
+  });
+  expect(map).toBe('site');
+
+  // Coming back in, the building site is ringed.
+  await page.getByRole('button', { name: 'Back', exact: true }).tap();
+  await page.getByRole('button', { name: 'Driving', exact: true }).tap();
+  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true', { timeout: 60_000 });
+  await expect(page.getByRole('button', { name: 'Building site', exact: true })).toHaveAttribute('aria-pressed', 'true');
+});

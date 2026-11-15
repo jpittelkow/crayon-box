@@ -13,6 +13,8 @@ export interface KidDriving {
   assist: Assist;
   /** The vehicle picked last time; the picker shows it picked. */
   vehicle: VehicleKind;
+  /** The map picked last time, by id (ADR 0035). */
+  map: string;
 }
 
 export interface DrivingSettings {
@@ -30,6 +32,7 @@ export async function loadKidDriving(storage: GameStorage, kidId: string): Promi
   return {
     assist: raw?.assist === 'road' ? 'road' : 'free',
     vehicle: VEHICLES.includes(raw?.vehicle as VehicleKind) ? (raw!.vehicle as VehicleKind) : 'car',
+    map: typeof raw?.map === 'string' ? raw.map : 'island',
   };
 }
 

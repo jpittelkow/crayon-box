@@ -166,6 +166,8 @@ One new ADR before any vehicle or map work, superseding ADR 0021's "one small is
   and the laptop still keeps its frame rate with the busiest traffic.
 
 ### E. Bigger maps
+**Status (2026-11-15): built** (ADR 0035). Two maps (`maps/index.ts`): **the island**, layout A grown 1.8 times across (a spur road and a third junction, two ramps, more puddles, herds and toys, boats in the bay), and **the building site** (`maps/site.ts`: dirt tracks, dirt hills, three ramps, mud puddles and a muddy pond, a sand pit, cones and crates, cows, the site office as the garage, the building vehicles first in traffic). **One picker screen**: the maps along the top as pictures from above, the vehicles below; a tap on a map rings it, a tap on a vehicle drives off there; the last map is saved per kid. Things further than 150 m from the chase camera are not drawn. Not built: map tiles (wait for the laptop's numbers, B7) and the map editor (waits for a third map). Every map passes the same rules in `maps/maps.test.ts`.
+
 - **Two or three maps**, each about three to five times the island's area, with more of what the prototype had
   and more water. Ideas to pick from in the ADR:
   - **The island**, grown: the set pieces of phase B, more beach, a harbour.
