@@ -145,6 +145,8 @@ One new ADR before any vehicle or map work, superseding ADR 0021's "one small is
 - Mockups added to the canvas for the vehicle picker, the map picker and the garage.
 
 ### D. Vehicles
+**Status (2026-11-15): built** (ADR 0035, Proposed). Ten new vehicles in code (`look/fleet.ts`), each with a moving part (a ladder that rises, a bed that tips, a digger that scoops, a drum that turns, a hook that swings), a feel (`VEHICLE_FEEL`: top speed, how far it knocks toys, wading), a stand-in engine and horn (sirens, a beep-beep, an ice-cream tune). The picker pages five at a time; traffic comes from the vehicles switched on; a parent can switch any vehicle but the car off; a garage on the island's shortcut hands out the next vehicle. Real engine and horn takes wait for new sound files.
+
 - **Candidates** (owner's list plus ideas, to trim in the ADR): fire truck (ladder, siren), ambulance, tow truck,
   digger, dump truck, tractor, garbage truck, cement mixer, ice-cream van, race car. Monster truck, school bus
   and police car exist already.

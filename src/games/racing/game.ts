@@ -5,7 +5,8 @@ import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import type { createRenderer as CreateRendererFn } from './render';
-import { VEHICLES, forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving } from './settings';
+import { VEHICLE_NAMES } from './names';
+import { forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving, shownVehicles } from './settings';
 import { DRIVE_KEYS, driveInput } from './sim/input';
 import { TOYS } from './sim/assets/toys';
 import { honk, makeWorld, step, type Assist, type VehicleKind, type World } from './sim/sim';
@@ -22,8 +23,6 @@ const PALM_CSS_PX = 80;
 
 type CreateRenderer = typeof CreateRendererFn;
 
-/** The vehicles' names, for screen readers and tests only: the picker shows no text (ADR 0003). */
-const VEHICLE_NAMES: Record<VehicleKind, string> = { car: 'Car', police: 'Police car', monster: 'Monster truck', bus: 'School bus' };
 
 /** The canvas carries the running world, for tests and the dev tools only. */
 export type DrivingCanvas = HTMLCanvasElement & { drivingWorld?: World };
@@ -76,25 +75,40 @@ class DrivingGame {
       await saveKidDriving(storage, kid.id, { ...prefs, vehicle });
       if (this.stopped) return;
       picker.remove();
-      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, kidColor);
+      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, kidColor, shown);
     };
-    const pictures = vehicleTiles(VEHICLES, kidColor);
-    const tiles = VEHICLES.map((vehicle, i) => {
+    // The vehicles a parent has on (ADR 0035).
+    const shown = shownVehicles(settings);
+    const pictures = vehicleTiles(shown, kidColor);
+    const tiles = shown.map((vehicle, i) => {
       const tile = kidButton({ kind: 'paper', label: VEHICLE_NAMES[vehicle], className: 'vehicle-tile', onTap: () => void choose(vehicle) });
       tile.dataset.vehicle = vehicle;
       tile.append(Object.assign(document.createElement('img'), { src: pictures[i], alt: '' }));
       return tile;
     });
-    setPicked(tiles, tiles[VEHICLES.indexOf(prefs.vehicle)]);
+    const last = Math.max(0, shown.indexOf(prefs.vehicle));
+    setPicked(tiles, tiles[last]);
+    // Five tiles a page and a "more" tile when there are more than six (ADR 0016 rule 6), opening on the page with
+    // the last pick.
+    const per = tiles.length > 6 ? 5 : tiles.length, pages = Math.ceil(tiles.length / per);
+    let page = Math.floor(last / per);
     const grid = el('div', 'vehicle-grid');
-    grid.append(...tiles);
+    const more = kidButton({
+      kind: 'paper', label: 'More', html: icons.more(), className: 'vehicle-tile vehicle-more',
+      onTap: () => {
+        page = (page + 1) % pages;
+        showPage();
+      },
+    });
+    const showPage = () => grid.replaceChildren(...tiles.slice(page * per, page * per + per), ...(pages > 1 ? [more] : []));
+    showPage();
     picker.append(grid);
     this.root.append(picker);
     picker.dataset.ready = 'true';
   }
 
   /** The island, driven in the vehicle the kid picked. */
-  private drive(assist: Assist, soundsOn: boolean, createRenderer: CreateRenderer, vehicle: VehicleKind, kidColor: string): void {
+  private drive(assist: Assist, soundsOn: boolean, createRenderer: CreateRenderer, vehicle: VehicleKind, kidColor: string, shown: VehicleKind[]): void {
     const screen = el('div', 'driving', { 'data-ready': 'false' });
     const canvas = el('canvas', 'driving-canvas') as DrivingCanvas;
     const back = kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() });
@@ -114,7 +128,7 @@ class DrivingGame {
     this.root.append(screen);
     this.cleanups.push(() => sound.close());
 
-    const world = makeWorld(SEED, PROP_COUNT, assist, undefined, vehicle);
+    const world = makeWorld(SEED, PROP_COUNT, assist, undefined, vehicle, shown);
     canvas.drivingWorld = world;
     let renderer = createRenderer(canvas, world, kidColor);
     this.cleanups.push(() => renderer.dispose());

@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { soundUrl } from '../../shell/soundFiles';
 import { MAX_SPEED, makeWorld, step, type VehicleKind } from './sim/sim';
+import { VEHICLES } from './settings';
 import { EFFECTS, ENGINES, engineLoudness } from './sound';
 
 describe('engine sounds (ADR 0025, 0032)', () => {
-  it('every kind of vehicle has an engine loop of its own', () => {
+  it('every kind of vehicle has an engine; the first four have loops of their own (the rest are stand-ins, ADR 0035)', () => {
     const kinds = Object.keys(ENGINES) as VehicleKind[];
-    expect(kinds.sort()).toEqual(['bus', 'car', 'monster', 'police']);
-    expect(new Set(kinds.map((k) => ENGINES[k].file)).size).toBe(kinds.length);
+    expect(kinds.sort()).toEqual([...VEHICLES].sort());
+    const own: VehicleKind[] = ['car', 'police', 'monster', 'bus'];
+    expect(new Set(own.map((k) => ENGINES[k].file)).size).toBe(own.length);
     for (const k of kinds) expect(soundUrl(ENGINES[k].file), k).toBeTruthy();
     // The big vehicles sound lower than the small ones, at every speed.
     for (const speed of [0, MAX_SPEED / 2, MAX_SPEED]) {

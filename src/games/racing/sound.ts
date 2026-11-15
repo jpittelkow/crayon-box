@@ -29,6 +29,18 @@ export const ENGINES: Record<VehicleKind, EngineVoice> = {
   // The big vehicles stay low: a slower loop at every speed.
   monster: { file: 'drive/engine-monster.wav', idleRate: 0.9, perSpeed: 0.045, toneHz: 1200, tonePerSpeed: 180, volume: 0.7 },
   bus: { file: 'drive/engine-bus.wav', idleRate: 0.9, perSpeed: 0.04, toneHz: 1300, tonePerSpeed: 160, volume: 0.65 },
+  // Milestone 3, phase D (ADR 0035): stand-ins from the four loops above, pitched and toned for each vehicle, until
+  // takes of their own can be made.
+  fire: { file: 'drive/engine-bus.wav', idleRate: 0.85, perSpeed: 0.045, toneHz: 1400, tonePerSpeed: 180, volume: 0.65 },
+  ambulance: { file: 'drive/engine-police.wav', idleRate: 0.95, perSpeed: 0.065, toneHz: 2000, tonePerSpeed: 260, volume: 0.55 },
+  tow: { file: 'drive/engine-car.wav', idleRate: 0.85, perSpeed: 0.055, toneHz: 1500, tonePerSpeed: 200, volume: 0.6 },
+  digger: { file: 'drive/engine-monster.wav', idleRate: 0.75, perSpeed: 0.04, toneHz: 1000, tonePerSpeed: 150, volume: 0.65 },
+  dump: { file: 'drive/engine-bus.wav', idleRate: 0.78, perSpeed: 0.04, toneHz: 1100, tonePerSpeed: 150, volume: 0.65 },
+  mixer: { file: 'drive/engine-bus.wav', idleRate: 0.82, perSpeed: 0.04, toneHz: 1200, tonePerSpeed: 160, volume: 0.62 },
+  tractor: { file: 'drive/engine-monster.wav', idleRate: 0.7, perSpeed: 0.035, toneHz: 900, tonePerSpeed: 120, volume: 0.6 },
+  garbage: { file: 'drive/engine-bus.wav', idleRate: 0.8, perSpeed: 0.04, toneHz: 1150, tonePerSpeed: 150, volume: 0.62 },
+  icecream: { file: 'drive/engine-car.wav', idleRate: 0.9, perSpeed: 0.05, toneHz: 1600, tonePerSpeed: 200, volume: 0.55 },
+  race: { file: 'drive/engine-police.wav', idleRate: 1.15, perSpeed: 0.08, toneHz: 2600, tonePerSpeed: 340, volume: 0.6 },
 };
 
 /** The effect files, under assets/sounds/. */
@@ -56,7 +68,26 @@ const BUMP: Record<Exclude<BumpSound, 'boing'>, { rate: number; volume: number }
 };
 
 /** The horn's pitch per vehicle: the same bicycle horn, lower for the big ones. The police car sounds its siren. */
-const HORN_RATE: Record<VehicleKind, number> = { car: 1, police: 1, monster: 0.7, bus: 0.8 };
+/**
+ * Each vehicle's horn (ADR 0035): the bicycle horn played as one or more notes (each a pitch), or the siren at a
+ * pitch. Stand-ins until takes of their own: a beep-beep for the digger, a little tune for the ice-cream van.
+ */
+const HORNS: Record<VehicleKind, { siren?: number; notes?: number[]; gap?: number; volume: number }> = {
+  car: { notes: [1], volume: 0.9 },
+  police: { siren: 1, volume: 0.7 },
+  monster: { notes: [0.55], volume: 1 },
+  bus: { notes: [0.72, 0.72], gap: 0.3, volume: 0.9 },
+  fire: { siren: 0.88, volume: 0.75 },
+  ambulance: { siren: 1.15, volume: 0.7 },
+  tow: { notes: [0.7], volume: 0.9 },
+  digger: { notes: [1.9, 1.9], gap: 0.24, volume: 0.6 },
+  dump: { notes: [0.6], volume: 0.95 },
+  mixer: { notes: [0.66], volume: 0.9 },
+  tractor: { notes: [0.48], volume: 0.95 },
+  garbage: { notes: [0.8], volume: 0.9 },
+  icecream: { notes: [1.2, 1.5, 1.35, 1.8], gap: 0.18, volume: 0.6 },
+  race: { notes: [1.5], volume: 0.8 },
+};
 
 /**
  * Animals answering the horn (milestone-3 B3): stand-ins until takes of their own, the horn file at a pitch for
@@ -84,6 +115,8 @@ export function engineLoudness(world: World, index: number): number {
 }
 
 interface Running {
+  /** The vehicle it was started for: the garage can change the kid's (ADR 0035). */
+  kind: VehicleKind;
   src: AudioBufferSourceNode;
   filter: BiquadFilterNode;
   gain: GainNode;
@@ -143,7 +176,7 @@ export class DrivingSound {
   }
 
   /** Plays an effect file once; `rate` also sets its pitch. */
-  private effect(path: string, volume: number, rate = 1): AudioBufferSourceNode | null {
+  private effect(path: string, volume: number, rate = 1, delay = 0): AudioBufferSourceNode | null {
     const ctx = this.running();
     const buf = this.files.get(path);
     if (!ctx || !buf) return null;
@@ -153,7 +186,7 @@ export class DrivingSound {
     const gain = ctx.createGain();
     gain.gain.value = volume;
     src.connect(gain).connect(this.out(ctx));
-    src.start();
+    src.start(ctx.currentTime + delay);
     return src;
   }
 
@@ -217,7 +250,7 @@ export class DrivingSound {
     src.connect(filter).connect(gain).connect(this.out(ctx));
     // Each engine starts at its own point in the loop, so two of the same kind don't beat against each other.
     src.start(0, Math.random() * buf.duration);
-    return { src, filter, gain };
+    return { kind, src, filter, gain };
   }
 
   /** Called once a frame: engines follow their vehicles, tyres squeal on hard turns, brakes squeak. */
@@ -227,6 +260,15 @@ export class DrivingSound {
     const t = ctx.currentTime;
     this.kidKind = world.cars[0]?.kind ?? 'car';
     world.cars.forEach((c, i) => {
+      if (this.engines[i] && this.engines[i]!.kind !== c.kind) {
+        // A new vehicle from the garage: its own engine.
+        try {
+          this.engines[i]!.src.stop();
+        } catch {
+          // already stopped
+        }
+        delete this.engines[i];
+      }
       if (!this.engines[i]) {
         const started = this.startEngine(ctx, c.kind);
         if (!started) return; // its loop is still loading
@@ -327,19 +369,20 @@ export class DrivingSound {
     this.effect(big ? EFFECTS.splash : EFFECTS.puddle, big ? 1 : 0.8);
   }
 
-  /** The kid's horn: a bicycle horn, lower for the big vehicles; the police car sounds its siren instead. */
+  /** The kid's horn: each vehicle's own (HORNS); emergency vehicles sound their siren instead. */
   horn(): void {
-    if (this.kidKind === 'police') {
+    const horn = HORNS[this.kidKind];
+    if (horn.siren) {
       // A new tap starts the siren again rather than piling a second one on top.
       try {
         this.siren?.stop();
       } catch {
         // already over
       }
-      this.siren = this.effect(EFFECTS.siren, 0.7);
+      this.siren = this.effect(EFFECTS.siren, horn.volume, horn.siren);
       return;
     }
-    this.effect(EFFECTS.horn, 0.9, HORN_RATE[this.kidKind]);
+    (horn.notes ?? [1]).forEach((rate, i) => this.effect(EFFECTS.horn, horn.volume, rate, i * (horn.gap ?? 0)));
   }
 
   close(): void {

@@ -11,7 +11,7 @@ import { toyPieces, type Pieces } from './look/toys';
 import { OWN_COLOR, buildKidVehicle, buildVehicle, type VehicleModel } from './look/vehicles';
 import type { SceneryId } from './sim/assets/scenery';
 import type { ToyId } from './sim/assets/toys';
-import { DROP_LIFE, RIPPLE_LIFE, type World } from './sim/sim';
+import { DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
 import { CAMERA_FOV, chaseView, stepTreeSizes, type View } from './sim/view';
 
 /** The most real pixels drawn per CSS pixel. Built-in laptop graphics (ADR 0021) get no more than this. */
@@ -111,15 +111,18 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     return model;
   });
 
-  const vehicles: VehicleModel[] = world.cars.map((c, i) => {
-    // The kid's vehicle in their colour, or with their flag (milestone-3 B5); traffic in its own colours.
-    const v = i === 0 ? buildKidVehicle(c.kind, kidColor) : buildVehicle(c.kind, OWN_COLOR[c.kind]);
+  // The kid's vehicle in their colour, or with their flag (milestone-3 B5); traffic in its own colours.
+  const vehicleModel = (kind: VehicleKind, kid: boolean): VehicleModel => {
+    const v = kid ? buildKidVehicle(kind, kidColor) : buildVehicle(kind, OWN_COLOR[kind]);
     v.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
     });
     scene.add(v.group);
     return v;
-  });
+  };
+  const vehicles: VehicleModel[] = world.cars.map((c, i) => vehicleModel(c.kind, i === 0));
+  // The kind each model was built as: the garage (ADR 0035) changes the kid's vehicle, and its model with it.
+  const builtAs = world.cars.map((c) => c.kind);
 
   // Splashes, dust and wake rings.
   const effect = (geo: THREE.BufferGeometry, color: number, count: number) => {
@@ -186,13 +189,18 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
 
     // Vehicles
     w.cars.forEach((c, i) => {
+      if (c.kind !== builtAs[i]) {
+        scene.remove(vehicles[i]!.group);
+        vehicles[i] = vehicleModel(c.kind, i === 0);
+        builtAs[i] = c.kind;
+      }
       const model = vehicles[i]!;
       model.group.position.set(c.x, c.y + c.h, c.z);
       // Nose up while climbing a ramp or rising from it, down while coming down (never enough to look like a flip).
       model.group.rotation.set(-Math.max(-0.35, Math.min(0.35, Math.atan2(c.vy, Math.max(c.speed, 2)))), c.heading, 0, 'YXZ');
       // The simulation's spin is for a wheel 0.45 m across; bigger wheels turn slower for the same distance.
       for (const wheel of model.wheels) wheel.rotation.x = (c.spin * 0.45) / wheel.position.y;
-      model.animate?.(w.time);
+      model.animate?.(w.time, c.speed);
     });
 
     // Effects

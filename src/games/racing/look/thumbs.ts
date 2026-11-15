@@ -33,7 +33,10 @@ export function vehicleTiles(kinds: readonly VehicleKind[], kidColor: THREE.Colo
       Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 1, far: 60 });
       scene.add(sun);
 
-      const vehicle = buildKidVehicle(kind, kidColor).group;
+      const model = buildKidVehicle(kind, kidColor);
+      // Posed as if driving: a digger's arm raised, a ladder down.
+      model.animate?.(0, 10);
+      const vehicle = model.group;
       vehicle.traverse((o) => {
         if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
       });

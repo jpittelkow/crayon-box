@@ -64,6 +64,8 @@ export const ISLAND: MapDef = {
   zones: [
     { kind: 'ramp', on: onLoop(-45, 11), r: 3.5 },
     { kind: 'car-wash', on: { road: 1, at: atShortcut(-23) }, r: 4 },
+    // The garage (ADR 0035): drive in, come out as the next vehicle.
+    { kind: 'garage', on: { road: 1, at: atShortcut(24) }, r: 4 },
   ],
   traffic: [
     { kind: 'bus', on: onLoop(30, 28, -2.2), cruise: 6.5 },
