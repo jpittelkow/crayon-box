@@ -8,7 +8,7 @@ New maps come last on purpose: first every piece a map is made from (vehicles, t
 editor, loading a map from a folder), then the maps themselves.
 
 ## 1. Finish what is in flight
-- **PR #43, the unlock window** (unlock the window for a parent's visit, paste in text boxes): merge.
+- The unlock window (PR #43) is merged.
 - **Release 0.8.0** once it is in, with the playtest fixes (PR #40) and AI page progress (PR #42) already on
   `main`: milestone 3 is then done ([release checklist](release-checklist.md)).
 

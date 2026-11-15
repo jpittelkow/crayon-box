@@ -4,7 +4,12 @@ import type { KioskControl } from '../shell/kiosk';
 import type { GameStorage } from '../storage/types';
 import { card, h, switchRow } from '../ui/parent';
 
-export async function renderLaptop(main: HTMLElement, kiosk: KioskControl, shell: GameStorage): Promise<void> {
+export async function renderLaptop(
+  main: HTMLElement,
+  kiosk: KioskControl,
+  shell: GameStorage,
+  changed: () => void = () => {},
+): Promise<void> {
   const settings = kiosk.current;
   const startOn = await kiosk.startAtSignIn().catch(() => false);
   const startStatus = h('p', { class: 'pw-muted', role: 'status' });
@@ -13,12 +18,16 @@ export async function renderLaptop(main: HTMLElement, kiosk: KioskControl, shell
     h('h1', {}, 'This laptop'),
     card(
       h('h2', {}, 'Lock'),
-      h('p', { class: 'pw-muted' }, 'These stay on this laptop. The parent area is never locked.'),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        'These stay on this laptop. The keyboard is never locked in the parent area, and “Unlock the window” beside Quit makes the app an ordinary window until you go back to the kids.',
+      ),
       switchRow(
         'Keep the app full screen',
         'It can’t be resized, minimized or closed except from the parent area. Off: an ordinary window with a close button.',
         settings.keepFullScreen,
-        (on) => void kiosk.update(shell, { keepFullScreen: on }),
+        (on) => void kiosk.update(shell, { keepFullScreen: on }).then(changed),
       ),
       switchRow(
         'Lock the keyboard',

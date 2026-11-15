@@ -77,6 +77,8 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   );
 
   let stopScreen: (() => void) | null = null;
+  /** Updates the unlock button after the full-screen setting changes on This laptop. */
+  let refreshUnlock = () => {};
   const show = async (id: string) => {
     revoke();
     stopScreen?.();
@@ -90,7 +92,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     if (id === 'settings') return renderSettings();
     if (id === 'laptop' && opts.kiosk) {
       const { renderLaptop } = await import('./laptopScreen');
-      await renderLaptop(main, opts.kiosk, storage.shell);
+      await renderLaptop(main, opts.kiosk, storage.shell, () => refreshUnlock());
       return;
     }
     if (id === 'sync' && opts.sync) {
@@ -151,9 +153,32 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     );
     quitButton.addEventListener('click', () => quit());
   }
+  // Unlock the window for this visit: an ordinary window, so a parent can use other apps; it locks again on the
+  // way back to the kids (owner, 2026-11-15). Windows app only, and only while the app is kept full screen.
+  const AUTO_LOCK_NOTE = 'Locks itself after 3 minutes without a touch.';
+  const note = h('p', { class: 'pw-nav-note' }, AUTO_LOCK_NOTE);
+  let unlockButton: HTMLButtonElement | null = null;
+  if (opts.kiosk) {
+    const kiosk = opts.kiosk;
+    unlockButton = h('button', { type: 'button', class: 'pw-nav-quit' }) as HTMLButtonElement;
+    const label = () => {
+      unlockButton!.hidden = !kiosk.current.keepFullScreen;
+      const locked = kiosk.windowLocked;
+      unlockButton!.textContent = locked ? 'Unlock the window' : 'Lock the window again';
+      unlockButton!.title = locked
+        ? 'An ordinary window you can minimize or move, to use other apps. It locks again when you go back to the kids.'
+        : 'Full screen again now. It also locks when you go back to the kids.';
+      unlockButton!.setAttribute('aria-pressed', String(!locked));
+      note.textContent = locked ? AUTO_LOCK_NOTE : 'Stays open while the window is unlocked.';
+    };
+    unlockButton.addEventListener('click', () => void kiosk.setWindowUnlocked(kiosk.windowLocked).then(label));
+    label();
+    refreshUnlock = label;
+  }
   nav.append(
     h('div', { class: 'pw-grow' }),
-    h('p', { class: 'pw-nav-note' }, 'Locks itself after 3 minutes without a touch.'),
+    note,
+    ...(unlockButton ? [unlockButton] : []),
     ...(quitButton ? [quitButton] : []),
     back,
   );
@@ -268,7 +293,8 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   let stopped = false;
   const touch = () => {
     clearTimeout(lockTimer);
-    lockTimer = setTimeout(() => exit(), AUTO_LOCK_MS);
+    // While the window is unlocked a parent may be working in another app: wait rather than jump back over it.
+    lockTimer = setTimeout(() => (opts.kiosk && !opts.kiosk.windowLocked ? touch() : exit()), AUTO_LOCK_MS);
   };
   const el = h('div', { class: 'parent-world pw-shell', 'data-screen': 'parent-area' }, nav, main);
   for (const type of ['pointerdown', 'keydown', 'wheel']) el.addEventListener(type, touch, { capture: true });

@@ -78,3 +78,14 @@ The app can't change these Windows settings itself. They are written up as a sho
 - The keyboard hook is Windows-only Rust code; it's isolated behind a setting so it can be turned off if it ever
   misbehaves.
 - The kids' Windows account means the app, its updates and the OpenRouter key live in that account.
+
+## Update (2026-11-15): unlocking the window from the parent area, and paste
+- The owner asked for a way out of the kiosk while being a parent or admin. The parent area's side menu has
+  **Unlock the window**, beside Quit: the app becomes an ordinary window (resizable, minimizable, closable) for
+  that visit, and locks again on the way back to the kids. The saved "Keep the app full screen" setting doesn't
+  change. While the window is unlocked the parent area doesn't lock itself after 3 minutes, so a parent working in
+  another app isn't covered by the kids' screen. The button is hidden when the app isn't kept full screen.
+- The keyboard hook was already released in the parent area, but the page's own guard (`shell/guards.ts`) blocked
+  every Ctrl shortcut there too, so the sync server's address couldn't be pasted. In the parent area, text boxes
+  now let through select all, copy, cut, paste, undo and redo, the word moves and deletes, and their right-click
+  menu; Ctrl+C works anywhere there. Other browser shortcuts (print, reload, find, zoom) stay blocked.
