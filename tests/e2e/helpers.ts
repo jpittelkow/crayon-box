@@ -89,6 +89,24 @@ export const RED = [0xf2, 0x3b, 0x2f, 255];
 export const BLUE = [0x2f, 0x6f, 0xed, 255];
 export const SKY = [0x4c, 0xc9, 0xf0, 255];
 
+export const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+
+/** Holds the lock for longer than a second, the first step of the gate (ADR 0008). */
+export async function holdLock(page: Page, ms = 1200): Promise<void> {
+  const box = (await page.getByRole('button', { name: 'Grown-ups: press and hold' }).boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(ms);
+  await page.mouse.up();
+}
+
+export async function openParentArea(page: Page): Promise<void> {
+  await holdLock(page);
+  const words = (await page.locator('[data-words]').getAttribute('data-words'))!.split(' ');
+  for (const w of words) await page.getByRole('button', { name: String(WORDS.indexOf(w)), exact: true }).click();
+  await expect(page.locator('[data-screen="parent-area"]')).toBeVisible();
+}
+
 export async function pick(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name, exact: true }).tap();
 }

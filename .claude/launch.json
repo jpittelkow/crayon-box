@@ -4,8 +4,33 @@
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "bakeoff",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "spikes/engine-bakeoff",
+        "run",
+        "dev"
+      ],
+      "port": 5180
+    },
+    {
+      "name": "bakeoff-built",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "spikes/engine-bakeoff",
+        "run",
+        "preview"
+      ],
+      "port": 5181
     }
   ]
 }

@@ -8,10 +8,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview --host localhost --port 5181 --strictPort"
   },
   "dependencies": {
     "@babylonjs/core": "^9.36.0",
+    "@babylonjs/materials": "^9.36.0",
     "three": "^0.187.0"
   },
   "devDependencies": {

@@ -4,7 +4,7 @@
 import { randomId } from '../storage/ids';
 import type { GameStorage } from '../storage/types';
 import { symbolIcon } from '../ui/icons';
-import type { ColoringMode, KidColor, KidProfile, KidSymbol } from './types';
+import type { ColoringMode, GameEntry, KidColor, KidProfile, KidSymbol } from './types';
 
 const SETTINGS = 'settings.json';
 const kidDir = (id: string) => `kids/${id}/`;
@@ -35,9 +35,14 @@ export const DEFAULT_PROFILES: KidProfile[] = [
 export interface ShellSettings {
   /** Show each kid's name under their badge on the kid picker (ADR 0018). */
   showNames: boolean;
+  /**
+   * Games a parent turned on (true) or off (false), by id (ADR 0012: a parent can hide a game). A game not listed
+   * shows unless its registry entry starts hidden.
+   */
+  games: Record<string, boolean>;
 }
 
-const DEFAULT_SETTINGS: ShellSettings = { showNames: true };
+const DEFAULT_SETTINGS: ShellSettings = { showNames: true, games: {} };
 
 /** Fills in fields that older saved profiles lack. */
 export function normalizeProfile(raw: Partial<KidProfile> & { id: string }): KidProfile {
@@ -110,7 +115,14 @@ export async function deleteProfile(shell: GameStorage, kidId: string): Promise<
 }
 
 export async function loadShellSettings(shell: GameStorage): Promise<ShellSettings> {
-  return { ...DEFAULT_SETTINGS, ...(await shell.getJson<Partial<ShellSettings>>(SETTINGS)) };
+  const saved = await shell.getJson<Partial<ShellSettings>>(SETTINGS);
+  return { ...DEFAULT_SETTINGS, ...saved, games: { ...saved?.games } };
+}
+
+/** The games the kids can open. Never empty: with every game turned off, the first one still shows. */
+export function enabledGames(games: readonly GameEntry[], settings: ShellSettings): GameEntry[] {
+  const on = games.filter((g) => settings.games[g.id] ?? !g.startsHidden);
+  return on.length > 0 ? on : games.slice(0, 1);
 }
 
 export async function saveShellSettings(shell: GameStorage, settings: ShellSettings): Promise<void> {

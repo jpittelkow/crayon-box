@@ -55,6 +55,12 @@ _Last updated: 2026-11-14_
 - Page art traps the check caught: a wheel top within ~6 px of the body line, a flagpole running beside a seat,
   and a smile ending a few px short of an outline. Lines should either cross clearly or keep 20 px apart
   (2026-11-14).
+- The Browser pane pauses a page's animation frames while it is hidden, so a canvas game looks frozen to the
+  tools and timings read as zero. The engine test exposes `bakeoff.tick()` to run frames by hand
+  (found 2026-11-14).
+- Babylon.js compiles shaders in the background and draws nothing for the first frames; time it only once its
+  draw-call count is above zero. Other Babylon and three.js matching traps are in
+  `spikes/engine-bakeoff/README.md` (found 2026-11-14).
 - **Rules for anything that saves data, so sync keeps working (ADR 0024):** save through the storage interface
   only; one file per thing that can change on its own (kids are `kids/<id>/profile.json`, not one list), because
   the newest change wins per file; device-only data goes under `local/`; new ids come from `randomId`; built-in

@@ -16,16 +16,26 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    online. Used to test with the kids early. Art made here is throwaway.
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
 3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
-   **Proposed** on 2026-11-14 and waiting on the owner to accept: a small 3D island to roam, no races, traffic
-   that drives alongside, touch to go plus arrow and WASD keys, three.js. Its step 1, a throwaway prototype
-   hidden behind a parent switch, is agreed to be built during milestone 1 so it can join a playtest.
+   **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
+   knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,
+   is built (2026-11-14)**: one island in `src/games/racing/`, off until a parent turns on "Show Driving" under
+   Settings, Games; it then shows on the home screen. Not yet playtested with the kids.
+   **After the MVP** (asked by the owner 2026-11-14, "think through all of this after the mvp is done"; nothing
+   designed yet): a choice of vehicles (monster trucks, school buses, emergency vehicles with working lights, and
+   more); two or three maps, much bigger than the prototype's island, with more of the same things and more
+   water. Needs a new ADR, since ADR 0021 has one small island and a few cars.
+5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
+   of the family's own area, made from real map and terrain data, with the roads, the family's house and a few
+   neighbours' houses. It must never be committed: it lives in a folder kept out of the repo that can be dropped
+   on the family's server. Not designed yet; the [privacy rule](../../CLAUDE.md) means the repo only ever holds
+   the code that loads such a folder, never the map, the place's name or any address.
 4. **Sync between devices:** [ADR 0024](../adr/0024-family-sync-server.md), Accepted 2026-11-14. A small
    self-hosted server on the family's Unraid machine (image published from this repo); the device stays the
    working copy and syncs in the background; Windows first. Order: storage groundwork (**done 2026-11-14**, see
    the code map), then the server and sync client right after the installer's file storage.
 
-Built in this order (owner's decision, 2026-11-14). The racing game is last because it needs 3D models and a lot
-of design; only its prototype comes early. Deferred: printing and export (ADR 0010).
+Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
+3D models and a lot of design; only its prototype came early. Deferred: printing and export (ADR 0010).
 
 ## Status of decisions
 - ADRs 0001–0009 and 0011–0016 are **Accepted** (the owner accepted 0002–0016 on 2026-11-14); 0010 is
@@ -38,6 +48,10 @@ of design; only its prototype comes early. Deferred: printing and export (ADR 00
   [open question](open-questions.md).
 
 ## Code map
+- `spikes/engine-bakeoff/`: throwaway test for ADR 0021, not part of the app, with its own `package.json`: the
+  same driving scene drawn by three.js and by Babylon.js. Run with `npm --prefix spikes/engine-bakeoff run dev`
+  (port 5180). Kept as the record behind ADR 0021's library comparison; the app does not use it. Its
+  simulation and shapes were copied into `src/games/racing/` and have moved on since.
 - `src/shell/`: app shell (ADR 0012): kid picker with the lock, home screen (skipped with one game), game
   registry, guards against escape hatches (ADR 0003 rule 4), profiles (one folder per kid, `kids/<id>/`) and
   shell settings.
@@ -50,6 +64,11 @@ of design; only its prototype comes early. Deferred: printing and export (ADR 00
   world kit with bundled fonts (ADR 0016).
 - `src/games/coloring/`: the game (lazy-loaded): `game.ts` (start, library, My pictures), `session.ts` (the
   coloring screen), `engine/` (ADR 0004), `pictures.ts`, `pages.ts`, `parentSections.ts` (its parent screens).
+- `src/games/racing/` (ADR 0021 prototype): `sim/` is plain TypeScript (the world, input, scene data, shapes)
+  with unit tests; `render.ts` is the only three.js file and loads when the game opens; `game.ts` (screen,
+  touch and keys, loop), `settings.ts` (per-kid assist, sounds), `parentSection.ts`, `sound.ts` (made by the
+  browser, no files). Games can start hidden (`GameEntry.startsHidden`) and a parent shows or hides each one
+  under Settings, Games (`ShellSettings.games`).
 - `pages/`: three original CC0 placeholder pages in the ADR 0005 format.
 
 ## Milestone 1: remaining phases (agreed with the owner 2026-11-14)

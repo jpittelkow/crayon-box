@@ -1,8 +1,8 @@
 # 0021. Driving game: a small 3D island to roam
 
-- Status: Proposed (the owner answered the main design questions on 2026-11-14; not yet accepted)
+- Status: Accepted (by the owner, 2026-11-14)
 - Date: 2026-11-14
-- Would supersede, once accepted:
+- Supersedes:
   - in ADR 0012, the racing sketch: "touch left/right half to steer, car drives itself" and "stickers or
     confetti for finishing a lap". There are no laps.
   - in ADR 0003 rule 4 and ADR 0014's keyboard lock, "every key is blocked": the driving keys work in this game.
@@ -25,20 +25,40 @@ Options considered, and what the owner chose (2026-11-14):
 | World | A track only; a large open world; a small island to roam | Small island |
 | Races | Laps with a finish; optional laps inside the island; none, with traffic that drives along with you | None, with traffic |
 | Controls | Car always drives, tap a side to steer; touch to go and the car heads to the finger; on-screen wheel and pedals | Touch to go, plus driving keys |
-| Drawing | three.js; Babylon.js; hand-written WebGL; flat canvas with a faked 3D road | three.js, "fine for now" |
+| Drawing | three.js; Babylon.js; hand-written WebGL; flat canvas with a faked 3D road | three.js, after testing both |
 | Movement | A physics engine; a simple car model of our own | Our own |
 
 A wheel and pedals need two hands and small precise targets. A large world is easy to get lost in. A physics
 engine lets cars flip, wedge and spin, which is exactly what must not happen.
 
 **three.js or Babylon.js** (compared for the owner, 2026-11-14). Both are free, open source, draw with the same
-browser graphics and are fast enough for this game on built-in graphics. three.js (MIT) is a drawing library:
-about 170 kB compressed for the whole library, with everything beyond drawing left to us. Babylon.js (Apache
-2.0) is a full game engine: physics, collisions, sound, particles, on-screen controls and a debugging inspector
-are built in, and the whole library is about 1.4 MB compressed, less when only parts are imported (sizes as
-quoted from Bundlephobia in articles read on 2026-11-14, not measured here). This game uses its own car model,
+browser graphics and are fast enough for this game on built-in graphics. three.js (MIT) is a drawing library,
+with everything beyond drawing left to us. Babylon.js (Apache 2.0) is a full game engine: physics, collisions,
+sound, particles, on-screen controls and a debugging inspector are built in. This game uses its own car model,
 the shell's sounds and Crayon Box buttons, so most of what Babylon.js adds would go unused. What it would save
 us is the small effects (splashes, bubbles) and a ready-made inspector.
+
+The owner called this an important fork and asked for a test, so `spikes/engine-bakeoff/` draws the same small
+island with each library from one simulation and one set of shapes, colors and lights (its README has the
+details). Measured there on the dev machine on 2026-11-14:
+- **The picture is the same:** a frame from each differed in 0.013% of pixels.
+- **Download for this scene, compressed:** three.js 131 kB, Babylon.js 278 kB. About double, not the eight times
+  that published whole-library sizes suggest.
+- **Work to draw a frame, built the way the game would be** (every prop of a kind drawn in one batch): the same,
+  0.1 to 0.2 ms with 2,400 props.
+- **Work to draw a frame with one object per prop:** Babylon.js took about nine times longer (4.3 ms against
+  0.5 ms for 1,200 objects). It adds more work per object, so it punishes a scene that is not batched.
+- **Each library's own code** for the scene is about 100 lines; Babylon.js needed three settings found by trial
+  to match three.js's handedness and colors.
+- **Water** (the owner asked which does it better): the cartoon water this game wants is shared code and came
+  out the same in both, 0.009% of pixels apart. Each library also ships ready-made reflecting water, and the
+  test can switch to it. It looks realistic, not like Crayon Box, and it is costly: three.js draws the scene a
+  second time for the reflection and Babylon.js two more times. Splashes, spray and the wake are our own code in
+  either library; Babylon.js has a built-in particle system that would shorten that work, which the test did
+  not use.
+- Not measured: frame rate, and anything on built-in graphics.
+
+With the test in front of them, the owner chose three.js on 2026-11-14.
 
 ## Decision
 
@@ -49,8 +69,12 @@ us is the small effects (splashes, bubbles) and a ready-made inspector.
 - **Things to knock around** (the owner liked these and the sound effects, 2026-11-14). Cones, boxes, beach
   balls and hay bales sit in the car's way on purpose. A bump sends them flying and tumbling with a sound each,
   and they come back to their places a little later, so the island never runs out.
-- **Other things react.** Puddles splash, the ramp gives a small jump, the car wash covers the car in bubbles,
-  animals answer the horn. Each reaction is a sound plus a short animation.
+- **Water to drive through** (the owner expects the kids to want puddles and flood water, 2026-11-14).
+  Puddles throw up a splash and wheel spray. A flooded stretch of road is deeper: a big splash going in, then
+  the car slows to a wade, sinks a little, bobs, and leaves a wake. Water never stops the car. It is drawn as
+  cartoon water, flat blue with a pale rim, not as either library's ready-made reflecting water (see Context).
+- **Other things react.** The ramp gives a small jump, the car wash covers the car in bubbles, animals answer
+  the horn. Each reaction is a sound plus a short animation.
 - **Traffic that races along with you.** A few friendly cars drive the roads by themselves. When the kid's car
   comes near one, it matches the kid's speed and drives alongside for a while, then drifts back to its own
   route. There is no start, no finish and no winner. Traffic never blocks the road: it moves aside for the kid's
@@ -84,7 +108,7 @@ us is the small effects (splashes, bubbles) and a ready-made inspector.
 ### How it is built
 - **three.js** (MIT), drawing with WebGL in a canvas. It lives in `src/games/racing/` and is loaded with the game
   (ADR 0012), so the coloring game's start-up does not pay for it. The same code runs in Edge and in WebView2.
-  The owner accepted it "for now"; the prototype is the point to change course if it disappoints.
+  The owner chose it over Babylon.js on 2026-11-14, after the test described in Context.
 - **No physics engine.** The car is a position, a heading and a speed. The ground height comes from the world
   data; collisions are circles against circles and line segments. This simulation is plain TypeScript with no
   three.js import and runs at a fixed step, so it can be unit-tested.

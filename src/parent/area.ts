@@ -80,7 +80,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   };
   addNav('settings', 'Settings');
   for (const s of sections) addNav(`${s.game.id}:${s.section.id}`, s.section.title);
-  const back = h('button', { type: 'button', class: 'pw-nav-back' }, 'Back to coloring');
+  const back = h('button', { type: 'button', class: 'pw-nav-back' }, 'Back to the kids');
   back.addEventListener('click', () => exit());
   nav.append(
     h('div', { class: 'pw-grow' }),
@@ -141,7 +141,25 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
           'Show names on the kid picker',
           "Each kid's name shows under their badge. Kids who can't read yet find themselves by photo or symbol.",
           settings.showNames,
-          (on) => void saveShellSettings(storage.shell, { ...settings, showNames: on }),
+          (on) => {
+            settings.showNames = on;
+            void saveShellSettings(storage.shell, settings);
+          },
+        ),
+      ),
+      card(
+        h('h2', {}, 'Games'),
+        h('p', { class: 'pw-muted' }, 'With more than one game on, kids pick a game after picking themselves.'),
+        ...opts.games.map((game) =>
+          switchRow(
+            `Show ${game.label}`,
+            game.startsHidden ? 'Still being tried out.' : null,
+            settings.games[game.id] ?? !game.startsHidden,
+            (on) => {
+              settings.games[game.id] = on;
+              void saveShellSettings(storage.shell, settings);
+            },
+          ),
         ),
       ),
     );

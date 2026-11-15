@@ -29,10 +29,18 @@ _Last confirmed: 2026-11-14_
 - Expects the racing game to use 3D models and to need a lot of design, so it comes after the installer.
 - **The racing game** (asked 2026-11-14, ADR 0021): 3D, seen from behind the car, simple, a little open world.
   Roam only, no races; maybe traffic that "sort of races with you". Touch to go, and keyboard driving too (arrow
-  keys and WASD). three.js and CC0 model kits are "fine for now"; the owner said they don't know the options, so
-  explain alternatives plainly if that choice comes up again. Fine with a prototype during milestone 1.
+  keys and WASD). **three.js is the 3D library**, chosen over Babylon.js on 2026-11-14 after a
+  side-by-side test; CC0 model kits are fine. For a choice this size the owner wants to see both options
+  running, not only read a comparison. Fine with a prototype during milestone 1.
   Confirmed touch driving and both assist levels (steers freely, follows the road). Likes the sound effects and
-  things to knock around. The family laptop has integrated graphics, no separate graphics card.
+  things to knock around. Expects the kids to want water to drive through: puddles and flood water. Cares how
+  the models look and asked which library gives better-looking ones. The family laptop has integrated graphics,
+  no separate graphics card.
+- **After the driving MVP** (asked 2026-11-14): a choice of vehicles (monster trucks, school buses, emergency
+  vehicles with working lights, "a bunch of other options"); two or three maps, a lot bigger than the
+  prototype, with more of everything the test had and more water. A map of the family's own area as its own
+  milestone, kept out of the repo in a folder for the family's server. The owner asked to think this through
+  only once the MVP is done, so don't start it unasked.
 
 ## Tooling and hosting
 - The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to

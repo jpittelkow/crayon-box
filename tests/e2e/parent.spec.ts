@@ -1,23 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { RED, SHAPES, expectPaint, openShapesPage, pick, tapPage } from './helpers';
-
-const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
-
-/** Holds the lock for longer than a second, the first step of the gate (ADR 0008). */
-async function holdLock(page: Page, ms = 1200): Promise<void> {
-  const box = (await page.getByRole('button', { name: 'Grown-ups: press and hold' }).boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.waitForTimeout(ms);
-  await page.mouse.up();
-}
-
-async function openParentArea(page: Page): Promise<void> {
-  await holdLock(page);
-  const words = (await page.locator('[data-words]').getAttribute('data-words'))!.split(' ');
-  for (const w of words) await page.getByRole('button', { name: String(WORDS.indexOf(w)), exact: true }).click();
-  await expect(page.locator('[data-screen="parent-area"]')).toBeVisible();
-}
+import { RED, SHAPES, WORDS, expectPaint, holdLock, openParentArea, openShapesPage, pick, tapPage } from './helpers';
 
 /** A generated two-color test image: never a real photo (CLAUDE.md privacy rule). */
 async function testImage(page: Page): Promise<Buffer> {
@@ -66,7 +48,7 @@ test('a parent names a kid and gives them a photo', async ({ page }) => {
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('button', { name: 'Edit Sample' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Back to coloring' }).click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
   const badge = page.getByRole('button', { name: 'Sample kid' });
   await expect(badge.locator('img')).toHaveCount(1);
   await expect(page.locator('.kid-name')).toHaveText(['Sample']);
@@ -74,7 +56,7 @@ test('a parent names a kid and gives them a photo', async ({ page }) => {
   // Names under the badges are a setting (ADR 0018).
   await openParentArea(page);
   await page.getByText('Show names on the kid picker').click();
-  await page.getByRole('button', { name: 'Back to coloring' }).click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
   await expect(page.locator('.kid-name')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Sample kid' })).toBeVisible();
 });
@@ -102,7 +84,7 @@ test('a parent adds a kid and deletes one with their pictures', async ({ page })
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.locator('[data-kid]')).toHaveCount(3);
 
-  await page.getByRole('button', { name: 'Back to coloring' }).click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
   await expect(page.locator('[data-screen="kid-picker"] [data-kid]')).toHaveCount(3);
   await expect(page.getByRole('button', { name: 'Moon kid' })).toHaveCount(0);
   await expect(page.locator('[data-screen="kid-picker"] [data-kid]').nth(2)).toHaveCSS(
@@ -116,7 +98,7 @@ test('a hidden page leaves the library', async ({ page }) => {
   await openParentArea(page);
   await page.getByRole('button', { name: 'Page library' }).click();
   await page.getByText('Show Fish').click();
-  await page.getByRole('button', { name: 'Back to coloring' }).click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
   await page.getByRole('button', { name: 'Star kid' }).tap();
   // Under the sea had only the fish, so its theme button goes too.
   await expect(page.locator('[data-theme]')).toHaveCount(2);
@@ -143,7 +125,7 @@ test('a parent restores the previous version of a picture, and deletes one', asy
   await openParentArea(page);
   await page.getByRole('button', { name: 'Pictures' }).click();
   await page.getByRole('button', { name: 'Restore previous Circle, square and triangle' }).click();
-  await page.getByRole('button', { name: 'Back to coloring' }).click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
   await page.getByRole('button', { name: 'Star kid' }).tap();
   await pick(page, 'My pictures');
   await page.getByRole('button', { name: 'Circle, square and triangle picture' }).tap();

@@ -12,11 +12,14 @@ _Last updated: 2026-11-14_
 - **Target laptop screen:** resolution and shape are not recorded; the 4:3 canvas layout depends on them
   (ADR 0004). The mockups assume 1280 × 800 (ADR 0016).
 - **Buttons on touch-down or lift:** to settle in playtests (ADR 0003).
-- **Racing game:** [ADR 0021](../adr/0021-racing-game.md) is Proposed; the owner has answered the main questions
-  but not yet accepted it. Still open in it: three.js or Babylon.js (compared for the owner 2026-11-14, no
-  answer yet; the ADR says three.js), how smoothly the laptop's integrated graphics draw it, which assist level
-  new kids start on, whether a resting hand driving the car is a problem (those three for the prototype
-  playtest), and whether the folder and registry id stay `racing` now that there are no races.
+- **Racing game** ([ADR 0021](../adr/0021-racing-game.md), Accepted 2026-11-14): still open in it are how
+  smoothly the laptop's integrated graphics draw it, which assist level new kids start on, whether a resting
+  hand driving the car is a problem (those three for the prototype playtest), and whether the folder and
+  registry id stay `racing` now that there are no races (kept as `racing` in the prototype, shown as
+  "Driving"). Also: the prototype paints the whole car in the kid's color, where ADR 0021 says a flag on the
+  car; fine with one car, to settle with the vehicle choice.
+- **After the driving MVP** (see project state, milestones 3 and 5): which vehicles, how many maps and how big,
+  and how the home map's private folder gets onto the device or the family's server.
 - **Brush sizes:** the three dots paint 40, 80 and 130 page pixels wide (about 15, 30 and 49 px on the
   1280 × 800 screen). A guess, to check in the first playtest (2026-11-14).
 - **64 px color buttons:** smaller than every other kid target since ADR 0019. Check in a playtest that the kids

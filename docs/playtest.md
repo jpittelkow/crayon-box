@@ -19,6 +19,12 @@ real test of the interaction rules (ADR 0015).
 Playing on another device than the dev machine: run `npm run dev -- --host` and open the address it prints. Over
 plain `http` from another device the browser may clear stored pictures (ADR 0014), so prefer the dev machine.
 
+### Trying the driving game (optional)
+The driving game is a first try (ADR 0021) and is off at first. To try it: hold the lock, open the parent area,
+and under Settings, Games turn on **Show Driving**. Kids then pick a game after picking themselves. Under
+**Driving** in the parent area, each kid can be set to *Steers freely* or *Follows the road* (the car steers
+itself and a touch only makes it go).
+
 ## What to watch
 Write down what happened, not what should have happened. One line per moment is enough.
 
@@ -32,6 +38,7 @@ Write down what happened, not what should have happened. One line per moment is 
 | Bucket taps that fill the wrong area, or leave white edges | The fill grows 2 px under lines and picks the nearest area within 8 px | Fill tuning, page art |
 | Finding New picture and My pictures, and getting back | One way back, top-left (ADR 0016) | Start screen layout |
 | A kid finding their own badge by photo or name | Names and photos are new (ADR 0018) | Badge design |
+| Driving (if on): a kid who can't make the car go where they want, a resting hand that makes it drive, or a picture that stutters | The controls and the laptop's graphics are untested (ADR 0021) | Assist default, palm handling, picture size |
 | Curiosity about the lock in the corner | It should be ignored (ADR 0008) | Lock size and contrast |
 | Boredom: what the kids ask for that isn't there | Pages, colors, sounds | What to build next |
 

@@ -67,5 +67,7 @@ export interface GameEntry {
   tileColor: string;
   /** Accessible name for tests and tools; never shown (ADR 0003). */
   label: string;
+  /** Kept off the kids' screens until a parent turns it on (a game still being tried out). */
+  startsHidden?: boolean;
   load(): Promise<GameModule>;
 }

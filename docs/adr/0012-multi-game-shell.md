@@ -1,6 +1,6 @@
 # 0012. Multi-game shell (coloring now, racing next)
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); the racing game sketch superseded by [0021](0021-racing-game.md)
 - Date: 2026-11-14
 
 ## Context

@@ -1,6 +1,6 @@
 # 0002. Tauri 2 + TypeScript + HTML canvas
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); canvas as the only way of drawing superseded by [0021](0021-racing-game.md)
 - Date: 2026-11-14
 
 ## Context

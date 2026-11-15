@@ -65,6 +65,19 @@ export const icons = {
         '<path d="M17 34c4-6 8-9 14-10" style="stroke: #ff70a6" stroke-width="5"/>',
       size,
     ),
+  /** The driving game's home tile: a cartoon car seen from the side (ADR 0021). Original, CC0. */
+  driving: (size = 120) =>
+    svg(
+      '<path d="M5 32v-7l5-2 6-9h15l7 9 5 2v7z" fill="#3a86ff"/><path d="M17 15l-4 8h11v-8zM28 15v8h9l-6-8z" fill="#cfeaff"/>' +
+        '<circle cx="14" cy="34" r="5" fill="#2b2b2b"/><circle cx="35" cy="34" r="5" fill="#2b2b2b"/>',
+      size,
+    ),
+  /** A squeeze-bulb horn, not a speaker, so it never reads as a sound setting. */
+  horn: (size = 58) =>
+    svg(
+      '<circle cx="12" cy="24" r="8" fill="#ff6b9d"/><path d="M20 21h5l17-10v26L25 27h-5z" fill="#ffd23f"/>',
+      size,
+    ),
 } as const;
 
 /** Kid profile symbols, drawn in paper with an ink outline on the kid's color. */

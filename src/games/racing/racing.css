@@ -1,0 +1,25 @@
+/* The driving game (ADR 0021): the island fills the screen; back top-left, horn bottom-right (ADR 0016 rule 5). */
+.driving {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.driving-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+.driving-back {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--space-6);
+}
+.driving-horn {
+  position: absolute;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  background: var(--crayon-yellow, #ffd23f);
+}

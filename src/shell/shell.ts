@@ -4,7 +4,7 @@ import type { AppStorage } from '../storage/types';
 import { icons } from '../ui/icons';
 import { el, kidButton } from '../ui/kid';
 import { kidPickerScreen, lockButton } from './kidPicker';
-import { getPhoto, kidTintVar, loadProfiles, loadShellSettings } from './profiles';
+import { enabledGames, getPhoto, kidTintVar, loadProfiles, loadShellSettings } from './profiles';
 import { GAMES } from './registry';
 import { silentSound } from './sound';
 import type { GameEntry, KidProfile } from './types';
@@ -72,11 +72,12 @@ export class Shell {
   }
 
   private async afterKidPicked(kid: KidProfile): Promise<void> {
-    if (this.games.length === 1) return this.openGame(this.games[0], kid);
-    this.show(this.homeScreen(kid));
+    const games = enabledGames(this.games, await loadShellSettings(this.storage.shell));
+    if (games.length === 1) return this.openGame(games[0], kid);
+    this.show(this.homeScreen(kid, games));
   }
 
-  private homeScreen(kid: KidProfile): HTMLElement {
+  private homeScreen(kid: KidProfile, games: readonly GameEntry[]): HTMLElement {
     const screen = el('div', 'screen home', { 'data-screen': 'home' });
     screen.style.setProperty('--ground', kidTintVar(kid));
     const back = kidButton({
@@ -87,7 +88,7 @@ export class Shell {
       onTap: () => void this.showKidPicker(),
     });
     const row = el('div', 'home-row');
-    for (const game of this.games) {
+    for (const game of games) {
       const tile = kidButton({
         kind: 'paper',
         label: game.label,
@@ -113,11 +114,19 @@ export class Shell {
         kid,
         storage: this.storage.game(entry.id),
         sound: silentSound,
-        exitToHome: () => void this.showKidPicker(),
+        exitToHome: () => void this.afterGame(kid),
       });
     } finally {
       this.busy = false;
     }
+  }
+
+  /** Leaving a game goes back to the home screen when there is one, else to the kid picker. */
+  private async afterGame(kid: KidProfile): Promise<void> {
+    const games = enabledGames(this.games, await loadShellSettings(this.storage.shell));
+    if (games.length === 1) return this.showKidPicker();
+    await this.leave();
+    this.show(this.homeScreen(kid, games));
   }
 
   /** The read-and-tap gate (ADR 0008). The parent world's code loads only from here. */
