@@ -49,6 +49,11 @@ export interface ItemMeta {
   deleted?: true;
   /** The server revision this state matches. Absent while a change made here is waiting to be sent. */
   rev?: number;
+  /**
+   * For a change waiting to be sent: the server revision it was made on top of. The sync client sends it along, so
+   * the server can tell an ordinary edit from two devices changing the same thing (ADR 0024).
+   */
+  base?: number;
 }
 
 export interface Change {
@@ -72,6 +77,17 @@ export interface Backend {
   applyRemote(key: string, value: StoredValue | null, meta: { modified: number; rev: number }): Promise<void>;
   /** The server took our change. Ignored if the item has changed again since `modified`. */
   markSynced(key: string, modified: number, rev: number): Promise<void>;
+}
+
+/** The record for a change made on this device, on top of `prev` (the item's record before, if any). */
+export function localChange(prev: ItemMeta | undefined, modified: number, deleted = false): ItemMeta {
+  const base = prev?.rev ?? prev?.base;
+  return { modified, ...(base !== undefined ? { base } : {}), ...(deleted ? { deleted: true as const } : {}) };
+}
+
+/** The record once the server took a change: it now matches `rev`, and has no base of its own. */
+export function synced(meta: ItemMeta, rev: number): ItemMeta {
+  return { modified: meta.modified, rev, ...(meta.deleted ? { deleted: true as const } : {}) };
 }
 
 /** Device-only keys: a `local/` folder at the top of the shell's or a game's namespace (ADR 0024). */

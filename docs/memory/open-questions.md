@@ -5,6 +5,10 @@ relevant memory file).
 
 _Last updated: 2026-11-14_
 
+- **Sync security trade-offs** (flagged by an automated review, 2026-11-14, kept as ADR 0024 decided): plain `http`
+  on the home network carries the sync token; the Windows app may connect to any `http:`/`https:` address (CSP);
+  the gate PIN's hash syncs, so whoever can read the server's data folder could work out the 4-digit PIN. Fine
+  for a home server and a PIN that only keeps young kids out; revisit if the server ever leaves the home network.
 - **Sync server defaults** (phase C, picked overnight 2026-11-14 to keep going): port 8787, data in
   `/mnt/user/appdata/crayon-box-sync`, runs as 99:100. Change in the Unraid template if any of that is wrong. The
   image on ghcr.io must be public for Unraid to pull it without logging in: check the package's visibility after

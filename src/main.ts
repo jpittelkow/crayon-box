@@ -8,6 +8,7 @@ import type { Backend } from './storage/types';
 import type { FinishedPictures } from './shell/types';
 import { UpdateController, loadUpdateSettings } from './shell/updates';
 import { KioskControl, loadKioskSettings, type KioskBridge } from './shell/kiosk';
+import { SyncService } from './sync/service';
 import '@fontsource/fredoka/600.css';
 import './ui/tokens.css';
 import './ui/kid.css';
@@ -54,10 +55,13 @@ async function boot(): Promise<void> {
   await deviceInfo(storage.shell);
   const updates = await openUpdates();
   const kiosk = await openKiosk(storage.shell);
-  const shell = new Shell(frame, storage, undefined, { finished, updates, kiosk });
+  // Family sync runs in the background when a parent has set it up (ADR 0024); kid screens never wait for it.
+  const sync = new SyncService({ backend, shell: storage.shell });
+  const shell = new Shell(frame, storage, undefined, { finished, updates, kiosk, sync });
   kiosk?.onQuitRequested(() => void shell.quit());
   if (kiosk) window.addEventListener(QUIT_KEYS_EVENT, () => void shell.quit());
   await shell.start();
+  sync.start();
   // Look for a newer version in the background (ADR 0009). It only shows in the parent area; nothing installs on
   // its own, and a failed check is only reported there too.
   if (updates && (await loadUpdateSettings(storage.shell)).checkOnStart) void updates.check();

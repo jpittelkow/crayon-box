@@ -11,6 +11,7 @@ import { WebAudioSound } from './sound';
 import type { FinishedPictures, GameEntry, KidProfile } from './types';
 import type { UpdateController } from './updates';
 import { screenKind, type KioskControl } from './kiosk';
+import type { SyncService } from '../sync/service';
 
 export class Shell {
   private unmount: (() => Promise<void>) | null = null;
@@ -24,7 +25,7 @@ export class Shell {
     private readonly storage: AppStorage,
     private readonly games: readonly GameEntry[] = GAMES,
     /** What only the Windows app has (milestone 2); empty in the browser. */
-    private readonly platform: { finished?: FinishedPictures; updates?: UpdateController; kiosk?: KioskControl } = {},
+    private readonly platform: { finished?: FinishedPictures; updates?: UpdateController; kiosk?: KioskControl; sync?: SyncService } = {},
   ) {}
 
   async start(): Promise<void> {
@@ -179,6 +180,7 @@ export class Shell {
       finished: this.platform.finished,
       updates: this.platform.updates,
       kiosk: this.platform.kiosk,
+      sync: this.platform.sync,
       quit: () => void this.quit(),
       onExit: () => void this.showKidPicker(),
     });

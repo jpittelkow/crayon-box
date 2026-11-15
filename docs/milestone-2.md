@@ -52,6 +52,16 @@ Two parts; the server part can start any time, even alongside phase A.
   `server/README.md`. Writes carry the revision they were based on; the server answers 409 when its copy moved on,
   and the client applies ADR 0024's rules. **Picked for the owner to confirm:** port 8787, Unraid data folder
   `/mnt/user/appdata/crayon-box-sync`, the container runs as 99:100.
+- **C2 status (2026-11-14):** built on branch `milestone-2/phase-c2-client`. `src/sync/`: `api.ts` (HTTP, problems
+  in words), `engine.ts` (pull since the last revision, then push; newest change wins; a picture changed on two
+  devices is copied to a new picture id so both stay), `service.ts` (a round 5 s after start, then every 3 minutes,
+  backing off to 30 after problems; settings in `shell/local/sync.json`). The storage layer now records each
+  waiting change's `base` revision, so an ordinary edit is never mistaken for a conflict. Parent area › Family
+  sync (connect with address and pairing code, last synced, problem, Sync now, Disconnect) and a one-time "Do you
+  have a family server?" card at the top of Settings, in the browser version too. The Windows app's CSP now
+  allows `connect-src http: https:` for the home server; the server allows any origin (CORS, token auth).
+  Tested against the real server: 17 unit tests (two and three devices) and 3 browser tests (two contexts).
+  Family pages (phase F) go through the same storage, so they sync too.
 - **C1, the server:** `server/`, TypeScript on Node with SQLite and the files on disk, API under `/api/v1`, a
   pairing code on first start, a one-page status screen. A Dockerfile; CI publishes the image to GitHub's
   container registry; an Unraid template in the repo. Its own tests.

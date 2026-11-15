@@ -1,4 +1,4 @@
-import { isDeviceOnly, type Backend, type Change, type ItemMeta, type PutOptions, type StoredValue } from './types';
+import { isDeviceOnly, localChange, synced, type Backend, type Change, type ItemMeta, type PutOptions, type StoredValue } from './types';
 
 const DB_NAME = 'crayon-box';
 const DB_VERSION = 2;
@@ -80,8 +80,9 @@ export async function openIdbBackend(opts: IdbOptions = {}): Promise<Backend> {
         const metas = tx.objectStore(META);
         const prev = metas.get(key);
         prev.onsuccess = () => {
-          const modified = putOpts?.asDefault ? 0 : nextModified(prev.result as ItemMeta | undefined, now());
-          metas.put({ modified } satisfies ItemMeta, key);
+          const before = prev.result as ItemMeta | undefined;
+          const modified = putOpts?.asDefault ? 0 : nextModified(before, now());
+          metas.put(localChange(before, modified), key);
         };
       }
       await done(tx);
@@ -100,7 +101,7 @@ export async function openIdbBackend(opts: IdbOptions = {}): Promise<Backend> {
           const meta = prev.result as ItemMeta | undefined;
           // Something that never existed, or is already deleted, leaves no new record.
           if (meta && !meta.deleted) {
-            metas.put({ modified: nextModified(meta, now()), deleted: true } satisfies ItemMeta, key);
+            metas.put(localChange(meta, nextModified(meta, now()), true), key);
           }
         };
       }
@@ -135,7 +136,7 @@ export async function openIdbBackend(opts: IdbOptions = {}): Promise<Backend> {
       const prev = metas.get(key);
       prev.onsuccess = () => {
         const meta = prev.result as ItemMeta | undefined;
-        if (meta && meta.modified === modified) metas.put({ ...meta, rev } satisfies ItemMeta, key);
+        if (meta && meta.modified === modified) metas.put(synced(meta, rev), key);
       };
       await done(tx);
     },
@@ -153,7 +154,8 @@ export function memoryBackend(now: () => number = Date.now): Backend {
     async put(key, value, putOpts?: PutOptions) {
       files.set(key, value);
       if (!isDeviceOnly(key)) {
-        metas.set(key, { modified: putOpts?.asDefault ? 0 : nextModified(metas.get(key), now()) });
+        const before = metas.get(key);
+        metas.set(key, localChange(before, putOpts?.asDefault ? 0 : nextModified(before, now())));
       }
     },
     async keys(prefix) {
@@ -162,7 +164,7 @@ export function memoryBackend(now: () => number = Date.now): Backend {
     async delete(key) {
       files.delete(key);
       const meta = metas.get(key);
-      if (meta && !meta.deleted) metas.set(key, { modified: nextModified(meta, now()), deleted: true });
+      if (meta && !meta.deleted) metas.set(key, localChange(meta, nextModified(meta, now()), true));
     },
     async meta(key) {
       return metas.get(key);
@@ -181,7 +183,7 @@ export function memoryBackend(now: () => number = Date.now): Backend {
     },
     async markSynced(key, modified, rev) {
       const meta = metas.get(key);
-      if (meta && meta.modified === modified) metas.set(key, { ...meta, rev });
+      if (meta && meta.modified === modified) metas.set(key, synced(meta, rev));
     },
   };
 }
