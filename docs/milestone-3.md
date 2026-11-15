@@ -217,3 +217,9 @@ A2 (laptop)  ──► B (MVP) ──────► E (maps) ──┴──►
 | ~~Before B is done~~ | ~~Browser-made sounds or recorded files~~: files (ADR 0032); the tunnel echo is made by the app (2026-11-15) |
 | ~~In C~~ | Decided 2026-11-15: **all ten new vehicles** (fire truck, ambulance, tow truck; digger, dump truck, cement mixer; tractor, garbage truck; ice-cream van, race car); **two maps**, the island grown and a building site; **one picker screen** with both the vehicles and the maps. Horns for the monster truck and bus come with these vehicles. |
 | After F | Whether Driving shows by default, and whether the folder and id stay `racing` |
+
+## Backlog (after milestone 3)
+- **Targets to collect and hit on the maps** (owner, 2026-11-15). Things placed for the kids to drive into on
+  purpose: stacked boxes to knock over, coins or stars to collect. Each one makes a crazy noise and a big, silly
+  explosion (confetti, puffs, bits flying) when hit, then comes back like the toys do. No score and no way to
+  lose (ADR 0012): hitting them is the fun. Not designed yet; needs an ADR before it is built.
