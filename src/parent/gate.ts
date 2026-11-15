@@ -1,6 +1,7 @@
 // The parent gate's second step (ADR 0008): read three number words and tap the digits, or, when a parent set
 // one, type the PIN. A wrong digit (or a wrong PIN), or 10 seconds without a tap, goes back to the kid screen.
 import { h } from '../ui/parent';
+import { wordmark } from '../ui/wordmark';
 import { PIN_LENGTH, pinMatches } from './gatePin';
 import { GateAttempt, newChallenge } from './gateWords';
 
@@ -79,6 +80,7 @@ export function gateScreen(
     h(
       'div',
       { class: 'pw-gate', role: 'dialog', 'aria-label': 'Parent gate' },
+      wordmark('sm', 'pw-gate-wordmark'),
       ...prompt,
       h('div', { class: 'pw-dots', role: 'img', 'aria-label': 'Numbers entered so far' }, ...dots),
       keys,

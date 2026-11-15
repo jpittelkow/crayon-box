@@ -3,6 +3,7 @@
 import type { AppStorage } from '../storage/types';
 import { icons } from '../ui/icons';
 import { el, kidButton } from '../ui/kid';
+import { wordmark } from '../ui/wordmark';
 import { kidPickerScreen, lockButton } from './kidPicker';
 import { enabledGames, getPhoto, kidTintVar, loadProfiles, loadShellSettings } from './profiles';
 import { GAMES } from './registry';
@@ -111,7 +112,7 @@ export class Shell {
       tile.style.background = game.tileColor;
       row.append(tile);
     }
-    screen.append(back, row, lockButton(() => void this.showGate()));
+    screen.append(wordmark('md', 'screen-wordmark'), back, row, lockButton(() => void this.showGate()));
     return screen;
   }
 

@@ -204,3 +204,42 @@ body {
     animation: none;
   }
 }
+
+/* The app's name (ADR 0027): crayon-colored letters with an ink outline, in both worlds. Never takes a touch. */
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+.wordmark-letter {
+  display: inline-block;
+  transform: rotate(var(--tilt, 0deg));
+  -webkit-text-stroke: var(--wordmark-stroke) var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 var(--wordmark-drop) 0 var(--ink);
+}
+.wordmark-gap {
+  width: 0.3em;
+}
+.wordmark--xl {
+  font-size: 76px;
+  --wordmark-stroke: 7px;
+  --wordmark-drop: 5px;
+  letter-spacing: 1px;
+}
+.wordmark--md {
+  font-size: 48px;
+  --wordmark-stroke: 5px;
+  --wordmark-drop: 3px;
+}
+.wordmark--sm {
+  font-size: 30px;
+  --wordmark-stroke: 2.5px;
+  --wordmark-drop: 1.5px;
+}

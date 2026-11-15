@@ -409,3 +409,12 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* The app's name in the parent world (ADR 0027). */
+.pw-nav-wordmark {
+  justify-content: flex-start;
+  padding: 4px 14px 6px;
+}
+.pw-gate-wordmark {
+  margin-bottom: 12px;
+}

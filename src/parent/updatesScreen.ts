@@ -3,6 +3,7 @@
 import { loadUpdateSettings, saveUpdateSettings, type UpdateController, type UpdateState } from '../shell/updates';
 import type { GameStorage } from '../storage/types';
 import { button, card, h, switchRow } from '../ui/parent';
+import { APP_NAME } from '../ui/wordmark';
 
 /** Draws the screen into `main` and keeps it current. Returns the way to stop listening. */
 export async function renderUpdates(main: HTMLElement, updates: UpdateController, shell: GameStorage): Promise<() => void> {
@@ -21,12 +22,7 @@ export async function renderUpdates(main: HTMLElement, updates: UpdateController
 
   main.append(
     h('h1', {}, 'Updates'),
-    card(
-      h('h2', {}, 'This app'),
-      h('p', {}, `Version ${version}`),
-      status,
-      live,
-    ),
+    card(h('h2', {}, 'This app'), h('p', {}, `${APP_NAME} version ${version}`), status, live),
     card(
       h('h2', {}, 'Checking'),
       switchRow(
