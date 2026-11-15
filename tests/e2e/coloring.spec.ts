@@ -30,7 +30,7 @@ test('the kid picker opens the pages, then a page, on the kid’s color', async 
   // No pictures yet, so the game opens straight on the page library (ADR 0017).
   await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
   // The theme strip: one button per theme with pages, in theme order, then the blank page (ADR 0016).
-  await expect(page.locator('[data-theme]')).toHaveCount(5);
+  await expect(page.locator('[data-theme]')).toHaveCount(8);
   await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'race-cars');
   await expect(page.getByRole('button', { name: 'Blank page' })).toBeVisible();
   await expect(page.locator('[data-page]')).toHaveCount(6); // Race cars: six pages, so no "more" arrow yet

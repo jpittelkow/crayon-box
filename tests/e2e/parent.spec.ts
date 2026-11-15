@@ -97,11 +97,11 @@ test('a hidden page leaves the library', async ({ page }) => {
   await page.goto('/');
   await openParentArea(page);
   await page.getByRole('button', { name: 'Page library' }).click();
-  await page.getByText('Show Fish').click();
+  // Hide every Under the sea page: the theme's button goes too.
+  for (const title of ['Fish', 'Octopus', 'Sea turtle', 'Whale', 'Crab']) await page.getByText(`Show ${title}`, { exact: true }).click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
   await openColoring(page, 'Star kid');
-  // Under the sea had only the fish, so its theme button goes too.
-  await expect(page.locator('[data-theme]')).toHaveCount(4);
+  await expect(page.locator('[data-theme]')).toHaveCount(7);
   await expect(page.getByRole('button', { name: 'Under the sea' })).toHaveCount(0);
 });
 

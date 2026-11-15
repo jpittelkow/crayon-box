@@ -116,6 +116,9 @@ const THEME_ICONS: Record<string, string> = {
     '<circle cx="29" cy="12" r="4"/><circle cx="37" cy="20" r="4"/>',
   'wild animals':
     '<circle cx="24" cy="24" r="18" fill="#ff8a1f"/><circle cx="24" cy="25" r="10"/><path d="M20 23v.01M28 23v.01"/>',
+  dinosaurs:
+    '<path d="M4 25c4 1 7 0 9-2"/><path d="M13 33v8M31 33v8"/><path d="M8 33c0-8 6-13 14-13 4 0 7 1 9 3V11a5 5 0 0 1 5-5h3a5 5 0 0 1 0 10h-3v17z"/>' +
+    '<path d="M37 10v.01"/>',
   'under the sea': '<path d="M6 24c6-10 22-10 28 0-6 10-22 10-28 0z"/><path d="M34 24l9-7v14z"/><path d="M14 22v.01"/>',
   'things that go':
     '<rect x="4" y="15" width="24" height="19" rx="2"/><path d="M28 21h9l7 7v6H28z"/><circle cx="13" cy="36" r="5"/>' +
