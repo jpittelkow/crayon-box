@@ -3,15 +3,14 @@
 // here can stop the car dead, flip it, or let it leave the island. The island itself comes from a map file
 // (sim/map.ts, maps/), so another map is another file.
 import { ISLAND } from '../maps/island';
+import { SCENERY, type SceneryId } from './assets/scenery';
+import { TOYS, type ToyId } from './assets/toys';
 import type { MapDef, OnRoad } from './map';
 import { buildRoad, nearestOn, nearestRoad, pointAt, wrapAlong, type Road } from './roads';
 
 export const MAX_SPEED = 17;
 export const FLOOD_SPEED = 8;
 
-/** Prop kinds, by index: cone, crate, ball, bale. */
-export const PROP_HALF = [0.55, 0.5, 0.6, 0.45];
-export const PROP_KINDS = PROP_HALF.length;
 
 const HOME = 0, FLYING = 1, AWAY = 2, SHRINK = 3, GROW = 4;
 
@@ -64,10 +63,11 @@ export interface Car {
   road: number; s: number; lane: number; home: number; cruise: number;
 }
 
-export interface Tree { x: number; z: number; scale: number }
+export interface Tree { kind: SceneryId; x: number; z: number; scale: number }
 
+/** A toy on the map (driving-assets.md, category 2), knocked about and always coming back. */
 export interface Prop {
-  kind: number;
+  toy: ToyId;
   homeX: number; homeZ: number; homeYaw: number;
   x: number; y: number; z: number;
   vx: number; vy: number; vz: number;
@@ -109,7 +109,7 @@ export interface World {
   splashes: number[];
   camHeading: number;
   /** Kinds of the props the kid's car knocked in the last step, for the sounds. */
-  knocks: number[];
+  knocks: ToyId[];
   assist: Assist;
   /** Seconds left of being steered back to the road after getting nowhere. */
   rescue: number;
@@ -188,13 +188,20 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   const offRoad = (x: number, z: number, gap: number) =>
     roads.every((road, i) => nearestOn(road, i, x, z).dist > road.def.width / 2 + gap);
 
+  // One of a map's kinds, chosen by their shares.
+  const pick = <T>(kinds: { id: T; share: number }[]): T => {
+    let r = rand(w) * kinds.reduce((sum, k) => sum + k.share, 0);
+    for (const k of kinds) if ((r -= k.share) < 0) return k.id;
+    return kinds[kinds.length - 1]!.id;
+  };
+
   const trees = map.trees;
   let treeTries = 0;
   while (w.trees.length < trees.count && treeTries++ < trees.count * 10) {
     const [x, z] = onLand(trees.edgeGap);
     if (!offRoad(x, z, trees.roadGap)) continue;
     if (w.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + trees.waterGap)) continue;
-    w.trees.push({ x, z, scale: trees.scale[0] + rand(w) * trees.scale[1] });
+    w.trees.push({ kind: pick(trees.kinds), x, z, scale: trees.scale[0] + rand(w) * trees.scale[1] });
   }
 
   const props = map.props;
@@ -208,13 +215,13 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
     } else {
       [x, z] = onLand(props.edgeGap);
     }
-    const kind = Math.floor(rand(w) * PROP_KINDS);
+    const toy = pick(props.kinds);
     const yaw = rand(w) * Math.PI * 2;
     if (Math.hypot(x - kid.x, z - kid.z) < props.spawnGap) continue;
     if (w.trees.some((t) => Math.hypot(x - t.x, z - t.z) < 1.6 * t.scale)) continue;
     if (waterAt(w, x, z) === 2) continue;
     w.props.push({
-      kind, homeX: x, homeZ: z, homeYaw: yaw, x, y: PROP_HALF[kind]!, z, vx: 0, vy: 0, vz: 0,
+      toy, homeX: x, homeZ: z, homeYaw: yaw, x, y: TOYS[toy].half, z, vx: 0, vy: 0, vz: 0,
       qx: 0, qy: Math.sin(yaw / 2), qz: 0, qw: Math.cos(yaw / 2), wx: 0, wy: 0, wz: 0,
       scale: 1, state: HOME, timer: 0, cool: 0,
     });
@@ -297,7 +304,7 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     const side = Math.sin(car.heading) * dz - Math.cos(car.heading) * dx;
     car.heading += (side > 0 ? -1 : 1) * 1.6 * dt;
   };
-  for (const t of w.trees) pushOut(t.x, t.z, 0.45 * t.scale + 1.3, 0.985);
+  for (const t of w.trees) pushOut(t.x, t.z, SCENERY[t.kind].radius * t.scale + 1.3, 0.985);
   const own = VEHICLE_SIZE[car.kind].side;
   for (let i = 1; i < w.cars.length; i++) {
     const other = w.cars[i]!;
@@ -407,7 +414,8 @@ function stepWater(w: World, dt: number): void {
 
 function stepProps(w: World, dt: number): void {
   for (const p of w.props) {
-    const half = PROP_HALF[p.kind]!;
+    const { half, behaviour } = TOYS[p.toy];
+    const rolls = behaviour === 'roll';
     if (p.cool > 0) p.cool -= dt;
 
     if (p.state === SHRINK) {
@@ -442,13 +450,14 @@ function stepProps(w: World, dt: number): void {
         const len = Math.hypot(dx, dz) || 1;
         p.vx = fx * car.speed * 0.85 + (dx / len) * car.speed * 0.45 + (rand(w) - 0.5) * 2;
         p.vz = fz * car.speed * 0.85 + (dz / len) * car.speed * 0.45 + (rand(w) - 0.5) * 2;
-        p.vy = 3 + car.speed * 0.32 + rand(w) * 1.5;
+        // A tumbling toy flies up; a rolling one only hops and keeps its speed along the ground.
+        p.vy = rolls ? 1.5 + rand(w) : 3 + car.speed * 0.32 + rand(w) * 1.5;
         p.wx = (rand(w) - 0.5) * car.speed * 1.2;
         p.wy = (rand(w) - 0.5) * car.speed * 1.2;
         p.wz = (rand(w) - 0.5) * car.speed * 1.2;
         p.state = FLYING; p.cool = 0.3; p.timer = 0;
         puff(w, p.x, p.y, p.z);
-        if (i === 0) w.knocks.push(p.kind);
+        if (i === 0) w.knocks.push(p.toy);
         break;
       }
     }
@@ -469,6 +478,13 @@ function stepProps(w: World, dt: number): void {
           if (waterAt(w, p.x, p.z)) splash(w, p.x, p.z, p.vx, p.vz, 6, 4);
           p.vy = -p.vy * 0.42; p.vx *= 0.75; p.vz *= 0.75;
           p.wx *= 0.7; p.wy *= 0.7; p.wz *= 0.7;
+        } else if (rolls) {
+          // Rolling: slows gently, and spins the way a ball rolls (about the axis across its path).
+          p.vy = 0;
+          const f = Math.max(0, 1 - 0.9 * dt);
+          p.vx *= f; p.vz *= f;
+          p.wx = p.vz / half; p.wy = 0; p.wz = -p.vx / half;
+          if (p.vx * p.vx + p.vz * p.vz < 0.15) { p.state = AWAY; p.timer = 0; }
         } else {
           p.vy = 0;
           const f = Math.max(0, 1 - 5 * dt);

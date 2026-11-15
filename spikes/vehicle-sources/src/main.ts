@@ -8,7 +8,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshoptSimplifier } from 'three/addons/libs/meshopt_simplifier.module.js';
-import { buildGround, propShapes, treeShapes } from '../../../src/games/racing/look/island';
+import { buildGround } from '../../../src/games/racing/look/island';
+import { sceneryPieces } from '../../../src/games/racing/look/scenery';
+import { toyPieces } from '../../../src/games/racing/look/toys';
+import { TOY_IDS } from '../../../src/games/racing/sim/assets/toys';
 import { buildVehicle } from '../../../src/games/racing/look/vehicles';
 import { makeWorld, step, type Input, type World } from '../../../src/games/racing/sim/sim';
 import { chaseView } from '../../../src/games/racing/sim/view';
@@ -63,10 +66,9 @@ scene.add(sun, sun.target);
 const world: World = makeWorld(7, view === 'drive' ? 150 : 0, 'free');
 world.cars[0]!.kind = 'bus'; // a truck-sized body for bumping
 scene.add(buildGround(world));
-const trees = treeShapes();
-world.trees.forEach((t, i) => {
+world.trees.forEach((t) => {
   if (view === 'lineup' && Math.hypot(t.x, t.z - 38) < 22) return;
-  for (const { geometry, material } of trees[i % 3 === 0 ? 1 : 0]!) {
+  for (const { geometry, material } of sceneryPieces(t.kind)) {
     const m = new THREE.Mesh(geometry, material);
     m.position.set(t.x, 0, t.z);
     m.scale.setScalar(t.scale);
@@ -268,7 +270,7 @@ async function drive(): Promise<void> {
     scene.add(v.group);
     return v;
   });
-  const props = propShapes().map((pieces) => pieces.map(({ geometry, material }) => {
+  const props = TOY_IDS.map((id) => toyPieces(id).map(({ geometry, material }) => {
     const m = new THREE.InstancedMesh(geometry, material, world.props.length);
     m.castShadow = m.receiveShadow = true;
     m.frustumCulled = false;
@@ -319,8 +321,9 @@ async function drive(): Promise<void> {
     const n = [0, 0, 0, 0];
     for (const p of world.props) {
       m4.compose(v.set(p.x, p.y, p.z), q.set(p.qx, p.qy, p.qz, p.qw), s.setScalar(p.scale));
-      for (const mesh of props[p.kind]!) mesh.setMatrixAt(n[p.kind]!, m4);
-      n[p.kind]!++;
+      const k = TOY_IDS.indexOf(p.toy);
+      for (const mesh of props[k]!) mesh.setMatrixAt(n[k]!, m4);
+      n[k]!++;
     }
     for (const kind of props) for (const mesh of kind) mesh.instanceMatrix.needsUpdate = true;
     const cv = chaseView(world);

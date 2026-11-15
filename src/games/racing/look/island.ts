@@ -1,11 +1,12 @@
-// The island in the polished toy look (ADR 0025): ground, roads (look/roads.ts), puddles and bushes that never
-// move, plus the shapes of trees and props, which the renderer draws in batches.
+// The island in the polished toy look (ADR 0025): the ground, roads (look/roads.ts), water and decor that never
+// move. Trees and toys are drawn in batches by the renderer, from look/scenery.ts and look/toys.ts.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { nearestRoad } from '../sim/roads';
 import type { World } from '../sim/sim';
-import { bake, part, plastic, rbox, ROUND } from './kit';
+import { ROUND } from './kit';
 import { buildRoads } from './roads';
+import { DECOR_LOOKS } from './scenery';
 
 function flatRing(inner: number, outer: number, y: number, segs = 128, rings = 1): THREE.BufferGeometry {
   return new THREE.RingGeometry(inner, outer, segs, rings).rotateX(-Math.PI / 2).translate(0, y, 0);
@@ -61,71 +62,21 @@ export function buildGround(world: World): THREE.Group {
     add(new THREE.CircleGeometry(p.r, ROUND * 2).rotateX(-Math.PI / 2).translate(p.x, 0.09, p.z), water);
   }
 
-  // Bushes, kept off the road and out of the water, merged into one mesh.
+  // Decor (bushes): clumps kept off the roads, out of the water and clear of toys, one mesh per kind.
   const r = rng(11);
-  const bushes: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < 70; i++) {
-    const a = r() * Math.PI * 2, d = 6 + r() * (land.r - 12);
-    const x = land.x + Math.sin(a) * d, z = land.z + Math.cos(a) * d;
-    const road = nearestRoad(world.roads, x, z);
-    if (road && road.dist < world.roads[road.road]!.def.width / 2 + 1.5) continue;
-    if (world.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + 1)) continue;
-    if (world.props.some((p) => Math.hypot(x - p.homeX, z - p.homeZ) < 1.5)) continue;
-    for (let k = 0; k < 3; k++) {
-      bushes.push(new THREE.IcosahedronGeometry(0.45 + r() * 0.3, 1).translate(x + (r() - 0.5) * 0.9, 0.3, z + (r() - 0.5) * 0.9));
+  for (const decor of world.map.decor) {
+    const look = DECOR_LOOKS[decor.id];
+    const pieces: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < decor.clumps; i++) {
+      const a = r() * Math.PI * 2, d = 6 + r() * (land.r - 12);
+      const x = land.x + Math.sin(a) * d, z = land.z + Math.cos(a) * d;
+      const road = nearestRoad(world.roads, x, z);
+      if (road && road.dist < world.roads[road.road]!.def.width / 2 + 1.5) continue;
+      if (world.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + 1)) continue;
+      if (world.props.some((p) => Math.hypot(x - p.homeX, z - p.homeZ) < 1.5)) continue;
+      pieces.push(...look.clump(r, x, z, decor.perClump));
     }
+    if (pieces.length) add(mergeGeometries(pieces)!, look.material(), true);
   }
-  if (bushes.length) add(mergeGeometries(bushes)!, new THREE.MeshStandardMaterial({ color: 0x4c9a3e, roughness: 0.7, flatShading: true }), true);
   return g;
-}
-
-export type Pieces = { geometry: THREE.BufferGeometry; material: THREE.Material }[];
-
-/** Two kinds of tree, each baked to one piece per material: a layered pine, and a round leafy tree. */
-export function treeShapes(): Pieces[] {
-  const bark = new THREE.MeshStandardMaterial({ color: 0x7a5034, roughness: 0.9 });
-  const leaves = [0x3f9b4b, 0x4aa95a, 0x5bb04f].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, flatShading: true }));
-  const trunk = () => part(new THREE.CylinderGeometry(0.3, 0.38, 1.6, 10), bark, 0, 0.8, 0);
-  const pine = new THREE.Group().add(trunk());
-  ([[1.75, 1.6, 1.9], [1.35, 1.4, 2.7], [0.95, 1.2, 3.4]] as const).forEach(([rad, h, y], k) =>
-    pine.add(part(new THREE.ConeGeometry(rad, h, 12), leaves[k % 2]!, 0, y, 0)));
-  const round = new THREE.Group().add(trunk());
-  round.add(part(new THREE.IcosahedronGeometry(1.45, 1), leaves[2]!, 0, 2.7, 0));
-  round.add(part(new THREE.IcosahedronGeometry(0.9, 1), leaves[1]!, 0.6, 3.4, 0.3));
-  return [bake(pine), bake(round)];
-}
-
-/** Cone, crate, ball, bale, each centred where the simulation puts it and baked to one piece per material. */
-export function propShapes(): Pieces[] {
-  const orange = plastic(0xff6a10, 0.5);
-  const whiteBand = plastic(0xf6f6f2, 0.4);
-  const wood = new THREE.MeshStandardMaterial({ color: 0xc08a4a, roughness: 0.8 });
-  const woodDark = new THREE.MeshStandardMaterial({ color: 0x8c5e2c, roughness: 0.85 });
-  const ball = new THREE.MeshPhysicalMaterial({ color: 0xff4f96, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 });
-  const straw = new THREE.MeshStandardMaterial({ color: 0xe5c25a, roughness: 0.95 });
-  const twine = plastic(0x7a5a2a, 0.9);
-
-  const cone = new THREE.Group();
-  cone.add(part(new THREE.CylinderGeometry(0.07, 0.42, 1.0, ROUND), orange, 0, 0.05, 0));
-  cone.add(part(rbox(1.0, 0.1, 1.0, 0.06), orange, 0, -0.45, 0));
-  cone.add(part(new THREE.CylinderGeometry(0.22, 0.29, 0.2, ROUND), whiteBand, 0, 0.12, 0));
-
-  const crate = new THREE.Group().add(part(rbox(1, 1, 1, 0.04), wood));
-  for (const [x, z] of [[0.48, 0.48], [-0.48, 0.48], [0.48, -0.48], [-0.48, -0.48]] as const) {
-    crate.add(part(new THREE.BoxGeometry(0.08, 1.02, 0.08), woodDark, x, 0, z));
-  }
-  for (const y of [-0.48, 0.48]) {
-    crate.add(part(new THREE.BoxGeometry(1.02, 0.08, 0.08), woodDark, 0, y, 0.48));
-    crate.add(part(new THREE.BoxGeometry(1.02, 0.08, 0.08), woodDark, 0, y, -0.48));
-    crate.add(part(new THREE.BoxGeometry(0.08, 0.08, 1.02), woodDark, 0.48, y, 0));
-    crate.add(part(new THREE.BoxGeometry(0.08, 0.08, 1.02), woodDark, -0.48, y, 0));
-  }
-
-  const beachBall = new THREE.Group().add(part(new THREE.SphereGeometry(0.6, ROUND + 8, ROUND), ball));
-  beachBall.add(part(new THREE.TorusGeometry(0.6, 0.04, 8, ROUND + 8), whiteBand));
-
-  const bale = new THREE.Group().add(part(new THREE.CylinderGeometry(0.45, 0.45, 1.5, ROUND + 4).rotateZ(Math.PI / 2), straw));
-  for (const x of [-0.4, 0.4]) bale.add(part(new THREE.TorusGeometry(0.455, 0.025, 6, ROUND + 4).rotateY(Math.PI / 2), twine, x, 0, 0));
-
-  return [cone, crate, beachBall, bale].map(bake);
 }

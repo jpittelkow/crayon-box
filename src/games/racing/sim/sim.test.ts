@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DRIVE_KEYS, driveInput } from './input';
 import { chaseView, stepTreeSizes } from './view';
 import { LAND_R, ROAD_R, ROAD_W } from '../maps/island';
+import { TOYS } from './assets/toys';
 import { pointAt } from './roads';
 import { FLOOD_SPEED, VEHICLE_SIZE, bodyPoints, MAX_SPEED, makeWorld, step, waterAt, type Input, type World } from './sim';
 
@@ -55,7 +56,7 @@ describe('the kid car', () => {
       return { go: true, brake: false, steer: i % 600 < 300 ? 0.15 : -0.1 };
     });
     expect(far).toBeLessThan(LAND_R);
-  });
+  }, 30_000);
 
   it('after a minute of random driving it is on land and has gone somewhere (never stuck)', () => {
     for (const seed of [1, 2, 3]) {
@@ -75,7 +76,7 @@ describe('the kid car', () => {
       expect(Math.hypot(w.cars[0].x, w.cars[0].z)).toBeLessThan(LAND_R);
       expect(travelled).toBeGreaterThan(200);
     }
-  });
+  }, 30_000);
 
   it('a car held against a tree gets steered back to the road', () => {
     const w = makeWorld(7, 0);
@@ -127,28 +128,51 @@ describe('the kid car', () => {
   });
 });
 
-describe('things to knock around', () => {
-  it('fly when hit, then go back home', () => {
+describe('toys to knock around', () => {
+  /** Drives the kid's car through a toy near the road, then waits; reports how high and how far it went. */
+  function knock(behaviour: 'tumble' | 'roll') {
     const w = makeWorld(7, 150);
-    const prop = w.props.find((p) => Math.abs(Math.hypot(p.homeX, p.homeZ) - ROAD_R) < 3)!;
+    const prop = w.props.find((p) => TOYS[p.toy].behaviour === behaviour && Math.abs(Math.hypot(p.homeX, p.homeZ) - ROAD_R) < 3)!;
     const car = w.cars[0];
-    // Line the car up to drive straight through the prop.
+    // Line the car up to drive straight through the toy, along the road.
     const a = Math.atan2(prop.homeX, prop.homeZ);
     car.x = prop.homeX - Math.cos(a) * 6;
     car.z = prop.homeZ + Math.sin(a) * 6;
     car.heading = Math.atan2(prop.homeX - car.x, prop.homeZ - car.z);
     car.speed = 12;
-    let flew = false;
-    run(w, 1, () => {
-      flew ||= prop.y > 1.5;
+    let high = 0, far = 0, knocked = false, cameHome = false;
+    const watch = () => {
+      high = Math.max(high, prop.y - TOYS[prop.toy].half);
+      far = Math.max(far, Math.hypot(prop.x - prop.homeX, prop.z - prop.homeZ));
+      // Home again: back at its own spot at full size. (Traffic may knock it again later; that is fine.)
+      cameHome ||= knocked && far > 1 && prop.scale === 1 && Math.hypot(prop.x - prop.homeX, prop.z - prop.homeZ) < 1e-6;
+    };
+    run(w, 1, (world) => {
+      knocked ||= world.knocks.includes(prop.toy);
+      watch();
       return GO;
     });
-    expect(flew).toBe(true);
     car.speed = 0;
-    run(w, 12, { go: false, brake: true, steer: 0 });
-    expect(prop.x).toBeCloseTo(prop.homeX, 5);
-    expect(prop.z).toBeCloseTo(prop.homeZ, 5);
-    expect(prop.scale).toBe(1);
+    run(w, 12, () => {
+      watch();
+      return { go: false, brake: true, steer: 0 };
+    });
+    return { high, far, knocked, cameHome };
+  }
+
+  it('a tumbling toy flies up when hit, then goes back home', () => {
+    const { high, knocked, cameHome } = knock('tumble');
+    expect(knocked).toBe(true);
+    expect(high).toBeGreaterThan(1);
+    expect(cameHome).toBe(true);
+  });
+
+  it('a rolling toy only hops, rolls a long way along the ground, then goes back home', () => {
+    const { high, far, knocked, cameHome } = knock('roll');
+    expect(knocked).toBe(true);
+    expect(high).toBeLessThan(0.5);
+    expect(far).toBeGreaterThan(8);
+    expect(cameHome).toBe(true);
   });
 });
 

@@ -75,8 +75,10 @@ Two quick tests that decide how much the rest can hold. Both are throwaway (`spi
     nearest point, a point along a road, smoothing a few points into a curve), `look/roads.ts` (road surface and
     markings along any path). Traffic, the assist, the rescue, the island's edge and placement all read the map;
     tests drive a second, bent, off-centre map. Still to do: ground as shapes or heights instead of a round
-    island, zones (car wash, garage), set pieces, junctions, and toys by id with the registry.
-- **The asset registry** ([driving-assets.md](driving-assets.md), "Where it goes in the code"): each asset gets
+    island, zones (car wash, garage), set pieces, junctions.
+- **The asset registry** ([driving-assets.md](driving-assets.md), "Where it goes in the code"). **Status
+  (2026-11-15): built** for toys, scenery and decor, with knock behaviours as data (tumble, and roll for the beach
+  ball), a test that every asset has both halves and fits its budget, and the gallery dev page. Was: each asset gets
   a definition in `sim/assets/` and a look in `look/`, and maps name assets by id (`toy/cone`) instead of
   today's prop numbers. Plus the asset gallery dev page, grown from the samples' line-up.
 - **Set pieces** from ADR 0021, each a sound plus a short animation: a bridge over water, a tunnel, a ramp with a

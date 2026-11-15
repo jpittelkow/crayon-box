@@ -3,10 +3,14 @@
 // Loaded only when the game opens.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { buildGround, propShapes, treeShapes, type Pieces } from './look/island';
+import { buildGround } from './look/island';
+import { sceneryPieces } from './look/scenery';
+import { toyPieces, type Pieces } from './look/toys';
 import { buildVehicle, type VehicleModel } from './look/vehicles';
-import { DROP_LIFE, PROP_KINDS, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
-import { CAMERA_FOV, chaseView, stepTreeSizes } from './sim/view';
+import type { SceneryId } from './sim/assets/scenery';
+import type { ToyId } from './sim/assets/toys';
+import { DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
+import { CAMERA_FOV, chaseView, stepTreeSizes, type View } from './sim/view';
 
 /** The most real pixels drawn per CSS pixel. Built-in laptop graphics (ADR 0021) get no more than this. */
 export const MAX_PIXEL_RATIO = 1.5;
@@ -18,7 +22,8 @@ const WATER_Y = 0.09;
 export interface Renderer {
   resize(cssWidth: number, cssHeight: number, pixelRatio: number): void;
   /** Brings every moving thing up to date with the world, then draws. */
-  render(world: World): void;
+  /** `view` is for dev tools (the asset gallery); the game always uses the chase camera. */
+  render(world: World, view?: View): void;
   dispose(): void;
 }
 
@@ -77,19 +82,21 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
 
   scene.add(buildGround(world));
 
-  // Trees: two kinds, batched; each tree can shrink away from the camera (ADR 0021).
-  const treeKinds = treeShapes();
-  const treeOf = world.trees.map((_, i) => (i % 3 === 0 ? 1 : 0));
-  const treeBatches = treeKinds.map((pieces, k) => batch(pieces, treeOf.filter((t) => t === k).length));
-  treeBatches.flat().forEach((m) => scene.add(m));
+  // Trees: one batch per kind on this map; each tree can shrink away from the camera (ADR 0021).
+  const treeBatches = new Map<SceneryId, THREE.InstancedMesh[]>();
+  for (const id of new Set(world.trees.map((t) => t.kind))) {
+    treeBatches.set(id, batch(sceneryPieces(id), world.trees.filter((t) => t.kind === id).length));
+  }
+  [...treeBatches.values()].flat().forEach((m) => scene.add(m));
   const treeSizes = world.trees.map(() => 1);
 
-  // Props: four kinds, batched.
-  const propKinds = propShapes();
-  const kindCount = new Array<number>(PROP_KINDS).fill(0);
-  for (const p of world.props) kindCount[p.kind]++;
-  const propBatches = propKinds.map((pieces, k) => batch(pieces, kindCount[k]!));
-  propBatches.flat().forEach((m) => scene.add(m));
+  // Toys: one batch per kind on this map.
+  const toyBatches = new Map<ToyId, THREE.InstancedMesh[]>();
+  for (const id of new Set(world.props.map((p) => p.toy))) {
+    toyBatches.set(id, batch(toyPieces(id), world.props.filter((p) => p.toy === id).length));
+  }
+  [...toyBatches.values()].flat().forEach((m) => scene.add(m));
+  const placed = new Map<string, number>();
 
   // Vehicles: the kid's car in their colour, traffic in its own colours.
   const vehicles: VehicleModel[] = world.cars.map((c, i) => {
@@ -127,25 +134,28 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     for (const mesh of meshes) mesh.instanceMatrix.needsUpdate = true;
   };
 
-  const update = (w: World) => {
+  const update = (w: World, view: View = chaseView(w)) => {
     // Trees
     stepTreeSizes(w, treeSizes);
-    const treeIndex = [0, 0];
+    placed.clear();
+    const next = (id: string) => {
+      const n = placed.get(id) ?? 0;
+      placed.set(id, n + 1);
+      return n;
+    };
     w.trees.forEach((t, i) => {
-      const k = treeOf[i]!;
       const size = t.scale * treeSizes[i]!;
       m.compose(v.set(t.x, 0, t.z), q.identity(), s.setScalar(size));
-      place(treeBatches[k]!, treeIndex[k]!++, size > 0 ? m : zero);
+      place(treeBatches.get(t.kind)!, next(t.kind), size > 0 ? m : zero);
     });
     treeBatches.forEach(dirty);
 
-    // Props
-    kindCount.fill(0);
+    // Toys
     for (const p of w.props) {
       m.compose(v.set(p.x, p.y, p.z), q.set(p.qx, p.qy, p.qz, p.qw), s.setScalar(p.scale));
-      place(propBatches[p.kind]!, kindCount[p.kind]!++, p.scale > 0 ? m : zero);
+      place(toyBatches.get(p.toy)!, next(p.toy), p.scale > 0 ? m : zero);
     }
-    propBatches.forEach(dirty);
+    toyBatches.forEach(dirty);
 
     // Vehicles
     w.cars.forEach((c, i) => {
@@ -167,7 +177,6 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     for (const e of [puffs, drops, ripples]) e.instanceMatrix.needsUpdate = true;
 
     // Camera, and the sun's shadow centred on the car.
-    const view = chaseView(w);
     camera.position.set(...view.eye);
     camera.lookAt(...view.target);
     const kid = w.cars[0]!;
@@ -183,8 +192,8 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
       camera.aspect = cssWidth / Math.max(1, cssHeight);
       camera.updateProjectionMatrix();
     },
-    render(w) {
-      update(w);
+    render(w, view) {
+      update(w, view);
       renderer.render(scene, camera);
     },
     dispose() {

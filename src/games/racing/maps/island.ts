@@ -25,6 +25,15 @@ export const ISLAND: MapDef = {
     pools: [{ on: around(Math.PI), r: 12, deep: true }],
     puddles: [{ road: 0, at: [0.75, 1.5, 2.2, 4.0, 4.8, 5.6].map((a) => a / (Math.PI * 2)), spread: 7, size: [2.2, 1.6] }],
   },
-  trees: { count: 44, scale: [0.8, 0.6], roadGap: 2.5, waterGap: 2, edgeGap: 5 },
-  props: { nearRoad: 0.55, spread: 4, edgeGap: 5, spawnGap: 7 },
+  trees: {
+    kinds: [{ id: 'scenery/pine', share: 2 }, { id: 'scenery/round-tree', share: 1 }],
+    count: 44, scale: [0.8, 0.6], roadGap: 2.5, waterGap: 2, edgeGap: 5,
+  },
+  props: {
+    kinds: [
+      { id: 'toy/cone', share: 1 }, { id: 'toy/crate', share: 1 }, { id: 'toy/beach-ball', share: 1 }, { id: 'toy/hay-bale', share: 1 },
+    ],
+    nearRoad: 0.55, spread: 4, edgeGap: 5, spawnGap: 7,
+  },
+  decor: [{ id: 'decor/bush', clumps: 70, perClump: 3 }],
 };

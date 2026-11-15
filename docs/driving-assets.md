@@ -92,8 +92,8 @@ by a number as today's props do.
 | Sky and light | per map settings | — | ambient (waves, birds, wind) | — |
 
 ### Knock behaviours (toys)
-Today every toy does the same thing. Giving each toy one of a few behaviours makes the toys feel different
-without new rules per toy:
+Giving each toy one of a few behaviours makes the toys feel different without new rules per toy. Built so far
+(2026-11-15): tumble and roll, set per toy in `sim/assets/toys.ts`.
 - **Tumble** (today's default): pushed, spins, bounces, settles, returns. Cone, crate, bale.
 - **Roll**: keeps rolling along the ground, slows, then returns. Beach ball, barrel, pumpkin.
 - **Topple**: a stack or row falls apart piece by piece, then rebuilds. Tyre stack, block tower, skittles.
@@ -138,7 +138,7 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 | `toy/cone` | built | all | tumble |
 | `toy/crate` | built | all | tumble |
 | `toy/beach-ball` | built | island | roll |
-| `toy/hay-bale` | built | country | roll (today tumble) |
+| `toy/hay-bale` | built | country | tumble (roll later: it should roll about its own axis, unlike a ball) |
 | `toy/barrel` | idea | all | roll |
 | `toy/tyre-stack` | idea | town | topple |
 | `toy/block-tower` | idea | all | topple (plain colours, no letters) |
@@ -282,7 +282,10 @@ sails); see Border cases.
 
 ## Where it goes in the code
 Proposed for phase B, when the world becomes data (a refactor of today's `look/` and `sim/`). Built so far
-(2026-11-15): `sim/map.ts` (the map format), `sim/roads.ts`, `look/roads.ts` and `maps/island.ts`.
+(2026-11-15): `sim/map.ts` (the map format), `sim/roads.ts`, `look/roads.ts`, `maps/island.ts`, and the
+registry for toys, scenery and decor: `sim/assets/toys.ts` and `scenery.ts` (definitions), `look/toys.ts` and
+`look/scenery.ts` (looks, keyed by id), and `sim/assets/index.ts` (every asset by category). Vehicles keep
+their kinds (`car`, `police`...) with ids `vehicle/<kind>`; their definitions stay in `sim.ts` for now.
 ```
 src/games/racing/
   sim/assets/        definitions, one file per category: vehicles.ts, toys.ts, scenery.ts, setpieces.ts, animals.ts
@@ -298,14 +301,17 @@ src/games/racing/
   maps/              island.ts, later town.ts, country.ts: the road network, then asset ids with places
 ```
 A **registry** maps each id to its definition and its look, so a new asset is: a definition, a look, a line in
-the registry, and a place on a map.
+the registry, and a place on a map. `src/games/racing/assets.test.ts` checks every id has both halves, that every
+look builds within its category's triangle budget, and that a map uses only registered ids.
 
 ## How a new asset gets made
 1. Add its row here (or move it from idea to planned).
 2. Definition and look, with the category's budget.
-3. Shown in an **asset gallery**: a dev page that lays out every asset by category on the island's ground, with
-   its triangle count, drawn the way the game draws it (grown from the line-up view in
-   `spikes/vehicle-sources/`). This is where a new asset is checked by eye next to the others.
+3. Shown in the **asset gallery**: `/tools/driving-gallery.html` on the dev server (built 2026-11-15). It lays
+   out every registered asset in rows by category on a small gallery map, drawn by the game's own renderer,
+   labelled with its id and triangle count; `?row=vehicles` (or `toys`, `scenery`, `effects`) shows one row
+   close up. `node tools/shoot-gallery.mjs` saves screenshots to `test-results/gallery/`. This is where a new
+   asset is checked by eye next to the others.
 4. Unit test from its category: a toy settles and returns; scenery never traps the car; an animal is never hit.
 5. Placed on a map.
 

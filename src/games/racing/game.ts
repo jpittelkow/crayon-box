@@ -6,6 +6,7 @@ import { icons } from '../../ui/icons';
 import { el, kidButton } from '../../ui/kid';
 import { forgetKid, loadDrivingSettings, loadKidDriving } from './settings';
 import { DRIVE_KEYS, driveInput } from './sim/input';
+import { TOYS } from './sim/assets/toys';
 import { makeWorld, step, type World } from './sim/sim';
 import { groundPoint } from './sim/view';
 import { DrivingSound } from './sound';
@@ -161,7 +162,7 @@ class DrivingGame {
       const input = driveInput([...fingers.values()].at(-1), keys);
       while (owed >= STEP) {
         step(world, input, STEP);
-        for (const kind of world.knocks) sound.bump(kind);
+        for (const toy of world.knocks) sound.bump(TOYS[toy].bump);
         for (const depth of world.splashes) sound.splash(depth === 2);
         owed -= STEP;
       }

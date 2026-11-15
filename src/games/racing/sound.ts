@@ -1,6 +1,7 @@
 // The driving game's sounds (ADR 0025), made by the browser as it plays: no sound files, so nothing to license
 // (ADR 0011). Every vehicle has an engine voice of its own whose pitch and loudness follow its speed; traffic is
 // heard only nearby. Effects: bumps per prop kind, splashes, tyre squeal, brake squeak and the horn.
+import type { BumpSound } from './sim/assets/toys';
 import { MAX_SPEED, type Input, type VehicleKind, type World } from './sim/sim';
 
 /** How a kind of vehicle's engine sounds. A new vehicle gets a new entry. */
@@ -184,17 +185,17 @@ export class DrivingSound {
     osc.stop(start + length + 0.02);
   }
 
-  /** A bump of its own for each kind of prop: a plastic cone pings, a crate knocks, a ball boings, a bale thumps. */
-  bump(kind: number): void {
+  /** A toy's own bump (sim/assets/toys.ts): a plastic ping, a wooden knock, a rubber boing, a soft thump. */
+  bump(kind: BumpSound): void {
     const ctx = this.running();
     if (!ctx || ctx.currentTime - this.lastBump < 0.05) return;
     this.lastBump = ctx.currentTime;
-    if (kind === 0) {
+    if (kind === 'ping') {
       this.tone('triangle', 700, 420, 0.12, 0.2);
-    } else if (kind === 1) {
+    } else if (kind === 'knock') {
       this.tone('square', 160, 90, 0.08, 0.14);
       this.tone('triangle', 240, 120, 0.1, 0.12, 0.03);
-    } else if (kind === 2) {
+    } else if (kind === 'boing') {
       this.tone('sine', 260, 520, 0.18, 0.22);
     } else {
       this.tone('sine', 110, 60, 0.18, 0.3);

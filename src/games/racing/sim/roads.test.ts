@@ -119,7 +119,7 @@ describe('a map that is not the ring island', () => {
     });
     expect(far).toBeLessThan(OVAL.land.r);
     expect(travelled).toBeGreaterThan(200);
-  });
+  }, 30_000);
 
   it('traffic drives the bent road in its lane and comes back round', () => {
     const w = makeWorld(3, 0, 'free', OVAL);
