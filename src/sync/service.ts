@@ -112,6 +112,9 @@ export class SyncService {
     const s = await this.settings();
     await saveSyncSettings(this.opts.shell, { ...s, server: address, token, lastRev: 0, asked: true, problem: undefined });
     this.failures = 0;
+    // A background round that started before the settings were saved read them without a server: let it end,
+    // then run one that sees the server, rather than joining it.
+    while (this.running) await this.running;
     await this.syncNow();
     this.scheduleNext();
   }
