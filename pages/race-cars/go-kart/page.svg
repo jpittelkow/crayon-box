@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A go-kart with a driver in a helmet and a flag. -->
+  <path d="M0 1240 L2048 1240"/>
+  <circle cx="1750" cy="250" r="100"/>
+  <rect x="420" y="880" width="220" height="100" rx="14" fill="#ffffff"/>
+  <path d="M790 672 L790 380"/>
+  <path d="M790 380 L940 425 L790 470 Z"/>
+  <path d="M760 980 L720 700 Q715 670 745 670 L800 670 Q830 670 835 700 L880 980 Z" fill="#ffffff"/>
+  <path d="M820 980 L860 760 Q880 700 940 700 L1000 700 Q1050 710 1060 760 L1080 980 Z" fill="#ffffff"/>
+  <circle cx="980" cy="580" r="120" fill="#ffffff"/>
+  <path d="M1010 545 L1075 545 Q1092 580 1080 625 L1010 625 Z"/>
+  <path d="M1200 850 L1250 980"/>
+  <path d="M1030 760 L1165 785 Q1185 790 1180 812 Q1176 830 1155 827 L1030 815 Z" fill="#ffffff"/>
+  <circle cx="1205" cy="805" r="60" fill="#ffffff"/>
+  <circle cx="1205" cy="805" r="22"/>
+  <path d="M380 980 L1700 980 Q1760 980 1760 1040 L1760 1080 L380 1080 Q340 1080 340 1040 L340 1020 Q340 980 380 980 Z" fill="#ffffff"/>
+  <circle cx="520" cy="1110" r="130" fill="#ffffff"/>
+  <circle cx="520" cy="1110" r="55"/>
+  <circle cx="1540" cy="1110" r="130" fill="#ffffff"/>
+  <circle cx="1540" cy="1110" r="55"/>
+</svg>

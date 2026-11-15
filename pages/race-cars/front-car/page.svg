@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A car seen from the front: headlight eyes and a grille smile. -->
+  <path d="M0 1260 L2048 1260"/>
+  <path d="M1024 1300 L1024 1350 M1024 1410 L1024 1480"/>
+  <circle cx="260" cy="240" r="100"/>
+  <path d="M1560 330 A70 70 0 0 1 1680 270 A90 90 0 0 1 1850 280 A70 70 0 0 1 1880 410 L1600 410 A60 60 0 0 1 1560 330 Z"/>
+  <path d="M1450 660 L1450 380"/>
+  <path d="M1450 380 L1600 425 L1450 470 Z"/>
+  <rect x="470" y="1020" width="210" height="250" rx="40" fill="#ffffff"/>
+  <rect x="1368" y="1020" width="210" height="250" rx="40" fill="#ffffff"/>
+  <path d="M700 700 L790 430 Q800 400 840 400 L1208 400 Q1248 400 1258 430 L1348 700 Z" fill="#ffffff"/>
+  <path d="M770 660 L840 465 L1208 465 L1278 660"/>
+  <rect x="440" y="660" width="1168" height="460" rx="90" fill="#ffffff"/>
+  <circle cx="700" cy="820" r="95" fill="#ffffff"/>
+  <circle cx="720" cy="835" r="40" fill="#23201c"/>
+  <circle cx="1348" cy="820" r="95" fill="#ffffff"/>
+  <circle cx="1328" cy="835" r="40" fill="#23201c"/>
+  <path d="M800 950 Q1024 1080 1248 950 Q1024 1010 800 950 Z"/>
+  <path d="M440 1062 L1608 1062"/>
+</svg>

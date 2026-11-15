@@ -12,10 +12,11 @@ _Last updated: 2026-11-14_
 - **Target laptop screen:** resolution and shape are not recorded; the 4:3 canvas layout depends on them
   (ADR 0004). The mockups assume 1280 × 800 (ADR 0016).
 - **Buttons on touch-down or lift:** to settle in playtests (ADR 0003).
-- **Racing game** needs its own ADR before work starts (ADR 0012), including how it is drawn: the owner expects
-  3D models and a lot of design.
-- **Built-in page art:** who or what draws the ~48 original v1 pages (ADR 0005)? ADR 0011 now allows AI-made
-  pages under conditions.
+- **Racing game:** [ADR 0021](../adr/0021-racing-game.md) is Proposed; the owner has answered the main questions
+  but not yet accepted it. Still open in it: three.js or Babylon.js (compared for the owner 2026-11-14, no
+  answer yet; the ADR says three.js), how smoothly the laptop's integrated graphics draw it, which assist level
+  new kids start on, whether a resting hand driving the car is a problem (those three for the prototype
+  playtest), and whether the folder and registry id stay `racing` now that there are no races.
 - **Brush sizes:** the three dots paint 40, 80 and 130 page pixels wide (about 15, 30 and 49 px on the
   1280 × 800 screen). A guess, to check in the first playtest (2026-11-14).
 - **64 px color buttons:** smaller than every other kid target since ADR 0019. Check in a playtest that the kids
@@ -23,3 +24,6 @@ _Last updated: 2026-11-14_
 - **Sync between devices** (milestone 4, see project state): where the server runs, what syncs (settings only,
   or pictures too), and whether kids' names and photos may leave the device. The owner earlier dropped a
   home-server container for the web app (ADR 0014).
+- **Search for AI pages from an idea** (ADR 0023): which search service, its key and cost. Settle before building
+  that part.
+- **AI model for the animal themes' built-in pages** (ADR 0022): pick with the default model test of ADR 0006.

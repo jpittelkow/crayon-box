@@ -25,6 +25,12 @@ _Last confirmed: 2026-11-14_
 - The AI page maker must not steer or discourage which photos a parent uses; that choice is the parent's
   (ADR 0006).
 - Expects the racing game to use 3D models and to need a lot of design, so it comes after the installer.
+- **The racing game** (asked 2026-11-14, ADR 0021): 3D, seen from behind the car, simple, a little open world.
+  Roam only, no races; maybe traffic that "sort of races with you". Touch to go, and keyboard driving too (arrow
+  keys and WASD). three.js and CC0 model kits are "fine for now"; the owner said they don't know the options, so
+  explain alternatives plainly if that choice comes up again. Fine with a prototype during milestone 1.
+  Confirmed touch driving and both assist levels (steers freely, follows the road). Likes the sound effects and
+  things to knock around. The family laptop has integrated graphics, no separate graphics card.
 
 ## Tooling and hosting
 - The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to

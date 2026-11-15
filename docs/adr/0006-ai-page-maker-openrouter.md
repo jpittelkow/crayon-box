@@ -1,6 +1,6 @@
 # 0006. AI page maker via OpenRouter
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); extended by [0023](0023-ai-pages-from-a-prompt.md) (pages from a typed idea)
 - Date: 2026-11-14
 
 ## Context

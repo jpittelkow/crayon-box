@@ -1,0 +1,22 @@
+{
+  "name": "engine-bakeoff",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Throwaway test for ADR 0021: the same driving scene drawn with three.js and with Babylon.js.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^9.36.0",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}

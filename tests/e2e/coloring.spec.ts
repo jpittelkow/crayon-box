@@ -27,7 +27,7 @@ test('the kid picker opens the pages, then a page, on the kid’s color', async 
   await expect(page.locator('[data-theme]')).toHaveCount(3);
   await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'race-cars');
   await expect(page.getByRole('button', { name: 'Blank page' })).toBeVisible();
-  await expect(page.locator('[data-page]')).toHaveCount(1);
+  await expect(page.locator('[data-page]')).toHaveCount(6); // Race cars: six pages, so no "more" arrow yet
   await page.getByRole('button', { name: 'Shapes', exact: true }).tap();
   await expect(page.getByRole('button', { name: 'Shapes', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: SHAPES.title }).tap();

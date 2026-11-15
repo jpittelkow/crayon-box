@@ -47,3 +47,11 @@ _Last updated: 2026-11-14_
   (found 2026-11-14).
 - Running a `.cmd` from the Bash tool with `cmd //c` executes it for real; `scripts/playtest.cmd` opened an Edge
   window that way once. Check scripts' parts separately (2026-11-14).
+- A helper script saved as `$TEMP/types.py` shadowed Python's own `types` module for every later script run from
+  `$TEMP`. Run throwaway scripts with `python -I`, and don't name them after standard modules (2026-11-14).
+- Several Claude sessions can work in this folder at once (a racing-game session wrote ADR 0021 while this one
+  was writing ADRs). Check `ls docs/adr` right before numbering a new ADR, and commit only your own files
+  (found 2026-11-14).
+- Page art traps the check caught: a wheel top within ~6 px of the body line, a flagpole running beside a seat,
+  and a smile ending a few px short of an outline. Lines should either cross clearly or keep 20 px apart
+  (2026-11-14).

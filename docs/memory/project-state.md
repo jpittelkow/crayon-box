@@ -15,13 +15,16 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    interface. Runs from the Vite dev server on the dev machine only (no container, ADR 0020). Never hosted
    online. Used to test with the kids early. Art made here is throwaway.
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
-3. **Racing game** (ADR 0012): second game module, needs its own ADR first.
+3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
+   **Proposed** on 2026-11-14 and waiting on the owner to accept: a small 3D island to roam, no races, traffic
+   that drives alongside, touch to go plus arrow and WASD keys, three.js. Its step 1, a throwaway prototype
+   hidden behind a parent switch, is agreed to be built during milestone 1 so it can join a playtest.
 4. **Sync between devices** (asked by the owner on 2026-11-14, "maybe a later milestone"): settings, profiles and
    maybe pictures saved to a server. Not designed yet; needs its own ADR, and changes ADR 0014 (nothing hosted
    online) and ADR 0018 (names and photos stay on the device). See [open questions](open-questions.md).
 
-Built in this order (owner's decision, 2026-11-14). The racing game is last because it needs an ADR, 3D models
-and a lot of design. Deferred: printing and export (ADR 0010).
+Built in this order (owner's decision, 2026-11-14). The racing game is last because it needs 3D models and a lot
+of design; only its prototype comes early. Deferred: printing and export (ADR 0010).
 
 ## Status of decisions
 - ADRs 0001–0009 and 0011–0016 are **Accepted** (the owner accepted 0002–0016 on 2026-11-14); 0010 is
@@ -50,8 +53,10 @@ and a lot of design. Deferred: printing and export (ADR 0010).
   get fixed or recorded (swatch size, brush sizes, touch-down or lift).
 - **B. Page pipeline:** done 2026-11-14: [page guide](../../pages/README.md), the rendered page check in CI
   (`tests/e2e/pages.spec.ts`, ADR 0005), the theme strip and blank page. Still open for C: who draws the pages.
-- **C. The real page library:** about 48 pages in 8 themes, in batches, each through the check; the test-only
-  shapes page leaves the kids' library. Needs B's check first.
+- **C. The real page library:** about 48 pages in 8 themes, in batches, each through the check. Sources decided
+  in [ADR 0022](../adr/0022-where-built-in-pages-come-from.md): SVG drawn by Claude for Race cars, Things that go,
+  Shapes and Yummy food; AI-made (with the clean-up step) for the animal themes. Race cars done 2026-11-14
+  (6 pages). Next SVG batch: Things that go. The shapes placeholder stays as a real Shapes page.
 - **D. Polish:** sounds with a Settings switch, optional gate PIN, reduce-motion check, design system and mockups
   updated to ADRs 0017–0020, optionally the two-finger undo limit.
 A and B can run in parallel; D fits anywhere.

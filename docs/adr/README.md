@@ -26,6 +26,9 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0018](0018-kid-names-and-photos.md) | Kid profiles with names and photos | Accepted |
 | [0019](0019-bigger-coloring-page.md) | A bigger coloring page: fills the window, 64 px color buttons | Accepted |
 | [0020](0020-web-app-from-the-dev-server.md) | The web app runs from the dev server; playtests use an Edge app window | Accepted |
+| [0021](0021-racing-game.md) | Driving game: a small 3D island to roam | Proposed |
+| [0022](0022-where-built-in-pages-come-from.md) | Where the built-in pages come from | Accepted |
+| [0023](0023-ai-pages-from-a-prompt.md) | The AI page maker also makes pages from a typed idea | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H

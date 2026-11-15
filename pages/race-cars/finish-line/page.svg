@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536" fill="none" stroke="#23201c" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Original page, CC0. A little race car about to cross the finish line, with balloons. -->
+  <path d="M0 1200 L2048 1200"/>
+  <path d="M40 950 L120 950 M20 1040 L110 1040"/>
+  <path d="M1500 240 L1500 340 M1700 255 L1700 340"/>
+  <circle cx="1500" cy="180" r="60"/>
+  <circle cx="1700" cy="200" r="55"/>
+  <rect x="1180" y="360" width="40" height="850" fill="#ffffff"/>
+  <rect x="1820" y="360" width="40" height="850" fill="#ffffff"/>
+  <rect x="1180" y="340" width="680" height="200" fill="#ffffff"/>
+  <path d="M1350 340 L1350 540 M1520 340 L1520 540 M1690 340 L1690 540 M1180 440 L1860 440"/>
+  <path d="M160 1080 L160 960 Q170 900 250 885 L460 870 L600 730 Q630 705 680 705 L860 705 Q905 705 935 735 L1030 870 L1080 880 Q1130 895 1130 960 L1130 1080 Z" fill="#ffffff"/>
+  <path d="M640 760 Q650 750 680 750 L770 750 L770 860 L530 860 Z"/>
+  <path d="M810 750 L860 750 Q890 750 910 770 L990 860 L810 860 Z"/>
+  <circle cx="1088" cy="935" r="24" fill="#ffffff"/>
+  <circle cx="1093" cy="939" r="10" fill="#23201c"/>
+  <path d="M1062 992 Q1094 1008 1128 986"/>
+  <circle cx="400" cy="1080" r="120" fill="#ffffff"/>
+  <circle cx="400" cy="1080" r="50"/>
+  <circle cx="930" cy="1080" r="120" fill="#ffffff"/>
+  <circle cx="930" cy="1080" r="50"/>
+</svg>
