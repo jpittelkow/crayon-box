@@ -26,7 +26,11 @@ export interface Renderer {
   /** Brings every moving thing up to date with the world, then draws. */
   /** `view` is for dev tools (the asset gallery); the game always uses the chase camera. */
   render(world: World, view?: View): void;
-  dispose(): void;
+  /**
+   * Frees the GPU memory. `loseContext` also gives the drawing context back at once (for a throwaway canvas, such as
+   * a picker picture), rather than when the canvas is collected: a browser keeps only about 16 at a time.
+   */
+  dispose(loseContext?: boolean): void;
 }
 
 function skyTexture(): THREE.CanvasTexture {
@@ -251,7 +255,7 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
       update(w, view);
       renderer.render(scene, camera);
     },
-    dispose() {
+    dispose(loseContext = false) {
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           o.geometry.dispose();
@@ -261,6 +265,7 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
       env.dispose();
       sky.dispose();
       renderer.dispose();
+      if (loseContext) renderer.forceContextLoss();
     },
   };
 }

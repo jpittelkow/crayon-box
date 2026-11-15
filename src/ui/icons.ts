@@ -59,6 +59,8 @@ export const icons = {
       size,
     ),
   more: (size = 96) => svg('<path d="M17 7l17 17-17 17"/>', size, { stroke: 5 }),
+  /** The other way from more: back a page. */
+  less: (size = 96) => svg('<path d="M31 7L14 24l17 17"/>', size, { stroke: 5 }),
   /** A check mark: "I'm done" (letters, ADR 0028). */
   check: (size = 96) => svg('<path d="M9 25l10 10L39 13"/>', size, { stroke: 6 }),
   coloring: (size = 120) =>
