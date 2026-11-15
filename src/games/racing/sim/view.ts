@@ -1,4 +1,5 @@
 // Where the camera goes and which trees step aside for it (ADR 0021): plain maths, so it can be unit-tested.
+import { SCENERY } from './assets/scenery';
 import type { World } from './sim';
 
 export interface View { eye: [number, number, number]; target: [number, number, number] }
@@ -13,8 +14,9 @@ export function chaseView(w: World): View {
   const kid = w.cars[0]!;
   const fx = Math.sin(w.camHeading), fz = Math.cos(w.camHeading);
   return {
-    eye: [kid.x - fx * 10, 5.5 + kid.y, kid.z - fz * 10],
-    target: [kid.x + fx * 5, 1.2, kid.z + fz * 5],
+    // The camera rises a little with a car hopping off a ramp, so the hop shows but the car stays in view.
+    eye: [kid.x - fx * 10, 5.5 + kid.y + kid.h * 0.6, kid.z - fz * 10],
+    target: [kid.x + fx * 5, 1.2 + kid.h * 0.6, kid.z + fz * 5],
   };
 }
 
@@ -64,7 +66,7 @@ export function stepTreeSizes(w: World, sizes: number[]): void {
   w.trees.forEach((t, i) => {
     const along = Math.max(0, Math.min(1, ((t.x - ex) * (kid.x - ex) + (t.z - ez) * (kid.z - ez)) / len2));
     const gap = Math.hypot(t.x - (ex + (kid.x - ex) * along), t.z - (ez + (kid.z - ez) * along));
-    const want = gap < 2.2 * t.scale + 0.8 ? 0 : 1;
+    const want = SCENERY[t.kind].shrinks && gap < 2.2 * t.scale + 0.8 ? 0 : 1;
     sizes[i] = (sizes[i] ?? 1) + Math.max(-0.12, Math.min(0.12, want - (sizes[i] ?? 1)));
   });
 }

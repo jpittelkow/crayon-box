@@ -34,8 +34,10 @@ _Last updated: 2026-11-14_
 - **Driving to a spot, traffic company** ([ADR 0031](../adr/0031-driving-to-a-spot-and-traffic-company.md),
   Proposed, built 2026-11-15): accept after a playtest. Watch whether a finger held still ending in a stop reads
   as "got there", what a resting hand low on the screen does (U-turn, then stop), and the guessed numbers.
-- **After the driving MVP** (see project state, milestones 3 and 5): which vehicles, how many maps and how big,
-  and how the home map's private folder gets onto the device or the family's server.
+- **Driving game, milestone 3** ([milestone-3.md](../milestone-3.md), decisions table): flag or whole-car color;
+  browser-made or recorded sounds; which vehicles and maps. Decided 2026-11-15: map picker tiles, vehicle
+  picker plus a garage on each map, vehicles built in code. Milestone 5: how the home map's private folder
+  gets onto the device.
 - **Letter practice** ([ADR 0026](../adr/0026-letter-practice.md), built 2026-11-14): for a playtest, tracing
   tolerance (10 units for a finger, 9 for a pen, ends within 6; tightened 2026-11-15), whether tracing the whole letter (ADR 0028: both ends of every
   stroke, 98 % of the letter) and tapping the check are manageable at 4, which handwriting program the kids'

@@ -1,0 +1,26 @@
+// Screenshots of the driving asset gallery (tools/driving-gallery.html) into test-results/gallery/, for checking
+// it without a browser at hand. Run from the repo root:  node tools/shoot-gallery.mjs
+import { chromium } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { createServer } from 'vite';
+
+const PORT = 5186;
+mkdirSync('test-results/gallery', { recursive: true });
+const server = await createServer({ logLevel: 'error', server: { port: PORT, strictPort: true, host: 'localhost' } });
+await server.listen();
+const browser = await chromium.launch({ args: ['--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-gpu'] });
+try {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  page.on('pageerror', (e) => console.error('page error:', e.message));
+  page.on('console', (m) => m.type() === 'error' && console.error('console:', m.text()));
+  for (const row of ['', 'vehicles', 'toys', 'scenery', 'effects']) {
+    await page.goto(`http://localhost:${PORT}/tools/driving-gallery.html${row ? `?row=${row}` : ''}`);
+    await page.waitForFunction(() => window.galleryReady === true, null, { timeout: 120_000 });
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `test-results/gallery/${row || 'all'}.png` });
+    console.log('shot', row || 'all');
+  }
+} finally {
+  await browser.close();
+  await server.close();
+}

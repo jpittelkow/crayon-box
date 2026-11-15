@@ -124,3 +124,7 @@ _Last updated: 2026-11-14_
 - **No Prettier config** (2026-11-14): `npx prettier --write` uses 80 columns and reflows whole files. The code is
   written to 120 columns with single quotes; format by hand or with `--print-width 120 --single-quote`, and check
   the diff for unrelated reflow.
+- Preview servers are capped at 5 per folder across all chats; when full, take screenshots with a script that
+  starts Vite itself (`spikes/*/shoot.mjs`) (2026-11-15).
+- TRELLIS.2 Space: decimation target can't go below 50,000 triangles; cut down afterwards (meshoptimizer's
+  simplifier ships in `three/addons/libs`). Its GLBs face +x; turn them +90° about y to face +z (2026-11-15).

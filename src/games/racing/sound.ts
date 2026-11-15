@@ -1,8 +1,9 @@
 // The driving game's sounds (ADR 0025, 0032). Every vehicle has an engine of its own: a recorded idle loop (shipped
 // file) that plays faster, so higher, and brighter as the vehicle speeds up; traffic is heard only nearby. Effects
-// are shipped files too: bumps per prop kind, splashes, the horn, the police car's siren, the tyre squeal and the
+// are shipped files too: each toy's bump, splashes, the horn, the police car's siren, the tyre squeal and the
 // brake squeak.
 import { soundUrl } from '../../shell/soundFiles';
+import type { BumpSound } from './sim/assets/toys';
 import { MAX_SPEED, type Input, type VehicleKind, type World } from './sim/sim';
 
 /** How a kind of vehicle's engine sounds. A new vehicle gets a new entry (and a loop in assets/sounds/drive/). */
@@ -39,6 +40,13 @@ export const EFFECTS = {
   squeal: 'drive/squeal.wav',
   brake: 'drive/brake.wav',
 } as const;
+
+/** The wooden knock at each toy's pitch and loudness (the boing is a file of its own). */
+const BUMP: Record<Exclude<BumpSound, 'boing'>, { rate: number; volume: number }> = {
+  ping: { rate: 1.35, volume: 0.8 },
+  knock: { rate: 1, volume: 0.8 },
+  thump: { rate: 0.6, volume: 1 },
+};
 
 /** The horn's pitch per vehicle: the same bicycle horn, lower for the big ones. The police car sounds its siren. */
 const HORN_RATE: Record<VehicleKind, number> = { car: 1, police: 1, monster: 0.7, bus: 0.8 };
@@ -206,15 +214,15 @@ export class DrivingSound {
   }
 
   /**
-   * A bump for each kind of prop, from one wooden knock and one spring: a plastic cone knocks high, a crate knocks,
-   * a beach ball boings, a hay bale thumps low.
+   * A toy's own bump (sim/assets/toys.ts), from one wooden knock and one spring: a plastic ping (the knock, high), a
+   * wooden knock, a rubber boing, a soft thump (the knock, low; also a landing from a ramp hop).
    */
-  bump(kind: number): void {
+  bump(kind: BumpSound): void {
     const ctx = this.running();
     if (!ctx || ctx.currentTime - this.lastBump < 0.05) return;
     this.lastBump = ctx.currentTime;
-    if (kind === 2) this.effect(EFFECTS.boing, 0.8);
-    else this.effect(EFFECTS.bump, kind === 3 ? 1 : 0.8, kind === 0 ? 1.35 : kind === 3 ? 0.6 : 1);
+    if (kind === 'boing') this.effect(EFFECTS.boing, 0.8);
+    else this.effect(EFFECTS.bump, BUMP[kind].volume, BUMP[kind].rate);
   }
 
   /** A puddle splash, or a big one for the flood. */
