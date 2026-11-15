@@ -25,7 +25,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    **Overnight 2026-11-14** (owner's plan: the letters fix, then D, C, F, H, then a published release), all
    merged: D kiosk lock (PR #8), C1 sync server (PR #9, image `ghcr.io/jpittelkow/crayon-box-sync`, public), C2
    sync client (PR #10), F family pages (PR #11), H the [release checklist](../release-checklist.md) (PR #12).
-   Release 0.3.0 has all of it. **G (AI page maker) built 2026-11-14 through the family server** ([ADR 0029](../adr/0029-ai-pages-through-the-family-server.md)); a parent picks the model in the app, with family favorites on the server ([ADR 0032](../adr/0032-pick-the-ai-model-in-the-app.md), built 2026-11-15, app 0.5.0 and server 1.2.0).
+   Release 0.3.0 has all of it. **G (AI page maker) built 2026-11-14 through the family server** ([ADR 0029](../adr/0029-ai-pages-through-the-family-server.md)); a parent picks the model in the app, with family favorites on the server ([ADR 0032](../adr/0032-pick-the-ai-model-in-the-app.md), built 2026-11-15, app 0.5.0 and server 1.2.0). The photo prompt was tuned on family photos and a parent can ask for two pages from two models to choose from ([ADR 0033](../adr/0033-photo-prompt-and-two-to-choose-from.md)); `server/tools/ai-samples.ts` compares prompts and models.
    **Left in milestone 2:** the model test (now done by picking models in the app), and the checklist on
    Windows. The in-app update was tested by the owner (2026-11-15). The sync server runs on the family's Unraid
    machine with AI pages on (2026-11-15).

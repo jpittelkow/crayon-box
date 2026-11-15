@@ -157,7 +157,7 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
       const out: AiModelsResponse = {
         models: list.models,
         favorites: store.aiFavorites(),
-        defaults: { image: ai.imageModel, draw: ai.drawModel },
+        defaults: { image: ai.imageModel, draw: ai.drawModel, second: ai.secondModel },
         fetched: list.fetched,
       };
       if (list.problem) out.problem = list.problem;

@@ -74,7 +74,7 @@ async function connectAndOpenAddPages(page: Page): Promise<void> {
 const aiStatus = (page: Page) => page.locator('[data-ai-status]');
 
 test('a page from an idea, made on the server, goes into the library', async ({ page }) => {
-  await startServer({ key: 'sk-test', imageModel: 'img/model', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
+  await startServer({ key: 'sk-test', imageModel: 'img/model', secondModel: 'img/second', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
   await connectAndOpenAddPages(page);
   await expect(page.getByRole('heading', { name: 'Make a page with AI' })).toBeVisible();
   await expect(page.getByText('Today: 0 of 5 AI pages used.')).toBeVisible();
@@ -91,7 +91,7 @@ test('a page from an idea, made on the server, goes into the library', async ({ 
 });
 
 test('a picked model makes the page, is remembered, and can be a family favorite', async ({ page }) => {
-  await startServer({ key: 'sk-test', imageModel: 'img/model', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
+  await startServer({ key: 'sk-test', imageModel: 'img/model', secondModel: 'img/second', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
   await connectAndOpenAddPages(page);
   const model = page.getByLabel('Model', { exact: true });
   await expect(model).toHaveValue('');
@@ -122,8 +122,29 @@ test('a picked model makes the page, is remembered, and can be a family favorite
   await expect(page.getByLabel('Model', { exact: true }).locator('optgroup[label^="Matching"] option')).toHaveText(['Default Image ($30 per million image tokens)']);
 });
 
+test('two to choose from asks both models, and the picked page goes into the library (ADR 0033)', async ({ page }) => {
+  await startServer({ key: 'sk-test', imageModel: 'img/model', secondModel: 'other/image', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
+  await connectAndOpenAddPages(page);
+  await page.getByRole('group', { name: 'How many' }).getByRole('button', { name: 'Two to choose from' }).click();
+  await page.getByLabel('What should it be?').fill('a kite');
+  await page.getByRole('button', { name: 'Make it' }).click();
+  await expect(aiStatus(page)).toHaveAttribute('data-ai-status', 'choose', { timeout: 30_000 });
+  expect([...asked].sort()).toEqual(['img/model', 'other/image']);
+  await expect(page.getByText('Today: 2 of 5 AI pages used.')).toBeVisible();
+  await expect(page.locator('[data-ai-choice]')).toHaveCount(2);
+  await page.locator('[data-ai-choice="2"]').getByRole('button', { name: 'Use this one' }).click();
+  await page.getByRole('button', { name: 'Add to the library' }).click();
+  await expect(aiStatus(page)).toHaveText('Added “A kite” to Our pages.');
+  // Drawing has one model only, so the choice is hidden there; the setting is remembered on this device.
+  await page.getByRole('group', { name: 'How to make it' }).getByRole('button', { name: 'Drawn simply' }).click();
+  await expect(page.locator('[data-ai-count]')).toBeHidden();
+  await page.locator('.pw-nav').getByRole('button', { name: 'Page library' }).click();
+  await page.locator('.pw-nav').getByRole('button', { name: 'Add pages' }).click();
+  await expect(page.getByRole('group', { name: 'How many' }).getByRole('button', { name: 'Two to choose from' })).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('drawn simply uses the drawing model and an SVG', async ({ page }) => {
-  await startServer({ key: 'sk-test', imageModel: 'img/model', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
+  await startServer({ key: 'sk-test', imageModel: 'img/model', secondModel: 'img/second', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
   await connectAndOpenAddPages(page);
   await page.getByRole('group', { name: 'How to make it' }).getByRole('button', { name: 'Drawn simply' }).click();
   await page.getByLabel('What should it be?').fill('a boat');
@@ -134,7 +155,7 @@ test('drawn simply uses the drawing model and an SVG', async ({ page }) => {
 });
 
 test('the daily limit is said in words', async ({ page }) => {
-  await startServer({ key: 'sk-test', imageModel: 'img/model', drawModel: 'draw/model', dailyLimit: 0, fetchFn: fakeOpenRouter });
+  await startServer({ key: 'sk-test', imageModel: 'img/model', secondModel: 'img/second', drawModel: 'draw/model', dailyLimit: 0, fetchFn: fakeOpenRouter });
   await connectAndOpenAddPages(page);
   await page.getByLabel('What should it be?').fill('a cat');
   await page.getByRole('button', { name: 'Make it' }).click();

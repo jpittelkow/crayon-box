@@ -36,6 +36,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0028](0028-letter-tracing-whole-letter-and-confirm.md) | Letter tracing: letters formed as taught in school, the whole letter traced, then a check to finish | Accepted |
 | [0029](0029-ai-pages-through-the-family-server.md) | AI pages through the family server: one OpenRouter key, kept off the laptops | Accepted |
 | [0032](0032-pick-the-ai-model-in-the-app.md) | Pick the AI model in the app, from OpenRouter's list, with family favorites on the server | Accepted |
+| [0033](0033-photo-prompt-and-two-to-choose-from.md) | AI pages: a photo prompt for everyone in the picture, and two pages to choose from | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H

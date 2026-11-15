@@ -43,7 +43,20 @@ export function pickStillFits(list: AiModelsResponse, way: AiWay, id: string | u
   return list.models.some((m) => m.id === id && m.ways.includes(way));
 }
 
+/**
+ * The other model for "two to choose from" (ADR 0033): the server's second model, or its default when the parent
+ * picked the second one. Undefined when there is no different model to ask (an older server, or both the same).
+ */
+export function secondModelFor(list: AiModelsResponse, chosenId: string): string | undefined {
+  const { second, image } = list.defaults;
+  if (second && second !== chosenId) return second;
+  if (image !== chosenId) return image;
+  return undefined;
+}
+
 export interface ModelPicker {
+  /** The other model to ask for "two to choose from" (ADR 0033), for the image ways. */
+  second(): string | undefined;
   el: HTMLElement;
   /** Shows the models for another way. */
   setWay(way: AiWay): void;
@@ -156,6 +169,7 @@ export async function modelPicker(ai: AiPageMaker, storage: GameStorage, startWa
       fill();
     },
     chosen: () => select.value || undefined,
+    second: () => (way === 'draw' ? undefined : secondModelFor(models, current())),
     nameOf,
   };
 }

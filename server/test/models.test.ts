@@ -61,7 +61,7 @@ async function start(ai: Partial<AiConfig> | null = {}): Promise<void> {
   dir = mkdtempSync(join(tmpdir(), 'cb-models-'));
   store = Store.open(dir);
   const config: AiConfig | undefined =
-    ai === null ? undefined : { key: 'sk-test', imageModel: 'img/both', drawModel: 'txt/draw', dailyLimit: 10, fetchFn: fakeFetch, ...ai };
+    ai === null ? undefined : { key: 'sk-test', imageModel: 'img/both', secondModel: 'img/both', drawModel: 'txt/draw', dailyLimit: 10, fetchFn: fakeFetch, ...ai };
   server = createServer(handler({ store, version: 't', pairingCode: 'ABCD-EFGH', ai: config, now: () => clock }));
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -105,7 +105,7 @@ describe('The model list (ADR 0032)', () => {
         ['img/only', ['idea']],
       ],
     );
-    assert.deepEqual(list.defaults, { image: 'img/both', draw: 'txt/draw' });
+    assert.deepEqual(list.defaults, { image: 'img/both', draw: 'txt/draw', second: 'img/both' });
     assert.deepEqual(list.favorites, []);
     assert.ok(list.fetched > 0);
     assert.equal(list.problem, undefined);

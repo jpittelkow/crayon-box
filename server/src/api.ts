@@ -67,7 +67,8 @@ export interface AiModelsResponse {
   /** The family's favorite model ids, in the order they were starred. */
   favorites: string[];
   /** The server's settings, used when a request names no model. */
-  defaults: { image: string; draw: string };
+  /** `second`: the other image model for "two to choose from" (ADR 0033); absent from older servers. */
+  defaults: { image: string; draw: string; second?: string };
   /** When the list was fetched from OpenRouter, ms since 1970; 0 when it never was. */
   fetched: number;
   /** Why the list is empty or old, in words. */

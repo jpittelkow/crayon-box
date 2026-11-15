@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AiModelsResponse } from '../../../server/src/api';
-import { modelChoices, pickStillFits } from './aiModelPicker';
+import { modelChoices, pickStillFits, secondModelFor } from './aiModelPicker';
 
 const list: AiModelsResponse = {
   models: [
@@ -45,5 +45,19 @@ describe('model choices (ADR 0032)', () => {
     expect(pickStillFits(list, 'photo', 'b/only')).toBe(false);
     expect(pickStillFits(list, 'idea', 'gone/model')).toBe(false);
     expect(pickStillFits(list, 'idea', undefined)).toBe(false);
+  });
+});
+
+describe('two to choose from (ADR 0033)', () => {
+  it("asks the server's second model, or its default when the parent picked the second one", () => {
+    const withSecond: AiModelsResponse = { ...list, defaults: { image: 'a/both', draw: 'c/text', second: 'b/only' } };
+    expect(secondModelFor(withSecond, 'a/both')).toBe('b/only');
+    expect(secondModelFor(withSecond, 'x/other')).toBe('b/only');
+    expect(secondModelFor(withSecond, 'b/only')).toBe('a/both');
+  });
+
+  it('falls back to the default model on an older server, and has none when both would be the same', () => {
+    expect(secondModelFor(list, 'b/only')).toBe('a/both');
+    expect(secondModelFor(list, 'a/both')).toBeUndefined();
   });
 });
