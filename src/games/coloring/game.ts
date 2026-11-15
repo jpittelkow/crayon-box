@@ -3,7 +3,8 @@ import type { GameContext, GameModule } from '../../shell/types';
 import { icons, themeIcon } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import './coloring.css';
-import { BLANK_PAGE, builtinThemes, libraryPages, pageById, type Page } from './pages';
+import { loadCatalog, type Catalog } from './catalog';
+import { BLANK_PAGE, type Page } from './pages';
 import { forgetKid, getPaint, keepPreviousVersion, listPictures, newPicture, type Picture } from './pictures';
 import { ColoringSession } from './session';
 import { loadSettings } from './settings';
@@ -24,6 +25,11 @@ export const coloringGame: GameModule = {
       id: 'library',
       title: 'Page library',
       render: async (el, ctx) => (await import('./parentSections')).renderLibrary(el, ctx),
+    },
+    {
+      id: 'add-pages',
+      title: 'Add pages',
+      render: async (el, ctx) => (await import('./addPages')).renderAddPages(el, ctx),
     },
   ],
   forgetKid,
@@ -84,7 +90,7 @@ class ColoringGame {
       className: 'big-tile',
       onTap: () => void this.showPictures(),
     });
-    await this.fillPictureTile(mine, pictures[0]);
+    await this.fillPictureTile(mine, pictures[0], await loadCatalog(this.ctx.storage));
     const badge = el('span', 'tile-badge', { 'aria-hidden': 'true' });
     badge.innerHTML = icons.gallery(56);
     mine.append(badge);
@@ -131,10 +137,11 @@ class ColoringGame {
     await this.closeSession();
     this.revokeUrls();
     const settings = await loadSettings(this.ctx.storage);
-    const all = libraryPages(settings.hiddenPages);
+    const catalog = await loadCatalog(this.ctx.storage);
+    const all = catalog.library(settings.hiddenPages);
     // The theme strip (ADR 0016): one round button per theme that has pages to show, then the blank page. A theme
     // with every page hidden has no button, so nothing on the strip leads to an empty screen.
-    const themes = builtinThemes();
+    const themes = catalog.themes;
     const shownThemes = [...new Set(all.map((p) => p.theme))];
     if (!this.theme || !shownThemes.includes(this.theme)) this.theme = shownThemes[0] ?? null;
     const pages = all.filter((p) => p.theme === this.theme);
@@ -200,19 +207,20 @@ class ColoringGame {
     this.revokeUrls();
     const pictures = await listPictures(this.ctx.storage, this.ctx.kid.id);
     if (pictures.length === 0) return this.start();
+    const catalog = await loadCatalog(this.ctx.storage);
     const screen = this.screen('my-pictures', () => void this.start());
     const grid = await this.tileGrid(
       pictures,
       'pictures',
       async (picture) => {
-        const page = pageById(picture.meta.pageId);
+        const page = catalog.byId(picture.meta.pageId);
         const tile = kidButton({
           kind: 'paper',
           label: `${page?.meta.title ?? 'Picture'} picture`,
           onTap: () => void this.openExisting(picture, () => void this.showPictures()),
         });
         tile.dataset.picture = picture.id;
-        await this.fillPictureTile(tile, picture);
+        await this.fillPictureTile(tile, picture, catalog);
         return tile;
       },
       () => void this.showPictures(),
@@ -222,14 +230,14 @@ class ColoringGame {
   }
 
   /** Draws a picture as it is now: its paint under the page's lines. */
-  private async fillPictureTile(tile: HTMLElement, picture: Picture): Promise<void> {
+  private async fillPictureTile(tile: HTMLElement, picture: Picture, catalog: Catalog): Promise<void> {
     const paint = await getPaint(this.ctx.storage, picture);
     if (paint) {
       const url = URL.createObjectURL(paint);
       this.urls.push(url);
       tile.append(Object.assign(document.createElement('img'), { src: url, alt: '' }));
     }
-    const page = pageById(picture.meta.pageId);
+    const page = catalog.byId(picture.meta.pageId);
     if (page) tile.append(Object.assign(document.createElement('img'), { src: page.url, alt: '' }));
   }
 
@@ -240,7 +248,7 @@ class ColoringGame {
 
   private async openExisting(picture: Picture, back: () => void): Promise<void> {
     if (this.session) return;
-    const page = pageById(picture.meta.pageId);
+    const page = (await loadCatalog(this.ctx.storage)).byId(picture.meta.pageId);
     if (!page) return;
     const paint = await keepPreviousVersion(this.ctx.storage, picture);
     await this.openSession(page, picture, paint, back);

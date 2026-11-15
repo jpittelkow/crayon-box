@@ -9,7 +9,7 @@ import {
   saveProfile,
   saveShellSettings,
 } from '../shell/profiles';
-import type { FinishedPictures, GameEntry, GameModule, KidProfile, SettingsSection } from '../shell/types';
+import type { FinishedPictures, GameEntry, GameModule, KidProfile, PagesFolder, SettingsSection } from '../shell/types';
 import type { KioskControl } from '../shell/kiosk';
 import type { UpdateController } from '../shell/updates';
 import type { SyncService } from '../sync/service';
@@ -26,6 +26,8 @@ export interface ParentAreaOptions {
   games: readonly GameEntry[];
   /** Present in the Windows app only. */
   finished?: FinishedPictures;
+  /** Present in the Windows app only (phase F). */
+  pagesFolder?: PagesFolder;
   /** Present in the Windows app only (ADR 0009). */
   updates?: UpdateController;
   /** Family sync (ADR 0024), in the browser too. */
@@ -107,7 +109,13 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     main.append(h('h1', {}, found.section.title));
     const body = h('div', { style: 'display: contents' });
     main.append(body);
-    await found.section.render(body, { storage: storage.game(found.game.id), kids, kidLabel, finished: opts.finished });
+    await found.section.render(body, {
+      storage: storage.game(found.game.id),
+      kids,
+      kidLabel,
+      finished: opts.finished,
+      pagesFolder: opts.pagesFolder,
+    });
   };
 
   const addNav = (id: string, label: string) => {

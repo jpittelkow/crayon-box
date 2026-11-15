@@ -28,7 +28,7 @@
     },
     {
       "identifier": "opener:allow-open-path",
-      "allow": [{ "path": "$PICTURE/Coloring Book/Art" }]
+      "allow": [{ "path": "$PICTURE/Coloring Book/Art" }, { "path": "$PICTURE/Coloring Book/Pages" }]
     }
   ]
 }

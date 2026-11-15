@@ -2,7 +2,8 @@
 import { drawAvatar } from '../../shell/profiles';
 import type { KidProfile, ParentSectionContext } from '../../shell/types';
 import { button, card, confirmInline, formatDate, h, switchRow } from '../../ui/parent';
-import { allBuiltinPages, builtinThemes, pageById } from './pages';
+import { loadCatalog, type Catalog } from './catalog';
+import { removeFamilyPage } from './family';
 import { deletePicture, finishedName, getPaint, hasPrevious, listPictures, restorePrevious, type Picture } from './pictures';
 import { loadSettings, saveSettings } from './settings';
 
@@ -16,11 +17,11 @@ function revoke(): void {
   urls.splice(0).forEach((u) => URL.revokeObjectURL(u));
 }
 
-async function thumb(ctx: ParentSectionContext, picture: Picture): Promise<HTMLElement> {
+async function thumb(ctx: ParentSectionContext, picture: Picture, catalog: Catalog): Promise<HTMLElement> {
   const t = h('div', { class: 'pw-thumb', 'aria-hidden': 'true' });
   const paint = await getPaint(ctx.storage, picture);
   if (paint) t.append(h('img', { src: blobUrl(paint), alt: '' }));
-  const page = pageById(picture.meta.pageId);
+  const page = catalog.byId(picture.meta.pageId);
   if (page) t.append(h('img', { src: page.url, alt: '' }));
   return t;
 }
@@ -51,17 +52,18 @@ export async function renderPictures(el: HTMLElement, ctx: ParentSectionContext)
     list.replaceChildren();
     if (!current) return;
     const pictures = await listPictures(ctx.storage, current.id);
+    const catalog = await loadCatalog(ctx.storage);
     if (pictures.length === 0) {
       list.append(h('p', { class: 'pw-muted' }, `${ctx.kidLabel(current)} has no pictures yet.`));
       return;
     }
     for (const picture of pictures) {
-      const title = pageById(picture.meta.pageId)?.meta.title ?? 'Picture';
+      const title = catalog.byId(picture.meta.pageId)?.meta.title ?? 'Picture';
       const actions = h('div', { class: 'pw-row', style: 'flex-grow: 1; justify-content: flex-end' });
       const row = h(
         'div',
         { class: 'pw-card pw-row', style: 'flex-direction: row; padding: 12px 16px', 'data-picture': picture.id },
-        await thumb(ctx, picture),
+        await thumb(ctx, picture, catalog),
         h('div', { style: 'display: flex; flex-direction: column' }, h('span', { style: 'font-weight: 700' }, title), h('span', { class: 'pw-muted' }, `Changed ${formatDate(picture.meta.updated)}`)),
         actions,
       );
@@ -111,35 +113,48 @@ export async function renderPictures(el: HTMLElement, ctx: ParentSectionContext)
 export async function renderLibrary(el: HTMLElement, ctx: ParentSectionContext): Promise<void> {
   const settings = await loadSettings(ctx.storage);
   const hidden = new Set(settings.hiddenPages);
-  const themes = builtinThemes();
-  const byTheme = new Map<string, ReturnType<typeof allBuiltinPages>>();
-  for (const page of allBuiltinPages()) {
-    byTheme.set(page.theme, [...(byTheme.get(page.theme) ?? []), page]);
-  }
+  const catalog = await loadCatalog(ctx.storage);
+  const byTheme = new Map<string, Catalog['all']>();
+  for (const page of catalog.all) byTheme.set(page.theme, [...(byTheme.get(page.theme) ?? []), page]);
 
   el.append(
     h(
       'p',
       { class: 'pw-muted' },
-      "Hidden pages leave the kids' library. Pictures already made from them stay in My pictures.",
+      "Hidden pages leave the kids' library. Pictures already made from them stay in My pictures. Add your own pages under Add pages.",
     ),
   );
   for (const [theme, pages] of byTheme) {
-    const section = card(h('h2', {}, themes.get(theme)?.name ?? theme));
+    const section = card(h('h2', {}, catalog.themes.get(theme)?.name ?? theme));
     for (const page of pages) {
-      section.append(
-        h(
-          'div',
-          { class: 'pw-row', 'data-page': page.id },
-          h('div', { class: 'pw-thumb', 'aria-hidden': 'true' }, h('img', { src: page.url, alt: '' })),
-          h('span', { class: 'pw-grow', style: 'font-weight: 700' }, page.meta.title),
-          switchRow(`Show ${page.meta.title}`, null, !hidden.has(page.id), (on) => {
-            if (on) hidden.delete(page.id);
-            else hidden.add(page.id);
-            void saveSettings(ctx.storage, { hiddenPages: [...hidden] });
-          }),
-        ),
+      const family = page.id.startsWith('family:');
+      const row = h(
+        'div',
+        { class: 'pw-row', 'data-page': page.id },
+        h('div', { class: 'pw-thumb', 'aria-hidden': 'true' }, h('img', { src: page.url, alt: '' })),
+        h('span', { class: 'pw-grow', style: 'font-weight: 700' }, page.meta.title),
+        switchRow(`Show ${page.meta.title}`, null, !hidden.has(page.id), (on) => {
+          if (on) hidden.delete(page.id);
+          else hidden.add(page.id);
+          void saveSettings(ctx.storage, { hiddenPages: [...hidden] });
+        }),
       );
+      if (family) {
+        const actions = h('div', { class: 'pw-row' });
+        actions.append(
+          button(
+            `Remove ${page.meta.title}`,
+            () =>
+              confirmInline(actions, 'Remove this page from every device?', 'Remove', async () => {
+                await removeFamilyPage(ctx.storage, page.slug);
+                row.remove();
+              }),
+            'danger',
+          ),
+        );
+        row.append(actions);
+      }
+      section.append(row);
     }
     el.append(section);
   }
