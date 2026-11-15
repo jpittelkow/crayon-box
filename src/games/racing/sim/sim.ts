@@ -56,7 +56,18 @@ export interface Input {
   steer: number;
   /** A finger's spot on the ground: the car drives there and stops (ADR 0031). Steering keys leave it out. */
   spot?: { x: number; z: number };
+  /**
+   * A finger as a joystick (ADR 0036): where it is from the middle of the screen, `x` -1 (left edge) to 1 (right
+   * edge), `y` -1 (bottom) to 1 (top). Above the middle goes, faster the higher; left and right turn, harder the
+   * further out; below the middle backs up. Steering keys leave it out.
+   */
+  stick?: { x: number; y: number };
 }
+
+/** Closer to the middle than this (in screen halves), a joystick finger does nothing that way. */
+export const STICK_DEAD = 0.12;
+/** The top speed backing up, m/s. */
+export const REVERSE_SPEED = 5;
 
 /** Closer than this to its spot, the car has arrived. */
 export const ARRIVE = 2.5;
@@ -469,19 +480,37 @@ function towardSpot(w: World, spot: { x: number; z: number }, dt: number): { go:
 function stepKidCar(w: World, input: Input, dt: number): void {
   const car = w.cars[0]!;
   let go = input.go, brake = input.brake, steer = clamp(input.steer, -1, 1), cap = VEHICLE_FEEL[car.kind].top;
+  // Backing up, for a joystick finger below the middle (ADR 0036): the speed it backs up at, or 0.
+  let back = 0;
   if (input.spot && w.assist === 'free') {
     const to = towardSpot(w, input.spot, dt);
     ({ steer, cap } = to);
     // Arrived: a short, firm stop on the spot.
     if (!to.go) { go = false; brake = true; }
   } else w.goal = null;
+  if (input.stick && w.assist === 'free') {
+    const { x, y } = input.stick;
+    const past = (v: number) => Math.sign(v) * Math.min(1, Math.max(0, Math.abs(v) - STICK_DEAD) / (0.85 - STICK_DEAD));
+    steer = past(x);
+    const up = past(y);
+    go = up > 0;
+    // Faster the higher the finger: a little above the middle creeps, the top edge is full speed.
+    if (go) cap = Math.min(cap, 4 + (cap - 4) * up);
+    else if (up < 0) back = REVERSE_SPEED * Math.max(0.4, -up);
+    // A finger in the middle, either way: the car rolls to a stop.
+  } else if (input.stick) go = true; // "follows the road": a touch only makes it go, as before
+  // Backing up, or stopping from it, eases to the speed wanted (negative is backwards); from forwards it brakes first.
+  const backing = back > 0 || car.speed < 0;
   // Following the road round a sharp bend (a junction): slow down so the turn stays close to the road.
   if ((w.assist === 'road' || w.rescue > 0) && w.followTurn > 0.5) cap = Math.min(cap, 8);
   // Sand holds it to a slower top speed (milestone-3 B4).
   const sandy = onSand(w.sand, car.x, car.z);
   if (sandy) cap = Math.min(cap, SAND_SPEED);
 
-  if (brake) car.speed = Math.max(0, car.speed - 24 * dt);
+  if (backing) {
+    const want = -back;
+    car.speed = want < car.speed ? Math.max(want, car.speed - (car.speed > 0 ? 24 : 8) * dt) : Math.min(want, car.speed + 12 * dt);
+  } else if (brake) car.speed = Math.max(0, car.speed - 24 * dt);
   else if (go && car.speed > cap) car.speed = Math.max(cap, car.speed - 12 * dt);
   else if (go) car.speed = Math.min(cap, car.speed + 10 * dt);
   else car.speed = Math.max(0, car.speed - 6 * dt);
@@ -794,7 +823,9 @@ function stepProps(w: World, dt: number): void {
     if (p.cool <= 0 && p.y < 1.8) {
       for (let i = 0; i < w.cars.length; i++) {
         const car = w.cars[i]!;
-        if (car.speed < 1) continue;
+        // Backing up knocks toys too (ADR 0036): `v` is the speed either way, `car.speed` keeps the direction.
+        const v = Math.abs(car.speed);
+        if (v < 1) continue;
         const fx = Math.sin(car.heading), fz = Math.cos(car.heading);
         // The car is longer than it is wide: one circle at the nose, one at the tail.
         const reach = VEHICLE_SIZE[car.kind].side + 0.15 + half;
@@ -807,13 +838,13 @@ function stepProps(w: World, dt: number): void {
         const len = Math.hypot(dx, dz) || 1;
         // A heavier vehicle knocks it further (ADR 0035).
         const push = VEHICLE_FEEL[car.kind].push;
-        p.vx = (fx * car.speed * 0.85 + (dx / len) * car.speed * 0.45) * push + (rand(w) - 0.5) * 2;
-        p.vz = (fz * car.speed * 0.85 + (dz / len) * car.speed * 0.45) * push + (rand(w) - 0.5) * 2;
+        p.vx = (fx * car.speed * 0.85 + (dx / len) * v * 0.45) * push + (rand(w) - 0.5) * 2;
+        p.vz = (fz * car.speed * 0.85 + (dz / len) * v * 0.45) * push + (rand(w) - 0.5) * 2;
         // A tumbling toy flies up; a rolling one only hops and keeps its speed along the ground.
-        p.vy = rolls ? 1.5 + rand(w) : 3 + car.speed * 0.32 + rand(w) * 1.5;
-        p.wx = (rand(w) - 0.5) * car.speed * 1.2;
-        p.wy = (rand(w) - 0.5) * car.speed * 1.2;
-        p.wz = (rand(w) - 0.5) * car.speed * 1.2;
+        p.vy = rolls ? 1.5 + rand(w) : 3 + v * 0.32 + rand(w) * 1.5;
+        p.wx = (rand(w) - 0.5) * v * 1.2;
+        p.wy = (rand(w) - 0.5) * v * 1.2;
+        p.wz = (rand(w) - 0.5) * v * 1.2;
         p.state = FLYING; p.cool = 0.3; p.timer = 0;
         puff(w, p.x, p.y, p.z);
         if (i === 0) w.knocks.push(p.toy);
@@ -945,6 +976,17 @@ function stepZones(w: World): void {
       }
     }
   }
+}
+
+/**
+ * The kid swapped vehicle from the tray in the game (playtest, 2026-11-15): it changes on the spot, in a puff, as
+ * in the garage. A vehicle that isn't on the list (a parent hid it) is ignored.
+ */
+export function swapVehicle(w: World, kind: VehicleKind): void {
+  const kid = w.cars[0]!;
+  if (kid.kind === kind || !w.pool.includes(kind)) return;
+  kid.kind = kind;
+  for (let k = 0; k < 4; k++) puff(w, kid.x + (rand(w) - 0.5) * 3, 0.6, kid.z + (rand(w) - 0.5) * 3);
 }
 
 /** The kid sounded the horn: animals nearby answer it (milestone-3 B3). */
