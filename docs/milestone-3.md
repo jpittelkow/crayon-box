@@ -95,6 +95,33 @@ Two quick tests that decide how much the rest can hold. Both are throwaway (`spi
 - **Done when:** a kid picks a vehicle and drives the whole island, through every set piece, on the family laptop
   at the frame rate phase A set, and the playtest has not turned up something that blocks it. That is the MVP.
 
+#### Finishing B, step by step (planned 2026-11-15)
+Seven steps. B1 to B5 are code anyone can build now; B6 is shared with the sound work; B7 needs the family laptop
+and the kids. Each step lands as its own PR with unit tests on the simulation and, where something new is on
+screen, a browser test and screenshots.
+
+| Step | What | Needs the owner? | Size |
+|---|---|---|---|
+| **B1. One branch, one plan** | Merge [ADR 0031](adr/0031-driving-to-a-spot-and-traffic-company.md) (PR #18: drive to a touched spot, traffic that rides alongside). Land the map-file work (this plan, the asset catalog, the world as data, the asset registry) on `main` with ADR 0031 ported onto its roads. One milestone 3 plan: this file (the older `milestone-3-driving.md` is folded in below). | Taking those commits off the in-app updates branch rewrites it: owner's OK | small |
+| **B2. Ground, zones and junctions** | The map format grows: the land as an outline (not only a circle), surfaces (grass, sand, dirt), **zones** (a named area with a kind: `car-wash`, `ramp`, `garage`, later `mud`), and **junctions** (roads join; traffic picks a turn; the assist follows the road it is on). Every rule that reads the island today (the edge turn-back, the rescue, placement) reads the outline. Tests: the car never leaves a non-round map; traffic reaches every road; a zone reports a car entering and leaving. | no | medium |
+| **B3. Set pieces, one PR each** | In this order, simplest first; each is a zone plus a short animation and a sound hook (category 7 in [driving-assets.md](driving-assets.md)): **ramp** (a faked hop: the car rises and lands on its wheels, never flips); **car wash** (drive in, brushes turn, the car comes out *bubbly* then rinsed; also washes off *wet*); **beach** (sand surface, wheel puffs, the car slows a little, never stops); **bridge** (a road stretch over water: drawn deck and rails, the car stays on it); **tunnel** (a road stretch under a hill: the hill turns see-through or the camera drops inside, so the car is never hidden, ADR 0021). | no | small to medium each |
+| **B4. The island redrawn** | A new island layout as one map file using B2 and B3: a main loop plus one cross road (one junction each end), the bridge over an inlet, the tunnel through one hill, the beach on one side, the ramp and car wash beside the loop, the flood kept. Still about 30 s end to end. Proposed as a top-down picture first. | approve the layout picture | medium |
+| **B5. Vehicle picker and the kid's colour** | Tiles of the four vehicles that exist, three across, a tap drives off; the last one saved per kid; the kid drives that vehicle (traffic keeps the others). The kid's colour: a flag or the whole vehicle painted, from a mockup. Optional here: the steering wheel overlay and steering sensitivity (below). | flag or paint | medium |
+| **B6. Sounds** | The driving game's sounds from the files of [ADR 0032](adr/0032-sounds-as-files.md) (the sound session is building those), each set piece's sound, and the app-wide Sounds switch. | no (ADR 0032 settled it) | small, once the files exist |
+| **B7. Laptop and kids** | Phase A2 (the frame-rate readout, on the installed app on the family laptop) and the first driving playtest: assist level, a resting hand, whether a finger held still ending in a stop reads as "got there" (ADR 0031), whether the horn and back buttons are found. Fixes from it; accept ADR 0031. | yes: run it | depends on findings |
+
+B2 to B5 can start before B7, but B7's frame rate may turn the look down (ADR 0025's order), so B4 is checked
+on the laptop before B5 adds more.
+
+#### Steering feel (folded in from the older plan, 2026-11-15)
+Asked for by the owner on 2026-11-15 while testing. Optional within B5; small.
+- **A steering wheel on screen** that turns as the car steers: a round Crayon Box wheel in the bottom corner
+  opposite the horn, turned by `World.steer` (the steering the car really used, including the road assist and the
+  rescue), so it never disagrees with the car. A display, not a control.
+- **Steering sensitivity, a parent setting per kid** (*gentle*, *normal*, *quick*). Since ADR 0031 a touch picks a
+  spot, so this scales the turn rate (keys, and how tightly the car swings toward a spot) rather than softening
+  small touches. Beside the assist level in the parent Driving screen.
+
 ### C. ADR: vehicles and maps
 One new ADR before any vehicle or map work, superseding ADR 0021's "one small island" and car picker parts:
 - Vehicles built in code (phase A1, decided 2026-11-15) and their triangle budget per vehicle.
