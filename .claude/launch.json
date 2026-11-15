@@ -31,6 +31,18 @@
         "preview"
       ],
       "port": 5181
+    },
+    {
+      "name": "realism",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "spikes/realism",
+        "--port",
+        "5183",
+        "--strictPort"
+      ],
+      "port": 5183
     }
   ]
 }

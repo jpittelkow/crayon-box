@@ -41,6 +41,10 @@ _Last confirmed: 2026-11-14_
   prototype, with more of everything the test had and more water. A map of the family's own area as its own
   milestone, kept out of the repo in a folder for the family's server. The owner asked to think this through
   only once the MVP is done, so don't start it unasked.
+- **More realism and more sound in the driving game** (asked 2026-11-14, after trying the prototype: "it looks
+  great"): more realistic across the board, above all the vehicle models; many more sound effects, engine
+  noise from every car, and each vehicle its own engine sound. Wanted before the next step. Changes ADR 0021's
+  flat Crayon Box look, so it needs a new ADR.
 
 ## Tooling and hosting
 - The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to

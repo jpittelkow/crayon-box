@@ -87,3 +87,8 @@ _Last updated: 2026-11-14_
   the version on main first, then tag (2026-11-14).
 - A PR can be merged while later commits are still being pushed to its branch; they then never reach main.
   After a merge, check `git log origin/main` holds the branch's last commit (PR #1, 2026-11-14).
+- Don't stage anything (not even `git rm`) until you are about to commit: another session's commit in this
+  folder takes whatever is staged. A staged deletion of `src/games/racing/sim/scene.ts` went out in someone
+  else's commit and left `main` unable to build until the matching change landed (found 2026-11-14).
+- The browser tests draw WebGL in software; the driving game's toy look takes seconds to start there, so
+  `driving.spec.ts` runs its tests one at a time with longer timeouts (2026-11-14).

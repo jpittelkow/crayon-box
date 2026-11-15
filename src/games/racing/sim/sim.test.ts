@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DRIVE_KEYS, driveInput } from './input';
-import { buildScene } from './scene';
-import { FLOOD_SPEED, LAND_R, MAX_SPEED, ROAD_R, ROAD_W, makeWorld, step, waterAt, type Input, type World } from './sim';
+import { chaseView, stepTreeSizes } from './view';
+import { FLOOD_SPEED, LAND_R, VEHICLE_SIZE, bodyPoints, MAX_SPEED, ROAD_R, ROAD_W, makeWorld, step, waterAt, type Input, type World } from './sim';
 
 const DT = 1 / 60;
 const GO: Input = { go: true, brake: false, steer: 0 };
@@ -174,30 +174,46 @@ describe('traffic', () => {
   });
 });
 
-describe('scene data', () => {
-  it('paints the kid car in the kid color and keeps the camera behind it', () => {
-    const w = makeWorld(7, 150);
-    const scene = buildScene(w, [1, 0, 0]);
-    expect(scene.batches.find((b) => b.name === 'body-0')!.color).toEqual([1, 0, 0]);
-    run(w, 2, GO);
-    scene.update(w);
-    const car = w.cars[0];
-    const [ex, , ez] = scene.camera.eye;
-    const behind = (car.x - ex) * Math.sin(w.camHeading) + (car.z - ez) * Math.cos(w.camHeading);
-    expect(behind).toBeGreaterThan(5);
-    for (const b of scene.batches) expect(b.matrices.every(Number.isFinite)).toBe(true);
+describe('vehicles and the camera', () => {
+  it('traffic is a school bus, a police car and a monster truck, and the long bus still bumps along its length', () => {
+    const w = makeWorld(7, 0);
+    expect(w.cars.map((c) => c.kind)).toEqual(['car', 'bus', 'police', 'monster']);
+    const bus = w.cars[1];
+    const points = bodyPoints(bus);
+    expect(points.length).toBeGreaterThan(2);
+    // Drive the kid's car at the back half of the bus, side on: it is pushed out, not let through.
+    const back = points[points.length - 1];
+    const kid = w.cars[0];
+    kid.x = back[0] + Math.cos(bus.heading) * 4;
+    kid.z = back[1] - Math.sin(bus.heading) * 4;
+    kid.heading = bus.heading - Math.PI / 2;
+    bus.cruise = 0;
+    bus.speed = 0;
+    run(w, 1.5, GO);
+    const nearest = Math.min(...bodyPoints(bus).map(([x, z]) => Math.hypot(kid.x - x, kid.z - z)));
+    expect(nearest).toBeGreaterThan(VEHICLE_SIZE.car.side + VEHICLE_SIZE.bus.side);
   });
 
-  it('shrinks a tree that stands between the camera and the car', () => {
-    const w = makeWorld(7, 0);
-    const scene = buildScene(w, [1, 0, 0]);
+  it('keeps the camera behind the car', () => {
+    const w = makeWorld(7, 150);
+    run(w, 2, GO);
     const car = w.cars[0];
-    // Plant the first tree halfway between the camera and the car.
+    const [ex, , ez] = chaseView(w).eye;
+    const behind = (car.x - ex) * Math.sin(w.camHeading) + (car.z - ez) * Math.cos(w.camHeading);
+    expect(behind).toBeGreaterThan(5);
+  });
+
+  it('shrinks a tree that stands between the camera and the car, and grows it back after', () => {
+    const w = makeWorld(7, 0);
+    const car = w.cars[0];
     w.trees[0].x = car.x - Math.sin(w.camHeading) * 5;
     w.trees[0].z = car.z - Math.cos(w.camHeading) * 5;
-    for (let i = 0; i < 20; i++) scene.update(w);
-    const canopies = scene.batches.find((b) => b.name === 'canopies')!;
-    expect(Math.abs(canopies.matrices[0])).toBeLessThan(1e-6);
-    expect(Math.abs(canopies.matrices[16])).toBeGreaterThan(0.5);
+    const sizes = w.trees.map(() => 1);
+    for (let i = 0; i < 20; i++) stepTreeSizes(w, sizes);
+    expect(sizes[0]).toBe(0);
+    expect(sizes[1]).toBe(1);
+    w.trees[0].x += 30;
+    for (let i = 0; i < 20; i++) stepTreeSizes(w, sizes);
+    expect(sizes[0]).toBe(1);
   });
 });

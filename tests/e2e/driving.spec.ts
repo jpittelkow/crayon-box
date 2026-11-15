@@ -4,6 +4,10 @@ import { openParentArea } from './helpers';
 // The driving game prototype (ADR 0021). Checks read the running simulation, not pixels: free driving can't be
 // compared picture by picture.
 
+// The browser tests draw in software, and the toy look (ADR 0025) is heavy there: one test at a time, with time
+// to spare.
+test.describe.configure({ mode: 'serial', timeout: 90_000 });
+
 interface CarState { x: number; z: number; speed: number; heading: number }
 
 function car(page: Page): Promise<CarState> {
@@ -24,7 +28,7 @@ async function turnOnDriving(page: Page): Promise<void> {
 async function openDriving(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Star kid' }).tap();
   await page.getByRole('button', { name: 'Driving', exact: true }).tap();
-  await expect(page.locator('.driving')).toHaveAttribute('data-ready', 'true');
+  await expect(page.locator('.driving')).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
 }
 
 test('the driving game stays hidden until a parent turns it on', async ({ page }) => {

@@ -24,7 +24,10 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
    knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,
    is built (2026-11-14)**: one island in `src/games/racing/`, off until a parent turns on "Show Driving" under
-   Settings, Games; it then shows on the home screen. Not yet playtested with the kids.
+   Settings, Games; it then shows on the home screen. Not yet playtested with the kids. Since 2026-11-14 it has
+   the polished toy look and an engine voice per vehicle ([ADR 0025](../adr/0025-driving-game-toy-look-and-engine-sounds.md));
+   traffic is a school bus, a police car (flashing lamps) and a monster truck. Frame rate on the family laptop
+   not measured yet.
    **After the MVP** (asked by the owner 2026-11-14, "think through all of this after the mvp is done"; nothing
    designed yet): a choice of vehicles (monster trucks, school buses, emergency vehicles with working lights, and
    more); two or three maps, much bigger than the prototype's island, with more of the same things and more
@@ -73,11 +76,14 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   world kit with bundled fonts (ADR 0016).
 - `src/games/coloring/`: the game (lazy-loaded): `game.ts` (start, library, My pictures), `session.ts` (the
   coloring screen), `engine/` (ADR 0004), `pictures.ts`, `pages.ts`, `parentSections.ts` (its parent screens).
-- `src/games/racing/` (ADR 0021 prototype): `sim/` is plain TypeScript (the world, input, scene data, shapes)
-  with unit tests; `render.ts` is the only three.js file and loads when the game opens; `game.ts` (screen,
-  touch and keys, loop), `settings.ts` (per-kid assist, sounds), `parentSection.ts`, `sound.ts` (made by the
-  browser, no files). Games can start hidden (`GameEntry.startsHidden`) and a parent shows or hides each one
-  under Settings, Games (`ShellSettings.games`).
+- `src/games/racing/` (ADR 0021, 0025): `sim/` is plain TypeScript (the world with vehicle kinds and sizes,
+  input, camera and tree rules in `view.ts`) with unit tests; `look/` builds the toy-look vehicles, island, trees
+  and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the
+  game; `game.ts` (screen, touch and keys, loop), `settings.ts` (per-kid assist, sounds), `parentSection.ts`,
+  `sound.ts` (an engine voice per vehicle kind in `ENGINES`, effects; made by the browser, no files). Games can
+  start hidden (`GameEntry.startsHidden`) and a parent shows or hides each one under Settings, Games
+  (`ShellSettings.games`).
+- `spikes/realism/`: the four-look grading samples behind ADR 0025 (`node spikes/realism/shoot.mjs`).
 - `pages/`: three original CC0 placeholder pages in the ADR 0005 format.
 
 ## Milestone 1: remaining phases (agreed with the owner 2026-11-14)

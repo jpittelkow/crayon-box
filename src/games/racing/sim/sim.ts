@@ -24,7 +24,31 @@ export interface Input {
   steer: number;
 }
 
+/** The kinds of vehicle (ADR 0025). Each has its own size, look and engine sound. */
+export type VehicleKind = 'car' | 'police' | 'monster' | 'bus';
+
+/** Half the length and half the width of each kind, in metres, for bumping into things. */
+export const VEHICLE_SIZE: Record<VehicleKind, { half: number; side: number }> = {
+  car: { half: 2.1, side: 1.0 },
+  police: { half: 2.1, side: 1.0 },
+  monster: { half: 2.7, side: 1.6 },
+  bus: { half: 4.7, side: 1.3 },
+};
+
+/** Points along a vehicle's middle, front to back, that together cover its length with circles of `side`. */
+export function bodyPoints(c: Car): [number, number][] {
+  const { half, side } = VEHICLE_SIZE[c.kind];
+  const reach = Math.max(0, half - side);
+  const n = Math.max(1, Math.ceil((2 * reach) / side) + 1);
+  const fx = Math.sin(c.heading), fz = Math.cos(c.heading);
+  return Array.from({ length: n }, (_, i) => {
+    const t = n === 1 ? 0 : reach - (2 * reach * i) / (n - 1);
+    return [c.x + fx * t, c.z + fz * t];
+  });
+}
+
 export interface Car {
+  kind: VehicleKind;
   x: number; z: number; heading: number; speed: number; spin: number;
   /** How far the car sits below the road (it sinks and bobs in deep water). */
   y: number;
@@ -109,11 +133,12 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: ROAD_R, t: 0 },
   };
-  const car = (angle: number, lane: number, cruise: number): Car =>
-    ({ x: 0, z: ROAD_R, heading: Math.PI / 2, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, angle, lane, home: lane, cruise });
-  w.cars.push(car(0, ROAD_R, 0));
-  [[1.3, ROAD_R - 2.2, 7.5], [3.1, ROAD_R + 2.2, 9], [4.7, ROAD_R - 2.2, 8.2]].forEach(([angle, lane, cruise]) => {
-    const c = car(angle!, lane!, cruise!);
+  const car = (kind: VehicleKind, angle: number, lane: number, cruise: number): Car =>
+    ({ kind, x: 0, z: ROAD_R, heading: Math.PI / 2, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, angle, lane, home: lane, cruise });
+  w.cars.push(car('car', 0, ROAD_R, 0));
+  // Traffic: a school bus, a police car and a monster truck, each at its own pace.
+  ([['bus', 1.3, ROAD_R - 2.2, 6.5], ['police', 3.1, ROAD_R + 2.2, 9.5], ['monster', 4.7, ROAD_R - 2.2, 8]] as const).forEach(([kind, angle, lane, cruise]) => {
+    const c = car(kind, angle, lane, cruise);
     trafficPose(c);
     w.cars.push(c);
   });
@@ -228,7 +253,11 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     car.heading += (side > 0 ? -1 : 1) * 1.6 * dt;
   };
   for (const t of w.trees) pushOut(t.x, t.z, 0.45 * t.scale + 1.3, 0.985);
-  for (let i = 1; i < w.cars.length; i++) pushOut(w.cars[i]!.x, w.cars[i]!.z, 2.9, 0.96);
+  const own = VEHICLE_SIZE[car.kind].side;
+  for (let i = 1; i < w.cars.length; i++) {
+    const other = w.cars[i]!;
+    for (const [px, pz] of bodyPoints(other)) pushOut(px, pz, own + VEHICLE_SIZE[other.kind].side + 0.3, 0.96);
+  }
 
   // A car that is being driven but has made no progress for a while is steered back to the road (ADR 0021).
   if (w.rescue > 0) w.rescue -= dt;
@@ -356,12 +385,13 @@ function stepProps(w: World, dt: number): void {
         if (car.speed < 1) continue;
         const fx = Math.sin(car.heading), fz = Math.cos(car.heading);
         // The car is longer than it is wide: one circle at the nose, one at the tail.
-        const reach = 1.15 + half;
-        let dx = p.x - (car.x + fx * 1.1), dz = p.z - (car.z + fz * 1.1);
-        if (dx * dx + dz * dz > reach * reach) {
-          dx = p.x - (car.x - fx * 1.1); dz = p.z - (car.z - fz * 1.1);
-          if (dx * dx + dz * dz > reach * reach) continue;
+        const reach = VEHICLE_SIZE[car.kind].side + 0.15 + half;
+        let dx = 0, dz = 0, hit = false;
+        for (const [bx, bz] of bodyPoints(car)) {
+          dx = p.x - bx; dz = p.z - bz;
+          if (dx * dx + dz * dz <= reach * reach) { hit = true; break; }
         }
+        if (!hit) continue;
         const len = Math.hypot(dx, dz) || 1;
         p.vx = fx * car.speed * 0.85 + (dx / len) * car.speed * 0.45 + (rand(w) - 0.5) * 2;
         p.vz = fz * car.speed * 0.85 + (dz / len) * car.speed * 0.45 + (rand(w) - 0.5) * 2;

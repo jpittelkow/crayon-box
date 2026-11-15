@@ -6,7 +6,6 @@ import { icons } from '../../ui/icons';
 import { el, kidButton } from '../../ui/kid';
 import { forgetKid, loadDrivingSettings, loadKidDriving } from './settings';
 import { DRIVE_KEYS, driveInput } from './sim/input';
-import { hex, type RGB } from './sim/scene';
 import { makeWorld, step, type World } from './sim/sim';
 import { DrivingSound } from './sound';
 import './racing.css';
@@ -48,10 +47,9 @@ class DrivingGame {
 
   async start(): Promise<void> {
     const { kid, storage } = this.ctx;
-    const [prefs, settings, { buildScene }, { createRenderer }] = await Promise.all([
+    const [prefs, settings, { createRenderer }] = await Promise.all([
       loadKidDriving(storage, kid.id),
       loadDrivingSettings(storage),
-      import('./sim/scene'),
       import('./render'),
     ]);
     if (this.stopped) return;
@@ -69,8 +67,8 @@ class DrivingGame {
 
     const world = makeWorld(SEED, PROP_COUNT, prefs.assist);
     canvas.drivingWorld = world;
-    const scene = buildScene(world, this.kidColor());
-    let renderer = createRenderer(canvas, scene);
+    const kidColor = this.kidColor();
+    let renderer = createRenderer(canvas, world, kidColor);
     this.cleanups.push(() => renderer.dispose());
 
     // ---- Size: real pixels, capped for built-in graphics (ADR 0021) ----
@@ -90,7 +88,7 @@ class DrivingGame {
     const onLost = (e: Event) => e.preventDefault();
     const onRestored = () => {
       renderer.dispose();
-      renderer = createRenderer(canvas, scene);
+      renderer = createRenderer(canvas, world, kidColor);
       resize();
     };
     canvas.addEventListener('webglcontextlost', onLost);
@@ -155,14 +153,15 @@ class DrivingGame {
       frame = requestAnimationFrame(tick);
       owed = Math.min(owed + (now - last) / 1000, STEP * 5);
       last = now;
+      const input = driveInput([...fingers.values()].at(-1), keys);
       while (owed >= STEP) {
-        step(world, driveInput([...fingers.values()].at(-1), keys), STEP);
+        step(world, input, STEP);
         for (const kind of world.knocks) sound.bump(kind);
         for (const depth of world.splashes) sound.splash(depth === 2);
         owed -= STEP;
       }
-      scene.update(world);
-      renderer.render();
+      sound.update(world, input);
+      renderer.render(world);
     };
     frame = requestAnimationFrame(tick);
     this.cleanups.push(() => cancelAnimationFrame(frame));
@@ -170,9 +169,9 @@ class DrivingGame {
   }
 
   /** The kid's own color from the Crayon Box tokens (ADR 0016 rule 7), for their car. */
-  private kidColor(): RGB {
+  private kidColor(): string {
     const value = getComputedStyle(document.documentElement).getPropertyValue(`--kid-${this.ctx.kid.color}`).trim();
-    return /^#[0-9a-f]{6}$/i.test(value) ? hex(value) : hex('#3a86ff');
+    return /^#[0-9a-f]{6}$/i.test(value) ? value : '#3a86ff';
   }
 
   async unmount(): Promise<void> {

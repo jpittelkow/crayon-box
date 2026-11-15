@@ -1,6 +1,6 @@
 # 0021. Driving game: a small 3D island to roam
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); the look and sounds superseded by [0025](0025-driving-game-toy-look-and-engine-sounds.md)
 - Date: 2026-11-14
 - Supersedes:
   - in ADR 0012, the racing sketch: "touch left/right half to steer, car drives itself" and "stickers or
