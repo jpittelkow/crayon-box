@@ -3,7 +3,7 @@
 Decisions waiting on the owner. Remove an item once it is answered (and record the answer in an ADR or the
 relevant memory file).
 
-_Last updated: 2026-11-14_
+_Last updated: 2026-11-15_
 
 - **Sync security trade-offs** (flagged by an automated review, 2026-11-14, kept as ADR 0024 decided): plain `http`
   on the home network carries the sync token; the Windows app may connect to any `http:`/`https:` address (CSP);
@@ -66,3 +66,8 @@ _Last updated: 2026-11-14_
 - **iPad version** ([ADR 0030](../adr/0030-ipad-home-screen-web-app.md), a draft the owner is keeping for later,
   2026-11-14): accept or not; which iPad and Pencil model the family has (hover needs an M2 iPad Pro or later).
   The family's server can have HTTPS, which the ADR requires (owner, 2026-11-14).
+- **Coloring buttons a kid can work out** (playtest, 2026-11-15): a kid didn't know what any coloring button does.
+  Needs a design without text (ADR 0003), for example a short demo when a button is pressed and held. Also wanted:
+  a colour wheel next to the swatches.
+- **AI pages freeze on the laptop** (playtest, 2026-11-15): the card shows but its buttons don't answer. Not seen in
+  the browser on the dev machine. Next: which buttons, and whether typing in the idea box works there.
