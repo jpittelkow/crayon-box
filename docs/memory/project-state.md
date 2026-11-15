@@ -17,8 +17,9 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
    **Next up** (owner, 2026-11-14): milestone 1 is paused with the animal themes and the artifact updates left;
    milestone 2 is planned in eight phases in [milestone-2.md](../milestone-2.md) (A Tauri window, B files, C sync,
-   D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A written 2026-11-14**
-   (`src-tauri/`, the `windows-installer` CI job); not yet built by CI or installed on a Windows machine.
+   D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A built by CI 2026-11-14**
+   (`src-tauri/`, the `windows-installer` CI job, PR #1); a `v*` tag drafts a release with the unsigned
+   installer (`release.yml`). Not yet installed on a Windows machine.
 3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
    **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
    knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,

@@ -11,7 +11,9 @@ at the end; anything that changes an accepted ADR gets a new ADR first (ADR 0001
 ## Phases
 
 ### A. The app in a Tauri window
-- **Status (2026-11-14):** written, waiting on its first CI build and a test install.
+- **Status (2026-11-14):** CI builds the installer (first build passed). A `v*` tag drafts a GitHub Release with
+  the unsigned installer (`.github/workflows/release.yml`), added early so there is a lasting download before
+  phase E. Waiting on a test install.
 - `src-tauri/`: a Tauri 2 project that wraps the existing web app. One window, the app's own icon, the version
   taken from `package.json`.
 - The web app keeps working in a browser: code that needs Windows checks whether it runs inside Tauri.
@@ -66,7 +68,8 @@ Two parts; the server part can start any time, even alongside phase A.
 - The Tauri updater plugin, checking `latest.json` on the Releases page at start-up (a parent switch) and on
   *Check now*. The parent area's Updates screen: version, release notes, *Install and restart*.
 - The release workflow: a `v*` tag builds the installer, its signature and `latest.json` into a **draft**
-  release; a parent tries it, then publishes it.
+  release; a parent tries it, then publishes it. The workflow exists since phase A with the unsigned installer
+  only; this phase adds the signature and `latest.json`.
 - **Done when:** a laptop on version N updates itself to N+1 from inside the parent area.
 - **Needs (your hands):** creating the updater signing key pair, storing the private key and password as GitHub
   secrets, and a backup copy in your password manager. Losing it means every installed copy has to be

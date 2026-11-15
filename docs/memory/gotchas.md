@@ -83,3 +83,5 @@ _Last updated: 2026-11-14_
   script on 2026-11-14 (fill worked, nothing blocked).
 - No Rust on the dev machine means no `src-tauri/Cargo.lock` locally. CI uploads the one its build makes
   (`cargo-lock` artifact); commit it so later builds use the same crate versions (2026-11-14).
+- A release tag must match `package.json`'s version (`v0.1.0` for `0.1.0`); `release.yml` stops otherwise. Bump
+  the version on main first, then tag (2026-11-14).
