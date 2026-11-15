@@ -8,7 +8,7 @@ import type { createRenderer as CreateRendererFn } from './render';
 import { VEHICLES, forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving } from './settings';
 import { DRIVE_KEYS, driveInput } from './sim/input';
 import { TOYS } from './sim/assets/toys';
-import { makeWorld, step, type Assist, type VehicleKind, type World } from './sim/sim';
+import { honk, makeWorld, step, type Assist, type VehicleKind, type World } from './sim/sim';
 import { groundPoint } from './sim/view';
 import { DrivingSound } from './sound';
 import './racing.css';
@@ -102,7 +102,12 @@ class DrivingGame {
     const sound = new DrivingSound(soundsOn && this.ctx.sound.enabled !== false);
     // Start decoding the sound files now (that needs no touch), so the first honk isn't silent.
     sound.unlock();
-    const hornButton = kidButton({ kind: 'action-lg', label: 'Horn', html: icons.horn(), className: 'driving-horn', onTap: () => sound.horn() });
+    // The horn: its sound, and the animals nearby answer it (milestone-3 B3). The world is made just below.
+    const hornNow = () => {
+      sound.horn();
+      honk(world);
+    };
+    const hornButton = kidButton({ kind: 'action-lg', label: 'Horn', html: icons.horn(), className: 'driving-horn', onTap: () => hornNow() });
     // The horn sounds on touch-down, so a quick tap still honks; onTap's lift still gives the press bounce.
     hornButton.addEventListener('pointerdown', () => sound.unlock());
     screen.append(canvas, back, hornButton);
@@ -175,7 +180,7 @@ class DrivingGame {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!DRIVE_KEYS.includes(e.code)) return;
       sound.unlock();
-      if (e.code === 'Space' && !e.repeat) sound.horn();
+      if (e.code === 'Space' && !e.repeat) hornNow();
       keys.add(e.code);
     };
     const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
@@ -205,6 +210,8 @@ class DrivingGame {
         step(world, input, STEP);
         for (const toy of world.knocks) sound.bump(TOYS[toy].bump);
         for (const depth of world.splashes) sound.splash(depth === 2);
+        // Animals answering the horn (milestone-3 B3).
+        for (const kind of world.calls) sound.call(kind);
         // Landing from a ramp hop: a soft thump (its own sound comes with the sound files, milestone-3 B6).
         if (world.landings.includes(0)) sound.bump('thump');
         owed -= STEP;
