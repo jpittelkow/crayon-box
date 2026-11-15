@@ -93,15 +93,26 @@ export const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'sev
 
 /** Holds the lock for longer than a second, the first step of the gate (ADR 0008). */
 export async function holdLock(page: Page, ms = 1200): Promise<void> {
-  const box = (await page.getByRole('button', { name: 'Grown-ups: press and hold' }).boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  // hover() waits until the button stops moving: screens slide in, and a box read mid-slide misses the button.
+  await page.getByRole('button', { name: 'Grown-ups: press and hold' }).hover();
   await page.mouse.down();
   await page.waitForTimeout(ms);
   await page.mouse.up();
 }
 
 export async function openParentArea(page: Page): Promise<void> {
-  await holdLock(page);
+  // Under load the first hold can land while the kid picker is still settling, and the gate never opens; hold
+  // again rather than wait for a gate that isn't coming.
+  const gate = page.locator('[data-screen="parent-gate"]');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await holdLock(page);
+    try {
+      await gate.waitFor({ state: 'visible', timeout: 4000 });
+      break;
+    } catch {
+      if (attempt === 2) throw new Error('The parent gate did not open after three holds');
+    }
+  }
   const words = (await page.locator('[data-words]').getAttribute('data-words'))!.split(' ');
   for (const w of words) await page.getByRole('button', { name: String(WORDS.indexOf(w)), exact: true }).click();
   await expect(page.locator('[data-screen="parent-area"]')).toBeVisible();

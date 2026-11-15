@@ -1,4 +1,4 @@
-import { fitFrame, fullscreenOnFirstTouch, installGuards } from './shell/guards';
+import { QUIT_KEYS_EVENT, fitFrame, fullscreenOnFirstTouch, installGuards } from './shell/guards';
 import { inTauri } from './shell/platform';
 import { Shell } from './shell/shell';
 import { memoryBackend, openIdbBackend } from './storage/idb';
@@ -7,6 +7,7 @@ import { appStorage } from './storage/namespaced';
 import type { Backend } from './storage/types';
 import type { FinishedPictures } from './shell/types';
 import { UpdateController, loadUpdateSettings } from './shell/updates';
+import { KioskControl, loadKioskSettings, type KioskBridge } from './shell/kiosk';
 import '@fontsource/fredoka/600.css';
 import './ui/tokens.css';
 import './ui/kid.css';
@@ -52,10 +53,32 @@ async function boot(): Promise<void> {
   const storage = appStorage(backend);
   await deviceInfo(storage.shell);
   const updates = await openUpdates();
-  await new Shell(frame, storage, undefined, { finished, updates }).start();
+  const kiosk = await openKiosk(storage.shell);
+  const shell = new Shell(frame, storage, undefined, { finished, updates, kiosk });
+  kiosk?.onQuitRequested(() => void shell.quit());
+  if (kiosk) window.addEventListener(QUIT_KEYS_EVENT, () => void shell.quit());
+  await shell.start();
   // Look for a newer version in the background (ADR 0009). It only shows in the parent area; nothing installs on
   // its own, and a failed check is only reported there too.
   if (updates && (await loadUpdateSettings(storage.shell)).checkOnStart) void updates.check();
+}
+
+/** The Windows app's kiosk lock (ADR 0014); on the dev server, `?fake-kiosk` stands in for it (`fakeKiosk.ts`). */
+async function openKiosk(shell: Parameters<typeof loadKioskSettings>[0]): Promise<KioskControl | undefined> {
+  try {
+    let bridge: KioskBridge | undefined;
+    if (inTauri()) bridge = (await import('./shell/tauriKiosk')).tauriKiosk();
+    else if (import.meta.env.DEV && new URLSearchParams(location.search).has('fake-kiosk')) {
+      bridge = (await import('./shell/fakeKiosk')).fakeKiosk();
+    }
+    if (!bridge) return undefined;
+    const control = new KioskControl(bridge, await loadKioskSettings(shell));
+    await control.start();
+    return control;
+  } catch (err) {
+    console.error('Kiosk lock unavailable', err);
+    return undefined;
+  }
 }
 
 /** The Windows app's updater; on the dev server, `?fake-updates=<mode>` stands in for it (`fakeUpdater.ts`). */
