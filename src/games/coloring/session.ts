@@ -26,6 +26,8 @@ export class ColoringSession {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private saving: Promise<void> = Promise.resolve();
   private sizeIndex = 1;
+  /** Back was tapped: the picture is being saved and the next screen is on its way. */
+  private leaving = false;
   private colorValue: string;
   private resize: ResizeObserver | null = null;
 
@@ -95,7 +97,17 @@ export class ColoringSession {
 
     // Tool rail, left
     const rail = el('div', 'cb-panel tool-rail');
-    const back = kidButton({ kind: 'action', label: 'Back', html: icons.back(50), onTap: this.back });
+    // Saving a big picture can take a moment; more taps on Back meanwhile must not leave twice.
+    const back = kidButton({
+      kind: 'action',
+      label: 'Back',
+      html: icons.back(50),
+      onTap: () => {
+        if (this.leaving) return;
+        this.leaving = true;
+        this.back();
+      },
+    });
     const toolGroup = el('div', 'rail-group', { role: 'group', 'aria-label': 'Tools' });
     const toolDefs: [Tool, string, string][] = [
       ['bucket', 'Paint bucket', icons.bucket()],

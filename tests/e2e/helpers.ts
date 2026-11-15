@@ -108,5 +108,13 @@ export async function openParentArea(page: Page): Promise<void> {
 }
 
 export async function pick(page: Page, name: string): Promise<void> {
+  if (name !== 'Back') {
+    await page.getByRole('button', { name, exact: true }).tap();
+    return;
+  }
+  // Leaving a screen can take a moment (the picture is saved first). Wait until it is gone, so that the next tap
+  // reaches the next screen and not this one's Back again.
+  const screen = await page.locator('[data-screen]').last().elementHandle();
   await page.getByRole('button', { name, exact: true }).tap();
+  await screen?.waitForElementState('hidden');
 }
