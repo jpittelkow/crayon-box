@@ -34,9 +34,22 @@ const MAX_BODY = 64 * 1024 * 1024;
 /** Pairing tries allowed per minute, across all devices: enough for a parent, too few to guess a code. */
 const PAIR_TRIES_PER_MINUTE = 10;
 
+/**
+ * The app's pages come from their own origin (`http://tauri.localhost` in the Windows app, `localhost` on the dev
+ * machine), so the API has to allow cross-origin calls. Any origin is fine: there are no cookies, and every call
+ * but info and pair needs the token.
+ */
+const CORS: Record<string, string> = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'access-control-allow-headers': 'authorization, content-type, x-kind',
+  'access-control-expose-headers': 'x-rev, x-modified, x-kind',
+  'access-control-max-age': '600',
+};
+
 function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
   const text = JSON.stringify(body);
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...CORS, ...headers });
   res.end(text);
 }
 
@@ -75,6 +88,11 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
     const path = url.pathname;
     const method = req.method ?? 'GET';
 
+    if (method === 'OPTIONS' && path.startsWith('/api/')) {
+      res.writeHead(204, CORS);
+      res.end();
+      return;
+    }
     if (path === '/' && method === 'GET') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       res.end(statusPage(opts, code()));
@@ -129,7 +147,7 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
           const meta = store.meta(key);
           return send(res, 404, { error: meta?.deleted ? 'Deleted' : 'Not found' });
         }
-        const headers = { 'x-rev': String(item.meta.rev), 'x-modified': String(item.meta.modified), 'cache-control': 'no-store' };
+        const headers = { ...CORS, 'x-rev': String(item.meta.rev), 'x-modified': String(item.meta.modified), 'cache-control': 'no-store' };
         if (item.json !== undefined) {
           res.writeHead(200, { ...headers, 'content-type': 'application/json; charset=utf-8', 'x-kind': 'json' });
           res.end(item.json);

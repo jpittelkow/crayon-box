@@ -208,6 +208,20 @@ describe('sync server (ADR 0024)', () => {
     assert.equal((await changes(t)).rev, 1);
   });
 
+  it('lets the app's pages call it from their own origin (CORS)', async () => {
+    const pre = await fetch(item('shell/a.json'), {
+      method: 'OPTIONS',
+      headers: { origin: 'http://tauri.localhost', 'access-control-request-method': 'PUT' },
+    });
+    assert.equal(pre.status, 204);
+    assert.equal(pre.headers.get('access-control-allow-origin'), '*');
+    assert.match(pre.headers.get('access-control-allow-headers') ?? '', /authorization/);
+    const t = await pair();
+    await put(t, 'shell/a.json', 1, { modified: 1, base: 0 });
+    const got = await fetch(item('shell/a.json'), { headers: { authorization: `Bearer ${t}` } });
+    assert.match(got.headers.get('access-control-expose-headers') ?? '', /x-rev/);
+  });
+
   it('shows a status page with the pairing code', async () => {
     const html = await (await fetch(`${base}/`)).text();
     assert.match(html, /ABCD-EFGH/);
