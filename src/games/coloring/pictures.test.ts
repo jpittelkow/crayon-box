@@ -4,6 +4,7 @@ import { memoryBackend } from '../../storage/idb';
 import { appStorage } from '../../storage/namespaced';
 import {
   deletePicture,
+  finishedName,
   findPicture,
   forgetKid,
   getPaint,
@@ -100,5 +101,13 @@ describe('pictures', () => {
     await forgetKid(storage, 'star');
     expect(await listPictures(storage, 'star')).toEqual([]);
     expect(await listPictures(storage, 'heart')).toHaveLength(1);
+  });
+});
+
+describe('finished picture names', () => {
+  it('are the page and the local time the picture was started', () => {
+    const created = new Date(2026, 10, 14, 9, 5, 7).toISOString();
+    const picture = { kid: 'star', id: 'x', meta: { pageId: 'builtin:cars/race-car', mode: 'free' as const, created, updated: created } };
+    expect(finishedName(picture)).toBe('cars-race-car-2026-11-14-090507.png');
   });
 });

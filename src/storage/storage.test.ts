@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
+import { openFileBackend, memoryFs } from './files';
 import { memoryBackend, openIdbBackend } from './idb';
 import { appStorage } from './namespaced';
 import type { Backend } from './types';
@@ -7,6 +8,7 @@ import type { Backend } from './types';
 const backends: [string, () => Promise<Backend>][] = [
   ['memory', async () => memoryBackend()],
   ['indexeddb', () => openIdbBackend({ factory: new IDBFactory(), keyRange: IDBKeyRange, name: 'test' })],
+  ['files', () => openFileBackend(memoryFs())],
 ];
 
 describe.each(backends)('storage on %s', (_name, make) => {

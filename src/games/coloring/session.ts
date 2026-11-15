@@ -5,7 +5,7 @@ import { el, kidButton, setPicked } from '../../ui/kid';
 import { PALETTE, RAINBOW } from '../../ui/palette';
 import { BRUSH_SIZES, ColoringEngine, type Tool } from './engine/engine';
 import type { Page } from './pages';
-import { savePicture, type Picture } from './pictures';
+import { finishedName, savePicture, type Picture } from './pictures';
 
 /** Autosave runs this long after the last action (ADR 0007). */
 export const AUTOSAVE_MS = 1000;
@@ -23,6 +23,8 @@ const PAGE_LEDGE = 8;
 export class ColoringSession {
   private readonly engine: ColoringEngine;
   private dirty = false;
+  /** Something changed since the picture was opened, so the finished picture needs writing on leaving. */
+  private touched = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private saving: Promise<void> = Promise.resolve();
   private sizeIndex = 1;
@@ -61,6 +63,7 @@ export class ColoringSession {
 
   private changed(): void {
     this.dirty = true;
+    this.touched = true;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.save(), AUTOSAVE_MS);
   }
@@ -85,7 +88,21 @@ export class ColoringSession {
     clearTimeout(this.timer);
     this.resize?.disconnect();
     await this.save();
+    await this.writeFinished();
     this.engine.destroy();
+  }
+
+  /** Leaving the page writes the finished picture to the Pictures folder (Windows app only, ADR 0007). */
+  private async writeFinished(): Promise<void> {
+    const finished = this.ctx.finished;
+    if (!finished || !this.touched) return;
+    try {
+      await finished.save(this.picture.kid, finishedName(this.picture), await this.engine.exportFlat());
+      this.touched = false;
+    } catch (err) {
+      // Never a dialog on kid screens; the working copy is saved, and the next visit writes it again.
+      console.error('Could not write the finished picture', err);
+    }
   }
 
   // ---- Screen ----

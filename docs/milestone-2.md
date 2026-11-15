@@ -26,6 +26,11 @@ at the end; anything that changes an accepted ADR gets a new ADR first (ADR 0001
   web side is tested in the browser first. The family laptop needs neither (ADR 0002).
 
 ### B. Files instead of browser storage
+- **Status (2026-11-14):** built and unit-tested, not yet tried in the installed app. The file backend is
+  `src/storage/files.ts`; the Tauri side (fs and opener plugins, finished pictures, "Open the pictures folder") is
+  `src/shell/tauriFiles.ts`. Kid folders in Pictures use the kid's id (owner, 2026-11-14). Not done yet: writing
+  the finished picture when the app quits (comes with *Quit app* in phase D), and rewriting it after a parent
+  restores the previous version.
 - A file backend behind the existing storage interface (ADR 0007): each stored item is a file under the app data
   folder; writes go to a temp file, then rename. Change records for sync (ADR 0024) live in a small index next to
   them. Games don't change.
@@ -35,8 +40,8 @@ at the end; anything that changes an accepted ADR gets a new ADR first (ADR 0001
 - Art made in the web version is not carried over (ADR 0014).
 - **Done when:** pictures and settings survive closing and reopening the installed app, and finished pictures show
   up in the Pictures folder.
-- **Needs:** whether kid folders in Pictures use the kid's name now that names exist (ADR 0018 keeps names out of
-  file names; a parent browsing Pictures might prefer them).
+- **Decided** (owner, 2026-11-14): kid folders in Pictures are named by the kid's id (`star`, or a random id for
+  kids added later), never the name (ADR 0018).
 
 ### C. Family sync (ADR 0024)
 Two parts; the server part can start any time, even alongside phase A.
@@ -115,7 +120,7 @@ C1 (server) can start any time.
 | When | Decision |
 |---|---|
 | Before A | ~~Rust on the dev machine, or CI-only builds~~: CI-only (2026-11-14) |
-| Before B | Kid folder names in `Pictures\Coloring Book\Art`: names or ids |
+| Before B | ~~Kid folder names in `Pictures\Coloring Book\Art`: names or ids~~: ids (2026-11-14) |
 | Before C | The server's port and place on Unraid |
 | Before D | The family laptop's model: screen size and shape (ADR 0004, 0016) and graphics (ADR 0021) |
 | Before E | Creating and backing up the updater signing key (your hands). A paid code-signing certificate stays optional (ADR 0009) |

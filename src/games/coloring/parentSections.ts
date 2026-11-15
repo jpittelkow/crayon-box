@@ -3,7 +3,7 @@ import { drawAvatar } from '../../shell/profiles';
 import type { KidProfile, ParentSectionContext } from '../../shell/types';
 import { button, card, confirmInline, formatDate, h, switchRow } from '../../ui/parent';
 import { allBuiltinPages, builtinThemes, pageById } from './pages';
-import { deletePicture, getPaint, hasPrevious, listPictures, restorePrevious, type Picture } from './pictures';
+import { deletePicture, finishedName, getPaint, hasPrevious, listPictures, restorePrevious, type Picture } from './pictures';
 import { loadSettings, saveSettings } from './settings';
 
 const urls: string[] = [];
@@ -81,6 +81,8 @@ export async function renderPictures(el: HTMLElement, ctx: ParentSectionContext)
           () =>
             confirmInline(actions, 'Delete this picture for good?', 'Delete', async () => {
               await deletePicture(ctx.storage, picture);
+              // ADR 0007: deleting removes the finished picture in Pictures too.
+              await ctx.finished?.remove(picture.kid, finishedName(picture)).catch((err) => console.error(err));
               await drawList();
             }),
           'danger',
@@ -96,8 +98,11 @@ export async function renderPictures(el: HTMLElement, ctx: ParentSectionContext)
     h(
       'p',
       { class: 'pw-muted' },
-      'Restore brings back how a picture looked before it was last opened; restoring again swaps back. In this web version, pictures live in this browser only.',
+      ctx.finished
+        ? 'Restore brings back how a picture looked before it was last opened; restoring again swaps back. A copy of each picture, with its lines, is kept in Pictures, Coloring Book, Art, in one folder per kid.'
+        : 'Restore brings back how a picture looked before it was last opened; restoring again swaps back. In this web version, pictures live in this browser only.',
     ),
+    ...(ctx.finished ? [h('div', { class: 'pw-row' }, button('Open the pictures folder', () => void ctx.finished?.openFolder().catch((err) => console.error(err))))] : []),
     list,
   );
   await drawList();

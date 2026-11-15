@@ -167,6 +167,18 @@ export class ColoringEngine {
     );
   }
 
+  /** The whole picture as a parent sees it: paper, paint and the page's lines on top (ADR 0007). */
+  exportFlat(): Promise<Blob> {
+    const flat = canvas('flat');
+    const flatCtx = ctx2d(flat);
+    flatCtx.drawImage(this.paper, 0, 0);
+    flatCtx.drawImage(this.paint, 0, 0);
+    flatCtx.drawImage(this.lines, 0, 0);
+    return new Promise((resolve, reject) =>
+      flat.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not encode the picture'))), 'image/png'),
+    );
+  }
+
   destroy(): void {
     this.regions.destroy();
     for (const stroke of this.strokes.values()) stroke.layer.remove();
