@@ -51,6 +51,8 @@ _Last confirmed: 2026-11-14_
 - The web app runs from the dev server only: no local container (dropped 2026-11-14, ADR 0020), no online
   hosting, no published image, and no home-server setup for this app (ADR 0014).
 - Install from GitHub and update inside the app; no dev tools on the family laptop (ADR 0009).
+- **Windows app builds run only in CI**: no Rust on the dev machine either (2026-11-14). Windows-side changes are
+  tried by pushing a branch and installing the CI artifact.
 - GitHub is fine as the main host; a self-hosted Gitea exists and may mirror (ADR 0013).
 - Uses OpenRouter for AI image models, with their own key (ADR 0006).
 
