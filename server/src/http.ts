@@ -11,8 +11,9 @@ import {
   type WriteResponse,
 } from './api.ts';
 import type { Store } from './store.ts';
-import { AiError, makePage, type AiConfig } from './ai.ts';
-import { MAX_IDEA, type AiPageRequest } from './api.ts';
+import { AiError, defaultModel, makePage, type AiConfig } from './ai.ts';
+import { MAX_FAVORITES, MAX_IDEA, validModelId, type AiFavoritesRequest, type AiModelsResponse, type AiPageRequest } from './api.ts';
+import { ModelCatalog } from './models.ts';
 
 export interface ServerOptions {
   store: Store;
@@ -24,6 +25,8 @@ export interface ServerOptions {
   now?: () => number;
   /** AI pages (ADR 0029); without a key there are none. */
   ai?: AiConfig;
+  /** OpenRouter's model list (ADR 0033); made from `ai.fetchFn` when not given. */
+  models?: ModelCatalog;
 }
 
 class HttpError extends Error {
@@ -88,6 +91,7 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
   let pairWindow = { start: 0, tries: 0 };
 
   const code = () => store.pairingCode(opts.pairingCode);
+  const catalog = opts.models ?? new ModelCatalog(opts.ai?.fetchFn ?? fetch, now);
 
   async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://server');
@@ -146,6 +150,36 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
       return send(res, 200, out);
     }
 
+    if (path === '/api/v1/ai/models' && method === 'GET') {
+      const ai = opts.ai;
+      if (!ai?.key) throw new HttpError(503, 'AI pages aren’t set up on the family server (no OpenRouter key).');
+      const list = await catalog.list();
+      const out: AiModelsResponse = {
+        models: list.models,
+        favorites: store.aiFavorites(),
+        defaults: { image: ai.imageModel, draw: ai.drawModel, second: ai.secondModel },
+        fetched: list.fetched,
+      };
+      if (list.problem) out.problem = list.problem;
+      return send(res, 200, out);
+    }
+
+    if (path === '/api/v1/ai/favorites' && method === 'PUT') {
+      if (!opts.ai?.key) throw new HttpError(503, 'AI pages aren’t set up on the family server (no OpenRouter key).');
+      let body: AiFavoritesRequest;
+      try {
+        body = JSON.parse((await readBody(req, 64 * 1024)).toString('utf8')) as AiFavoritesRequest;
+      } catch (err) {
+        if (err instanceof HttpError) throw err;
+        throw new HttpError(400, 'Expected JSON');
+      }
+      if (!Array.isArray(body.favorites) || !body.favorites.every(validModelId)) throw new HttpError(400, 'Expected a list of model ids');
+      const favorites = [...new Set(body.favorites)];
+      if (favorites.length > MAX_FAVORITES) throw new HttpError(400, `Keep it to ${MAX_FAVORITES} favorites`);
+      store.setAiFavorites(favorites);
+      return send(res, 200, { favorites });
+    }
+
     if (path === '/api/v1/ai/page' && method === 'POST') {
       const ai = opts.ai;
       if (!ai?.key) throw new HttpError(503, 'AI pages aren’t set up on the family server (no OpenRouter key).');
@@ -169,8 +203,19 @@ export function handler(opts: ServerOptions): (req: IncomingMessage, res: Server
       } else {
         throw new HttpError(400, 'Expected photo, idea or draw');
       }
+      // The model: the request's pick, if it is on OpenRouter's list for this way (ADR 0033), else the setting.
+      let model = defaultModel(ai, ask.kind);
+      if (ask.model !== undefined) {
+        if (!validModelId(ask.model)) throw new HttpError(400, 'Expected an OpenRouter model id');
+        await catalog.list();
+        const listed = catalog.find(ask.model);
+        if (catalog.known && !listed?.ways.includes(ask.kind)) {
+          throw new HttpError(400, listed ? `${listed.name} can’t make a page that way. Pick another model.` : `${ask.model} isn’t on OpenRouter’s list. Pick another model.`);
+        }
+        model = ask.model;
+      }
       try {
-        const page = await makePage(ai, { ...ask, detail } as AiPageRequest);
+        const page = await makePage(ai, { ...ask, detail } as AiPageRequest, { model, output: catalog.find(model)?.output });
         store.countAi(day);
         res.writeHead(200, { ...CORS, 'content-type': page.type, 'x-ai-model': page.model, 'cache-control': 'no-store' });
         res.end(page.bytes);

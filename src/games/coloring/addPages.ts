@@ -3,6 +3,7 @@
 // family server that has AI set up (ADR 0029), a page can also be made from a photo or a typed idea.
 import type { ParentSectionContext } from '../../shell/types';
 import type { AiPageMaker } from '../../sync/service';
+import { modelPicker } from './aiModelPicker';
 import { button, card, h, segmented } from '../../ui/parent';
 import { OUR_THEME_META } from './catalog';
 import { addFamilyPage, OUR_THEME, type FamilyPageMeta } from './family';
@@ -69,7 +70,7 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
   // ---- Make a page with AI (ADR 0029) ----
   if (ctx.ai) {
     const maker = await ctx.ai();
-    el.append(maker ? aiCard(maker) : aiOffCard());
+    el.append(maker ? await aiCard(maker) : aiOffCard());
   }
 
   function aiOffCard(): HTMLElement {
@@ -83,7 +84,7 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
     );
   }
 
-  function aiCard(ai: AiPageMaker): HTMLElement {
+  async function aiCard(ai: AiPageMaker): Promise<HTMLElement> {
     type Way = 'idea' | 'draw' | 'photo';
     let way: Way = 'idea';
     let detail: 'simple' | 'more' = 'simple';
@@ -95,6 +96,28 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
     const photoField = h('div', { class: 'pw-field', hidden: true }, h('label', { for: 'ai-photo' }, 'Photo'), photo);
     const usage = () => `Today: ${ai.info.usedToday} of ${ai.info.dailyLimit} AI pages used.`;
     const used = h('p', { class: 'pw-muted' }, usage());
+    // The model to use (ADR 0033); absent with an older server, which uses its own setting.
+    const picker = await modelPicker(ai, ctx.storage, way);
+    // One page, or two from different models to choose from (ADR 0034). Remembered on this device.
+    let count: Count = (await ctx.storage.getJson<{ count?: Count }>(MAKE_PATH))?.count === 'two' ? 'two' : 'one';
+    const howMany = h(
+      'div',
+      { 'data-ai-count': '' },
+      segmented<Count>(
+        'How many',
+        [
+          ['one', 'One page'],
+          ['two', 'Two to choose from'],
+        ],
+        count,
+        (c) => {
+          count = c;
+          void ctx.storage.putJson(MAKE_PATH, { count: c });
+        },
+      ),
+      h('p', { class: 'pw-muted' }, 'Two asks a second model too, so it counts as two of today’s pages.'),
+    );
+    howMany.hidden = !picker?.second();
 
     const make = button(
       'Make it',
@@ -118,22 +141,44 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
           name = text.slice(0, 40);
           request = { kind: way, idea: text, detail };
         }
+        const model = picker?.chosen();
+        if (model) request.model = model;
+        // Two to choose from (ADR 0034): the same request to a second model, at the same time.
+        const second = count === 'two' ? picker?.second() : undefined;
+        const requests = second ? [request, { ...request, model: second }] : [request];
         make.disabled = true;
         result.replaceChildren();
-        status.textContent = 'Making a page… this can take up to a minute.';
+        status.textContent = requests.length > 1 ? 'Making two pages to choose from… this can take up to a minute.' : 'Making a page… this can take up to a minute.';
         status.dataset.aiStatus = 'working';
+        const added = (message: string) => {
+          status.textContent = message;
+          status.dataset.aiStatus = 'added';
+        };
         try {
-          const image = await ai.make(request);
-          const ext = image.type === 'image/svg+xml' ? 'svg' : image.type === 'image/jpeg' ? 'jpg' : 'png';
-          const page = await importFile(`${name.replace(/\.[^.]+$/, '')}.${ext}`, image);
-          ai.info.usedToday++;
+          const made = await Promise.allSettled(
+            requests.map(async (req) => {
+              const { image, model: madeBy } = await ai.make(req);
+              ai.info.usedToday++;
+              const ext = image.type === 'image/svg+xml' ? 'svg' : image.type === 'image/jpeg' ? 'jpg' : 'png';
+              const page = await importFile(`${name.replace(/\.[^.]+$/, '')}.${ext}`, image);
+              return { page, by: picker?.nameOf(madeBy ?? req.model ?? '') ?? madeBy ?? '' };
+            }),
+          );
           used.textContent = usage();
-          status.textContent = 'Here it is. Not quite right? Make it again.';
-          status.dataset.aiStatus = 'ready';
-          showResult(result, 'ai', name, page, 'ai', (message) => {
-            status.textContent = message;
-            status.dataset.aiStatus = 'added';
-          });
+          const pages = made.flatMap((m) => (m.status === 'fulfilled' ? [m.value] : []));
+          const failed = made.flatMap((m) => (m.status === 'rejected' ? [m.reason instanceof Error ? m.reason.message : String(m.reason)] : []));
+          if (!pages.length) throw new Error(failed[0] ?? 'No page came back.');
+          if (pages.length === 1) {
+            const by = pages[0]!.by ? ` Made by ${pages[0]!.by}.` : '';
+            const other = failed.length ? ` (The other model had a problem: ${failed[0]})` : '';
+            status.textContent = `Here it is.${by}${other} Not quite right? Make it again, or try another model.`;
+            status.dataset.aiStatus = 'ready';
+            showResult(result, 'ai', name, pages[0]!.page, 'ai', added);
+          } else {
+            status.textContent = 'Here are two. Pick the one to keep, or make them again.';
+            status.dataset.aiStatus = 'choose';
+            showChoices(result, pages, (page) => showResult(result, 'ai', name, page, 'ai', added));
+          }
         } catch (err) {
           status.textContent = err instanceof Error ? err.message : String(err);
           status.dataset.aiStatus = 'problem';
@@ -163,10 +208,14 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
           way = w;
           ideaField.hidden = w === 'photo';
           photoField.hidden = w !== 'photo';
+          picker?.setWay(w);
+          howMany.hidden = !picker?.second();
         },
       ),
       ideaField,
       photoField,
+      picker?.el ?? null,
+      howMany,
       segmented<'simple' | 'more'>(
         'Detail',
         [
@@ -248,6 +297,26 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
       ),
     );
   }
+}
+
+type Count = 'one' | 'two';
+/** Device-only (ADR 0024): whether this device makes one page or two to choose from. */
+const MAKE_PATH = 'local/ai-make.json';
+
+/** Two cleaned pages side by side, each with the model that made it; picking one moves on to name and theme. */
+function showChoices(into: HTMLElement, pages: { page: CleanedPage; by: string }[], pick: (page: CleanedPage) => void): void {
+  const tiles = pages.map(({ page, by }, i) => {
+    const preview = h('canvas', { width: '2048', height: '1536', class: 'pw-page-preview', 'aria-label': `Choice ${i + 1}, made by ${by}` });
+    preview.getContext('2d')!.putImageData(new ImageData(page.rgba, 2048, 1536), 0, 0);
+    return h(
+      'div',
+      { class: 'pw-ai-choice', 'data-ai-choice': String(i + 1) },
+      preview,
+      h('p', { class: 'pw-muted' }, `${by}. ${page.check.regions} areas to color.`),
+      button(`Use this one`, () => pick(page), i === 0 ? 'primary' : 'default'),
+    );
+  });
+  into.replaceChildren(h('div', { class: 'pw-ai-choices' }, ...tiles));
 }
 
 /** A photo as a JPEG data URL, at most 1600 px on its longest side: enough for the model, small to send. */
