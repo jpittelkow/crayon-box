@@ -1,6 +1,6 @@
 # 0026. Letter practice: trace big letters with a finger or a stylus
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); finishing and checking partly superseded by [0028](0028-letter-tracing-whole-letter-and-confirm.md)
 - Date: 2026-11-14
 - Mockups: boards 19–24 on the mockup canvas (linked from the [ADR index](README.md))
 

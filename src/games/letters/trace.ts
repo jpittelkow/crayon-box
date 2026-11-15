@@ -1,19 +1,20 @@
 // Checks a kid's trace against a letter (ADR 0026). Plain TypeScript with no DOM, so it has unit tests.
 //
 // Each stroke is sampled into checkpoints a few units apart. A checkpoint counts once a trace passes within the
-// tolerance of it. Lenient (the default): any order and direction, done when 85 % of all checkpoints and 80 % of
-// every stroke are covered, so a whole stroke (A's bar) can't be skipped. Stroke order: only the current stroke
-// counts, from its start and in its direction, and the next stroke starts when 85 % of it is done.
+// tolerance of it. The whole letter has to be traced (ADR 0028, which tightened ADR 0026's 85 %): every stroke from
+// end to end, both of its ends and nearly all of its checkpoints. Lenient (the default): any order and direction.
+// Stroke order: only the current stroke counts, from its start and in its direction, and the next stroke starts
+// once the current one is traced to its end. A finished trace is only "ready": the kid confirms it (game.ts).
 // Ink far from the letter is counted too: a trace with more than three times the letter's length of it (a scribble
 // over the whole screen) does not finish until it is wiped.
 import { strokeLength, type Glyph, type Pt } from './glyphs';
 
 /** Checkpoint spacing, in glyph units. */
 const SPACING = 3;
-/** Share of a letter's checkpoints a lenient trace must cover. */
-export const DONE_SHARE = 0.85;
-/** Share of each stroke a lenient trace must cover. */
-const STROKE_SHARE = 0.8;
+/** Share of a letter's checkpoints a trace must cover (ADR 0028). */
+export const DONE_SHARE = 0.95;
+/** Share of each stroke's own checkpoints a trace must cover. */
+const STROKE_SHARE = 0.92;
 /** In stroke order, how far ahead of the covered run a checkpoint may still count. */
 const WINDOW = 4;
 /** How far from a checkpoint a trace still covers it, in glyph units (the guide is 20 wide). */
@@ -113,6 +114,8 @@ export class Tracer {
     const total = this.covered.reduce((a, c) => a + c.length, 0);
     const hit = this.covered.reduce((a, c) => a + c.filter(Boolean).length, 0);
     if (hit < total * DONE_SHARE) return false;
+    // Both ends of every stroke: a stroke traced most of the way isn't traced.
+    if (!this.covered.every((c) => c[0] && c[c.length - 1])) return false;
     return this.covered.every((c, s) => {
       // Judge each stroke by its own checkpoints; a stroke with none (wholly near others) by all of them.
       const mine = c.filter((_, i) => this.own[s][i]);
@@ -127,6 +130,21 @@ export class Tracer {
     if (this.opts.ordered) return Math.min(this.current, this.checkpoints.length - 1);
     const i = this.covered.findIndex((c) => c.filter(Boolean).length < c.length * STROKE_SHARE);
     return i < 0 ? 0 : i;
+  }
+
+  /**
+   * The checkpoints still to trace, for the "here's what's left" dots after a finger lifts. In stroke order, only
+   * the current stroke's.
+   */
+  get missing(): Pt[] {
+    const out: Pt[] = [];
+    this.checkpoints.forEach((cps, s) => {
+      if (this.opts.ordered && s !== this.current) return;
+      cps.forEach((cp, i) => {
+        if (!this.covered[s][i]) out.push(cp);
+      });
+    });
+    return out;
   }
 
   /** Share of the letter covered, 0..1. */
@@ -166,7 +184,7 @@ export class Tracer {
         while (i < c.length && c[i]) i++;
       }
       this.run[this.current] = i;
-      if (this.run[this.current] >= Math.ceil(c.length * DONE_SHARE)) {
+      if (this.run[this.current] >= Math.ceil(c.length * DONE_SHARE) && c[c.length - 1]) {
         this.current++;
         continue;
       }

@@ -3,7 +3,7 @@
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
-import { arrowFor, glyph, pathData, SET_CHARS, setOf, type SetId } from './glyphs';
+import { arrowsFor, glyph, pathData, SET_CHARS, setOf, type SetId } from './glyphs';
 import {
   finishLetter,
   forgetKid,
@@ -43,6 +43,8 @@ const INK = '#23201c';
 const GREEN = '#2fa35f';
 /** The tracing view: the 100 x 140 glyph box with room round it for the arrows. */
 const VIEW = '-16 -8 132 156';
+/** Once this much of the letter is traced, lifting the finger shows dots on what is left (ADR 0028). */
+const LEFT_FROM = 0.5;
 /** Seconds without a touch before the hint shows the first stroke. */
 const IDLE_MS = 8000;
 /** A pen near the screen mutes touches for this long after it was last seen (ADR 0026). */
@@ -337,17 +339,19 @@ class LettersGame {
       arrows.setAttribute('opacity', started ? '0.55' : '1');
       for (const i of shown) {
         if (i >= g.strokes.length) continue;
-        const a = arrowFor(g, i);
-        if (a) {
-          const grp = svgEl('g', { 'data-stroke': i });
+        // One group per stroke; a stroke that goes down and back up (n, b, m) has an arrow for each way.
+        const list = arrowsFor(g, i);
+        if (list.length === 0) continue;
+        const grp = svgEl('g', { 'data-stroke': i });
+        for (const a of list) {
           grp.append(
             svgEl('path', { d: a.shaft, stroke: INK, 'stroke-width': 5.5 }),
             svgEl('path', { d: a.head, stroke: INK, 'stroke-width': 5.5 }),
             svgEl('path', { d: a.shaft, stroke: GREEN, 'stroke-width': 3.2, 'stroke-dasharray': '7 5', class: 'letters-march' }),
             svgEl('path', { d: a.head, stroke: GREEN, 'stroke-width': 3.2 }),
           );
-          arrows.append(grp);
         }
+        arrows.append(grp);
       }
       // Dots: drawn back to front so the first stroke's dot sits on top where two strokes share a start.
       for (const i of [...shown].reverse()) {
@@ -400,8 +404,22 @@ class LettersGame {
       svgEl('circle', { r: 10, fill: '#ffffff', stroke: INK, 'stroke-width': 2.5 }),
     );
     helpers.append(hint);
+
+    // ---- What is left: after a finger lifts with most of the letter traced, small dots mark the rest ----
+    const left = layer('letters-left');
+    const showLeft = () => {
+      left.replaceChildren();
+      if (screen.dataset.done !== 'false' || tracer.progress < LEFT_FROM) return;
+      // A dotted trail, a dot every 8 units, so it reads as "this way still" rather than one blob.
+      let last: { x: number; y: number } | null = null;
+      for (const p of tracer.missing) {
+        if (last && Math.hypot(p.x - last.x, p.y - last.y) < 8) continue;
+        last = p;
+        left.append(svgEl('circle', { cx: p.x, cy: p.y, r: 3.4, fill: GREEN, stroke: INK, 'stroke-width': 1.2, class: 'letters-pulse' }));
+      }
+    };
     const showHint = () => {
-      if (screen.dataset.done === 'true') return;
+      if (screen.dataset.done !== 'false') return;
       const stroke = g.strokes[tracer.firstUnfinished];
       const still = reducedMotion();
       const t0 = performance.now();
@@ -448,7 +466,7 @@ class LettersGame {
     const onDown = (e: PointerEvent) => {
       notePen(e);
       armIdle();
-      if (screen.dataset.done === 'true' || e.button > 0) return;
+      if (screen.dataset.done === 'true' || screen.dataset.done === 'saving' || e.button > 0) return;
       const pen = e.pointerType === 'pen';
       if (!pen && e.pointerType === 'touch') {
         if (penDown || performance.now() < penSeenUntil) return;
@@ -474,6 +492,7 @@ class LettersGame {
       const node = svgEl('polyline', { 'stroke-width': pen ? 6 : 9, opacity: 0.92 });
       ink.append(node);
       lines.set(e.pointerId, { node, points: [], pen });
+      left.replaceChildren();
       move(e, p);
     };
     const move = (e: PointerEvent, p = toGlyph(e)) => {
@@ -484,7 +503,7 @@ class LettersGame {
       const before = tracer.currentStroke;
       tracer.add(e.pointerId, p, line.pen ? TOLERANCE.pen : TOLERANCE.finger);
       if (this.prefs.ordered && tracer.currentStroke !== before) drawGuides(true);
-      if (tracer.done) void finish();
+      if (tracer.done) ready();
     };
     const onMove = (e: PointerEvent) => {
       notePen(e);
@@ -494,6 +513,7 @@ class LettersGame {
       notePen(e);
       if (e.pointerType === 'pen') penDown = false;
       endLine(e.pointerId);
+      if (lines.size === 0) showLeft();
       armIdle();
     };
     svg.addEventListener('pointerdown', onDown);
@@ -511,25 +531,47 @@ class LettersGame {
       html: icons.startOver(58),
       className: 'letters-wipe',
       onTap: () => {
-        if (screen.dataset.done === 'true') return;
+        if (screen.dataset.done !== 'false' && screen.dataset.done !== 'ready') return;
         this.ctx.sound.play('undo');
         ink.replaceChildren();
+        left.replaceChildren();
+        filled.replaceChildren();
+        confirm.remove();
         lines.clear();
         tracer.reset();
+        screen.dataset.done = 'false';
         drawGuides(started);
+        armIdle();
       },
     });
 
-    // ---- Done ----
-    const finish = async () => {
+    // ---- Ready: the whole letter is traced; the kid says "done" with the big check (ADR 0028) ----
+    const confirm = kidButton({
+      kind: 'action-lg',
+      label: 'Done',
+      html: icons.check(84),
+      className: 'letters-confirm',
+      onTap: () => void finish(),
+    });
+    const ready = () => {
       if (screen.dataset.done !== 'false') return;
-      screen.dataset.done = 'saving';
-      for (const id of [...lines.keys()]) endLine(id);
+      screen.dataset.done = 'ready';
       clearTimeout(idle);
       hint.setAttribute('visibility', 'hidden');
+      left.replaceChildren();
       arrows.replaceChildren();
       starts.replaceChildren();
       guide(filled);
+      this.ctx.sound.play('fill');
+      screen.append(confirm);
+    };
+
+    // ---- Done ----
+    const finish = async () => {
+      if (screen.dataset.done !== 'ready') return;
+      screen.dataset.done = 'saving';
+      for (const id of [...lines.keys()]) endLine(id);
+      confirm.remove();
       this.progress = await finishLetter(this.ctx.storage, this.ctx.kid.id, ch, mode === 'game');
       this.ctx.sound.play('cheer');
       void this.voice.say(ch);

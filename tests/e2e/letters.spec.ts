@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { glyph, type Pt } from '../../src/games/letters/glyphs';
 import { openParentArea } from './helpers';
 
-// Letter practice (ADR 0026): practice, the game path, tracing with fingers and a pen, and the parent's settings.
+// Letter practice (ADR 0026, 0028): practice, the game path, tracing with fingers and a pen, and the parent's settings.
 
 async function turnOnLetters(page: Page): Promise<void> {
   await page.goto('/');
@@ -52,6 +52,15 @@ async function trace(page: Page, ch: string): Promise<void> {
 
 const traceScreen = (page: Page) => page.locator('[data-screen="letters-trace"]');
 
+/** Traces a letter, sees it is ready but not yet done, and taps the big check (ADR 0028). */
+async function traceAndConfirm(page: Page, ch: string): Promise<void> {
+  await trace(page, ch);
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'ready');
+  await expect(page.locator('.letters-done-star')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Done', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
+}
+
 // The pulsing stops and arrows never hold still, so Playwright could not tap them; motion is off here.
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -79,8 +88,7 @@ test('practice: every letter is open; tracing one gives it a star and the arrow 
   await expect(page.locator('.letters-finger')).toHaveCount(1);
   await expect(page.locator('.letters-arrows [data-stroke]')).toHaveCount(1);
 
-  await trace(page, 'L');
-  await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
+  await traceAndConfirm(page, 'L');
   await expect(page.locator('.letters-finger')).toHaveCount(0);
   await page.getByRole('button', { name: 'Next letter' }).tap();
   await expect(traceScreen(page)).toHaveAttribute('data-letter', 'M');
@@ -97,8 +105,7 @@ test('the game opens one letter at a time', async ({ page }) => {
   await expect(page.locator('[data-screen="letters-path"]')).toBeVisible(); // a locked letter does nothing
 
   await page.getByRole('button', { name: 'Letter A, next to trace' }).tap();
-  await trace(page, 'A');
-  await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
+  await traceAndConfirm(page, 'A');
   await page.getByRole('button', { name: 'Next letter' }).tap();
   await expect(traceScreen(page)).toHaveAttribute('data-letter', 'B');
   await page.getByRole('button', { name: 'Back' }).tap();
@@ -118,8 +125,7 @@ test('a scribble does not finish a letter; wipe and a real trace do', async ({ p
   await expect(traceScreen(page)).toHaveAttribute('data-done', 'false');
   await page.getByRole('button', { name: 'Wipe' }).tap();
   await expect(page.locator('.letters-ink polyline')).toHaveCount(0);
-  await trace(page, 'O');
-  await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
+  await traceAndConfirm(page, 'O');
 });
 
 test('a pen near the screen mutes touches (the resting hand)', async ({ page }) => {
@@ -171,6 +177,28 @@ test('a parent turns on more sets and stroke order', async ({ page }) => {
   // Stroke order: only the first stroke's dot and arrow show.
   await expect(page.locator('.letters-starts [data-start]')).toHaveCount(1);
   await expect(page.locator('.letters-arrows [data-stroke="0"]')).toHaveCount(1);
-  await trace(page, 'T');
-  await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
+  await traceAndConfirm(page, 'T');
+});
+
+test('most of a letter is not enough: dots show what is left, then the kid confirms (ADR 0028)', async ({ page }) => {
+  await turnOnLetters(page);
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
+  const strokes = glyph('L').strokes;
+  // Each stroke three quarters of the way.
+  await drag(page, strokes.map((s) => s.slice(0, Math.floor(s.length * 0.75)).filter((_, i) => i % 4 === 0)));
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'false');
+  await expect(page.locator('.letters-left circle').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Done', exact: true })).toHaveCount(0);
+  // The rest: now it is ready, and the dots are gone.
+  await drag(page, strokes.map((s) => s.slice(Math.floor(s.length * 0.7)).filter((_, i, a) => i % 4 === 0 || i === a.length - 1)));
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'ready');
+  await expect(page.locator('.letters-left circle')).toHaveCount(0);
+  // Wipe takes it back to the start.
+  await page.getByRole('button', { name: 'Wipe' }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'false');
+  await expect(page.getByRole('button', { name: 'Done', exact: true })).toHaveCount(0);
+  await traceAndConfirm(page, 'L');
+  await expect(page.getByRole('button', { name: 'Next letter' })).toBeVisible();
 });

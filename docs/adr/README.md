@@ -33,6 +33,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0025](0025-driving-game-toy-look-and-engine-sounds.md) | Driving game: a polished toy look and an engine sound for every vehicle | Accepted |
 | [0026](0026-letter-practice.md) | Letter practice: trace big letters with a finger or a stylus | Accepted |
 | [0027](0027-app-name-wordmark.md) | The app's name as a wordmark on a few screens | Accepted |
+| [0028](0028-letter-tracing-whole-letter-and-confirm.md) | Letter tracing: letters formed as taught in school, the whole letter traced, then a check to finish | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H
