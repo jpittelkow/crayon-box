@@ -14,8 +14,9 @@ export function chaseView(w: World): View {
   const kid = w.cars[0]!;
   const fx = Math.sin(w.camHeading), fz = Math.cos(w.camHeading);
   return {
-    eye: [kid.x - fx * 10, 5.5 + kid.y, kid.z - fz * 10],
-    target: [kid.x + fx * 5, 1.2, kid.z + fz * 5],
+    // The camera rises a little with a car hopping off a ramp, so the hop shows but the car stays in view.
+    eye: [kid.x - fx * 10, 5.5 + kid.y + kid.h * 0.6, kid.z - fz * 10],
+    target: [kid.x + fx * 5, 1.2 + kid.h * 0.6, kid.z + fz * 5],
   };
 }
 

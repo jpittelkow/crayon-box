@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildGround } from './look/island';
+import { buildSetPieces } from './look/setpieces';
 import { sceneryPieces } from './look/scenery';
 import { toyPieces, type Pieces } from './look/toys';
 import { buildVehicle, type VehicleModel } from './look/vehicles';
@@ -80,7 +81,7 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 200 });
   scene.add(sun, sun.target);
 
-  scene.add(buildGround(world));
+  scene.add(buildGround(world), buildSetPieces(world));
 
   // Trees: one batch per kind on this map; each tree can shrink away from the camera (ADR 0021).
   const treeBatches = new Map<SceneryId, THREE.InstancedMesh[]>();
@@ -160,8 +161,9 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     // Vehicles
     w.cars.forEach((c, i) => {
       const model = vehicles[i]!;
-      model.group.position.set(c.x, c.y, c.z);
-      model.group.rotation.y = c.heading;
+      model.group.position.set(c.x, c.y + c.h, c.z);
+      // Nose up while climbing a ramp or rising from it, down while coming down (never enough to look like a flip).
+      model.group.rotation.set(-Math.max(-0.35, Math.min(0.35, Math.atan2(c.vy, Math.max(c.speed, 2)))), c.heading, 0, 'YXZ');
       // The simulation's spin is for a wheel 0.45 m across; bigger wheels turn slower for the same distance.
       for (const wheel of model.wheels) wheel.rotation.x = (c.spin * 0.45) / wheel.position.y;
       model.animate?.(w.time);

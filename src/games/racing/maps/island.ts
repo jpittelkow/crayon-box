@@ -17,6 +17,8 @@ export const ISLAND: MapDef = {
   land: { outline: roundOutline(0, 0, LAND_R), beach: 8 },
   roads: [{ kind: 'street', width: ROAD_W, points: circlePath(ROAD_R), closed: true }],
   spawn: around(0),
+  // A ramp across the road (milestone-3 B3), clear of the puddles and the flood; traffic hops it too.
+  zones: [{ kind: 'ramp', on: around(2.45), r: 3.5 }],
   traffic: [
     { kind: 'bus', on: around(1.3, -2.2), cruise: 6.5 },
     { kind: 'police', on: around(3.1, 2.2), cruise: 9.5 },

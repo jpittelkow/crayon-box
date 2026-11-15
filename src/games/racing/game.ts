@@ -164,6 +164,8 @@ class DrivingGame {
         step(world, input, STEP);
         for (const toy of world.knocks) sound.bump(TOYS[toy].bump);
         for (const depth of world.splashes) sound.splash(depth === 2);
+        // Landing from a ramp hop: a soft thump (its own sound comes with the sound files, milestone-3 B6).
+        if (world.landings.includes(0)) sound.bump('thump');
         owed -= STEP;
       }
       sound.update(world, input);

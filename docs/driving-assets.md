@@ -243,7 +243,7 @@ sails); see Border cases.
 
 | Id | Status | Maps | What happens |
 |---|---|---|---|
-| `setpiece/ramp` | planned (ADR 0021) | all | on a `road/ramp`: small faked jump |
+| `setpiece/ramp` | built (2026-11-15, `sim/ramps.ts`, `look/setpieces.ts`) | all | a yellow hump across the road, either way; cars follow its height and a fast one hops off the top and lands (a thump); traffic hops too |
 | `setpiece/car-wash` | planned (ADR 0021) | all | bubbles cover the car, then rinse; washes off mud |
 | `setpiece/tunnel` | planned (ADR 0021) | island, country | on a `road/tunnel-floor`: echo on the engine and horn, lamps light up |
 | `setpiece/bridge` | planned (ADR 0021) | island, country | on a `road/bridge-deck`: a boat passes under sometimes |

@@ -13,7 +13,12 @@ export interface OnRoad { road: number; at: number; offset?: number }
 export type ZoneKind = 'ramp' | 'car-wash' | 'garage';
 
 /** A zone: a round area of radius `r`, placed on a road or by its middle. */
-export interface ZoneDef { kind: ZoneKind; on: OnRoad | { x: number; z: number }; r: number }
+export interface ZoneDef {
+  kind: ZoneKind;
+  /** On a road (facing along it), or by its middle and the way it faces (a heading, default 0). */
+  on: OnRoad | { x: number; z: number; heading?: number };
+  r: number;
+}
 
 export interface MapDef {
   id: string;

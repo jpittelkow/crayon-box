@@ -7,6 +7,7 @@ import { SCENERY, type SceneryId } from './assets/scenery';
 import { TOYS, type ToyId } from './assets/toys';
 import { buildLand, keepInland, randomInland, shore, type Land } from './land';
 import type { MapDef, OnRoad, ZoneKind } from './map';
+import { HOP_GRAVITY, groundHeight } from './ramps';
 import { buildRoad, nearestOn, nearestRoad, pointAt, wrapAlong, type Road } from './roads';
 
 export const MAX_SPEED = 17;
@@ -67,6 +68,8 @@ export interface Car {
   wet: number;
   /** Time until its next wake ring. */
   wake: number;
+  /** Height above the ground under it (ramps), and how fast that is changing; 0 and 0 on flat ground. */
+  h: number; vy: number;
   /**
    * Traffic only: the road it drives, how far along it, its lane now and its usual lane (metres right of the
    * centre line), and its own pace.
@@ -143,10 +146,12 @@ export interface World {
   zone: number;
   /** Zones the kid's car drove into or out of in the last step, for set pieces and sounds. */
   zoneEvents: { zone: number; kind: ZoneKind; entered: boolean }[];
+  /** Vehicles that came down from a hop in the last step: 0 is the kid's car. For the sounds and dust. */
+  landings: number[];
 }
 
-/** A map's zone, placed on the ground. */
-export interface Zone { kind: ZoneKind; x: number; z: number; r: number }
+/** A map's zone, placed on the ground, and the way it faces. */
+export interface Zone { kind: ZoneKind; x: number; z: number; r: number; heading: number }
 
 function rand(w: World): number {
   w.rng = (w.rng + 0x6d2b79f5) | 0;
@@ -172,18 +177,18 @@ const along = (w: World, on: OnRoad): number => on.at * w.roads[on.road]!.length
 export function makeWorld(seed: number, propCount: number, assist: Assist = 'free', map: MapDef = ISLAND): World {
   const roads = map.roads.map(buildRoad);
   const w: World = {
-    map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [],
+    map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [],
     rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
   };
   for (const z of map.zones ?? []) {
     const p = 'road' in z.on ? pointAt(roads[z.on.road]!, along(w, z.on), z.on.offset ?? 0) : z.on;
-    w.zones.push({ kind: z.kind, x: p.x, z: p.z, r: z.r });
+    w.zones.push({ kind: z.kind, x: p.x, z: p.z, r: z.r, heading: 'heading' in p ? (p.heading ?? 0) : 0 });
   }
   const car = (kind: VehicleKind, on: OnRoad, cruise: number): Car => {
     const c: Car = {
-      kind, x: 0, z: 0, heading: 0, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0,
+      kind, x: 0, z: 0, heading: 0, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, h: 0, vy: 0,
       road: on.road, s: along(w, on), lane: on.offset ?? 0, home: on.offset ?? 0, cruise,
       mode: CRUISE, timer: 0, cool: 0,
     };
@@ -248,6 +253,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
     if (Math.hypot(x - kid.x, z - kid.z) < props.spawnGap) continue;
     if (w.trees.some((t) => Math.hypot(x - t.x, z - t.z) < 1.6 * t.scale)) continue;
     if (waterAt(w, x, z) === 2) continue;
+    if (w.zones.some((zone) => Math.hypot(x - zone.x, z - zone.z) < zone.r + 1)) continue;
     w.props.push({
       toy, homeX: x, homeZ: z, homeYaw: yaw, x, y: TOYS[toy].half, z, vx: 0, vy: 0, vz: 0,
       qx: 0, qy: Math.sin(yaw / 2), qz: 0, qw: Math.cos(yaw / 2), wx: 0, wy: 0, wz: 0,
@@ -608,6 +614,31 @@ function stepProps(w: World, dt: number): void {
   }
 }
 
+/**
+ * Cars follow the ground's height over ramps (milestone-3 B3). Climbing a ramp gives a car upward speed; past the
+ * top the ground drops away, so a fast car leaves it, flies under gravity and lands. Only the height changes: the
+ * car keeps its heading and speed and can't flip.
+ */
+function stepHops(w: World, dt: number): void {
+  w.cars.forEach((c, i) => {
+    const ground = groundHeight(w.zones, c.x, c.z);
+    if (ground === 0 && c.h === 0 && c.vy === 0) return;
+    const was = c.h;
+    c.vy -= HOP_GRAVITY * dt;
+    c.h += c.vy * dt;
+    if (c.h <= ground) {
+      // On the ground: ride it, carrying its rise as upward speed (so the top of a ramp throws the car up).
+      // Coming down fast is a landing; rolling down the ramp's far side never falls this fast.
+      if (c.vy < -3) {
+        w.landings.push(i);
+        puff(w, c.x, 0.2 + ground, c.z);
+      }
+      c.vy = Math.max(0, (ground - was) / dt);
+      c.h = ground;
+    }
+  });
+}
+
 /** Which zone the kid's car is in; reports driving in and out. Leaving needs a metre past the edge, so a car on the
  * edge doesn't flicker in and out. */
 function stepZones(w: World): void {
@@ -631,9 +662,11 @@ export function step(w: World, input: Input, dt: number): void {
   w.knocks.length = 0;
   w.splashes.length = 0;
   w.zoneEvents.length = 0;
+  w.landings.length = 0;
   stepKidCar(w, input, dt);
   stepZones(w);
   stepTraffic(w, dt);
+  stepHops(w, dt);
   stepWater(w, dt);
   stepProps(w, dt);
   for (const p of w.puffs) {
