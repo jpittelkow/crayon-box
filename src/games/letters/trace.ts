@@ -2,7 +2,8 @@
 //
 // Each stroke is sampled into checkpoints a few units apart. A checkpoint counts once a trace passes within the
 // tolerance of it. The whole letter has to be traced (ADR 0028, which tightened ADR 0026's 85 %): every stroke from
-// end to end, both of its ends and nearly all of its checkpoints. Lenient (the default): any order and direction.
+// end to end and nearly all of its checkpoints. Each end must be reached, not just passed near: the trace has to come
+// within END_REACH of it, closer than the tolerance (tightened 2026-11-15). Lenient (the default): any order and direction.
 // Stroke order: only the current stroke counts, from its start and in its direction, and the next stroke starts
 // once the current one is traced to its end. A finished trace is only "ready": the kid confirms it (game.ts).
 // Ink far from the letter is counted too: a trace with more than three times the letter's length of it (a scribble
@@ -12,13 +13,15 @@ import { strokeLength, type Glyph, type Pt } from './glyphs';
 /** Checkpoint spacing, in glyph units. */
 const SPACING = 3;
 /** Share of a letter's checkpoints a trace must cover (ADR 0028). */
-export const DONE_SHARE = 0.95;
+export const DONE_SHARE = 0.98;
 /** Share of each stroke's own checkpoints a trace must cover. */
 const STROKE_SHARE = 0.92;
 /** In stroke order, how far ahead of the covered run a checkpoint may still count. */
 const WINDOW = 4;
 /** How far from a checkpoint a trace still covers it, in glyph units (the guide is 20 wide). */
-export const TOLERANCE = { finger: 15, pen: 9 } as const;
+export const TOLERANCE = { finger: 10, pen: 9 } as const;
+/** How close a trace must come to each end of a stroke, in glyph units: a quarter of the guide's width or so. */
+export const END_REACH = 6;
 /** Ink this many tolerances from every checkpoint is off the letter. */
 const OFF_FACTOR = 1.5;
 /** How much off-letter ink, in letter lengths, still lets a trace finish. */
@@ -33,6 +36,8 @@ export interface TraceOptions {
 export class Tracer {
   private readonly checkpoints: Pt[][];
   private readonly covered: boolean[][];
+  /** Whether each stroke's start and end were reached (within END_REACH). */
+  private readonly ends: [boolean, boolean][];
   private readonly own: boolean[][];
   /** In stroke order: how many checkpoints of each stroke are covered in a row from its start. */
   private readonly run: number[];
@@ -60,6 +65,7 @@ export class Tracer {
       return out;
     });
     this.covered = this.checkpoints.map((c) => c.map(() => false));
+    this.ends = this.checkpoints.map(() => [false, false]);
     // A checkpoint is a stroke's own when no other stroke passes near it. Tracing A's legs covers the ends of its
     // bar, so only the bar's own middle shows whether the bar was traced.
     this.own = this.checkpoints.map((cps, s) =>
@@ -102,6 +108,7 @@ export class Tracer {
   /** Wipes the trace: the letter starts again. */
   reset(): void {
     for (const c of this.covered) c.fill(false);
+    for (const e of this.ends) e.fill(false);
     this.run.fill(0);
     this.last.clear();
     this.offInk = 0;
@@ -115,7 +122,7 @@ export class Tracer {
     const hit = this.covered.reduce((a, c) => a + c.filter(Boolean).length, 0);
     if (hit < total * DONE_SHARE) return false;
     // Both ends of every stroke: a stroke traced most of the way isn't traced.
-    if (!this.covered.every((c) => c[0] && c[c.length - 1])) return false;
+    if (!this.ends.every(([a, b]) => a && b)) return false;
     return this.covered.every((c, s) => {
       // Judge each stroke by its own checkpoints; a stroke with none (wholly near others) by all of them.
       const mine = c.filter((_, i) => this.own[s][i]);
@@ -141,7 +148,8 @@ export class Tracer {
     this.checkpoints.forEach((cps, s) => {
       if (this.opts.ordered && s !== this.current) return;
       cps.forEach((cp, i) => {
-        if (!this.covered[s][i]) out.push(cp);
+        const end = (i === 0 && !this.ends[s][0]) || (i === cps.length - 1 && !this.ends[s][1]);
+        if (!this.covered[s][i] || end) out.push(cp);
       });
     });
     return out;
@@ -161,9 +169,13 @@ export class Tracer {
       for (let i = 0; i < cps.length; i++) {
         const d = Math.hypot(cps[i].x - p.x, cps[i].y - p.y);
         if (d <= reach) near = true;
-        if (d > tolerance || this.covered[s][i]) continue;
+        if (d > tolerance) continue;
         if (this.opts.ordered) {
           if (s !== this.current || i > this.run[s] + WINDOW) continue;
+        }
+        if (d <= Math.min(END_REACH, tolerance)) {
+          if (i === 0) this.ends[s][0] = true;
+          if (i === cps.length - 1) this.ends[s][1] = true;
         }
         this.covered[s][i] = true;
       }
@@ -184,7 +196,8 @@ export class Tracer {
         while (i < c.length && c[i]) i++;
       }
       this.run[this.current] = i;
-      if (this.run[this.current] >= Math.ceil(c.length * DONE_SHARE) && c[c.length - 1]) {
+      const [start, end] = this.ends[this.current];
+      if (this.run[this.current] >= Math.ceil(c.length * DONE_SHARE) && start && end) {
         this.current++;
         continue;
       }
