@@ -11,6 +11,7 @@ import {
   tapPage,
   toScreen,
   touchStrokes,
+  openColoring,
 } from './helpers';
 
 test('the kid picker opens the pages, then a page, on the kid’s color', async ({ page }) => {
@@ -25,7 +26,7 @@ test('the kid picker opens the pages, then a page, on the kid’s color', async 
   });
   expect(text).toBe('');
 
-  await page.getByRole('button', { name: 'Heart kid' }).tap();
+  await openColoring(page, 'Heart kid');
   // No pictures yet, so the game opens straight on the page library (ADR 0017).
   await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
   // The theme strip: one button per theme with pages, in theme order, then the blank page (ADR 0016).
@@ -52,6 +53,8 @@ test('the kid picker opens the pages, then a page, on the kid’s color', async 
   expect(Math.abs(pageBox.width / pageBox.height - 4 / 3)).toBeLessThan(0.01);
 
   await pick(page, 'Back');
+  await pick(page, 'Back');
+  // Through the home screen: Driving shows by default, so there are two games.
   await pick(page, 'Back');
   await expect(page.locator('[data-screen="kid-picker"]')).toBeVisible();
 });
@@ -204,7 +207,8 @@ test('a picture and its mode are kept when the kid leaves and comes back', async
   await pick(page, 'Back');
   await pick(page, 'Back');
   await pick(page, 'Back');
-  await page.getByRole('button', { name: 'Moon kid' }).tap();
+  await pick(page, 'Back'); // the home screen
+  await openColoring(page, 'Moon kid');
   await page.getByRole('button', { name: 'Shapes', exact: true }).tap();
   await page.getByRole('button', { name: SHAPES.title }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
@@ -237,14 +241,16 @@ test('a page opened and left without painting adds nothing to My pictures', asyn
   await openShapesPage(page);
   await pick(page, 'Back');
   await pick(page, 'Back');
+  // Through the home screen: Driving shows by default, so there are two games.
+  await pick(page, 'Back');
   await expect(page.locator('[data-screen="kid-picker"]')).toBeVisible();
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
 });
 
 test('the blank page is one big area to fill', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   await page.getByRole('button', { name: 'Blank page' }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
   await pick(page, 'Paint bucket');

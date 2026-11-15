@@ -1,6 +1,6 @@
 // Phase D: sounds with a parent switch, the optional gate PIN, and "reduce motion" (ADR 0008, 0016).
 import { expect, test, type Page } from '@playwright/test';
-import { RED, SHAPES, expectPaint, holdLock as holdTheLock, openShapesPage, pick, tapPage, touchStrokes } from './helpers';
+import { RED, SHAPES, expectPaint, holdLock as holdTheLock, openShapesPage, pick, tapPage, touchStrokes, openColoring } from './helpers';
 
 // The parent area's way back. Its label is being reworded in another branch of work, so both are accepted.
 const BACK_TO_KIDS = /^Back to (coloring|the kids)$/;
@@ -85,7 +85,7 @@ test('kid touches make sounds, until a parent turns them off', async ({ page }) 
   await expect(page.locator('[data-screen="kid-picker"]')).toBeVisible();
 
   const before = await tones(page);
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   await pick(page, 'My pictures');
   await page.getByRole('button', { name: 'Circle, square and triangle picture' }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
@@ -133,7 +133,7 @@ const animations = (page: Page) => page.evaluate(() => (window as unknown as { _
 
 async function pickThings(page: Page): Promise<void> {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   await page.getByRole('button', { name: 'Shapes', exact: true }).tap();
   await page.getByRole('button', { name: SHAPES.title }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');

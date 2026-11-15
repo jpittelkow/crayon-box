@@ -51,6 +51,9 @@ _Last confirmed: 2026-11-14_
 - **Milestone 3, worked through without stopping** (asked 2026-11-15): each step's PR may be merged into main
   by Claude once its checks pass; the owner reviews afterwards. Nothing merges on red.
 
+- **Driving shows on the home screen by default** (owner, 2026-11-15, after milestone 3 was built), so the home
+  screen now opens with Coloring and Driving; Letters still starts hidden.
+
 ## Tooling and hosting
 - The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to
   `crayon-box` on 2026-11-14; the local checkout folder may still be called `kidsapp`.

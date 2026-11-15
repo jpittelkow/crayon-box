@@ -1,6 +1,7 @@
 // A browser that used the first web build holds a version 1 database: one store, all profiles in one file. The
 // sync groundwork (ADR 0024) upgrades it in place. This runs that upgrade in a real browser.
 import { expect, test } from '@playwright/test';
+import { openColoring } from './helpers';
 
 test('data saved by the first build survives the storage upgrade', async ({ page }) => {
   // Any same-origin page that doesn't start the app, so the old database can be written first.
@@ -39,7 +40,7 @@ test('data saved by the first build survives the storage upgrade', async ({ page
   await expect(page.locator('.kid-name')).toHaveText(['Sample']);
 
   // The old picture is still in that kid's My pictures.
-  await page.getByRole('button', { name: 'Moon kid' }).tap();
+  await openColoring(page, 'Moon kid');
   await expect(page.locator('[data-screen="coloring-start"]')).toBeVisible();
   await page.getByRole('button', { name: 'My pictures' }).tap();
   await expect(page.locator('[data-picture="old-picture"]')).toBeVisible();
