@@ -33,6 +33,11 @@ The prototype (ADR 0021 step 1) is built in `src/games/racing/`, off until a par
   after the samples in phase A1). No kit or AI-made vehicles. Each vehicle costs hours, so the list in phase D
   is kept short and the fire truck from the samples is the first one.
 
+## Assets
+Everything the game draws is sorted into ten categories (vehicles, toys, solid scenery, decor, roads, ground and
+water, set pieces, animals, effects, sky) in [driving-assets.md](driving-assets.md), with each category's rules,
+budget and catalog. New things are added there first.
+
 ## Phases
 
 ### A. Samples and the laptop check
@@ -65,6 +70,9 @@ Two quick tests that decide how much the rest can hold. Both are throwaway (`spi
   (water, car wash, garage), prop spots, set pieces. The simulation and the look read the map; traffic follows
   any road curve, not only a circle. Every later map is another file in this format, and milestone 5's home map
   is one loaded from a folder.
+- **The asset registry** ([driving-assets.md](driving-assets.md), "Where it goes in the code"): each asset gets
+  a definition in `sim/assets/` and a look in `look/`, and maps name assets by id (`toy/cone`) instead of
+  today's prop numbers. Plus the asset gallery dev page, grown from the samples' line-up.
 - **Set pieces** from ADR 0021, each a sound plus a short animation: a bridge over water, a tunnel, a ramp with a
   small faked jump (the car can't flip), a beach, a car wash that covers the car in bubbles, a few animals that
   answer the horn.
