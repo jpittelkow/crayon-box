@@ -112,3 +112,6 @@ _Last updated: 2026-11-14_
   (2026-11-14).
 - The browser tests draw WebGL in software; the driving game's toy look takes seconds to start there, so
   `driving.spec.ts` runs its tests one at a time with longer timeouts (2026-11-14).
+- **No Prettier config** (2026-11-14): `npx prettier --write` uses 80 columns and reflows whole files. The code is
+  written to 120 columns with single quotes; format by hand or with `--print-width 120 --single-quote`, and check
+  the diff for unrelated reflow.

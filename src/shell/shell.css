@@ -90,6 +90,12 @@
   align-items: center;
   justify-content: center;
   gap: 56px;
+  /* The row fills the screen to center the tiles; only the tiles take touches, so the Back button and the lock
+     under it stay reachable. */
+  pointer-events: none;
+}
+.home-row > * {
+  pointer-events: auto;
 }
 .home .cb-paper {
   width: 300px;
@@ -102,4 +108,15 @@
   position: absolute;
   top: var(--space-6);
   left: var(--space-6);
+}
+
+/* The app's name across the top of the kid picker and the home screen (ADR 0027). */
+.screen-wordmark {
+  position: absolute;
+  top: var(--space-6);
+  left: 0;
+  right: 0;
+}
+.home .screen-wordmark {
+  top: calc(var(--space-6) + 10px);
 }

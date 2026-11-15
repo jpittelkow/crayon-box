@@ -1,4 +1,5 @@
 import { el, kidButton } from '../ui/kid';
+import { wordmark } from '../ui/wordmark';
 import { drawAvatar, kidLabel } from './profiles';
 import type { KidProfile } from './types';
 
@@ -40,7 +41,7 @@ export function kidPickerScreen(opts: KidPickerOptions): HTMLElement {
     }
     row.append(column);
   }
-  screen.append(row, lockButton(opts.onUnlock));
+  screen.append(wordmark('xl', 'screen-wordmark'), row, lockButton(opts.onUnlock));
   return screen;
 }
 

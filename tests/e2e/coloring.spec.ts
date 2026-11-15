@@ -17,8 +17,13 @@ test('the kid picker opens the pages, then a page, on the kid’s color', async 
   await page.goto('/');
   await expect(page.locator('[data-screen="kid-picker"]')).toBeVisible();
   await expect(page.locator('[data-kid]')).toHaveCount(3);
-  // No text on kid screens (ADR 0003 rule 1).
-  await expect(page.locator('#app')).toHaveText('');
+  // No text on kid screens (ADR 0003 rule 1), apart from the app's name, a picture nobody has to read (ADR 0027).
+  const text = await page.locator('#app').evaluate((app) => {
+    const copy = app.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll('.wordmark').forEach((w) => w.remove());
+    return copy.textContent;
+  });
+  expect(text).toBe('');
 
   await page.getByRole('button', { name: 'Heart kid' }).tap();
   // No pictures yet, so the game opens straight on the page library (ADR 0017).

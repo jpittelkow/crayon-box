@@ -13,6 +13,7 @@ import type { FinishedPictures, GameEntry, GameModule, KidProfile, SettingsSecti
 import type { UpdateController } from '../shell/updates';
 import type { AppStorage } from '../storage/types';
 import { button, card, h, segmented, switchRow } from '../ui/parent';
+import { wordmark } from '../ui/wordmark';
 import { kidEditor } from './kidEditor';
 import { moreSettingsCards } from './moreSettings';
 
@@ -58,7 +59,12 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
 
   const main = h('main', { class: 'pw-main' });
   const navButtons = new Map<string, HTMLButtonElement>();
-  const nav = h('nav', { class: 'pw-nav', 'aria-label': 'Parent area' }, h('div', { class: 'pw-nav-title' }, 'Parent area'));
+  const nav = h(
+    'nav',
+    { class: 'pw-nav', 'aria-label': 'Parent area' },
+    wordmark('sm', 'pw-nav-wordmark'),
+    h('div', { class: 'pw-nav-title' }, 'Parent area'),
+  );
 
   let stopScreen: (() => void) | null = null;
   const show = async (id: string) => {

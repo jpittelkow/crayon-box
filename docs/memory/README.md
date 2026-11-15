@@ -9,6 +9,7 @@ Read all of these at the start of a session; they are kept short on purpose.
 | [preferences.md](preferences.md) | How the owner wants things built and how they like to work |
 | [open-questions.md](open-questions.md) | Decisions still waiting on the owner |
 | [gotchas.md](gotchas.md) | Non-obvious traps, workarounds and lessons learned |
+| [known-bugs.md](known-bugs.md) | Bugs found and not fixed yet |
 
 ## Rules for memory files
 - **One topic per file**, bullets over prose. Add a new file only when a topic doesn't fit an existing one, and
