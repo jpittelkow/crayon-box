@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { ISLAND } from '../maps/island';
+import { RING } from '../maps/ring';
 import type { MapDef } from './map';
 import { RAMP, rampHeight } from './ramps';
-import { makeWorld, step, type World } from './sim';
+import { makeWorld as makeOn, step, type World, type Assist } from './sim';
+
+/** Worlds on the ring map unless a test says otherwise (the game itself drives the island of layout A). */
+const makeWorld = (seed: number, props: number, assist: Assist = 'free', map: MapDef = RING) => makeOn(seed, props, assist, map);
 
 /** The island with one ramp on open ground, facing along +x, and no traffic in the way. */
-const RAMPED: MapDef = { ...ISLAND, id: 'ramp-test', traffic: [], zones: [{ kind: 'ramp', on: { x: 0, z: 0, heading: Math.PI / 2 }, r: 3.5 }] };
+const RAMPED: MapDef = { ...RING, id: 'ramp-test', traffic: [], zones: [{ kind: 'ramp', on: { x: 0, z: 0, heading: Math.PI / 2 }, r: 3.5 }] };
 
 /** Drives the kid's car straight at the ramp from 15 m away at `speed`, holding that speed; watches the hop. */
 function overTheRamp(speed: number, from = -1) {

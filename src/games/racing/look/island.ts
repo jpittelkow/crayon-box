@@ -2,6 +2,7 @@
 // move. Trees and toys are drawn in batches by the renderer, from look/scenery.ts and look/toys.ts.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { hillReach, onSand } from '../sim/ground';
 import { offsetOutline, randomInland } from '../sim/land';
 import { nearestRoad } from '../sim/roads';
 import type { World } from '../sim/sim';
@@ -81,6 +82,8 @@ export function buildGround(world: World): THREE.Group {
       const road = nearestRoad(world.roads, x, z);
       if (road && road.dist < world.roads[road.road]!.def.width / 2 + 1.5) continue;
       if (world.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + 1)) continue;
+      // Not on the beach, and not inside a hill.
+      if (onSand(world.sand, x, z) || (world.map.hills ?? []).some((h) => hillReach(h, x, z, 1) < 1)) continue;
       if (world.props.some((p) => Math.hypot(x - p.homeX, z - p.homeZ) < 1.5)) continue;
       pieces.push(...look.clump(r, x, z, decor.perClump));
     }

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { ISLAND } from '../maps/island';
+import { RING } from '../maps/ring';
 import type { MapDef } from './map';
-import { RINSE, WASH_SPEED, makeWorld, step, type Input, type World } from './sim';
+import { RINSE, WASH_SPEED, makeWorld as makeOn, step, type Input, type World, type Assist } from './sim';
+
+/** Worlds on the ring map unless a test says otherwise (the game itself drives the island of layout A). */
+const makeWorld = (seed: number, props: number, assist: Assist = 'free', map: MapDef = RING) => makeOn(seed, props, assist, map);
 
 /** The island with only a car wash, 10 % of the way round the ring road. */
-const WASHED: MapDef = { ...ISLAND, id: 'wash-test', zones: [{ kind: 'car-wash', on: { road: 0, at: 0.1 }, r: 4 }] };
+const WASHED: MapDef = { ...RING, id: 'wash-test', zones: [{ kind: 'car-wash', on: { road: 0, at: 0.1 }, r: 4 }] };
 const GO: Input = { go: true, brake: false, steer: 0 };
 
 function run(w: World, seconds: number, each: (w: World) => void = () => {}): void {

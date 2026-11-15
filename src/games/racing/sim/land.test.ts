@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ISLAND } from '../maps/island';
+import { RING } from '../maps/ring';
 import { buildLand, keepInland, offsetOutline, onLand, randomInland, roundOutline, shore } from './land';
 import type { MapDef } from './map';
-import { makeWorld, step, type World } from './sim';
+import { makeWorld as makeOn, step, type World, type Assist } from './sim';
+
+/** Worlds on the ring map unless a test says otherwise (the game itself drives the island of layout A). */
+const makeWorld = (seed: number, props: number, assist: Assist = 'free', map: MapDef = RING) => makeOn(seed, props, assist, map);
 
 const round = buildLand({ outline: roundOutline(10, -5, 50), beach: 8 });
 /** An L-shaped island: a 100 × 40 bar along x, and a 40 × 100 bar going up z from its left end. */
@@ -48,7 +51,7 @@ describe('the land as an outline (milestone-3 B2)', () => {
 
 describe('zones (milestone-3 B2)', () => {
   const ZONED: MapDef = {
-    ...ISLAND,
+    ...RING,
     id: 'zoned-test',
     zones: [{ kind: 'car-wash', on: { road: 0, at: 0.05 }, r: 4 }, { kind: 'ramp', on: { x: 0, z: 0 }, r: 3 }],
   };

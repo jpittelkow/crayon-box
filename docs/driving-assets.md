@@ -205,10 +205,10 @@ Rules for roads:
 | Id | Status | Notes |
 |---|---|---|
 | `road/curve` | built | any stretch between junctions; the ring is one closed curve |
-| `road/junction` | idea | three- and four-way; traffic gives way |
+| `road/junction` | built (three-way, 2026-11-15) | an open road joins another at its ends (`from`, `to`); traffic and "follows the road" pick a way there. Four-way and traffic giving way are still to do |
 | `road/roundabout` | idea | town; a toy or fountain in the middle |
-| `road/bridge-deck` | planned (ADR 0021) | raised over water, with railings the car slides along |
-| `road/tunnel-floor` | planned (ADR 0021) | with its walls and lamps; the rock around it is `scenery/tunnel-rock` |
+| `road/bridge-deck` | built (2026-11-15, a `bridge` guard) | a wooden deck over the water with white rails the car slides along; the shore doesn't turn the car back on or near it |
+| `road/tunnel-floor` | built (2026-11-15, a `tunnel` guard) | walls keep the car on the road; stone portals at both ends. Lamps are still to do; the hill around it is a map `hill` |
 | `road/ford` | idea | a shallow stretch across a river: puddle splash, never deep |
 | `road/ramp` | planned (ADR 0021) | the slope; the jump is the set piece |
 
@@ -229,7 +229,7 @@ Things that stand along roads (lamp posts, traffic lights, signs, fence panels) 
 | Id | Status | Notes |
 |---|---|---|
 | `ground/grass` | built | patchy colour |
-| `ground/sand` | built | the beach ring today |
+| `ground/sand` | built | the beach ring, and sand areas a map draws (`sand`): top speed 11 and wheel puffs |
 | `ground/mud` | idea | splatters the car; washes off in the car wash |
 | `water/puddle` | built | splash and spray |
 | `water/flood` | built | deep: wade, sink, bob, wake |
@@ -245,7 +245,7 @@ sails); see Border cases.
 |---|---|---|---|
 | `setpiece/ramp` | built (2026-11-15, `sim/ramps.ts`, `look/setpieces.ts`) | all | a yellow hump across the road, either way; cars follow its height and a fast one hops off the top and lands (a thump); traffic hops too |
 | `setpiece/car-wash` | built (2026-11-15, `look/setpieces.ts`) | all | an open arch over the road with spinning brushes; cars crawl through, come out soapy and shed bubbles while they rinse (3.5 s); the roof fades while the camera passes; traffic uses it too. Washing off mud comes with `ground/mud` |
-| `setpiece/tunnel` | planned (ADR 0021) | island, country | on a `road/tunnel-floor`: echo on the engine and horn, lamps light up |
+| `setpiece/tunnel` | built, without sound (2026-11-15) | island, country | the hill turns see-through while the kid is inside; the echo on the engine and horn comes with the sound files |
 | `setpiece/bridge` | planned (ADR 0021) | island, country | on a `road/bridge-deck`: a boat passes under sometimes |
 | `setpiece/garage` | planned (phase D) | all | drive in, come out in the next vehicle |
 | `setpiece/fire-station` | idea | town | the town's garage, doors roll up |
