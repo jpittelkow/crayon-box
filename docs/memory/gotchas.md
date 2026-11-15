@@ -85,3 +85,5 @@ _Last updated: 2026-11-14_
   (`cargo-lock` artifact); commit it so later builds use the same crate versions (2026-11-14).
 - A release tag must match `package.json`'s version (`v0.1.0` for `0.1.0`); `release.yml` stops otherwise. Bump
   the version on main first, then tag (2026-11-14).
+- A PR can be merged while later commits are still being pushed to its branch; they then never reach main.
+  After a merge, check `git log origin/main` holds the branch's last commit (PR #1, 2026-11-14).
