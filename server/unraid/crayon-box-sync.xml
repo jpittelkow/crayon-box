@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>crayon-box-sync</Name>
+  <Repository>ghcr.io/jpittelkow/crayon-box-sync:latest</Repository>
+  <Registry>https://github.com/jpittelkow/crayon-box/pkgs/container/crayon-box-sync</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/jpittelkow/crayon-box</Support>
+  <Project>https://github.com/jpittelkow/crayon-box</Project>
+  <Overview>Family sync for Crayon Box, the kids' coloring app (ADR 0024). Keeps kid profiles, settings and pictures the same on every paired device. Home network only: do not expose it to the internet. Open the WebUI for the pairing code.</Overview>
+  <Category>Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8787]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/jpittelkow/crayon-box/main/server/unraid/crayon-box-sync.xml</TemplateURL>
+  <ExtraParams>--user 99:100</ExtraParams>
+  <Config Name="Port" Target="8787" Default="8787" Mode="tcp" Description="Where the app reaches the server" Type="Port" Display="always" Required="true" Mask="false">8787</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/crayon-box-sync" Mode="rw" Description="The database and pictures. Include it in your appdata backup." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/crayon-box-sync</Config>
+  <Config Name="Pairing code" Target="PAIRING_CODE" Default="" Mode="" Description="Optional: a fixed pairing code. Leave empty to use the one the server makes on first start (shown on the WebUI)." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+</Container>

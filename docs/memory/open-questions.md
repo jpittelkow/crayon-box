@@ -5,6 +5,11 @@ relevant memory file).
 
 _Last updated: 2026-11-14_
 
+- **Sync server defaults** (phase C, picked overnight 2026-11-14 to keep going): port 8787, data in
+  `/mnt/user/appdata/crayon-box-sync`, runs as 99:100. Change in the Unraid template if any of that is wrong. The
+  image on ghcr.io must be public for Unraid to pull it without logging in: check the package's visibility after
+  the first publish.
+
 - **Enough colors?** The coloring screen now has 23 plus rainbow, which is all that fits at full button size on
   a 1280 × 800 screen. If the owner wants more still, it costs page size or needs a second page of colors
   (ADR 0016).
