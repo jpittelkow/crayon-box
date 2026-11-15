@@ -234,6 +234,37 @@ describe('sync service', () => {
     expect(store.meta('shell/local/sync.json')).toBeUndefined();
   });
 
+  it('syncs on connect even when a background round started just before', async () => {
+    const backend = memoryBackend();
+    const real = appStorage(backend).shell;
+    await real.putJson('settings.json', { showNames: true });
+    // The 5-second round fires while the parent is connecting: its read of the sync settings (no server yet) is
+    // still under way when connect saves the server and asks for a round.
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    let first = true;
+    const shell: typeof real = {
+      ...real,
+      async getJson<T>(path: string) {
+        const value = await real.getJson<T>(path);
+        if (path === 'local/sync.json' && first) {
+          first = false;
+          await held;
+        }
+        return value;
+      },
+    };
+    const service = new SyncService({ backend, shell, setTimer: () => 0, clearTimer: () => {} });
+    const early = service.syncNow();
+    const connecting = service.connect(address, 'ABCD-EFGH');
+    await new Promise((r) => setTimeout(r, 100)); // pairing done, settings saved, connect waiting on the round
+    release();
+    await connecting;
+    await early;
+    expect((await loadSyncSettings(shell)).lastSync).toBeGreaterThan(0);
+    expect(store.meta('shell/settings.json')).toBeDefined();
+  });
+
   it('says a wrong pairing code and an unreachable server in words', async () => {
     const backend = memoryBackend();
     const shell = appStorage(backend).shell;
