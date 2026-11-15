@@ -70,6 +70,21 @@ Two parts; the server part can start any time, even alongside phase A.
   `Ctrl+Shift+Q`, Ctrl+Alt+Del and Win+L.
 
 ### E. Updates and releases (ADR 0009)
+- **Status (2026-11-14):** built on branch `milestone-2/phase-e-updates`, unit- and browser-tested with a fake
+  updater; not yet through a real release. Waiting on the signing key (below). `src/shell/updates.ts` (checks,
+  installs, the *Check for updates when the app starts* setting, on by default), `src/shell/tauriUpdater.ts`
+  (the plugin), `src/parent/updatesScreen.ts` (the Updates screen, Windows app only, with a dot in the nav while
+  a newer version waits), `src/tools/releaseManifest.ts` (writes `latest.json`, with GitHub's generated notes
+  turned into plain lines). On the dev server, `?fake-updates=available|none|offline|broken` stands in for the
+  updater. The release names the installer `CrayonBox_<version>_x64-setup.exe` (GitHub would turn the spaces
+  into dots).
+- **Signing key, one time (owner):** `npx tauri signer generate -w <a file outside the repo>`, with a password.
+  Put the private key file's contents in the repo secret `TAURI_SIGNING_PRIVATE_KEY` and the password in
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; keep the file and the password in the password manager. The public key
+  (the `.pub` file) replaces `REPLACE_WITH_UPDATER_PUBLIC_KEY` in `src-tauri/tauri.conf.json`; `release.yml`
+  refuses to run until both are in place.
+- **To finish:** release `v0.1.1` (or similar) and install it, then release the next version, publish it, and
+  update from the parent area. Commit the `Cargo.lock` from the CI build (it needs `tauri-plugin-updater`).
 - The Tauri updater plugin, checking `latest.json` on the Releases page at start-up (a parent switch) and on
   *Check now*. The parent area's Updates screen: version, release notes, *Install and restart*.
 - The release workflow: a `v*` tag builds the installer, its signature and `latest.json` into a **draft**

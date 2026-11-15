@@ -6,6 +6,7 @@ import { deviceInfo } from './storage/ids';
 import { appStorage } from './storage/namespaced';
 import type { Backend } from './storage/types';
 import type { FinishedPictures } from './shell/types';
+import { UpdateController, loadUpdateSettings } from './shell/updates';
 import '@fontsource/fredoka/600.css';
 import './ui/tokens.css';
 import './ui/kid.css';
@@ -50,7 +51,25 @@ async function boot(): Promise<void> {
 
   const storage = appStorage(backend);
   await deviceInfo(storage.shell);
-  await new Shell(frame, storage, undefined, { finished }).start();
+  const updates = await openUpdates();
+  await new Shell(frame, storage, undefined, { finished, updates }).start();
+  // Look for a newer version in the background (ADR 0009). It only shows in the parent area; nothing installs on
+  // its own, and a failed check is only reported there too.
+  if (updates && (await loadUpdateSettings(storage.shell)).checkOnStart) void updates.check();
+}
+
+/** The Windows app's updater; on the dev server, `?fake-updates=<mode>` stands in for it (`fakeUpdater.ts`). */
+async function openUpdates(): Promise<UpdateController | undefined> {
+  try {
+    if (inTauri()) return new UpdateController((await import('./shell/tauriUpdater')).tauriUpdater());
+    if (import.meta.env.DEV) {
+      const mode = new URLSearchParams(location.search).get('fake-updates');
+      if (mode) return new UpdateController((await import('./shell/fakeUpdater')).fakeUpdater(mode));
+    }
+  } catch (err) {
+    console.error('Updates unavailable', err);
+  }
+  return undefined;
 }
 
 void boot();

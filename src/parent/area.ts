@@ -10,6 +10,7 @@ import {
   saveShellSettings,
 } from '../shell/profiles';
 import type { FinishedPictures, GameEntry, GameModule, KidProfile, SettingsSection } from '../shell/types';
+import type { UpdateController } from '../shell/updates';
 import type { AppStorage } from '../storage/types';
 import { button, card, h, segmented, switchRow } from '../ui/parent';
 import { kidEditor } from './kidEditor';
@@ -22,6 +23,8 @@ export interface ParentAreaOptions {
   games: readonly GameEntry[];
   /** Present in the Windows app only. */
   finished?: FinishedPictures;
+  /** Present in the Windows app only (ADR 0009). */
+  updates?: UpdateController;
   onExit(): void;
 }
 
@@ -57,8 +60,11 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   const navButtons = new Map<string, HTMLButtonElement>();
   const nav = h('nav', { class: 'pw-nav', 'aria-label': 'Parent area' }, h('div', { class: 'pw-nav-title' }, 'Parent area'));
 
+  let stopScreen: (() => void) | null = null;
   const show = async (id: string) => {
     revoke();
+    stopScreen?.();
+    stopScreen = null;
     for (const [key, b] of navButtons) {
       if (key === id) b.setAttribute('aria-current', 'page');
       else b.removeAttribute('aria-current');
@@ -66,6 +72,11 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     main.replaceChildren();
     main.scrollTop = 0;
     if (id === 'settings') return renderSettings();
+    if (id === 'updates' && opts.updates) {
+      const { renderUpdates } = await import('./updatesScreen');
+      stopScreen = await renderUpdates(main, opts.updates, storage.shell);
+      return;
+    }
     const found = sections.find((s) => `${s.game.id}:${s.section.id}` === id);
     if (!found) return;
     const kids = await loadProfiles(storage.shell);
@@ -83,6 +94,15 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   };
   addNav('settings', 'Settings');
   for (const s of sections) addNav(`${s.game.id}:${s.section.id}`, s.section.title);
+  let stopDot: (() => void) | null = null;
+  if (opts.updates) {
+    const updates = opts.updates;
+    addNav('updates', 'Updates');
+    // A dot on Updates while a newer version waits; kid screens never show it (ADR 0009).
+    const dot = () => navButtons.get('updates')!.classList.toggle('pw-nav-dot', updates.hasNews);
+    dot();
+    stopDot = updates.subscribe(dot);
+  }
   const back = h('button', { type: 'button', class: 'pw-nav-back' }, 'Back to the kids');
   back.addEventListener('click', () => exit());
   nav.append(
@@ -201,6 +221,8 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     stopped = true;
     clearTimeout(lockTimer);
     revoke();
+    stopScreen?.();
+    stopDot?.();
   }
   function exit(): void {
     if (stopped) return;

@@ -377,3 +377,35 @@
   background: var(--text-muted);
   transform-origin: left;
 }
+
+/* ---- Updates (ADR 0009) ---- */
+.pw-notes {
+  padding: var(--space-4) var(--space-5);
+  border-left: 4px solid var(--line);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.pw-progress {
+  width: 100%;
+  max-width: 480px;
+  height: 14px;
+  accent-color: var(--action);
+}
+.pw-nav .pw-nav-dot::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--pick);
+  vertical-align: middle;
+}
+.pw-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

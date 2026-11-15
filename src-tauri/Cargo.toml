@@ -17,6 +17,9 @@ tauri = { version = "2", features = [] }
 # Files for storage and finished pictures (phase B); "Open the pictures folder" in the parent area.
 tauri-plugin-fs = "2"
 tauri-plugin-opener = "2"
+# In-app updates from GitHub Releases (ADR 0009, phase E): signed downloads, checked against the public key in
+# tauri.conf.json.
+tauri-plugin-updater = "2"
 
 [profile.release]
 codegen-units = 1

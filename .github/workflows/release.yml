@@ -1,9 +1,14 @@
 name: Release
 
-# ADR 0009: pushing a version tag (`v0.1.0`) builds the Windows installer into a **draft** GitHub Release. A parent
-# installs the draft, then publishes it by hand; nothing reaches the family laptop on its own.
-# For now the installer is unsigned and there is no updater: phase E of docs/milestone-2.md adds the update
-# signature and `latest.json` to this same workflow.
+# ADR 0009: pushing a version tag (`v0.1.0`) builds the Windows installer into a **draft** GitHub Release, with the
+# installer's update signature and `latest.json` (phase E of docs/milestone-2.md). A parent installs the draft, then
+# publishes it by hand. Installed apps only see published releases, so nothing reaches the family laptop on its own.
+#
+# Needs two repository secrets (Settings, Secrets and variables, Actions), made with `npx tauri signer generate`:
+#   TAURI_SIGNING_PRIVATE_KEY           the private key file's contents
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password
+# and the matching public key in src-tauri/tauri.conf.json (plugins.updater.pubkey).
+# The installer itself is not code-signed (no certificate yet), so SmartScreen still asks on a first install.
 #
 # To release: bump "version" in package.json on main, then
 #   git tag v<version> && git push origin v<version>
@@ -38,16 +43,62 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: src-tauri
+      - name: Check the update signing key is set up
+        shell: bash
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if grep -q REPLACE_WITH_UPDATER_PUBLIC_KEY src-tauri/tauri.conf.json; then
+            echo "::error::src-tauri/tauri.conf.json has no updater public key yet (plugins.updater.pubkey)"
+            exit 1
+          fi
+          if [ -z "$KEY" ]; then
+            echo "::error::The TAURI_SIGNING_PRIVATE_KEY secret is not set"
+            exit 1
+          fi
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npx tauri build --bundles nsis
+      # createUpdaterArtifacts only here: it needs the private key, which ordinary CI builds don't have.
+      - name: Build the installer and its update signature
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npx tauri build --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":true}}'
+      # GitHub turns spaces in asset names into dots, so the files get a name without spaces before upload, and
+      # latest.json points at that name. The signature covers the file's bytes, not its name.
+      - name: Gather the release files and write latest.json
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          shopt -s nullglob
+          exes=(src-tauri/target/release/bundle/nsis/*-setup.exe)
+          if [ ${#exes[@]} -ne 1 ]; then echo "::error::Expected one installer, found ${#exes[@]}"; exit 1; fi
+          if [ ! -s "${exes[0]}.sig" ]; then echo "::error::No update signature next to ${exes[0]}"; exit 1; fi
+          mkdir -p release
+          name="CrayonBox_${version}_x64-setup.exe"
+          cp "${exes[0]}" "release/$name"
+          cp "${exes[0]}.sig" "release/$name.sig"
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$GITHUB_REF_NAME" --jq .body > release/notes.md
+          node src/tools/releaseManifest.ts --version "$version" \
+            --url "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$name" \
+            --sig "release/$name.sig" --notes release/notes.md --out release/latest.json
+          {
+            echo "Windows installer, per-user (no admin rights needed). Not code-signed yet: on a first install"
+            echo "Windows SmartScreen asks first; choose More info, then Run anyway. Installed copies update"
+            echo "themselves from the parent area once this release is published."
+            echo
+            cat release/notes.md
+          } > release/body.md
       - name: Draft the release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" src-tauri/target/release/bundle/nsis/*.exe \
-            --draft --verify-tag --generate-notes \
-            --title "Crayon Box ${GITHUB_REF_NAME#v}" \
-            --notes "Windows installer, per-user (no admin rights needed). Not code-signed yet: Windows SmartScreen asks first; choose More info, then Run anyway."
+          version="${GITHUB_REF_NAME#v}"
+          name="CrayonBox_${version}_x64-setup.exe"
+          gh release create "$GITHUB_REF_NAME" "release/$name" "release/$name.sig" release/latest.json \
+            --draft --verify-tag --title "Crayon Box $version" --notes-file release/body.md
