@@ -170,3 +170,27 @@ test('without a key on the server, the screen says what AI pages need', async ({
   await expect(page.locator('[data-ai-off]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Make it' })).toHaveCount(0);
 });
+
+test('while a page is being made, a working panel shows with the seconds going up (playtest, 2026-11-15)', async ({ page }) => {
+  // A slow model: the answer comes after 3 s, so the panel can be seen.
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  const slow = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (!String(url).endsWith('/api/v1/models')) await held;
+    return fakeOpenRouter(url, init);
+  }) as typeof fetch;
+  await startServer({ key: 'sk-test', imageModel: 'img/model', secondModel: 'img/second', drawModel: 'draw/model', dailyLimit: 5, fetchFn: slow });
+  await connectAndOpenAddPages(page);
+  const busy = page.locator('[data-working]');
+  await expect(busy).toBeHidden();
+  await page.getByLabel('What should it be?').fill('a kite');
+  await page.getByRole('button', { name: 'Make it' }).click();
+  await expect(busy).toBeVisible();
+  await expect(busy).toContainText('Making a page');
+  await expect(page.getByRole('button', { name: 'Making…' })).toBeDisabled();
+  await expect(busy.locator('.pw-working-time')).toHaveText('0:02', { timeout: 5_000 });
+  release();
+  await expect(aiStatus(page)).toHaveAttribute('data-ai-status', 'ready', { timeout: 30_000 });
+  await expect(busy).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Make it' })).toBeEnabled();
+});

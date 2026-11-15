@@ -71,5 +71,3 @@ _Last updated: 2026-11-15_
 - **Coloring buttons a kid can work out** (playtest, 2026-11-15): a kid didn't know what any coloring button does.
   Needs a design without text (ADR 0003), for example a short demo when a button is pressed and held. Also wanted:
   a colour wheel next to the swatches.
-- **AI pages freeze on the laptop** (playtest, 2026-11-15): the card shows but its buttons don't answer. Not seen in
-  the browser on the dev machine. Next: which buttons, and whether typing in the idea box works there.
