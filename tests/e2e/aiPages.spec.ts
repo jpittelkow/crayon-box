@@ -25,8 +25,18 @@ let server: Server;
 let address: string;
 const asked: string[] = [];
 
-/** OpenRouter stand-in: an "image" for idea and photo (an SVG data URL here), SVG text for draw. */
-const fakeOpenRouter = (async (_url: string | URL | Request, init?: RequestInit) => {
+/** OpenRouter's model list, for the Model dropdown (ADR 0032). */
+const MODEL_LIST = [
+  { id: 'img/model', name: 'Default Image', architecture: { input_modalities: ['text', 'image'], output_modalities: ['image', 'text'] }, pricing: { image_output: '0.00003' } },
+  { id: 'other/image', name: 'Other Image', architecture: { input_modalities: ['text'], output_modalities: ['image'] }, pricing: { image_output: '0.000002' } },
+  { id: 'draw/model', name: 'Default Drawer', architecture: { input_modalities: ['text'], output_modalities: ['text'] }, pricing: { completion: '0.0000025' } },
+];
+
+/** OpenRouter stand-in: the model list; an "image" for idea and photo (an SVG data URL here), SVG text for draw. */
+const fakeOpenRouter = (async (url: string | URL | Request, init?: RequestInit) => {
+  if (String(url).endsWith('/api/v1/models')) {
+    return new Response(JSON.stringify({ data: MODEL_LIST }), { headers: { 'content-type': 'application/json' } });
+  }
   const body = JSON.parse(String(init?.body)) as { model: string; modalities?: string[] };
   asked.push(body.model);
   const message = body.modalities
@@ -78,6 +88,38 @@ test('a page from an idea, made on the server, goes into the library', async ({ 
   await expect(aiStatus(page)).toHaveText('Added “A fire truck” to Our pages.');
   await page.locator('.pw-nav').getByRole('button', { name: 'Page library' }).click();
   await expect(page.locator('[data-page^="family:a-fire-truck-"]')).toBeVisible();
+});
+
+test('a picked model makes the page, is remembered, and can be a family favorite', async ({ page }) => {
+  await startServer({ key: 'sk-test', imageModel: 'img/model', drawModel: 'draw/model', dailyLimit: 5, fetchFn: fakeOpenRouter });
+  await connectAndOpenAddPages(page);
+  const model = page.getByLabel('Model', { exact: true });
+  await expect(model).toHaveValue('');
+  await expect(model.locator('option').first()).toHaveText('Server default: Default Image');
+  await model.selectOption('other/image');
+  await expect(page.locator('[data-ai-price]')).toHaveText('Price: $2 per million image tokens.');
+  await page.locator('[data-ai-star]').click();
+  await expect(page.locator('[data-ai-star]')).toHaveText('★ Remove from favorites');
+  expect(store.aiFavorites()).toEqual(['other/image']);
+  await expect(model.locator('optgroup[label="Favorites"] option')).toHaveText(['★ Other Image ($2 per million image tokens)']);
+  await page.getByLabel('What should it be?').fill('a cat');
+  await page.getByRole('button', { name: 'Make it' }).click();
+  await expect(aiStatus(page)).toHaveAttribute('data-ai-status', 'ready', { timeout: 30_000 });
+  await expect(aiStatus(page)).toContainText('Made by Other Image.');
+  expect(asked).toEqual(['other/image']);
+
+  // Drawing lists only text models; back on ideas, the pick is remembered.
+  await page.getByRole('group', { name: 'How to make it' }).getByRole('button', { name: 'Drawn simply' }).click();
+  await expect(model.locator('option')).toHaveText(['Server default: Default Drawer', 'Default Drawer ($2.5 per million tokens out)']);
+  await page.getByRole('group', { name: 'How to make it' }).getByRole('button', { name: 'From an idea' }).click();
+  await expect(model).toHaveValue('other/image');
+  await page.locator('.pw-nav').getByRole('button', { name: 'Page library' }).click();
+  await page.locator('.pw-nav').getByRole('button', { name: 'Add pages' }).click();
+  await expect(page.getByLabel('Model', { exact: true })).toHaveValue('other/image');
+
+  // The search narrows the list.
+  await page.getByLabel('Search models').fill('default');
+  await expect(page.getByLabel('Model', { exact: true }).locator('optgroup[label^="Matching"] option')).toHaveText(['Default Image ($30 per million image tokens)']);
 });
 
 test('drawn simply uses the drawing model and an SVG', async ({ page }) => {

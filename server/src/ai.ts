@@ -101,15 +101,24 @@ export interface AiResult {
   model: string;
 }
 
-export async function makePage(cfg: AiConfig, req: AiPageRequest): Promise<AiResult> {
+/** The server's setting for a way of making a page (ADR 0029), used when a request names no model. */
+export function defaultModel(cfg: AiConfig, kind: AiPageRequest['kind']): string {
+  return kind === 'draw' ? cfg.drawModel : cfg.imageModel;
+}
+
+/**
+ * Makes a page. `model` is the model to use (default: the server's setting); `output` is what that model gives
+ * back as OpenRouter lists it, so an image-only model isn't asked for text too (ADR 0032).
+ */
+export async function makePage(cfg: AiConfig, req: AiPageRequest, pick: { model?: string; output?: string[] } = {}): Promise<AiResult> {
   if (!cfg.key) throw new AiError(503, 'AI pages aren’t set up on the family server (no OpenRouter key).');
   const fetchFn = cfg.fetchFn ?? fetch;
-  const model = req.kind === 'draw' ? cfg.drawModel : cfg.imageModel;
+  const model = pick.model ?? defaultModel(cfg, req.kind);
   const prompt = promptFor(req);
   const content: { type: string; text?: string; image_url?: { url: string } }[] = [{ type: 'text', text: prompt }];
   if (req.kind === 'photo') content.push({ type: 'image_url', image_url: { url: req.image } });
   const body: Record<string, unknown> = { model, messages: [{ role: 'user', content }] };
-  if (req.kind !== 'draw') body.modalities = ['image', 'text'];
+  if (req.kind !== 'draw') body.modalities = pick.output && !pick.output.includes('text') ? ['image'] : ['image', 'text'];
 
   let res: Response;
   try {

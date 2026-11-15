@@ -3,13 +3,16 @@
 // parent area. The settings live under `local/` (this device only).
 import { deviceInfo } from '../storage/ids';
 import type { Backend, GameStorage } from '../storage/types';
-import type { AiInfo, AiPageRequest } from '../../server/src/api';
-import { httpApi, normalizeServer, pairWith, SyncProblem, type SyncApi } from './api';
+import type { AiInfo, AiModelsResponse, AiPageRequest } from '../../server/src/api';
+import { httpApi, normalizeServer, pairWith, SyncProblem, type AiPageResult, type SyncApi } from './api';
 
 /** AI pages through the family server (ADR 0029), for Parent area › Add pages. */
 export interface AiPageMaker {
   info: AiInfo;
-  make(req: AiPageRequest): Promise<Blob>;
+  make(req: AiPageRequest): Promise<AiPageResult>;
+  /** The models to pick from (ADR 0032); null from an older server. */
+  models(): Promise<AiModelsResponse | null>;
+  setFavorites(ids: string[]): Promise<string[]>;
 }
 import { SyncEngine } from './engine';
 
@@ -119,7 +122,12 @@ export class SyncService {
     try {
       const info = await api.info();
       if (!info.ai) return null;
-      return { info: info.ai, make: (req) => api.aiPage(req) };
+      return {
+        info: info.ai,
+        make: (req) => api.aiPage(req),
+        models: () => api.aiModels(),
+        setFavorites: (ids) => api.setAiFavorites(ids),
+      };
     } catch {
       return null;
     }

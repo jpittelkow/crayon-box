@@ -8,6 +8,8 @@
 //   PUT    /api/v1/items/<key>?modified=&base=[&force=1]   store a value (JSON or bytes)
 //   DELETE /api/v1/items/<key>?modified=&base=[&force=1]   remember a deletion
 //   POST   /api/v1/ai/page  AiPageRequest      a coloring page made by AI (ADR 0029); answers with the image
+//   GET    /api/v1/ai/models                  the models a parent can pick from, and the favorites (ADR 0032)
+//   PUT    /api/v1/ai/favorites { favorites } the family's favorite models (ADR 0032)
 //
 // Every request but info and pair carries `Authorization: Bearer <token>`. A write names the revision its change
 // was based on (`base`, 0 for "never seen"); when the server's copy has moved on since, it answers 409 with that
@@ -36,11 +38,53 @@ export interface AiInfo {
 
 export type Detail = 'simple' | 'more';
 
-/** What to make (ADR 0029): from a photo (a data URL), from an idea, or drawn as SVG from an idea. */
+/**
+ * What to make (ADR 0029): from a photo (a data URL), from an idea, or drawn as SVG from an idea. `model` picks an
+ * OpenRouter model from the list (ADR 0032); without it the server's setting for that way is used.
+ */
 export type AiPageRequest =
-  | { kind: 'photo'; image: string; detail: Detail }
-  | { kind: 'idea'; idea: string; detail: Detail }
-  | { kind: 'draw'; idea: string; detail: Detail };
+  | { kind: 'photo'; image: string; detail: Detail; model?: string }
+  | { kind: 'idea'; idea: string; detail: Detail; model?: string }
+  | { kind: 'draw'; idea: string; detail: Detail; model?: string };
+
+/** The ways of making a page; a model can do some of them (ADR 0032). */
+export type AiWay = AiPageRequest['kind'];
+
+/** One model a parent can pick (ADR 0032). */
+export interface AiModel {
+  /** OpenRouter's id, e.g. `google/gemini-2.5-flash-image`. */
+  id: string;
+  name: string;
+  ways: AiWay[];
+  /** What it gives back, as OpenRouter lists it: `image`, `text`. */
+  output: string[];
+  /** A short price, e.g. `$0.04 an image` or `free`; absent when unclear. */
+  price?: string;
+}
+
+export interface AiModelsResponse {
+  models: AiModel[];
+  /** The family's favorite model ids, in the order they were starred. */
+  favorites: string[];
+  /** The server's settings, used when a request names no model. */
+  defaults: { image: string; draw: string };
+  /** When the list was fetched from OpenRouter, ms since 1970; 0 when it never was. */
+  fetched: number;
+  /** Why the list is empty or old, in words. */
+  problem?: string;
+}
+
+export interface AiFavoritesRequest {
+  favorites: string[];
+}
+
+/** The most favorites the server keeps. */
+export const MAX_FAVORITES = 30;
+
+/** An OpenRouter model id: `maker/model`, maybe with a `:variant`. */
+export function validModelId(id: unknown): id is string {
+  return typeof id === 'string' && id.length <= 200 && /^[\w.-]+\/[\w.:-]+$/.test(id);
+}
 
 /** The longest idea text the server takes. */
 export const MAX_IDEA = 300;

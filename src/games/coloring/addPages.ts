@@ -3,6 +3,7 @@
 // family server that has AI set up (ADR 0029), a page can also be made from a photo or a typed idea.
 import type { ParentSectionContext } from '../../shell/types';
 import type { AiPageMaker } from '../../sync/service';
+import { modelPicker } from './aiModelPicker';
 import { button, card, h, segmented } from '../../ui/parent';
 import { OUR_THEME_META } from './catalog';
 import { addFamilyPage, OUR_THEME, type FamilyPageMeta } from './family';
@@ -69,7 +70,7 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
   // ---- Make a page with AI (ADR 0029) ----
   if (ctx.ai) {
     const maker = await ctx.ai();
-    el.append(maker ? aiCard(maker) : aiOffCard());
+    el.append(maker ? await aiCard(maker) : aiOffCard());
   }
 
   function aiOffCard(): HTMLElement {
@@ -83,7 +84,7 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
     );
   }
 
-  function aiCard(ai: AiPageMaker): HTMLElement {
+  async function aiCard(ai: AiPageMaker): Promise<HTMLElement> {
     type Way = 'idea' | 'draw' | 'photo';
     let way: Way = 'idea';
     let detail: 'simple' | 'more' = 'simple';
@@ -95,6 +96,8 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
     const photoField = h('div', { class: 'pw-field', hidden: true }, h('label', { for: 'ai-photo' }, 'Photo'), photo);
     const usage = () => `Today: ${ai.info.usedToday} of ${ai.info.dailyLimit} AI pages used.`;
     const used = h('p', { class: 'pw-muted' }, usage());
+    // The model to use (ADR 0032); absent with an older server, which uses its own setting.
+    const picker = await modelPicker(ai, ctx.storage, way);
 
     const make = button(
       'Make it',
@@ -118,17 +121,20 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
           name = text.slice(0, 40);
           request = { kind: way, idea: text, detail };
         }
+        const model = picker?.chosen();
+        if (model) request.model = model;
         make.disabled = true;
         result.replaceChildren();
         status.textContent = 'Making a page… this can take up to a minute.';
         status.dataset.aiStatus = 'working';
         try {
-          const image = await ai.make(request);
+          const { image, model: madeBy } = await ai.make(request);
           const ext = image.type === 'image/svg+xml' ? 'svg' : image.type === 'image/jpeg' ? 'jpg' : 'png';
           const page = await importFile(`${name.replace(/\.[^.]+$/, '')}.${ext}`, image);
           ai.info.usedToday++;
           used.textContent = usage();
-          status.textContent = 'Here it is. Not quite right? Make it again.';
+          const by = madeBy ? ` Made by ${picker?.nameOf(madeBy) ?? madeBy}.` : '';
+          status.textContent = `Here it is.${by} Not quite right? Make it again, or try another model.`;
           status.dataset.aiStatus = 'ready';
           showResult(result, 'ai', name, page, 'ai', (message) => {
             status.textContent = message;
@@ -163,10 +169,12 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
           way = w;
           ideaField.hidden = w === 'photo';
           photoField.hidden = w !== 'photo';
+          picker?.setWay(w);
         },
       ),
       ideaField,
       photoField,
+      picker?.el ?? null,
       segmented<'simple' | 'more'>(
         'Detail',
         [
