@@ -2,6 +2,7 @@
 // and the two hooks the sync client will use.
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
+import { openFileBackend, memoryFs } from './files';
 import { memoryBackend, openIdbBackend } from './idb';
 import { appStorage } from './namespaced';
 import { isDeviceOnly, type Backend, type StoredValue } from './types';
@@ -15,6 +16,7 @@ function clock(start = 1000) {
 const backends: [string, (now: () => number) => Promise<Backend>][] = [
   ['memory', async (now) => memoryBackend(now)],
   ['indexeddb', (now) => openIdbBackend({ factory: new IDBFactory(), keyRange: IDBKeyRange, name: 'test', now })],
+  ['files', (now) => openFileBackend(memoryFs(), { now })],
 ];
 
 const json = (v: unknown): StoredValue => ({ kind: 'json', json: JSON.stringify(v) });

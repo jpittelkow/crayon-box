@@ -19,7 +19,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    milestone 2 is planned in eight phases in [milestone-2.md](../milestone-2.md) (A Tauri window, B files, C sync,
    D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A done 2026-11-14**
    (`src-tauri/`, the `windows-installer` CI job): the installer ran on Windows. A `v*` tag drafts a release
-   with the unsigned installer (`release.yml`). Next: phase B, after the kid-folder-names decision.
+   with the unsigned installer (`release.yml`). **Phase B (files) built 2026-11-14** on branch
+   `milestone-2/phase-b-files`: unit- and browser-tested, not yet tried in the installed app; see milestone-2.md.
 3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
    **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
    knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,
@@ -72,6 +73,12 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   Sync-ready (ADR 0024): every item has a change record (`modified`, `deleted`, `rev`) in a `meta` store;
   `local/` at the top of a namespace is device-only; the backend has the sync client's hooks (`changes`,
   `applyRemote`, `markSynced`); `ids.ts` makes cross-device ids and the device id. No sync client or server yet.
+  `files.ts` is the installed app's backend: one file per item under `items\`, temp file then rename, and an
+  `index.json` with each item's kind and change record; reopening mends what a crash left.
+- `src/shell/tauriFiles.ts`: the Windows app's files (phase B), loaded only in Tauri: the storage backend's file
+  system, and `FinishedPictures` (`Pictures\Coloring Book\Art\<kid id>\<page>-<started>.png`), which games and
+  parent sections get as an optional `finished` in their context. What the page may touch is listed in
+  `src-tauri/capabilities/default.json` (only `store\` in local app data and `Pictures\Coloring Book`).
 - `src/ui/`: Crayon Box tokens as CSS custom properties, kid components, icons, the palette, and the parent
   world kit with bundled fonts (ADR 0016).
 - `src/games/coloring/`: the game (lazy-loaded): `game.ts` (start, library, My pictures), `session.ts` (the

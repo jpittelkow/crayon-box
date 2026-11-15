@@ -9,7 +9,7 @@ import {
   saveProfile,
   saveShellSettings,
 } from '../shell/profiles';
-import type { GameEntry, GameModule, KidProfile, SettingsSection } from '../shell/types';
+import type { FinishedPictures, GameEntry, GameModule, KidProfile, SettingsSection } from '../shell/types';
 import type { AppStorage } from '../storage/types';
 import { button, card, h, segmented, switchRow } from '../ui/parent';
 import { kidEditor } from './kidEditor';
@@ -20,6 +20,8 @@ export const AUTO_LOCK_MS = 3 * 60 * 1000;
 export interface ParentAreaOptions {
   storage: AppStorage;
   games: readonly GameEntry[];
+  /** Present in the Windows app only. */
+  finished?: FinishedPictures;
   onExit(): void;
 }
 
@@ -70,7 +72,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     main.append(h('h1', {}, found.section.title));
     const body = h('div', { style: 'display: contents' });
     main.append(body);
-    await found.section.render(body, { storage: storage.game(found.game.id), kids, kidLabel });
+    await found.section.render(body, { storage: storage.game(found.game.id), kids, kidLabel, finished: opts.finished });
   };
 
   const addNav = (id: string, label: string) => {

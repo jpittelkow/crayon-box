@@ -90,5 +90,10 @@ _Last updated: 2026-11-14_
 - Don't stage anything (not even `git rm`) until you are about to commit: another session's commit in this
   folder takes whatever is staged. A staged deletion of `src/games/racing/sim/scene.ts` went out in someone
   else's commit and left `main` unable to build until the matching change landed (found 2026-11-14).
+- Storage keys become Windows file names in the installed app (`storage/files.ts`). Windows ignores case, so
+  capitals and anything outside `a-z0-9._-` are `%`-escaped; keep keys lower case to keep the files readable
+  (2026-11-14).
+- A new folder the Windows app writes to must be added to `fs:scope` in `src-tauri/capabilities/default.json`, or
+  the fs plugin refuses it only in the installed app (2026-11-14).
 - The browser tests draw WebGL in software; the driving game's toy look takes seconds to start there, so
   `driving.spec.ts` runs its tests one at a time with longer timeouts (2026-11-14).

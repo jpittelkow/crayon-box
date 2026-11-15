@@ -28,11 +28,25 @@ export interface Sound {
   play(kind: SoundKind): void;
 }
 
+/**
+ * Finished pictures in the Windows Pictures folder, for parents (ADR 0007): `Coloring Book\Art\<kid id>\<name>`.
+ * Only the Windows app has them; in the browser this is absent.
+ */
+export interface FinishedPictures {
+  /** Writes the picture, replacing an earlier version of the same name. */
+  save(kidId: string, name: string, png: Blob): Promise<void>;
+  remove(kidId: string, name: string): Promise<void>;
+  /** Opens the Art folder in File Explorer. */
+  openFolder(): Promise<void>;
+}
+
 export interface GameContext {
   kid: KidProfile;
   storage: GameStorage;
   sound: Sound;
   exitToHome(): void;
+  /** Present in the Windows app only. */
+  finished?: FinishedPictures;
 }
 
 /** What a game's parent-area section gets to work with. */
@@ -41,6 +55,8 @@ export interface ParentSectionContext {
   kids: KidProfile[];
   /** The kid's name, or their symbol name when they have none. */
   kidLabel(kid: KidProfile): string;
+  /** Present in the Windows app only. */
+  finished?: FinishedPictures;
 }
 
 /** A screen a game adds to the parent area (ADR 0008, 0012). */

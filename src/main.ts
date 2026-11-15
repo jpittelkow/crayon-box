@@ -4,6 +4,8 @@ import { Shell } from './shell/shell';
 import { memoryBackend, openIdbBackend } from './storage/idb';
 import { deviceInfo } from './storage/ids';
 import { appStorage } from './storage/namespaced';
+import type { Backend } from './storage/types';
+import type { FinishedPictures } from './shell/types';
 import '@fontsource/fredoka/600.css';
 import './ui/tokens.css';
 import './ui/kid.css';
@@ -19,12 +21,25 @@ async function boot(): Promise<void> {
   // the Windows app, whose web storage lives in its own app data folder.
   void navigator.storage?.persist?.().catch(() => false);
 
-  let backend;
-  try {
-    backend = await openIdbBackend();
-  } catch (err) {
-    console.error('IndexedDB unavailable; pictures will not be kept', err);
-    backend = memoryBackend();
+  // The Windows app keeps everything as files (milestone 2, phase B); the browser keeps it in IndexedDB.
+  let backend: Backend | undefined;
+  let finished: FinishedPictures | undefined;
+  if (inTauri()) {
+    try {
+      const files = await import('./shell/tauriFiles');
+      backend = await files.openTauriBackend();
+      finished = files.tauriFinishedPictures();
+    } catch (err) {
+      console.error('App files unavailable; using browser storage instead', err);
+    }
+  }
+  if (!backend) {
+    try {
+      backend = await openIdbBackend();
+    } catch (err) {
+      console.error('IndexedDB unavailable; pictures will not be kept', err);
+      backend = memoryBackend();
+    }
   }
 
   const app = document.getElementById('app')!;
@@ -35,7 +50,7 @@ async function boot(): Promise<void> {
 
   const storage = appStorage(backend);
   await deviceInfo(storage.shell);
-  await new Shell(frame, storage).start();
+  await new Shell(frame, storage, undefined, { finished }).start();
 }
 
 void boot();

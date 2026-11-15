@@ -47,6 +47,19 @@ export function newPicture(kid: KidProfile, pageId: string, now = new Date()): P
   };
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * The finished picture's file name in the Pictures folder (ADR 0007): `<page>-<yyyy-mm-dd-hhmmss>.png`, from the
+ * page and the time the picture was started (local time), so each save of one picture replaces the same file.
+ */
+export function finishedName(picture: Picture): string {
+  const page = picture.meta.pageId.replace(/^[a-z]+:/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+  const d = new Date(picture.meta.created);
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  return `${page || 'picture'}-${stamp}.png`;
+}
+
 export function getPaint(storage: GameStorage, picture: Picture): Promise<Blob | undefined> {
   return storage.getBlob(`${dir(picture)}paint.png`);
 }

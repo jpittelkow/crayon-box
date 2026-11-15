@@ -7,7 +7,7 @@ import { kidPickerScreen, lockButton } from './kidPicker';
 import { enabledGames, getPhoto, kidTintVar, loadProfiles, loadShellSettings } from './profiles';
 import { GAMES } from './registry';
 import { WebAudioSound } from './sound';
-import type { GameEntry, KidProfile } from './types';
+import type { FinishedPictures, GameEntry, KidProfile } from './types';
 
 export class Shell {
   private unmount: (() => Promise<void>) | null = null;
@@ -20,6 +20,8 @@ export class Shell {
     private readonly frame: HTMLElement,
     private readonly storage: AppStorage,
     private readonly games: readonly GameEntry[] = GAMES,
+    /** What only the Windows app has (milestone 2); empty in the browser. */
+    private readonly platform: { finished?: FinishedPictures } = {},
   ) {}
 
   async start(): Promise<void> {
@@ -125,6 +127,7 @@ export class Shell {
         storage: this.storage.game(entry.id),
         sound: this.sounds(),
         exitToHome: () => void this.afterGame(kid),
+        finished: this.platform.finished,
       });
     } finally {
       this.busy = false;
@@ -159,6 +162,7 @@ export class Shell {
     const area = await parentArea({
       storage: this.storage,
       games: this.games,
+      finished: this.platform.finished,
       onExit: () => void this.showKidPicker(),
     });
     this.stopParent = area.stop;
