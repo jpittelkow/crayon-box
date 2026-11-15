@@ -15,7 +15,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    interface. Runs from the Vite dev server on the dev machine only (no container, ADR 0020). Never hosted
    online. Used to test with the kids early. Art made here is throwaway.
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
-   **Next up** (owner, 2026-11-14): milestone 1 is paused with the animal themes and the artifact updates left;
+   **Next up** (owner, 2026-11-14): milestone 1 is paused with only the animal themes left;
    milestone 2 is planned in eight phases in [milestone-2.md](../milestone-2.md) (A Tauri window, B files, C sync,
    D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A done 2026-11-14**
    (`src-tauri/`, the `windows-installer` CI job): the installer ran on Windows. A `v*` tag drafts a release
@@ -116,6 +116,8 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   needs a model picked (open questions).
 - **D. Polish:** done 2026-11-14: sounds with a Settings switch (`shell/sound.ts`, made from tones, no files),
   the optional gate PIN (stored as a hash), the reduce-motion check (browser test), and the two-finger undo limit
-  fixed (each stroke draws on its own layer until the finger lifts). Left: the design system and mockup
-  artifacts still show ADR 0016's first look (80 px swatches, no names or photos, the old page flow).
+  fixed (each stroke draws on its own layer until the finger lifts). The design system artifact was matched to
+  ADRs 0017–0025 and the code on 2026-11-14 (`kid-swatch` token, names and photos, start screen, theme strip,
+  driving tile and horn, gate PIN, parent nav). The mockup canvas was matched the same day (18 boards, 6 of them new:
+  coloring start, driving, kid editor, parent Driving, add from an idea, family sync).
 A and B can run in parallel; D fits anywhere.
