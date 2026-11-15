@@ -34,6 +34,9 @@ _Last updated: 2026-11-14_
 - **Driving to a spot, traffic company** ([ADR 0031](../adr/0031-driving-to-a-spot-and-traffic-company.md),
   Proposed, built 2026-11-15): accept after a playtest. Watch whether a finger held still ending in a stop reads
   as "got there", what a resting hand low on the screen does (U-turn, then stop), and the guessed numbers.
+- **New sound files for the driving game's set pieces** (milestone-3 B6): landing, car wash, bridge planks play
+  stand-ins from existing files. Making real ones needs the owner's OK to download CC0 packs or pay for AI
+  takes, and ffmpeg on the dev machine (2026-11-15).
 - **Driving game, milestone 3** ([milestone-3.md](../milestone-3.md), decisions table): which vehicles and maps.
   Decided 2026-11-15: map picker tiles, vehicle picker plus a garage on each map, vehicles built in code; the
   island redrawn as layout A (a loop and a shortcut, with junctions); the kid's colour mixed (paint on the car

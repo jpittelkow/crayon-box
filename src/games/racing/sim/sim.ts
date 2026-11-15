@@ -179,6 +179,8 @@ export interface World {
   followAt: string;
   /** How sharply "follows the road" wants to turn (radians off the way ahead), to slow for a bend. */
   followTurn: number;
+  /** What is under the kid's car this step, for the sounds (milestone-3 B6): sand, a bridge, a tunnel. */
+  under: { sand: boolean; bridge: boolean; tunnel: boolean };
 }
 
 /** A map's zone, placed on the ground, and the way it faces. */
@@ -219,7 +221,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   const w: World = {
     map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [], bubbles: [], bubbleNext: 0,
     junctions: buildJunctions(roads), guards: buildGuards(map.guards, roads), sand: buildSand(map.sand),
-    follow: null, turnNext: true, followAt: '', followTurn: 0,
+    follow: null, turnNext: true, followAt: '', followTurn: 0, under: { sand: false, bridge: false, tunnel: false },
     rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
@@ -501,6 +503,7 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   }
   // On a bridge or in a tunnel, its sides keep the car on the road: it slides along them (milestone-3 B4).
   const held = guardAt(w.guards, w.roads, car.x, car.z);
+  w.under = { sand: sandy, bridge: held?.guard.kind === 'bridge', tunnel: held?.guard.kind === 'tunnel' };
   if (held) {
     const { spot } = held, limit = w.roads[spot.road]!.def.width / 2 - 0.8;
     if (Math.abs(spot.offset) > limit) {

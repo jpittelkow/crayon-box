@@ -111,6 +111,22 @@ describe('the island, layout A (milestone-3 B4)', () => {
     expect(onLand(w.land, kid.x, kid.z)).toBe(true);
   });
 
+  it('tells the sounds what is under the kid\'s car: the bridge, the tunnel, sand (milestone-3 B6)', () => {
+    const w = makeWorld(7, 0, 'free', ISLAND);
+    const under = (x: number, z: number) => {
+      Object.assign(w.cars[0], { x, z, speed: 0 });
+      step(w, { go: false, brake: true, steer: 0 }, DT);
+      return w.under;
+    };
+    const bridge = w.guards.find((g) => g.kind === 'bridge')!, tunnel = w.guards.find((g) => g.kind === 'tunnel')!;
+    const onBridge = pointAt(w.roads[bridge.road]!, (bridge.s0 + bridge.s1) / 2);
+    const inTunnel = pointAt(w.roads[tunnel.road]!, (tunnel.s0 + tunnel.s1) / 2);
+    expect(under(onBridge.x, onBridge.z)).toEqual({ sand: false, bridge: true, tunnel: false });
+    expect(under(inTunnel.x, inTunnel.z)).toEqual({ sand: false, bridge: false, tunnel: true });
+    expect(under(-20, -47)).toEqual({ sand: true, bridge: false, tunnel: false });
+    expect(under(-20, 20)).toEqual({ sand: false, bridge: false, tunnel: false });
+  });
+
   it('sand on the beach slows the car and kicks up puffs', () => {
     const w = makeWorld(7, 0, 'free', ISLAND);
     w.trees.length = 0;

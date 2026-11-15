@@ -1,7 +1,8 @@
 // The driving game's sounds (ADR 0025, 0032). Every vehicle has an engine of its own: a recorded idle loop (shipped
 // file) that plays faster, so higher, and brighter as the vehicle speeds up; traffic is heard only nearby. Effects
 // are shipped files too: each toy's bump, splashes, the horn, the police car's siren, the tyre squeal and the
-// brake squeak.
+// brake squeak. The set pieces (milestone-3 B6) reuse them for now: plank knocks on a bridge, a whoosh and popping
+// bubbles at the car wash; the tunnel's echo and the sand's hiss are made by the app.
 import { soundUrl } from '../../shell/soundFiles';
 import type { BumpSound } from './sim/assets/toys';
 import { MAX_SPEED, type Input, type VehicleKind, type World } from './sim/sim';
@@ -39,7 +40,12 @@ export const EFFECTS = {
   splash: 'drive/splash.wav',
   squeal: 'drive/squeal.wav',
   brake: 'drive/brake.wav',
+  // Stand-in for the car wash's bubbles until a take of its own (milestone-3 B6): the app's soft pop.
+  pop: 'ui/fill.wav',
 } as const;
+
+/** How far apart the bridge's planks are, for their knocks under the wheels. */
+const PLANK_M = 1.6;
 
 /** The wooden knock at each toy's pitch and loudness (the boing is a file of its own). */
 const BUMP: Record<Exclude<BumpSound, 'boing'>, { rate: number; volume: number }> = {
@@ -85,6 +91,12 @@ export class DrivingSound {
   private readonly loaded = new Map<string, Promise<AudioBuffer | null>>();
   private kidKind: VehicleKind = 'car';
   private siren: AudioBufferSourceNode | null = null;
+  /** The tunnel's echo: how much of everything is sent round the echo (0 outside a tunnel). */
+  private echo: GainNode | null = null;
+  /** The hiss of sand under the wheels, made by the app: its loudness. */
+  private sand: GainNode | null = null;
+  /** For effects that depend on time or distance between frames. */
+  private last = { time: 0, x: 0, z: 0, zone: -1, plank: 0 };
 
   constructor(private readonly enabled: boolean) {}
 
@@ -143,8 +155,40 @@ export class DrivingSound {
       this.master = ctx.createGain();
       this.master.gain.value = 1;
       this.master.connect(ctx.destination);
+      // The tunnel's echo (milestone-3 B6, made by the app as the owner allowed): everything is also sent through a
+      // short delay that feeds back into itself, faded in only inside a tunnel.
+      this.echo = ctx.createGain();
+      this.echo.gain.value = 0;
+      const delay = ctx.createDelay(1);
+      delay.delayTime.value = 0.14;
+      const feedback = ctx.createGain();
+      feedback.gain.value = 0.38;
+      const tone = ctx.createBiquadFilter();
+      tone.type = 'lowpass';
+      tone.frequency.value = 2400;
+      this.master.connect(this.echo).connect(delay).connect(tone).connect(feedback).connect(delay);
+      tone.connect(ctx.destination);
     }
     return this.master;
+  }
+
+  /** The hiss of sand under the wheels: noise through a band-pass, quiet until the car is on sand. */
+  private startSand(ctx: AudioContext): GainNode {
+    const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const data = noise.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = noise;
+    src.loop = true;
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 1400;
+    band.Q.value = 0.8;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    src.connect(band).connect(gain).connect(this.out(ctx));
+    src.start();
+    return gain;
   }
 
   /** A vehicle's engine: its idle loop, through a filter that opens with speed. Null until the loop has loaded. */
@@ -211,6 +255,42 @@ export class DrivingSound {
     const braking = input.brake && kid.speed > 6;
     if (braking && !this.braking) this.effect(EFFECTS.brake, 0.6);
     this.braking = braking;
+
+    this.setPieces(ctx, world);
+  }
+
+  /**
+   * The set pieces' sounds (milestone-3 B6): the tunnel's echo, the bridge's planks knocking under the wheels,
+   * sand hissing, and the car wash (a whoosh going in, then bubbles popping while the car is soapy). Landing from
+   * a ramp is a bump, played by the game.
+   */
+  private setPieces(ctx: AudioContext, world: World): void {
+    const t = ctx.currentTime, dt = Math.min(0.1, Math.max(0, t - this.last.time));
+    const kid = world.cars[0]!;
+    const moved = Math.hypot(kid.x - this.last.x, kid.z - this.last.z);
+    this.last.time = t;
+    this.last.x = kid.x;
+    this.last.z = kid.z;
+
+    this.echo?.gain.setTargetAtTime(world.under.tunnel ? 0.55 : 0, t, 0.15);
+
+    this.sand ??= this.startSand(ctx);
+    const hiss = world.under.sand && kid.h === 0 ? 0.05 + 0.1 * Math.min(1, kid.speed / MAX_SPEED) : 0;
+    this.sand.gain.setTargetAtTime(kid.speed > 1 ? hiss : 0, t, 0.08);
+
+    // A plank under the wheels every PLANK_M metres on the bridge: the wooden knock, high and quiet.
+    if (world.under.bridge && moved < 5) {
+      this.last.plank += moved;
+      if (this.last.plank >= PLANK_M) {
+        this.last.plank %= PLANK_M;
+        this.effect(EFFECTS.bump, 0.22, 1.7 + Math.random() * 0.2);
+      }
+    }
+
+    const zone = world.zone >= 0 ? world.zones[world.zone]! : null;
+    if (zone?.kind === 'car-wash' && this.last.zone !== world.zone) this.effect(EFFECTS.splash, 0.5, 1.3);
+    this.last.zone = world.zone;
+    if (kid.soap > 0.05 && Math.random() < kid.soap * dt * 7) this.effect(EFFECTS.pop, 0.3, 0.8 + Math.random() * 0.7);
   }
 
   /**
@@ -252,6 +332,8 @@ export class DrivingSound {
     this.engines = [];
     this.squeal = null;
     this.siren = null;
+    this.echo = null;
+    this.sand = null;
     this.files.clear();
     this.loaded.clear();
   }
