@@ -8,7 +8,7 @@ import { kidPickerScreen, lockButton } from './kidPicker';
 import { enabledGames, getPhoto, kidTintVar, loadProfiles, loadShellSettings } from './profiles';
 import { GAMES } from './registry';
 import { WebAudioSound } from './sound';
-import type { FinishedPictures, GameEntry, KidProfile } from './types';
+import type { FinishedPictures, GameEntry, KidProfile, PagesFolder } from './types';
 import type { UpdateController } from './updates';
 import { screenKind, type KioskControl } from './kiosk';
 import type { SyncService } from '../sync/service';
@@ -25,7 +25,13 @@ export class Shell {
     private readonly storage: AppStorage,
     private readonly games: readonly GameEntry[] = GAMES,
     /** What only the Windows app has (milestone 2); empty in the browser. */
-    private readonly platform: { finished?: FinishedPictures; updates?: UpdateController; kiosk?: KioskControl; sync?: SyncService } = {},
+    private readonly platform: {
+      finished?: FinishedPictures;
+      pagesFolder?: PagesFolder;
+      updates?: UpdateController;
+      kiosk?: KioskControl;
+      sync?: SyncService;
+    } = {},
   ) {}
 
   async start(): Promise<void> {
@@ -178,6 +184,7 @@ export class Shell {
       storage: this.storage,
       games: this.games,
       finished: this.platform.finished,
+      pagesFolder: this.platform.pagesFolder,
       updates: this.platform.updates,
       kiosk: this.platform.kiosk,
       sync: this.platform.sync,

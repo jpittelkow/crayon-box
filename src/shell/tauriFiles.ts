@@ -11,7 +11,7 @@ import { BaseDirectory } from '@tauri-apps/plugin-fs';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { openFileBackend, type FileSystem } from '../storage/files';
 import type { Backend } from '../storage/types';
-import type { FinishedPictures } from './types';
+import type { FinishedPictures, PagesFolder, PagesFolderFile } from './types';
 
 type Fs = Pick<typeof tauriFs, 'readFile' | 'writeFile' | 'rename' | 'remove' | 'mkdir' | 'readDir' | 'exists'>;
 
@@ -86,6 +86,52 @@ export function tauriFinishedPictures(fs: Fs = tauriFs, open: (path: string) => 
     async openFolder() {
       await files.mkdir('');
       await open(await join(await pictureDir(), 'Coloring Book', 'Art'));
+    },
+  };
+}
+
+const PAGES = 'Coloring Book/Pages';
+const ADDED = 'Added';
+const NOT_ADDED = 'Not added';
+const PAGE_FILE = /\.(png|jpe?g|svg|pdf)$/i;
+const TYPES: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', svg: 'image/svg+xml', pdf: 'application/pdf' };
+
+/** The Pages folder (ADR 0005, phase F): files dropped in become family pages at the next start. */
+export function tauriPagesFolder(fs: Fs = tauriFs, open: (path: string) => Promise<void> = openPath): PagesFolder {
+  const opts = { baseDir: BaseDirectory.Picture };
+  const at = (rel: string) => (rel ? `${PAGES}/${rel}` : PAGES);
+  return {
+    async list() {
+      await fs.mkdir(PAGES, { ...opts, recursive: true });
+      const out: PagesFolderFile[] = [];
+      for (const entry of await fs.readDir(PAGES, opts)) {
+        if (entry.isFile && PAGE_FILE.test(entry.name)) out.push({ folder: '', name: entry.name, path: entry.name });
+        if (entry.isDirectory && entry.name !== ADDED && entry.name !== NOT_ADDED) {
+          for (const inner of await fs.readDir(at(entry.name), opts)) {
+            if (inner.isFile && PAGE_FILE.test(inner.name)) {
+              out.push({ folder: entry.name, name: inner.name, path: `${entry.name}/${inner.name}` });
+            }
+          }
+        }
+      }
+      return out;
+    },
+    async read(path) {
+      const data = await fs.readFile(at(path), opts);
+      const ext = path.slice(path.lastIndexOf('.') + 1).toLowerCase();
+      return new Blob([data], { type: TYPES[ext] ?? 'application/octet-stream' });
+    },
+    async done(path, added) {
+      const dir = added ? ADDED : NOT_ADDED;
+      await fs.mkdir(at(dir), { ...opts, recursive: true });
+      const name = path.slice(path.lastIndexOf('/') + 1);
+      let target = `${dir}/${name}`;
+      if (await fs.exists(at(target), opts)) target = `${dir}/${Date.now()}-${name}`;
+      await fs.rename(at(path), at(target), { oldPathBaseDir: BaseDirectory.Picture, newPathBaseDir: BaseDirectory.Picture });
+    },
+    async openFolder() {
+      await fs.mkdir(PAGES, { ...opts, recursive: true });
+      await open(await join(await pictureDir(), 'Coloring Book', 'Pages'));
     },
   };
 }

@@ -121,6 +121,14 @@ Two parts; the server part can start any time, even alongside phase A.
   reinstalled by hand.
 
 ### F. Family pages from files (ADR 0005)
+- **Status (2026-11-14):** built on branch `milestone-2/phase-f-family-pages`. **Decided** (Claude, to keep going;
+  the open "Needs" below): family pages live in the coloring game's storage (`family/<id>/page.png` and
+  `page.json`), so they sync like everything else; the Pictures folder is only an inbox. `catalog.ts` merges them
+  with the built-in pages ("Our pages" first in the theme strip); `importPage.ts` (PNG, JPG, SVG, the first page
+  of a PDF through pdf.js, loaded only there; then clean-up, page check, page.png); Parent area › Add pages
+  (preview, what the check found, name, theme); Page library lists family pages with Hide and Remove;
+  `folderImport.ts` turns files in `Pictures\Coloring Book\Pages` (a theme-named subfolder picks the theme) into
+  pages 3 s after start and moves them to `Added` or `Not added`. 5 unit tests, 5 browser tests with real files.
 - *Import* in the parent area: PNG, JPG, SVG or the first page of a PDF, run through the clean-up step and the
   page check (built in milestone 1), previewed, then added to a theme or "Our pages".
 - Loose files dropped into `Pictures\Coloring Book\Pages\<theme>\` are turned into pages at the next launch.
