@@ -230,6 +230,17 @@
   background: var(--crayon-yellow);
   animation: lt-beat 1.2s ease-in-out infinite;
 }
+.letters-confirm.cb-action {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  margin-top: -80px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: var(--crayon-lime);
+  animation: lt-beat 1s ease-in-out infinite;
+}
 .letters-done-star {
   width: 120px;
   height: 120px;
@@ -311,7 +322,8 @@
   .letters-poke,
   .letters-march,
   .letters-stop.is-now,
-  .letters-next.cb-action {
+  .letters-next.cb-action,
+  .letters-confirm.cb-action {
     animation: none;
   }
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { memoryBackend } from '../../storage/idb';
 import { appStorage } from '../../storage/namespaced';
-import { allChars, arrowFor, glyph, SET_CHARS, type Glyph, type Pt } from './glyphs';
+import { allChars, arrowFor, arrowsFor, glyph, SET_CHARS, type Glyph, type Pt } from './glyphs';
 import {
   finishLetter,
   forgetKid,
@@ -60,9 +60,33 @@ describe('the letters (ADR 0026)', () => {
     }
     expect(arrowFor(glyph('i'), 1)).toBeNull(); // the dot
   });
+
+  it('follows how print letters are taught (ADR 0028)', () => {
+    const start = (ch: string, i = 0) => glyph(ch).strokes[i][0];
+    const end = (ch: string, i = 0) => glyph(ch).strokes[i].at(-1)!;
+    // Start at the top: capitals and numbers in their top part, small letters at the middle line or just below it
+    // (the top right of "magic c"). Only e starts in its middle, as taught.
+    for (const ch of allChars()) {
+      if (ch === 'e') continue;
+      expect(start(ch).y, ch).toBeLessThanOrEqual(/[a-z]/.test(ch) ? 75 : 40);
+    }
+    // Down, then back up the same line without lifting, then over: one stroke each.
+    for (const ch of 'bhmnpr') {
+      expect(glyph(ch).strokes.length, ch).toBe(1);
+      expect(arrowsFor(glyph(ch), 0).length, ch).toBeGreaterThanOrEqual(2);
+    }
+    // Round letters go counterclockwise ("magic c"): from the start the pen heads left (and up or down).
+    for (const ch of 'COacdgoq09') {
+      const s0 = glyph(ch).strokes[0];
+      expect(s0[5].x, ch).toBeLessThan(s0[0].x);
+    }
+    // G's bar runs right to left; the 4 is open (a short line straight down first).
+    expect(end('G').x).toBeLessThan(glyph('G').strokes[0].at(-15)!.x);
+    expect(glyph('4').strokes[0][10].x).toBe(start('4').x);
+  });
 });
 
-describe('tracing (ADR 0026)', () => {
+describe('tracing (ADR 0026, 0028)', () => {
   it('a good trace finishes every letter, lenient and in stroke order', () => {
     for (const ch of allChars()) {
       const lenient = new Tracer(glyph(ch), { ordered: false });
@@ -81,6 +105,31 @@ describe('tracing (ADR 0026)', () => {
     const ordered = new Tracer(glyph('L'), { ordered: true });
     traceGlyph(ordered, glyph('L'), { reverse: true });
     expect(ordered.done).toBe(false);
+  });
+
+  it('a trace that stops short of the ends does not finish, and what is left is known (ADR 0028)', () => {
+    for (const ch of ['L', 'U', 'S', 'C', 'J', '2']) {
+      for (const ordered of [false, true]) {
+        const g = glyph(ch);
+        const t = new Tracer(g, { ordered });
+        // Each stroke traced only three quarters of the way: enough for ADR 0026's 85 %, not for the whole letter.
+        g.strokes.forEach((stroke, s) => {
+          stroke.slice(0, Math.floor(stroke.length * 0.75)).forEach((p) => t.add(s, p, TOLERANCE.finger));
+          t.lift(s);
+        });
+        expect(t.done, `${ch} ${ordered ? 'in order' : 'lenient'}`).toBe(false);
+        const left = t.missing;
+        expect(left.length, ch).toBeGreaterThan(0);
+        // What is left includes the end of the stroke being worked on.
+        const stroke = g.strokes[ordered ? t.currentStroke : 0];
+        const end = stroke[stroke.length - 1];
+        expect(left.some((p) => Math.hypot(p.x - end.x, p.y - end.y) < 4), ch).toBe(true);
+        // Finishing the strokes finishes the letter.
+        g.strokes.forEach((s, i) => s.forEach((p) => t.add(10 + i, p, TOLERANCE.finger)));
+        expect(t.done, ch).toBe(true);
+        expect(t.missing).toEqual([]);
+      }
+    }
   });
 
   it("a whole stroke can't be skipped, even a short one like A's bar", () => {

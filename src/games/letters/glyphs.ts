@@ -2,6 +2,11 @@
 // Original work, CC0 (ADR 0011). Not a font: the strokes carry their order and direction, which give the guide,
 // the start dots, the arrows and the hint.
 //
+// Strokes follow how print letters are taught in US schools (Zaner-Bloser and Handwriting Without Tears agree on
+// these, ADR 0028): start at the top; lines go down, then across left to right; round letters go counterclockwise
+// from the top right ("magic c"); b, h, m, n, p and r go down and push back up the same line without lifting; the
+// bumps of B and R, the slants of K and k and the bar of G go on without a lift; the 4 is the open 4.
+//
 // Every glyph sits in a 100 x 140 box. Capitals and numbers run from y 10 (top) to y 110 (the baseline). Small
 // letters have their middle line at y 60 and descenders down to y 135. Angles are in degrees, 0 pointing right and
 // 90 pointing down (screen coordinates), so a rising angle turns clockwise on screen.
@@ -62,18 +67,24 @@ const DATA: Record<string, Stroke[]> = {
   A: [s(line(50, 10, 15, 110)), s(line(50, 10, 85, 110)), s(line(27, 75, 73, 75))],
   B: [
     s(line(25, 10, 25, 110)),
-    s(line(25, 10, 55, 10), arc(55, 35, 22, 25, -90, 90), line(55, 60, 25, 60)),
-    s(line(25, 60, 58, 60), arc(58, 85, 24, 25, -90, 90), line(58, 110, 25, 110)),
+    s(
+      line(25, 10, 55, 10),
+      arc(55, 35, 22, 25, -90, 90),
+      line(55, 60, 25, 60),
+      line(25, 60, 58, 60),
+      arc(58, 85, 24, 25, -90, 90),
+      line(58, 110, 25, 110),
+    ),
   ],
   C: [s(arc(55, 60, 38, 50, -40, -320))],
   D: [s(line(25, 10, 25, 110)), s(line(25, 10, 42, 10), arc(42, 60, 38, 50, -90, 90), line(42, 110, 25, 110))],
   E: [s(line(25, 10, 25, 110)), s(line(25, 10, 80, 10)), s(line(25, 60, 70, 60)), s(line(25, 110, 80, 110))],
   F: [s(line(25, 10, 25, 110)), s(line(25, 10, 80, 10)), s(line(25, 60, 70, 60))],
-  G: [s(arc(55, 60, 38, 50, -40, -360)), s(line(65, 60, 93, 60))],
+  G: [s(arc(55, 60, 38, 50, -40, -360), line(93, 60, 65, 60))],
   H: [s(line(20, 10, 20, 110)), s(line(80, 10, 80, 110)), s(line(20, 60, 80, 60))],
   I: [s(line(50, 10, 50, 110)), s(line(30, 10, 70, 10)), s(line(30, 110, 70, 110))],
   J: [s(line(70, 10, 70, 85), arc(47, 85, 23, 25, 0, 180))],
-  K: [s(line(25, 10, 25, 110)), s(line(80, 10, 25, 65)), s(line(43, 47, 80, 110))],
+  K: [s(line(25, 10, 25, 110)), s(line(80, 10, 27, 62), line(27, 62, 80, 110))],
   L: [s(line(25, 10, 25, 110), line(25, 110, 80, 110))],
   M: [s(line(15, 10, 15, 110)), s(line(15, 10, 50, 80), line(50, 80, 85, 10), line(85, 10, 85, 110))],
   N: [s(line(20, 10, 20, 110)), s(line(20, 10, 80, 110), line(80, 110, 80, 10))],
@@ -82,46 +93,51 @@ const DATA: Record<string, Stroke[]> = {
   Q: [s(arc(50, 60, 38, 50, -90, -450)), s(line(60, 85, 85, 115))],
   R: [
     s(line(25, 10, 25, 110)),
-    s(line(25, 10, 55, 10), arc(55, 35, 25, 25, -90, 90), line(55, 60, 25, 60)),
-    s(line(50, 60, 82, 110)),
+    s(line(25, 10, 55, 10), arc(55, 35, 25, 25, -90, 90), line(55, 60, 30, 60), line(30, 60, 82, 110)),
   ],
   S: [s(arc(50, 35, 30, 25, -30, -270), arc(50, 85, 30, 25, -90, 150))],
   T: [s(line(50, 10, 50, 110)), s(line(15, 10, 85, 10))],
   U: [s(line(20, 10, 20, 80), arc(50, 80, 30, 30, 180, 0), line(80, 80, 80, 10))],
   V: [s(line(15, 10, 50, 110), line(50, 110, 85, 10))],
-  W: [s(line(10, 10, 30, 110), line(30, 110, 50, 40), line(50, 40, 70, 110), line(70, 110, 90, 10))],
+  W: [s(line(10, 10, 30, 110), line(30, 110, 50, 10), line(50, 10, 70, 110), line(70, 110, 90, 10))],
   X: [s(line(20, 10, 80, 110)), s(line(80, 10, 20, 110))],
   Y: [s(line(15, 10, 50, 60)), s(line(85, 10, 50, 60), line(50, 60, 50, 110))],
   Z: [s(line(20, 10, 80, 10), line(80, 10, 20, 110), line(20, 110, 80, 110))],
 
   // ---- Small letters ----
   a: [s(arc(50, 85, 25, 25, -30, -390)), s(line(75, 60, 75, 110))],
-  b: [s(line(25, 10, 25, 110)), s(arc(50, 85, 25, 25, 180, 540))],
+  b: [s(line(25, 10, 25, 110), line(25, 110, 25, 85), arc(50, 85, 25, 25, 180, 540))],
   c: [s(arc(55, 85, 27, 25, -40, -320))],
   d: [s(arc(50, 85, 25, 25, -30, -390)), s(line(75, 10, 75, 110))],
   e: [s(line(25, 85, 77, 85), arc(51, 85, 26, 25, 0, -310))],
   f: [s(arc(65, 30, 17, 20, -30, -180), line(48, 30, 48, 110)), s(line(32, 60, 68, 60))],
   g: [s(arc(50, 85, 25, 25, -30, -390)), s(line(75, 60, 75, 120), arc(52, 120, 23, 15, 0, 160))],
-  h: [s(line(25, 10, 25, 110)), s(arc(50, 82, 25, 22, 180, 360), line(75, 82, 75, 110))],
+  h: [s(line(25, 10, 25, 110), line(25, 110, 25, 82), arc(50, 82, 25, 22, 180, 360), line(75, 82, 75, 110))],
   i: [s(line(50, 60, 50, 110)), dot(50, 40)],
   j: [s(line(55, 60, 55, 120), arc(35, 120, 20, 15, 0, 160)), dot(55, 40)],
-  k: [s(line(25, 10, 25, 110)), s(line(72, 60, 25, 90)), s(line(40, 81, 75, 110))],
+  k: [s(line(25, 10, 25, 110)), s(line(72, 60, 27, 87), line(27, 87, 75, 110))],
   l: [s(line(50, 10, 50, 110))],
   m: [
-    s(line(15, 60, 15, 110)),
-    s(arc(31, 78, 16, 18, 180, 360), line(47, 78, 47, 110)),
-    s(arc(63, 78, 16, 18, 180, 360), line(79, 78, 79, 110)),
+    s(
+      line(15, 60, 15, 110),
+      line(15, 110, 15, 78),
+      arc(31, 78, 16, 18, 180, 360),
+      line(47, 78, 47, 110),
+      line(47, 110, 47, 78),
+      arc(63, 78, 16, 18, 180, 360),
+      line(79, 78, 79, 110),
+    ),
   ],
-  n: [s(line(25, 60, 25, 110)), s(arc(50, 82, 25, 22, 180, 360), line(75, 82, 75, 110))],
+  n: [s(line(25, 60, 25, 110), line(25, 110, 25, 82), arc(50, 82, 25, 22, 180, 360), line(75, 82, 75, 110))],
   o: [s(arc(50, 85, 25, 25, -90, -450))],
-  p: [s(line(25, 60, 25, 135)), s(arc(50, 85, 25, 25, 180, 540))],
+  p: [s(line(25, 60, 25, 135), line(25, 135, 25, 85), arc(50, 85, 25, 25, 180, 540))],
   q: [s(arc(50, 85, 25, 25, -30, -390)), s(line(75, 60, 75, 135))],
-  r: [s(line(30, 60, 30, 110)), s(arc(52, 82, 22, 22, 180, 300))],
+  r: [s(line(30, 60, 30, 110), line(30, 110, 30, 82), arc(52, 82, 22, 22, 180, 300))],
   s: [s(arc(50, 72, 20, 12, -30, -270), arc(50, 97, 20, 13, -90, 150))],
   t: [s(line(50, 20, 50, 110)), s(line(32, 60, 68, 60))],
   u: [s(line(25, 60, 25, 88), arc(50, 88, 25, 22, 180, 0), line(75, 88, 75, 60), line(75, 60, 75, 110))],
   v: [s(line(20, 60, 50, 110), line(50, 110, 80, 60))],
-  w: [s(line(10, 60, 30, 110), line(30, 110, 50, 70), line(50, 70, 70, 110), line(70, 110, 90, 60))],
+  w: [s(line(10, 60, 30, 110), line(30, 110, 50, 60), line(50, 60, 70, 110), line(70, 110, 90, 60))],
   x: [s(line(25, 60, 75, 110)), s(line(75, 60, 25, 110))],
   y: [s(line(25, 60, 50, 105)), s(line(75, 60, 36, 135))],
   z: [s(line(25, 60, 75, 60), line(75, 60, 25, 110), line(25, 110, 75, 110))],
@@ -131,7 +147,7 @@ const DATA: Record<string, Stroke[]> = {
   '1': [s(line(50, 10, 50, 110))],
   '2': [s(arc(50, 37, 28, 27, -160, 20), line(76.31, 46.23, 20, 110), line(20, 110, 82, 110))],
   '3': [s(arc(48, 34, 27, 24, -150, 90), arc(48, 84, 30, 26, -90, 150))],
-  '4': [s(line(55, 10, 18, 78), line(18, 78, 85, 78)), s(line(65, 10, 65, 110))],
+  '4': [s(line(22, 10, 22, 70), line(22, 70, 85, 70)), s(line(65, 10, 65, 110))],
   '5': [s(line(28, 10, 28, 57), arc(48, 78, 28, 30, -136, 150)), s(line(28, 10, 78, 10))],
   '6': [s(arc(55, 60, 33, 50, -70, -180), line(22, 60, 22, 83), arc(50, 83, 28, 27, 180, -180))],
   '7': [s(line(20, 10, 80, 10), line(80, 10, 40, 110))],
@@ -178,12 +194,52 @@ function centre(g: Glyph): Pt {
 /** How far an arrow sits from its stroke's centre line, in glyph units. The guide is 20 wide. */
 const ARROW_GAP = 16;
 
+export interface Arrow {
+  shaft: string;
+  head: string;
+}
+
 /**
- * An arrow beside a stroke, pointing the way it is drawn: the shaft follows the stroke from 20 % to 60 % of its
- * length, shifted to the outside of the letter. Strokes too short for one (the dots) get none.
+ * The parts of a stroke between sharp turns (more than 90 degrees): n's "down, then back up and over" is two runs,
+ * and so is K's "slant in, slant out". Each run gets its own
+ * arrow, so an arrow never folds back on itself.
  */
-export function arrowFor(g: Glyph, index: number): { shaft: string; head: string } | null {
-  const stroke = g.strokes[index];
+function runs(stroke: Stroke): Stroke[] {
+  const out: Stroke[] = [[stroke[0]]];
+  for (let i = 1; i < stroke.length; i++) {
+    const cur = out.at(-1)!;
+    if (cur.length >= 2) {
+      const a = cur[cur.length - 2];
+      const b = cur[cur.length - 1];
+      const c = stroke[i];
+      const u = { x: b.x - a.x, y: b.y - a.y };
+      const v = { x: c.x - b.x, y: c.y - b.y };
+      const dot = (u.x * v.x + u.y * v.y) / ((Math.hypot(u.x, u.y) || 1) * (Math.hypot(v.x, v.y) || 1));
+      if (dot < 0) out.push([b]);
+    }
+    out.at(-1)!.push(stroke[i]);
+  }
+  return out;
+}
+
+/** Arrows beside a stroke, one per run of at least 30 units (or the stroke's one run): see `arrowFor`. */
+export function arrowsFor(g: Glyph, index: number): Arrow[] {
+  const all = runs(g.strokes[index]);
+  const long = all.filter((r) => strokeLength(r) >= 30);
+  const picked = long.length > 0 ? long : all.length === 1 ? all : [];
+  return picked.map((r) => arrowAlong(g, r)).filter((a): a is Arrow => a !== null);
+}
+
+/** The first arrow of a stroke (`arrowsFor`), or null for strokes too short for one (the dots). */
+export function arrowFor(g: Glyph, index: number): Arrow | null {
+  return arrowsFor(g, index)[0] ?? null;
+}
+
+/**
+ * An arrow beside a run of a stroke, pointing the way it is drawn: the shaft follows the run from 20 % to 60 % of
+ * its length, shifted to the outside of the letter. Runs too short for one get none.
+ */
+function arrowAlong(g: Glyph, stroke: Stroke): Arrow | null {
   const total = strokeLength(stroke);
   if (total < 12) return null;
   const c = centre(g);
