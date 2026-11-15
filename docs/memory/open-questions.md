@@ -31,9 +31,10 @@ _Last updated: 2026-11-15_
   registry id stay `racing` now that there are no races (kept as `racing` in the prototype, shown as
   "Driving"). Also: the prototype paints the whole car in the kid's color, where ADR 0021 says a flag on the
   car; fine with one car, to settle with the vehicle choice.
-- **Driving to a spot, traffic company** ([ADR 0031](../adr/0031-driving-to-a-spot-and-traffic-company.md),
-  Proposed, built 2026-11-15): accept after a playtest. Watch whether a finger held still ending in a stop reads
-  as "got there", what a resting hand low on the screen does (U-turn, then stop), and the guessed numbers.
+- **Driving: the joystick and traffic company** ([ADR 0036](../adr/0036-driving-screen-is-a-joystick.md),
+  [ADR 0031](../adr/0031-driving-to-a-spot-and-traffic-company.md)): the screen became a joystick after the playtest
+  of 2026-11-15. Watch whether the kids find backing up, and what a resting hand low on the screen does (backs up
+  slowly); then accept 0031's traffic part.
 - **New sound files for the driving game's set pieces** (milestone-3 B6): landing, car wash, bridge planks play
   stand-ins from existing files. Making real ones needs the owner's OK to download CC0 packs or pay for AI
   takes, and ffmpeg on the dev machine (2026-11-15).

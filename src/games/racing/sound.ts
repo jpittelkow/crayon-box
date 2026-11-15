@@ -105,7 +105,8 @@ const HEARING_M = 40;
 /** How loud a vehicle's engine is: the kid's own car always, traffic fading with distance. */
 export function engineLoudness(world: World, index: number): number {
   const c = world.cars[index]!;
-  const effort = 0.35 + 0.65 * Math.min(1, c.speed / MAX_SPEED);
+  // Speed either way: backing up (ADR 0036) sounds like driving slowly.
+  const effort = 0.35 + 0.65 * Math.min(1, Math.abs(c.speed) / MAX_SPEED);
   const base = ENGINES[c.kind].volume * effort;
   if (index === 0) return base;
   const kid = world.cars[0]!;
@@ -276,8 +277,8 @@ export class DrivingSound {
       }
       const e = this.engines[i]!;
       const v = ENGINES[c.kind];
-      e.src.playbackRate.setTargetAtTime(v.idleRate + v.perSpeed * c.speed, t, 0.08);
-      e.filter.frequency.setTargetAtTime(v.toneHz + v.tonePerSpeed * c.speed, t, 0.08);
+      e.src.playbackRate.setTargetAtTime(v.idleRate + v.perSpeed * Math.abs(c.speed), t, 0.08);
+      e.filter.frequency.setTargetAtTime(v.toneHz + v.tonePerSpeed * Math.abs(c.speed), t, 0.08);
       e.gain.gain.setTargetAtTime(engineLoudness(world, i), t, 0.1);
     });
 

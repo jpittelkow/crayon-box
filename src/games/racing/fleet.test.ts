@@ -7,7 +7,7 @@ import { VEHICLES, shownVehicles } from './settings';
 import { ENGINES } from './sound';
 import type { MapDef } from './sim/map';
 import { nearestOn } from './sim/roads';
-import { VEHICLE_FEEL, VEHICLE_SIZE, makeWorld, step, type VehicleKind, type World } from './sim/sim';
+import { VEHICLE_FEEL, VEHICLE_SIZE, makeWorld, step, swapVehicle, type VehicleKind, type World } from './sim/sim';
 
 const DT = 1 / 60;
 
@@ -94,5 +94,18 @@ describe('the garage (ADR 0035)', () => {
     const garage = w.zones.find((z) => z.kind === 'garage')!;
     expect(garage).toBeDefined();
     expect(nearestOn(w.roads[1]!, 1, garage.x, garage.z).dist).toBeLessThan(0.5);
+  });
+});
+
+describe('the quick swap in the game (playtest, 2026-11-15)', () => {
+  it('changes the kid\'s vehicle on the spot, in a puff, but only to one a parent has on', () => {
+    const w = makeWorld(7, 0, 'free', RING, 'car', ['car', 'digger', 'bus']);
+    const puffs = () => w.puffs.filter((p) => p.life > 0).length;
+    const before = puffs();
+    swapVehicle(w, 'digger');
+    expect(w.cars[0]!.kind).toBe('digger');
+    expect(puffs()).toBeGreaterThan(before);
+    swapVehicle(w, 'fire');
+    expect(w.cars[0]!.kind).toBe('digger');
   });
 });

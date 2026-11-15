@@ -1,20 +1,21 @@
 // The driving game (ADR 0021): a vehicle picker (milestone-3 B5), then an island with traffic, things to knock around,
-// water and set pieces. Touch a spot and the car drives there (ADR 0031), or drive with the arrow keys or W, A, S, D.
+// water and set pieces. The screen is a joystick (ADR 0036), or drive with the arrow keys or W, A, S, D.
 // three.js loads only when the game opens; the parent area can load this file without it.
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
-import { el, kidButton, setPicked } from '../../ui/kid';
+import { el, kidButton, onTap, setPicked } from '../../ui/kid';
 import type { createRenderer as CreateRendererFn } from './render';
 import { MAPS, MAP_NAMES } from './maps';
 import { VEHICLE_NAMES } from './names';
 import { pagesOf } from './pickerPages';
 import { detailWatcher } from './detail';
 import type { MapDef } from './sim/map';
-import { forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving, shownVehicles, type KidDriving } from './settings';
-import { DRIVE_KEYS, driveInput } from './sim/input';
+import { carColors, forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving, shownVehicles, type KidDriving } from './settings';
+import type { VehiclePainter } from './look/thumbs';
+import { mapFile, vehicleFile } from './look/shippedPictures';
+import { DRIVE_KEYS, driveInput, stickAt } from './sim/input';
 import { TOYS } from './sim/assets/toys';
-import { honk, makeWorld, step, type Assist, type VehicleKind, type World } from './sim/sim';
-import { groundPoint } from './sim/view';
+import { honk, makeWorld, step, swapVehicle, type Assist, type VehicleKind, type World } from './sim/sim';
 import { DrivingSound } from './sound';
 import './racing.css';
 import { version as APP_VERSION } from '../../../package.json';
@@ -84,22 +85,26 @@ class DrivingGame {
   private showPicker(): void {
     const { kid, storage } = this.ctx;
     const { prefs, settings, createRenderer, thumbs } = this.loaded!;
-    const kidColor = this.kidColor();
+    const ownColor = this.kidColor();
+    // The vehicle's colour (playtest, 2026-11-15): the kid's own unless they picked another.
+    let color = prefs.color ?? ownColor;
     const picker = el('div', 'driving-picker', { 'data-ready': 'false' });
     picker.style.background = `var(--kid-${kid.color}-tint, var(--paper))`;
     picker.append(kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() }));
     let chosen = false;
+    const save = () => saveKidDriving(storage, kid.id, this.loaded!.prefs);
     const choose = async (vehicle: VehicleKind) => {
       if (chosen) return;
       chosen = true;
-      this.loaded!.prefs = { ...prefs, vehicle, map: map.id };
-      await saveKidDriving(storage, kid.id, this.loaded!.prefs);
+      this.loaded!.prefs = { ...this.loaded!.prefs, vehicle, map: map.id };
+      await save();
       if (this.stopped) return;
       picker.remove();
-      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, kidColor, shown, map);
+      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, color, shown, map);
     };
-    // Pictures to draw once the picker shows: what is in view first.
-    const jobs: { key: string; img: HTMLImageElement; draw: () => string; first: boolean }[] = [];
+    // Pictures to draw once the picker shows: what is in view first. A vehicle's picture is in the colour picked.
+    interface Job { key: () => string; img: HTMLImageElement; draw: (painter: () => VehiclePainter) => string; first: boolean }
+    const jobs: Job[] = [];
     const picture = (tile: HTMLElement) => {
       const img = Object.assign(document.createElement('img'), { alt: '' });
       tile.append(img);
@@ -116,7 +121,7 @@ class DrivingGame {
         },
       });
       tile.dataset.map = m.id;
-      jobs.push({ key: `map-${m.id}-${kidColor}`, img: picture(tile), draw: () => thumbs.mapPicture(m, kidColor), first: false });
+      jobs.push({ key: () => mapFile(m.id), img: picture(tile), draw: () => thumbs.mapPicture(m, ownColor), first: false });
       return tile;
     });
     setPicked(mapTilesEls, mapTilesEls[MAPS.indexOf(map)]);
@@ -124,11 +129,10 @@ class DrivingGame {
     mapRow.append(...mapTilesEls);
     // The vehicles a parent has on (ADR 0035).
     const shown = shownVehicles(settings);
-    let painter: import('./look/thumbs').VehiclePainter | undefined;
     const tiles = shown.map((vehicle) => {
       const tile = kidButton({ kind: 'paper', label: VEHICLE_NAMES[vehicle], className: 'vehicle-tile', onTap: () => void choose(vehicle) });
       tile.dataset.vehicle = vehicle;
-      jobs.push({ key: `vehicle-${vehicle}-${kidColor}`, img: picture(tile), draw: () => (painter ??= thumbs.vehiclePainter()).draw(vehicle, kidColor), first: false });
+      jobs.push({ key: () => vehicleFile(vehicle, color), img: picture(tile), draw: (painter) => painter().draw(vehicle, color), first: false });
       return tile;
     });
     const last = Math.max(0, shown.indexOf(prefs.vehicle));
@@ -147,27 +151,59 @@ class DrivingGame {
     const showPage = () =>
       grid.replaceChildren(...(page > 0 ? [less] : []), ...pages[page]!.map((i) => tiles[i]!), ...(page < pages.length - 1 ? [more] : []));
     showPage();
-    picker.append(mapRow, grid);
+
+    // The colours (playtest, 2026-11-15): the kid's own first, down the right-hand side. A tap paints the vehicles'
+    // pictures in it and is remembered for this kid.
+    const colors = el('div', 'car-colors');
+    const swatches = carColors(ownColor).map((c, i) => {
+      const swatch = kidButton({
+        kind: 'swatch', label: i === 0 ? 'My colour' : `Colour ${i + 1}`, className: 'car-color',
+        onTap: () => {
+          if (c === color) return;
+          color = c;
+          setPicked(swatches, swatch);
+          this.loaded!.prefs = { ...this.loaded!.prefs };
+          if (c === ownColor) delete this.loaded!.prefs.color;
+          else this.loaded!.prefs.color = c;
+          void save();
+          drawPictures(jobs.slice(MAPS.length));
+        },
+      });
+      swatch.style.background = c;
+      swatch.dataset.color = c;
+      return swatch;
+    });
+    setPicked(swatches, swatches.find((s) => s.dataset.color === color) ?? swatches[0]);
+    colors.append(...swatches);
+    picker.append(mapRow, grid, colors);
     this.root.append(picker);
     picker.dataset.ready = 'true';
 
-    // The pictures: the vehicles on this page first, then the maps, then the rest; kept for next time.
-    for (const i of pages[page]!) jobs[MAPS.length + i]!.first = true;
-    jobs.sort((a, b) => Number(b.first) - Number(a.first));
-    void (async () => {
-      const { cachedPicture } = await import('./look/pictureCache');
-      try {
-        for (const job of jobs) {
-          if (this.stopped || chosen) break;
-          job.img.src = await cachedPicture(job.key, job.draw, import.meta.env.DEV ? undefined : storage, APP_VERSION);
-          // Let the screen show it, and take a tap, before drawing the next.
-          await new Promise((r) => setTimeout(r, 16));
+    // The pictures: the vehicles on this page first, then the maps, then the rest; kept for next time. A new colour
+    // starts a new round of drawing, and the round before it stops.
+    let round = 0;
+    const drawPictures = (list: Job[]) => {
+      const mine = ++round;
+      const order = [...list].sort((a, b) => Number(b.first) - Number(a.first));
+      picker.dataset.pictures = 'false';
+      void (async () => {
+        const { cachedPicture } = await import('./look/pictureCache');
+        let painter: VehiclePainter | undefined;
+        try {
+          for (const job of order) {
+            if (this.stopped || chosen || mine !== round) return;
+            job.img.src = await cachedPicture(job.key(), () => job.draw(() => (painter ??= thumbs.vehiclePainter())), import.meta.env.DEV ? undefined : storage, APP_VERSION);
+            // Let the screen show it, and take a tap, before drawing the next.
+            await new Promise((r) => setTimeout(r, 16));
+          }
+          if (!chosen && mine === round) picker.dataset.pictures = 'true';
+        } finally {
+          painter?.dispose();
         }
-        if (!chosen) picker.dataset.pictures = 'true';
-      } finally {
-        painter?.dispose();
-      }
-    })();
+      })();
+    };
+    for (const i of pages[page]!) jobs[MAPS.length + i]!.first = true;
+    drawPictures(jobs);
   }
 
   /** A map, driven in the vehicle the kid picked. */
@@ -203,6 +239,7 @@ class DrivingGame {
     canvas.drivingWorld = world;
     let renderer = createRenderer(canvas, world, kidColor);
     this.driving.push(() => renderer.dispose());
+    if (shown.length > 1) this.swapTray(screen, world, shown, kidColor);
 
     // ---- Size: real pixels, capped for built-in graphics (ADR 0021), fewer if frames fall behind ----
     const watcher = detailWatcher();
@@ -233,15 +270,22 @@ class DrivingGame {
       canvas.removeEventListener('webglcontextrestored', onRestored);
     });
 
-    // ---- Fingers: the car drives to the spot under the newest one still down (ADR 0031) ----
-    // The spot is picked when the finger lands or moves, then stays put on the ground while the finger rests, so
-    // the car arrives and stops instead of chasing a point that moves with the camera.
-    const fingers = new Map<number, { x: number; z: number }>();
-    const spotUnder = (e: PointerEvent) => {
-      const r = canvas.getBoundingClientRect();
-      const nx = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
-      const ny = Math.max(-1, Math.min(1, 1 - ((e.clientY - r.top) / r.height) * 2));
-      return groundPoint(world, nx, ny, r.width / Math.max(1, r.height));
+    // ---- Fingers: the screen is a joystick for the newest one still down (ADR 0036) ----
+    // Above the middle goes, faster the higher; left and right of it turn; below it backs up. A ring shows the
+    // middle while a finger is down, and a dot follows the finger, so a kid sees what the finger is doing.
+    const fingers = new Map<number, { x: number; y: number }>();
+    const stickUnder = (e: PointerEvent) => stickAt(e.clientX, e.clientY, canvas.getBoundingClientRect());
+    const ring = el('div', 'driving-stick');
+    const dot = el('div', 'driving-stick-dot');
+    ring.hidden = dot.hidden = true;
+    screen.append(ring, dot);
+    const showStick = () => {
+      const newest = [...fingers.values()].at(-1);
+      ring.hidden = dot.hidden = !newest;
+      if (!newest) return;
+      // The dot sits where the finger is, in the screen's own units (the frame may be scaled to fit, ADR 0019).
+      dot.style.left = `${(newest.x + 1) * 50}%`;
+      dot.style.top = `${(1 - newest.y) * 50}%`;
     };
     const isPalm = (e: PointerEvent) => e.pointerType === 'touch' && Math.max(e.width, e.height) > PALM_CSS_PX;
     canvas.addEventListener('pointerdown', (e) => {
@@ -253,12 +297,18 @@ class DrivingGame {
         // Synthetic events in tests can't be captured; driving still works.
       }
       fingers.delete(e.pointerId);
-      fingers.set(e.pointerId, spotUnder(e));
+      fingers.set(e.pointerId, stickUnder(e));
+      showStick();
     });
     canvas.addEventListener('pointermove', (e) => {
-      if (fingers.has(e.pointerId)) fingers.set(e.pointerId, spotUnder(e));
+      if (!fingers.has(e.pointerId)) return;
+      fingers.set(e.pointerId, stickUnder(e));
+      showStick();
     });
-    const lift = (e: PointerEvent) => fingers.delete(e.pointerId);
+    const lift = (e: PointerEvent) => {
+      fingers.delete(e.pointerId);
+      showStick();
+    };
     canvas.addEventListener('pointerup', lift);
     canvas.addEventListener('pointercancel', lift);
 
@@ -274,6 +324,7 @@ class DrivingGame {
     const onBlur = () => {
       keys.clear();
       fingers.clear();
+      showStick();
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -313,6 +364,71 @@ class DrivingGame {
     frame = requestAnimationFrame(tick);
     this.driving.push(() => cancelAnimationFrame(frame));
     screen.dataset.ready = 'true';
+  }
+
+  /**
+   * The quick swap (playtest, 2026-11-15): a button top right shows the vehicle being driven; a tap opens a tray of
+   * the vehicles a parent has on, and a tap on one changes to it on the spot. A tap beside the tray closes it.
+   */
+  private swapTray(screen: HTMLElement, world: World, shown: VehicleKind[], color: string): void {
+    const { kid, storage } = this.ctx;
+    const thumbs = this.loaded!.thumbs;
+    const dev = import.meta.env.DEV;
+    let painter: VehiclePainter | undefined;
+    this.driving.push(() => painter?.dispose());
+    const pictureOf = async (kind: VehicleKind) => {
+      const { cachedPicture } = await import('./look/pictureCache');
+      return cachedPicture(vehicleFile(kind, color), () => (painter ??= thumbs.vehiclePainter()).draw(kind, color), dev ? undefined : storage, APP_VERSION);
+    };
+    const button = kidButton({ kind: 'paper', label: 'Change vehicle', className: 'driving-swap', onTap: () => open() });
+    const now = Object.assign(document.createElement('img'), { alt: '' });
+    button.append(now);
+    const showNow = async () => {
+      now.src = await pictureOf(world.cars[0]!.kind);
+    };
+    void showNow();
+
+    const tray = el('div', 'driving-tray');
+    tray.hidden = true;
+    const close = () => {
+      tray.hidden = true;
+    };
+    // A tap on the dimmed screen round the tray closes it.
+    onTap(tray, close);
+    const panel = el('div', 'driving-tray-panel');
+    // Taps on the panel itself don't reach the dimmed screen behind it.
+    panel.addEventListener('pointerdown', (e) => e.stopPropagation());
+    const tiles = shown.map((kind) => {
+      const tile = kidButton({
+        kind: 'paper', label: VEHICLE_NAMES[kind], className: 'vehicle-tile driving-tray-tile',
+        onTap: () => {
+          swapVehicle(world, kind);
+          setPicked(tiles, tile);
+          close();
+          void showNow();
+          this.loaded!.prefs = { ...this.loaded!.prefs, vehicle: kind };
+          void saveKidDriving(storage, kid.id, this.loaded!.prefs);
+        },
+      });
+      tile.dataset.vehicle = kind;
+      tile.append(Object.assign(document.createElement('img'), { alt: '' }));
+      return tile;
+    });
+    panel.append(...tiles);
+    tray.append(panel);
+    const open = () => {
+      setPicked(tiles, tiles[shown.indexOf(world.cars[0]!.kind)]);
+      tray.hidden = false;
+      // The pictures, one at a time (most are kept from the picker already).
+      void (async () => {
+        for (const [i, tile] of tiles.entries()) {
+          const img = tile.querySelector('img')!;
+          if (!img.src) img.src = await pictureOf(shown[i]!);
+          await new Promise((r) => setTimeout(r, 0));
+        }
+      })();
+    };
+    screen.append(button, tray);
   }
 
   /** The kid's own color from the Crayon Box tokens (ADR 0016 rule 7), for their car. */
