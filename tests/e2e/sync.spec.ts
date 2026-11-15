@@ -86,3 +86,13 @@ test('a picture painted on one device shows up on another', async ({ browser }) 
   await pick(two, 'My pictures');
   await expect(two.locator('[data-picture]')).toHaveCount(1);
 });
+
+test('a background round doesn’t wipe what a parent is typing', async ({ page }) => {
+  await page.goto('/');
+  await openParentArea(page);
+  await page.locator('.pw-nav').getByRole('button', { name: 'Family sync' }).click();
+  await page.getByLabel('Server address').fill(address);
+  // The first background round runs 5 s after start; wait past it.
+  await page.waitForTimeout(6000);
+  await expect(page.getByLabel('Server address')).toHaveValue(address);
+});

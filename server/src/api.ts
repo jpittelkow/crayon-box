@@ -7,6 +7,7 @@
 //   GET    /api/v1/items/<key>                one item's value; X-Rev, X-Modified headers
 //   PUT    /api/v1/items/<key>?modified=&base=[&force=1]   store a value (JSON or bytes)
 //   DELETE /api/v1/items/<key>?modified=&base=[&force=1]   remember a deletion
+//   POST   /api/v1/ai/page  AiPageRequest      a coloring page made by AI (ADR 0029); answers with the image
 //
 // Every request but info and pair carries `Authorization: Bearer <token>`. A write names the revision its change
 // was based on (`base`, 0 for "never seen"); when the server's copy has moved on since, it answers 409 with that
@@ -22,7 +23,27 @@ export interface ServerInfo {
   server: string;
   /** The newest revision on the server. */
   rev: number;
+  /** Present when AI pages are set up on the server (ADR 0029). */
+  ai?: AiInfo;
 }
+
+export interface AiInfo {
+  imageModel: string;
+  drawModel: string;
+  dailyLimit: number;
+  usedToday: number;
+}
+
+export type Detail = 'simple' | 'more';
+
+/** What to make (ADR 0029): from a photo (a data URL), from an idea, or drawn as SVG from an idea. */
+export type AiPageRequest =
+  | { kind: 'photo'; image: string; detail: Detail }
+  | { kind: 'idea'; idea: string; detail: Detail }
+  | { kind: 'draw'; idea: string; detail: Detail };
+
+/** The longest idea text the server takes. */
+export const MAX_IDEA = 300;
 
 export interface PairRequest {
   code: string;

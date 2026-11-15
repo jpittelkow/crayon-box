@@ -7,7 +7,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/jpittelkow/crayon-box</Support>
   <Project>https://github.com/jpittelkow/crayon-box</Project>
-  <Overview>Family sync for Crayon Box, the kids' coloring app (ADR 0024). Keeps kid profiles, settings and pictures the same on every paired device. Home network only: do not expose it to the internet. Open the WebUI for the pairing code.</Overview>
+  <Overview>Family sync for Crayon Box, the kids' coloring app (ADR 0024). Keeps kid profiles, settings and pictures the same on every paired device. Home network only: do not expose it to the internet. Open the WebUI for the pairing code. Optional: an OpenRouter key turns on AI coloring pages for the family.</Overview>
   <Category>Tools:</Category>
   <WebUI>http://[IP]:[PORT:8787]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/jpittelkow/crayon-box/main/server/unraid/crayon-box-sync.xml</TemplateURL>
@@ -15,4 +15,8 @@
   <Config Name="Port" Target="8787" Default="8787" Mode="tcp" Description="Where the app reaches the server" Type="Port" Display="always" Required="true" Mask="false">8787</Config>
   <Config Name="Data" Target="/data" Default="/mnt/user/appdata/crayon-box-sync" Mode="rw" Description="The database and pictures. Include it in your appdata backup." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/crayon-box-sync</Config>
   <Config Name="Pairing code" Target="PAIRING_CODE" Default="" Mode="" Description="Optional: a fixed pairing code. Leave empty to use the one the server makes on first start (shown on the WebUI)." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="OpenRouter API key" Target="OPENROUTER_API_KEY" Default="" Mode="" Description="Optional: turns on AI pages for the whole family (ADR 0029). Make a key just for this app at openrouter.ai, with a credit limit. It stays in this container's settings only." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="AI pages a day" Target="AI_DAILY_LIMIT" Default="20" Mode="" Description="The most AI pages the family can make in a day." Type="Variable" Display="always" Required="false" Mask="false">20</Config>
+  <Config Name="Image model" Target="AI_IMAGE_MODEL" Default="google/gemini-2.5-flash-image" Mode="" Description="An OpenRouter model with image output, for pages from a photo or an idea." Type="Variable" Display="advanced" Required="false" Mask="false">google/gemini-2.5-flash-image</Config>
+  <Config Name="Drawing model" Target="AI_DRAW_MODEL" Default="google/gemini-2.5-flash" Mode="" Description="An OpenRouter text model that draws pages as SVG line art." Type="Variable" Display="advanced" Required="false" Mask="false">google/gemini-2.5-flash</Config>
 </Container>

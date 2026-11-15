@@ -14,8 +14,17 @@ export async function renderSync(main: HTMLElement, sync: SyncService): Promise<
   const body = h('div', { style: 'display: contents' });
   main.append(h('h1', {}, 'Family sync'), body);
 
+  // The form is drawn once and left alone while it shows: background rounds (every few minutes, even when not set
+  // up) must not wipe what a parent is typing or the problem it was told.
+  let showingForm = false;
   const draw = (s: SyncSettings, busy: boolean) => {
-    body.replaceChildren(s.server && s.token ? connected(s, busy) : connectForm());
+    if (s.server && s.token) {
+      showingForm = false;
+      body.replaceChildren(connected(s, busy));
+    } else if (!showingForm) {
+      showingForm = true;
+      body.replaceChildren(connectForm());
+    }
   };
 
   const connected = (s: SyncSettings, busy: boolean) => {

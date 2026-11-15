@@ -1,6 +1,6 @@
 # 0023. The AI page maker also makes pages from a typed idea
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); the key and model setting superseded by [0029](0029-ai-pages-through-the-family-server.md)
 - Date: 2026-11-14
 - Extends: ADR 0006 (AI page maker from a photo). Everything there about where, when, the key, privacy and
   failures still holds.
