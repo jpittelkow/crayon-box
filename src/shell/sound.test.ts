@@ -62,6 +62,8 @@ describe('sounds', () => {
     await sound.refresh();
     // Node has no AudioContext: playing with sound on would be caught and stay silent, but off must not even try.
     expect(() => sound.play('fill')).not.toThrow();
+    expect(() => sound.scratch(0.8)).not.toThrow();
+    expect(() => sound.scratch(0)).not.toThrow();
     expect((sound as unknown as { ctx: unknown }).ctx).toBeNull();
   });
 

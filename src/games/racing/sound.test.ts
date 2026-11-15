@@ -1,16 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { makeWorld, step, type VehicleKind } from './sim/sim';
-import { ENGINES, engineLoudness } from './sound';
+import { soundUrl } from '../../shell/soundFiles';
+import { MAX_SPEED, makeWorld, step, type VehicleKind } from './sim/sim';
+import { EFFECTS, ENGINES, engineLoudness } from './sound';
 
-describe('engine sounds (ADR 0025)', () => {
-  it('every kind of vehicle has an engine voice of its own', () => {
+describe('engine sounds (ADR 0025, 0032)', () => {
+  it('every kind of vehicle has an engine loop of its own', () => {
     const kinds = Object.keys(ENGINES) as VehicleKind[];
     expect(kinds.sort()).toEqual(['bus', 'car', 'monster', 'police']);
-    const voices = new Set(kinds.map((k) => JSON.stringify(ENGINES[k])));
-    expect(voices.size).toBe(kinds.length);
-    // The big vehicles sound lower than the small ones.
-    expect(ENGINES.monster.idleHz).toBeLessThan(ENGINES.car.idleHz);
-    expect(ENGINES.bus.idleHz).toBeLessThan(ENGINES.car.idleHz);
+    expect(new Set(kinds.map((k) => ENGINES[k].file)).size).toBe(kinds.length);
+    for (const k of kinds) expect(soundUrl(ENGINES[k].file), k).toBeTruthy();
+    // The big vehicles sound lower than the small ones, at every speed.
+    for (const speed of [0, MAX_SPEED / 2, MAX_SPEED]) {
+      const rate = (k: VehicleKind) => ENGINES[k].idleRate + ENGINES[k].perSpeed * speed;
+      expect(rate('monster')).toBeLessThan(rate('car'));
+      expect(rate('bus')).toBeLessThan(rate('car'));
+    }
+  });
+
+  it('every effect has a file', () => {
+    for (const [name, path] of Object.entries(EFFECTS)) expect(soundUrl(path), name).toBeTruthy();
   });
 
   it("the kid's car is always heard and louder when going fast; traffic fades with distance", () => {

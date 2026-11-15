@@ -1,37 +1,45 @@
-// The driving game's sounds (ADR 0025), made by the browser as it plays: no sound files, so nothing to license
-// (ADR 0011). Every vehicle has an engine voice of its own whose pitch and loudness follow its speed; traffic is
-// heard only nearby. Effects: bumps per prop kind, splashes, tyre squeal, brake squeak and the horn.
+// The driving game's sounds (ADR 0025, 0032). Every vehicle has an engine of its own: a recorded idle loop (shipped
+// file) that plays faster, so higher, and brighter as the vehicle speeds up; traffic is heard only nearby. Effects
+// are shipped files too: bumps per prop kind, splashes, the horn, and the police car's siren. The tyre squeal and the
+// brake squeak are still made as they play (none was picked as a file).
+import { soundUrl } from '../../shell/soundFiles';
 import { MAX_SPEED, type Input, type VehicleKind, type World } from './sim/sim';
 
-/** How a kind of vehicle's engine sounds. A new vehicle gets a new entry. */
+/** How a kind of vehicle's engine sounds. A new vehicle gets a new entry (and a loop in assets/sounds/drive/). */
 export interface EngineVoice {
-  /** Main and second oscillator shapes. */
-  wave: OscillatorType;
-  sub: OscillatorType;
-  /** Pitch at idle, and how much it rises per metre a second. */
-  idleHz: number;
+  /** The idle loop, under assets/sounds/. */
+  file: string;
+  /** Playback rate at idle, and how much it rises per metre a second (a faster loop is a higher engine). */
+  idleRate: number;
   perSpeed: number;
-  /** Brightness: the filter's cut-off at idle and how far it opens with speed. */
+  /** Brightness: a filter's cut-off at idle and how far it opens with speed. */
   toneHz: number;
   tonePerSpeed: number;
-  /** A throb in the loudness: rate at idle, rate added per metre a second, and depth (0..1). */
-  throbHz: number;
-  throbPerSpeed: number;
-  throb: number;
-  /** Loudness at full speed. */
+  /** Loudness at full speed (the loops are levelled to one loudness). */
   volume: number;
 }
 
 export const ENGINES: Record<VehicleKind, EngineVoice> = {
-  // A small car hums.
-  car: { wave: 'sawtooth', sub: 'square', idleHz: 72, perSpeed: 8, toneHz: 700, tonePerSpeed: 45, throbHz: 0, throbPerSpeed: 0, throb: 0, volume: 0.09 },
-  // A police car runs higher and brighter.
-  police: { wave: 'sawtooth', sub: 'sawtooth', idleHz: 88, perSpeed: 10, toneHz: 1000, tonePerSpeed: 60, throbHz: 0, throbPerSpeed: 0, throb: 0, volume: 0.08 },
-  // A monster truck rumbles low.
-  monster: { wave: 'square', sub: 'sawtooth', idleHz: 40, perSpeed: 4.5, toneHz: 420, tonePerSpeed: 25, throbHz: 9, throbPerSpeed: 0.4, throb: 0.45, volume: 0.12 },
-  // A school bus chugs like a diesel.
-  bus: { wave: 'square', sub: 'square', idleHz: 46, perSpeed: 3.5, toneHz: 380, tonePerSpeed: 18, throbHz: 5, throbPerSpeed: 0.7, throb: 0.7, volume: 0.1 },
+  car: { file: 'drive/engine-car.wav', idleRate: 1, perSpeed: 0.065, toneHz: 1800, tonePerSpeed: 260, volume: 0.6 },
+  // The police car revs higher.
+  police: { file: 'drive/engine-police.wav', idleRate: 1, perSpeed: 0.07, toneHz: 2200, tonePerSpeed: 300, volume: 0.55 },
+  // The big vehicles stay low: a slower loop at every speed.
+  monster: { file: 'drive/engine-monster.wav', idleRate: 0.9, perSpeed: 0.045, toneHz: 1200, tonePerSpeed: 180, volume: 0.7 },
+  bus: { file: 'drive/engine-bus.wav', idleRate: 0.9, perSpeed: 0.04, toneHz: 1300, tonePerSpeed: 160, volume: 0.65 },
 };
+
+/** The effect files, under assets/sounds/. */
+export const EFFECTS = {
+  horn: 'drive/horn.wav',
+  siren: 'drive/siren.mp3',
+  bump: 'drive/bump.wav',
+  boing: 'drive/boing.wav',
+  puddle: 'drive/puddle.wav',
+  splash: 'drive/splash.wav',
+} as const;
+
+/** The horn's pitch per vehicle: the same bicycle horn, lower for the big ones. The police car sounds its siren. */
+const HORN_RATE: Record<VehicleKind, number> = { car: 1, police: 1, monster: 0.7, bus: 0.8 };
 
 /** Traffic further away than this is not heard. */
 const HEARING_M = 40;
@@ -49,10 +57,7 @@ export function engineLoudness(world: World, index: number): number {
 }
 
 interface Running {
-  osc: OscillatorNode;
-  sub: OscillatorNode;
-  throb: OscillatorNode;
-  throbDepth: GainNode;
+  src: AudioBufferSourceNode;
   filter: BiquadFilterNode;
   gain: GainNode;
 }
@@ -65,6 +70,10 @@ export class DrivingSound {
   private noise: AudioBuffer | null = null;
   private lastBump = 0;
   private braking = false;
+  /** Decoded sound files by path; null while loading or when a file could not load. */
+  private readonly files = new Map<string, AudioBuffer | null>();
+  private kidKind: VehicleKind = 'car';
+  private siren: AudioBufferSourceNode | null = null;
 
   constructor(private readonly enabled: boolean) {}
 
@@ -74,9 +83,42 @@ export class DrivingSound {
     try {
       this.ctx ??= new AudioContext();
       if (this.ctx.state === 'suspended') void this.ctx.resume();
+      this.load(this.ctx);
     } catch {
       this.ctx = null;
     }
+  }
+
+  /** Starts decoding every file once. An engine waits silently for its loop; an effect not loaded yet is skipped. */
+  private load(ctx: AudioContext): void {
+    if (this.files.size > 0) return;
+    for (const path of [...Object.values(ENGINES).map((v) => v.file), ...Object.values(EFFECTS)]) {
+      this.files.set(path, null);
+      const url = soundUrl(path);
+      if (!url) continue;
+      void fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((data) => ctx.decodeAudioData(data))
+        .then((buf) => {
+          if (this.ctx === ctx) this.files.set(path, buf);
+        })
+        .catch(() => {});
+    }
+  }
+
+  /** Plays an effect file once; `rate` also sets its pitch. */
+  private effect(path: string, volume: number, rate = 1): AudioBufferSourceNode | null {
+    const ctx = this.running();
+    const buf = this.files.get(path);
+    if (!ctx || !buf) return null;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+    src.connect(gain).connect(this.out(ctx));
+    src.start();
+    return src;
   }
 
   private running(): AudioContext | null {
@@ -101,30 +143,22 @@ export class DrivingSound {
     return this.noise;
   }
 
-  private startEngine(ctx: AudioContext, kind: VehicleKind): Running {
-    const v = ENGINES[kind];
-    const osc = ctx.createOscillator();
-    osc.type = v.wave;
-    const sub = ctx.createOscillator();
-    sub.type = v.sub;
-    const subGain = ctx.createGain();
-    subGain.gain.value = 0.5;
+  /** A vehicle's engine: its idle loop, through a filter that opens with speed. Null until the loop has loaded. */
+  private startEngine(ctx: AudioContext, kind: VehicleKind): Running | null {
+    const buf = this.files.get(ENGINES[kind].file);
+    if (!buf) return null;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.Q.value = 2;
-    const throbbing = ctx.createGain();
-    throbbing.gain.value = 1 - v.throb / 2;
-    const throb = ctx.createOscillator();
-    const throbDepth = ctx.createGain();
-    throbDepth.gain.value = v.throb / 2;
-    throb.connect(throbDepth).connect(throbbing.gain);
+    filter.Q.value = 0.7;
     const gain = ctx.createGain();
     gain.gain.value = 0;
-    osc.connect(filter);
-    sub.connect(subGain).connect(filter);
-    filter.connect(throbbing).connect(gain).connect(this.out(ctx));
-    for (const o of [osc, sub, throb]) o.start();
-    return { osc, sub, throb, throbDepth, filter, gain };
+    src.connect(filter).connect(gain).connect(this.out(ctx));
+    // Each engine starts at its own point in the loop, so two of the same kind don't beat against each other.
+    src.start(0, Math.random() * buf.duration);
+    return { src, filter, gain };
   }
 
   /** Called once a frame: engines follow their vehicles, tyres squeal on hard turns, brakes squeak. */
@@ -132,14 +166,17 @@ export class DrivingSound {
     const ctx = this.running();
     if (!ctx) return;
     const t = ctx.currentTime;
+    this.kidKind = world.cars[0]?.kind ?? 'car';
     world.cars.forEach((c, i) => {
-      const e = (this.engines[i] ??= this.startEngine(ctx, c.kind));
+      if (!this.engines[i]) {
+        const started = this.startEngine(ctx, c.kind);
+        if (!started) return; // its loop is still loading
+        this.engines[i] = started;
+      }
+      const e = this.engines[i]!;
       const v = ENGINES[c.kind];
-      const hz = v.idleHz + v.perSpeed * c.speed;
-      e.osc.frequency.setTargetAtTime(hz, t, 0.08);
-      e.sub.frequency.setTargetAtTime(hz * 0.5, t, 0.08);
+      e.src.playbackRate.setTargetAtTime(v.idleRate + v.perSpeed * c.speed, t, 0.08);
       e.filter.frequency.setTargetAtTime(v.toneHz + v.tonePerSpeed * c.speed, t, 0.08);
-      e.throb.frequency.setTargetAtTime(v.throbHz + v.throbPerSpeed * c.speed, t, 0.1);
       e.gain.gain.setTargetAtTime(engineLoudness(world, i), t, 0.1);
     });
 
@@ -183,45 +220,36 @@ export class DrivingSound {
     osc.stop(start + length + 0.02);
   }
 
-  /** A bump of its own for each kind of prop: a plastic cone pings, a crate knocks, a ball boings, a bale thumps. */
+  /**
+   * A bump for each kind of prop, from one wooden knock and one spring: a plastic cone knocks high, a crate knocks,
+   * a beach ball boings, a hay bale thumps low.
+   */
   bump(kind: number): void {
     const ctx = this.running();
     if (!ctx || ctx.currentTime - this.lastBump < 0.05) return;
     this.lastBump = ctx.currentTime;
-    if (kind === 0) {
-      this.tone('triangle', 700, 420, 0.12, 0.2);
-    } else if (kind === 1) {
-      this.tone('square', 160, 90, 0.08, 0.14);
-      this.tone('triangle', 240, 120, 0.1, 0.12, 0.03);
-    } else if (kind === 2) {
-      this.tone('sine', 260, 520, 0.18, 0.22);
-    } else {
-      this.tone('sine', 110, 60, 0.18, 0.3);
-    }
+    if (kind === 2) this.effect(EFFECTS.boing, 0.8);
+    else this.effect(EFFECTS.bump, kind === 3 ? 1 : 0.8, kind === 0 ? 1.35 : kind === 3 ? 0.6 : 1);
   }
 
-  /** A burst of hiss that slides from bright to dull. Longer and deeper for the flood. */
+  /** A puddle splash, or a big one for the flood. */
   splash(big: boolean): void {
-    const ctx = this.running();
-    if (!ctx) return;
-    const length = big ? 0.55 : 0.28;
-    const source = ctx.createBufferSource();
-    source.buffer = this.noiseBuffer(ctx);
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(big ? 2600 : 3800, ctx.currentTime);
-    filter.frequency.exponentialRampToValueAtTime(big ? 350 : 700, ctx.currentTime + length);
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(big ? 0.45 : 0.28, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + length);
-    source.connect(filter).connect(gain).connect(this.out(ctx));
-    source.start();
-    source.stop(ctx.currentTime + length + 0.02);
+    this.effect(big ? EFFECTS.splash : EFFECTS.puddle, big ? 1 : 0.8);
   }
 
+  /** The kid's horn: a bicycle horn, lower for the big vehicles; the police car sounds its siren instead. */
   horn(): void {
-    this.tone('square', 392, 392, 0.16, 0.12);
-    this.tone('square', 494, 494, 0.26, 0.12, 0.18);
+    if (this.kidKind === 'police') {
+      // A new tap starts the siren again rather than piling a second one on top.
+      try {
+        this.siren?.stop();
+      } catch {
+        // already over
+      }
+      this.siren = this.effect(EFFECTS.siren, 0.7);
+      return;
+    }
+    this.effect(EFFECTS.horn, 0.9, HORN_RATE[this.kidKind]);
   }
 
   close(): void {
@@ -230,5 +258,7 @@ export class DrivingSound {
     this.master = null;
     this.engines = [];
     this.squeal = null;
+    this.siren = null;
+    this.files.clear();
   }
 }

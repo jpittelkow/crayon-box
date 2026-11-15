@@ -1,6 +1,6 @@
 // Phase D: sounds with a parent switch, the optional gate PIN, and "reduce motion" (ADR 0008, 0016).
 import { expect, test, type Page } from '@playwright/test';
-import { RED, SHAPES, expectPaint, holdLock as holdTheLock, openShapesPage, pick, tapPage } from './helpers';
+import { RED, SHAPES, expectPaint, holdLock as holdTheLock, openShapesPage, pick, tapPage, touchStrokes } from './helpers';
 
 // The parent area's way back. Its label is being reworded in another branch of work, so both are accepted.
 const BACK_TO_KIDS = /^Back to (coloring|the kids)$/;
@@ -94,6 +94,31 @@ test('kid touches make sounds, until a parent turns them off', async ({ page }) 
   await tapPage(page, SHAPES.inSquare);
   await pick(page, 'Undo');
   expect(await tones(page)).toBe(before);
+});
+
+test('drawing plays the crayon sound, which stops when the finger lifts (ADR 0032)', async ({ page }) => {
+  // Counts looping sources (the crayon) as they start and stop.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __loops: { started: number; stopped: number } };
+    w.__loops = { started: 0, stopped: 0 };
+    const start = AudioBufferSourceNode.prototype.start, stop = AudioBufferSourceNode.prototype.stop;
+    AudioBufferSourceNode.prototype.start = function (...args: Parameters<typeof start>) {
+      if (this.loop) w.__loops.started++;
+      return start.apply(this, args);
+    };
+    AudioBufferSourceNode.prototype.stop = function (...args: Parameters<typeof stop>) {
+      if (this.loop) w.__loops.stopped++;
+      return stop.apply(this, args);
+    };
+  });
+  const loops = () => page.evaluate(() => (window as unknown as { __loops: { started: number; stopped: number } }).__loops);
+  await openShapesPage(page);
+  await pick(page, 'Brush');
+  await pick(page, 'Red');
+  await touchStrokes(page, [[SHAPES.inCircle, SHAPES.inCircleHigh]], 24);
+  await expectPaint(page, SHAPES.inCircle, RED);
+  await expect.poll(async () => (await loops()).started).toBeGreaterThan(0);
+  await expect.poll(async () => (await loops()).stopped).toBe((await loops()).started);
 });
 
 /** Records the name of every CSS animation that starts (the press is a transition, not an animation). */

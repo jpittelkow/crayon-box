@@ -49,9 +49,12 @@ _Last updated: 2026-11-14_
     output (found 2026-11-15). Only the ModelArk *Playground* terms bar publishing outputs, and the API was used, not
     the Playground. The owner should confirm this is enough to commit the Seed Audio files.
   - **Narrator:** the owner checks the full Matilda set and flags clips to redo.
-  - **Siren:** the owner picks one of the six takes.
-  - **Driving sounds** wait for the other driving branch (`driving/steer-and-traffic`), since both change
-    `src/games/racing/sound.ts`.
+  - **Siren:** the owner picks one of the six takes. Part 2 ships `siren-toy-1` as a placeholder.
+  - **Engine loops** are cut automatically from the idle part of each take; the owner checks by ear that none sounds
+    strained at a standstill.
+  - **Tyre squeal and brake squeak** are still made as they play: none was picked as a file.
+  - **Merging with `driving/steer-and-traffic`:** both change `src/games/racing/sound.ts`; that branch only changes
+    the tyre-squeal line, which part 2 doesn't touch.
 - **Search for AI pages from an idea** (ADR 0023): which search service, its key and cost. Settle before building
   that part.
 - **AI model for the animal themes' built-in pages** (ADR 0022): pick with the default model test of ADR 0006.

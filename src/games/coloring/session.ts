@@ -51,6 +51,8 @@ export class ColoringSession {
       onChange: () => this.changed(),
       onNothing: () => ctx.sound.play('nothing'),
       onFill: () => ctx.sound.play('fill'),
+      // A slow line is a quiet scratch, a fast scribble a loud one (page pixels a second; the page is 2048 wide).
+      onDraw: (speed) => ctx.sound.scratch?.(speed <= 0 ? 0 : Math.min(1, 0.25 + speed / 2500)),
     });
     this.engine.mode = picture.meta.mode;
     this.colorValue = this.engine.color;

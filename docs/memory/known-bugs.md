@@ -10,4 +10,5 @@ _Last updated: 2026-11-14_
   files instead of live browser speech, better sound assets (original or CC0, ADR 0011).
   Owner (2026-11-15): sounds ship as files made ahead of time. Picks are in
   [ADR 0032](../adr/0032-sounds-as-files.md) (Accepted 2026-11-15). Part 1 (touch sounds, narrator, praise, page
-  turn) is built; driving engines, effects and the crayon sound are part 2.
+  turn) and part 2 (driving engines and effects, police siren, crayon sound) are built; remove this item once the
+  owner has listened on the laptop.

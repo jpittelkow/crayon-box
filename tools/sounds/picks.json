@@ -4,6 +4,9 @@
     "kenney-ui": { "title": "51 UI sound effects (buttons, switches and clicks), Kenney's UI SFX Set", "url": "https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks", "author": "Kenney", "license": "CC0" },
     "pops": { "title": "3 Pop Sounds", "url": "https://opengameart.org/content/3-pop-sounds", "license": "CC0" },
     "cc0-sfx-100": { "title": "100 CC0 SFX", "url": "https://opengameart.org/content/100-cc0-sfx", "license": "CC0" },
+    "water": { "title": "40 CC0 water / splash / slime SFX", "url": "https://opengameart.org/content/40-cc0-water-splash-slime-sfx", "license": "CC0" },
+    "bicycle-horn": { "title": "Bicycle Horn", "url": "https://opengameart.org/content/bicycle-horn", "license": "CC0" },
+    "seed-audio": { "title": "Made with Seed Audio 1.0 (ByteDance) through OpenRouter for this project", "url": "https://openrouter.ai/bytedance-seed/seed-audio-1-0", "license": "Owned by the project (BytePlus General Terms for AI Services); released as CC0", "model": "bytedance-seed/seed-audio-1-0" },
     "matilda": { "title": "Narrator: ElevenLabs v4, voice Matilda, through OpenRouter (tools/sounds/generate-narrator.mjs)", "url": "https://openrouter.ai/elevenlabs/eleven-v4", "license": "Owned by the project (ElevenLabs terms, paid use); released as CC0", "model": "elevenlabs/eleven-v4", "voice": "matilda" }
   },
   "sounds": [
@@ -11,7 +14,18 @@
     { "out": "ui/fill.wav", "from": "pops", "file": "3pops/pop1.ogg", "kind": "ui" },
     { "out": "ui/undo.wav", "from": "kenney-ui", "file": "UI_SFX_Set/rollover1.wav", "kind": "ui" },
     { "out": "ui/cheer.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/bell_01.ogg", "kind": "ui" },
-    { "out": "ui/page.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/paper_02.ogg", "kind": "ui" }
+    { "out": "ui/page.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/paper_02.ogg", "kind": "ui" },
+    { "out": "ui/crayon.wav", "from": "seed-audio", "file": "seed/crayon-1.mp3", "kind": "loop", "loopSeconds": 1.0, "prompt": "A wax crayon scribbling quickly on paper, close up, no music, about 3 seconds." },
+    { "out": "drive/engine-car.wav", "from": "seed-audio", "file": "seed/engine-car-1.mp3", "kind": "loop", "prompt": "A small family car engine idling then revving gently, recorded close up outdoors, no music, no voices, about 4 seconds." },
+    { "out": "drive/engine-police.wav", "from": "seed-audio", "file": "seed/engine-police-1.mp3", "kind": "loop", "prompt": "A police car V8 engine idling with a deep burble, then a short rev, no siren, no music, about 4 seconds." },
+    { "out": "drive/engine-monster.wav", "from": "seed-audio", "file": "seed/engine-monster-2.mp3", "kind": "loop", "prompt": "A huge monster truck engine rumbling at idle with a heavy low growl, then a big rev, no music, about 4 seconds." },
+    { "out": "drive/engine-bus.wav", "from": "seed-audio", "file": "seed/engine-bus-1.mp3", "kind": "loop", "prompt": "A diesel school bus engine idling with a clattering diesel knock, no music, no voices, about 4 seconds." },
+    { "out": "drive/siren.mp3", "from": "seed-audio", "file": "seed/siren-toy-1.mp3", "kind": "ui", "prompt": "A friendly toy police car siren going wee-woo wee-woo, two tones, bright and cheerful, not scary, no engine, no music, about 2 seconds.", "note": "Placeholder take until the owner picks one of the six." },
+    { "out": "drive/horn.wav", "from": "bicycle-horn", "file": "bicycle-horn/bicycle-horn-1.wav", "kind": "ui" },
+    { "out": "drive/bump.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/wooded_box_open.ogg", "kind": "ui" },
+    { "out": "drive/boing.wav", "from": "cc0-sfx-100", "file": "100-CC0-SFX/spring_03.ogg", "kind": "ui" },
+    { "out": "drive/puddle.wav", "from": "seed-audio", "file": "seed/puddle-2.mp3", "kind": "ui", "prompt": "A toy car driving through a small puddle with a light splash, no music, about 1 second." },
+    { "out": "drive/splash.wav", "from": "water", "file": "40-cc0-water/splash_05.ogg", "kind": "ui" }
   ],
   "narrator": { "from": "matilda", "dir": "narrator", "kind": "voice" }
 }

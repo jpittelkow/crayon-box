@@ -57,7 +57,10 @@ class DrivingGame {
     const screen = el('div', 'driving', { 'data-ready': 'false' });
     const canvas = el('canvas', 'driving-canvas') as DrivingCanvas;
     const back = kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() });
-    const sound = new DrivingSound(settings.sounds);
+    // The game's own sounds switch, and the app's (ADR 0032 settles what ADR 0025 left open: both must be on).
+    const sound = new DrivingSound(settings.sounds && this.ctx.sound.enabled !== false);
+    // Start decoding the sound files now (that needs no touch), so the first honk isn't silent.
+    sound.unlock();
     const hornButton = kidButton({ kind: 'action-lg', label: 'Horn', html: icons.horn(), className: 'driving-horn', onTap: () => sound.horn() });
     // The horn sounds on touch-down, so a quick tap still honks; onTap's lift still gives the press bounce.
     hornButton.addEventListener('pointerdown', () => sound.unlock());
