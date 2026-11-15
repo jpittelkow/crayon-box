@@ -1,11 +1,13 @@
 // Every asset has both halves (driving-assets.md): a definition the simulation reads and a look that draws it.
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
+import { ANIMAL_LOOKS } from './look/animals';
 import { DECOR_LOOKS, SCENERY_LOOKS } from './look/scenery';
 import { TOY_LOOKS } from './look/toys';
 import { buildVehicle } from './look/vehicles';
 import { ISLAND } from './maps/island';
 import { CATEGORIES, VEHICLE_IDS } from './sim/assets';
+import { ANIMAL_IDS } from './sim/assets/animals';
 import { DECOR_IDS, SCENERY, SCENERY_IDS } from './sim/assets/scenery';
 import { TOYS, TOY_IDS } from './sim/assets/toys';
 import type { VehicleKind } from './sim/sim';
@@ -28,7 +30,9 @@ describe('the asset registry', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('every toy, tree and bush has a look, and every look has a definition', () => {
+  it('every toy, tree, bush and animal has a look, and every look has a definition', () => {
+    expect(Object.keys(ANIMAL_LOOKS).sort()).toEqual([...ANIMAL_IDS].sort());
+    for (const id of ANIMAL_IDS) expect(triangles(ANIMAL_LOOKS[id]()), id).toBeLessThanOrEqual(3000);
     expect(Object.keys(TOY_LOOKS).sort()).toEqual([...TOY_IDS].sort());
     expect(Object.keys(SCENERY_LOOKS).sort()).toEqual([...SCENERY_IDS].sort());
     expect(Object.keys(DECOR_LOOKS).sort()).toEqual([...DECOR_IDS].sort());

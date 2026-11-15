@@ -5,10 +5,13 @@ import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import type { createRenderer as CreateRendererFn } from './render';
-import { VEHICLES, forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving } from './settings';
+import { MAPS, MAP_NAMES } from './maps';
+import { VEHICLE_NAMES } from './names';
+import type { MapDef } from './sim/map';
+import { forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving, shownVehicles } from './settings';
 import { DRIVE_KEYS, driveInput } from './sim/input';
 import { TOYS } from './sim/assets/toys';
-import { makeWorld, step, type Assist, type VehicleKind, type World } from './sim/sim';
+import { honk, makeWorld, step, type Assist, type VehicleKind, type World } from './sim/sim';
 import { groundPoint } from './sim/view';
 import { DrivingSound } from './sound';
 import './racing.css';
@@ -22,8 +25,6 @@ const PALM_CSS_PX = 80;
 
 type CreateRenderer = typeof CreateRendererFn;
 
-/** The vehicles' names, for screen readers and tests only: the picker shows no text (ADR 0003). */
-const VEHICLE_NAMES: Record<VehicleKind, string> = { car: 'Car', police: 'Police car', monster: 'Monster truck', bus: 'School bus' };
 
 /** The canvas carries the running world, for tests and the dev tools only. */
 export type DrivingCanvas = HTMLCanvasElement & { drivingWorld?: World };
@@ -55,7 +56,7 @@ class DrivingGame {
 
   async start(): Promise<void> {
     const { kid, storage } = this.ctx;
-    const [prefs, settings, { createRenderer }, { vehicleTiles }] = await Promise.all([
+    const [prefs, settings, { createRenderer }, { vehicleTiles, mapTiles }] = await Promise.all([
       loadKidDriving(storage, kid.id),
       loadDrivingSettings(storage),
       import('./render'),
@@ -64,8 +65,9 @@ class DrivingGame {
     if (this.stopped) return;
     const kidColor = this.kidColor();
 
-    // The vehicle picker (milestone-3 B5): a tile for each vehicle, on the kid's colour (ADR 0021); the last one
-    // picked shows picked, and a tap drives off in that vehicle.
+    // The picker (milestone-3 B5 and E, ADR 0035): one screen on the kid's colour (ADR 0021), the maps along the
+    // top and the vehicles below. A tap on a map rings it; a tap on a vehicle drives off on the ringed map. The last
+    // map and vehicle show picked.
     const picker = el('div', 'driving-picker', { 'data-ready': 'false' });
     picker.style.background = `var(--kid-${kid.color}-tint, var(--paper))`;
     picker.append(kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() }));
@@ -73,28 +75,61 @@ class DrivingGame {
     const choose = async (vehicle: VehicleKind) => {
       if (chosen) return;
       chosen = true;
-      await saveKidDriving(storage, kid.id, { ...prefs, vehicle });
+      await saveKidDriving(storage, kid.id, { ...prefs, vehicle, map: map.id });
       if (this.stopped) return;
       picker.remove();
-      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, kidColor);
+      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, kidColor, shown, map);
     };
-    const pictures = vehicleTiles(VEHICLES, kidColor);
-    const tiles = VEHICLES.map((vehicle, i) => {
+    // The maps: wide tiles, each a picture of it from above.
+    let map = MAPS.find((m) => m.id === prefs.map) ?? MAPS[0]!;
+    const mapPictures = mapTiles(MAPS, kidColor);
+    const mapTilesEls = MAPS.map((m, i) => {
+      const tile = kidButton({
+        kind: 'paper', label: MAP_NAMES[m.id] ?? m.id, className: 'map-tile',
+        onTap: () => {
+          map = m;
+          setPicked(mapTilesEls, tile);
+        },
+      });
+      tile.dataset.map = m.id;
+      tile.append(Object.assign(document.createElement('img'), { src: mapPictures[i], alt: '' }));
+      return tile;
+    });
+    setPicked(mapTilesEls, mapTilesEls[MAPS.indexOf(map)]);
+    const mapRow = el('div', 'map-row');
+    mapRow.append(...mapTilesEls);
+    // The vehicles a parent has on (ADR 0035).
+    const shown = shownVehicles(settings);
+    const pictures = vehicleTiles(shown, kidColor);
+    const tiles = shown.map((vehicle, i) => {
       const tile = kidButton({ kind: 'paper', label: VEHICLE_NAMES[vehicle], className: 'vehicle-tile', onTap: () => void choose(vehicle) });
       tile.dataset.vehicle = vehicle;
       tile.append(Object.assign(document.createElement('img'), { src: pictures[i], alt: '' }));
       return tile;
     });
-    setPicked(tiles, tiles[VEHICLES.indexOf(prefs.vehicle)]);
+    const last = Math.max(0, shown.indexOf(prefs.vehicle));
+    setPicked(tiles, tiles[last]);
+    // Five tiles a page and a "more" tile when there are more than six (ADR 0016 rule 6), opening on the page with
+    // the last pick.
+    const per = tiles.length > 6 ? 5 : tiles.length, pages = Math.ceil(tiles.length / per);
+    let page = Math.floor(last / per);
     const grid = el('div', 'vehicle-grid');
-    grid.append(...tiles);
-    picker.append(grid);
+    const more = kidButton({
+      kind: 'paper', label: 'More', html: icons.more(), className: 'vehicle-tile vehicle-more',
+      onTap: () => {
+        page = (page + 1) % pages;
+        showPage();
+      },
+    });
+    const showPage = () => grid.replaceChildren(...tiles.slice(page * per, page * per + per), ...(pages > 1 ? [more] : []));
+    showPage();
+    picker.append(mapRow, grid);
     this.root.append(picker);
     picker.dataset.ready = 'true';
   }
 
-  /** The island, driven in the vehicle the kid picked. */
-  private drive(assist: Assist, soundsOn: boolean, createRenderer: CreateRenderer, vehicle: VehicleKind, kidColor: string): void {
+  /** A map, driven in the vehicle the kid picked. */
+  private drive(assist: Assist, soundsOn: boolean, createRenderer: CreateRenderer, vehicle: VehicleKind, kidColor: string, shown: VehicleKind[], map: MapDef): void {
     const screen = el('div', 'driving', { 'data-ready': 'false' });
     const canvas = el('canvas', 'driving-canvas') as DrivingCanvas;
     const back = kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() });
@@ -102,14 +137,19 @@ class DrivingGame {
     const sound = new DrivingSound(soundsOn && this.ctx.sound.enabled !== false);
     // Start decoding the sound files now (that needs no touch), so the first honk isn't silent.
     sound.unlock();
-    const hornButton = kidButton({ kind: 'action-lg', label: 'Horn', html: icons.horn(), className: 'driving-horn', onTap: () => sound.horn() });
+    // The horn: its sound, and the animals nearby answer it (milestone-3 B3). The world is made just below.
+    const hornNow = () => {
+      sound.horn();
+      honk(world);
+    };
+    const hornButton = kidButton({ kind: 'action-lg', label: 'Horn', html: icons.horn(), className: 'driving-horn', onTap: () => hornNow() });
     // The horn sounds on touch-down, so a quick tap still honks; onTap's lift still gives the press bounce.
     hornButton.addEventListener('pointerdown', () => sound.unlock());
     screen.append(canvas, back, hornButton);
     this.root.append(screen);
     this.cleanups.push(() => sound.close());
 
-    const world = makeWorld(SEED, PROP_COUNT, assist, undefined, vehicle);
+    const world = makeWorld(SEED, map.propCount ?? PROP_COUNT, assist, map, vehicle, shown);
     canvas.drivingWorld = world;
     let renderer = createRenderer(canvas, world, kidColor);
     this.cleanups.push(() => renderer.dispose());
@@ -175,7 +215,7 @@ class DrivingGame {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!DRIVE_KEYS.includes(e.code)) return;
       sound.unlock();
-      if (e.code === 'Space' && !e.repeat) sound.horn();
+      if (e.code === 'Space' && !e.repeat) hornNow();
       keys.add(e.code);
     };
     const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
@@ -205,6 +245,8 @@ class DrivingGame {
         step(world, input, STEP);
         for (const toy of world.knocks) sound.bump(TOYS[toy].bump);
         for (const depth of world.splashes) sound.splash(depth === 2);
+        // Animals answering the horn (milestone-3 B3).
+        for (const kind of world.calls) sound.call(kind);
         // Landing from a ramp hop: a soft thump (its own sound comes with the sound files, milestone-3 B6).
         if (world.landings.includes(0)) sound.bump('thump');
         owed -= STEP;

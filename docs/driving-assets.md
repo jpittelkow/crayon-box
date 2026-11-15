@@ -114,16 +114,16 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 | `vehicle/police` | built | all, town | flashing lamps; horn becomes a siren (phase D) |
 | `vehicle/monster` | built | all, country | pushes toys furthest, wades fastest |
 | `vehicle/bus` | built | all, town | flashing top lamps |
-| `vehicle/fire-truck` | sample | all, town | from `spikes/vehicle-sources/`; ladder could rise when stopped |
-| `vehicle/ambulance` | planned | town | siren, lamps |
-| `vehicle/tow-truck` | planned | all | hook swings |
-| `vehicle/digger` | planned | country | arm scoops when stopped |
-| `vehicle/dump-truck` | planned | country | bed tips when stopped |
-| `vehicle/tractor` | planned | country | slow, big back wheels |
-| `vehicle/garbage-truck` | idea | town | |
-| `vehicle/cement-mixer` | idea | town | drum turns |
-| `vehicle/ice-cream-van` | idea | island | its own original tune as the horn |
-| `vehicle/race-car` | idea | all | quickest |
+| `vehicle/fire-truck` | built (2026-11-15, `look/fleet.ts`) | all, town | ladder rises when it stops; siren (stand-in), lamps flash |
+| `vehicle/ambulance` | built (2026-11-15, `look/fleet.ts`) | town | siren (stand-in, higher), lamps flash |
+| `vehicle/tow-truck` | built (2026-11-15, `look/fleet.ts`) | all | hook swings as it drives |
+| `vehicle/digger` | built (2026-11-15, `look/fleet.ts`) | country | arm scoops when it stops; beep-beep |
+| `vehicle/dump-truck` | built (2026-11-15, `look/fleet.ts`) | country | bed tips when it stops |
+| `vehicle/tractor` | built (2026-11-15, `look/fleet.ts`) | country | slow, big back wheels; painted in the kid's colour |
+| `vehicle/garbage-truck` | built (2026-11-15, `look/fleet.ts`) | town | amber lamp |
+| `vehicle/cement-mixer` | built (2026-11-15, `look/fleet.ts`) | town | drum turns |
+| `vehicle/ice-cream-van` | built (2026-11-15, `look/fleet.ts`) | island | a cone on the roof; its horn is a little tune (stand-in) |
+| `vehicle/race-car` | built (2026-11-15, `look/fleet.ts`) | all | quickest; painted in the kid's colour |
 
 **States every vehicle has** (switched by ground, water and set pieces, not assets of their own):
 | State | Status | Switched on by | Switched off by |
@@ -205,10 +205,10 @@ Rules for roads:
 | Id | Status | Notes |
 |---|---|---|
 | `road/curve` | built | any stretch between junctions; the ring is one closed curve |
-| `road/junction` | built (three-way, 2026-11-15) | an open road joins another at its ends (`from`, `to`); traffic and "follows the road" pick a way there. Four-way and traffic giving way are still to do |
+| `road/junction` | built (three-way, 2026-11-15) | an open road joins another at its ends (`from`, `to`); traffic and "follows the road" pick a way there, and traffic gives way to the kid's car. Four-way is still to do |
 | `road/roundabout` | idea | town; a toy or fountain in the middle |
 | `road/bridge-deck` | built (2026-11-15, a `bridge` guard) | a wooden deck over the water with white rails the car slides along; the shore doesn't turn the car back on or near it |
-| `road/tunnel-floor` | built (2026-11-15, a `tunnel` guard) | walls keep the car on the road; stone portals at both ends. Lamps are still to do; the hill around it is a map `hill` |
+| `road/tunnel-floor` | built (2026-11-15, a `tunnel` guard) | walls keep the car on the road; stone portals at both ends; the hill around it is a map `hill`. Lamps were tried and dropped: with no tunnel walls drawn, they float when the hill fades |
 | `road/ford` | idea | a shallow stretch across a river: puddle splash, never deep |
 | `road/ramp` | planned (ADR 0021) | the slope; the jump is the set piece |
 
@@ -257,10 +257,10 @@ sails); see Border cases.
 ### 8. Animals
 | Id | Status | Maps | Answer to the horn |
 |---|---|---|---|
-| `animal/cow` | idea | country | moo, turns its head |
-| `animal/sheep` | idea | country | baa, small hop |
+| `animal/cow` | built (2026-11-15) | building site, later maps | moo (stand-in), a hop |
+| `animal/sheep` | built (2026-11-15) | island | baa (stand-in), small hop |
 | `animal/chicken` | idea | country | cluck, flaps |
-| `animal/duck` | idea | island, country | quack, paddles away on the pond |
+| `animal/duck` | built (2026-11-15) | island | quack (stand-in), a hop; paddling on a pond is still to do |
 | `animal/seagull` | idea | island | flies up and lands again |
 | `animal/dog` | idea | town | woof, wags |
 

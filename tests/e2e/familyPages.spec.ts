@@ -1,7 +1,7 @@
 // Phase F: family pages from files (ADR 0005). Real files go through the parent area's Add pages screen, then
 // show up in the kids' library under Our pages (or a chosen theme).
 import { expect, test, type Page } from '@playwright/test';
-import { openParentArea, pick } from './helpers';
+import { openParentArea, pick, openColoring } from './helpers';
 
 /** A drawing made in the page: closed shapes in black on white, as a PNG. */
 async function drawingPng(page: Page): Promise<Buffer> {
@@ -73,7 +73,7 @@ test('a drawing becomes a page in Our pages, and a kid can color it', async ({ p
 
   // In the library: Our pages comes first in the strip, with the page in it.
   await page.getByRole('button', { name: 'Back to the kids' }).click();
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   const ours = page.locator('.theme-strip [data-theme="our-pages"]');
   await expect(ours).toBeVisible();
   await ours.tap();
@@ -125,7 +125,7 @@ test('a family page can be hidden and removed', async ({ page }) => {
   const row = page.locator('[data-page^="family:boat-"]');
   await row.getByRole('switch', { name: 'Show Boat' }).click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   // Hidden: Our pages has nothing to show, so it has no button.
   await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
   await expect(page.locator('.theme-strip [data-theme="our-pages"]')).toHaveCount(0);

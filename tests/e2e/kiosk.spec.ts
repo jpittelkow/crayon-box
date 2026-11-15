@@ -1,7 +1,7 @@
 // Phase D: the kiosk lock (ADR 0014). The Windows app's lock is stood in for by the dev server's fake
 // (`?fake-kiosk`, src/shell/fakeKiosk.ts), which records what the app asks of it.
 import { expect, test, type Page } from '@playwright/test';
-import { SHAPES, openParentArea, pick, tapPage } from './helpers';
+import { SHAPES, openParentArea, pick, tapPage, openColoring } from './helpers';
 
 type Log = { mode: string | null; locked: boolean | null; startAtSignIn: boolean; quits: number };
 const log = (page: Page) =>
@@ -54,7 +54,7 @@ test("Quit is on the parent area's first screen and quits the app", async ({ pag
 
 test('Ctrl+Shift+Q from a picture saves it, then quits', async ({ page }) => {
   await page.goto('/?fake-kiosk');
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   await page.getByRole('button', { name: 'Shapes', exact: true }).tap();
   await page.getByRole('button', { name: SHAPES.title }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
@@ -65,7 +65,7 @@ test('Ctrl+Shift+Q from a picture saves it, then quits', async ({ page }) => {
   await expect.poll(async () => (await log(page)).quits).toBe(1);
   // Saved: after a reload the kid's picture is in My pictures.
   await page.goto('/');
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   await pick(page, 'My pictures');
   await expect(page.locator('[data-picture]')).toHaveCount(1);
 });

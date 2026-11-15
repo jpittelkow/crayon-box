@@ -18,11 +18,9 @@ function car(page: Page): Promise<CarState> {
   });
 }
 
+/** Opens the app. Driving shows by default (owner, 2026-11-15), so there is nothing to turn on. */
 async function turnOnDriving(page: Page): Promise<void> {
   await page.goto('/');
-  await openParentArea(page);
-  await page.getByText('Show Driving').click();
-  await page.getByRole('button', { name: 'Back to the kids' }).click();
 }
 
 /** Opens the game and picks a vehicle on the picker (milestone-3 B5), then waits for the island. */
@@ -40,8 +38,12 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   await page.getByRole('button', { name: 'Driving', exact: true }).tap();
   const picker = page.locator('.driving-picker');
   await expect(picker).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
-  // Four vehicles, each with a picture; the car is picked to begin with.
-  await expect(picker.locator('.vehicle-tile')).toHaveCount(4);
+  // Fourteen vehicles (ADR 0035): five a page and a "more" tile, each with a picture; the car is picked to begin with.
+  await expect(picker.locator('.vehicle-tile')).toHaveCount(6);
+  await page.getByRole('button', { name: 'More', exact: true }).tap();
+  await expect(page.getByRole('button', { name: 'Ambulance', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'More', exact: true }).tap();
+  await page.getByRole('button', { name: 'More', exact: true }).tap();
   await expect(picker.locator('.vehicle-tile img').first()).toHaveAttribute('src', /^data:image\/png/);
   await expect(page.getByRole('button', { name: 'Car', exact: true })).toHaveAttribute('aria-pressed', 'true');
 
@@ -64,16 +66,19 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   await expect(page.getByRole('button', { name: 'School bus', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('the driving game stays hidden until a parent turns it on', async ({ page }) => {
+test('the driving game shows on the home screen by default, and a parent can hide it', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Star kid' }).tap();
-  // One game on: straight into coloring, no home screen (ADR 0012).
-  await expect(page.locator('[data-screen="game-coloring"]')).toBeVisible();
-
-  await turnOnDriving(page);
   await page.getByRole('button', { name: 'Star kid' }).tap();
   await expect(page.locator('[data-screen="home"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Driving', exact: true })).toBeVisible();
+
+  // Hidden again: one game on, so straight into coloring, no home screen (ADR 0012).
+  await page.goto('/');
+  await openParentArea(page);
+  await page.getByText('Show Driving').click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await expect(page.locator('[data-screen="game-coloring"]')).toBeVisible();
 });
 
 test('a touch drives the car to that spot and it stops there; lifting early stops it too', async ({ page }) => {
@@ -141,4 +146,28 @@ test('a parent sets a kid to "follows the road"', async ({ page }) => {
     return canvas.drivingWorld!.assist;
   });
   expect(assist).toBe('road');
+});
+
+test('the picker has the maps along the top: a tap rings one, and a vehicle drives off there (ADR 0035)', async ({ page }) => {
+  await turnOnDriving(page);
+  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await page.getByRole('button', { name: 'Driving', exact: true }).tap();
+  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true', { timeout: 60_000 });
+  await expect(page.locator('.map-tile')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'Island', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Building site', exact: true }).tap();
+  await expect(page.getByRole('button', { name: 'Building site', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Car', exact: true }).tap();
+  await expect(page.locator('.driving')).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
+  const map = await page.evaluate(() => {
+    const canvas = document.querySelector('.driving-canvas') as HTMLCanvasElement & { drivingWorld?: { map: { id: string } } };
+    return canvas.drivingWorld!.map.id;
+  });
+  expect(map).toBe('site');
+
+  // Coming back in, the building site is ringed.
+  await page.getByRole('button', { name: 'Back', exact: true }).tap();
+  await page.getByRole('button', { name: 'Driving', exact: true }).tap();
+  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true', { timeout: 60_000 });
+  await expect(page.getByRole('button', { name: 'Building site', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });

@@ -18,13 +18,13 @@ const allowed = (w: World, x: number, z: number) => onLand(w.land, x, z) || guar
 const inHill = (w: World, x: number, z: number) => hillReach(ISLAND.hills![0]!, x, z) < 0.8 && !guardAt(w.guards, w.roads, x, z);
 
 describe('the island, layout A (milestone-3 B4)', () => {
-  it('has a junction at each end of the shortcut, on the loop', () => {
+  it('has a junction at each end of the shortcut and at the spur\'s start on the loop, and the spur\'s end on the shortcut', () => {
     const w = makeWorld(7, 0, 'free', ISLAND);
     const ends = w.junctions[0]!.map((j) => pointAt(w.roads[0]!, j.s));
-    expect(w.junctions[0]!.map((j) => [j.road, j.dir])).toEqual([[1, 1], [1, -1]]);
-    expect(ends[0]!.z).toBeCloseTo(37, 0);
-    expect(ends[1]!.z).toBeCloseTo(-37, 0);
-    expect(w.junctions[1]).toEqual([]);
+    expect(w.junctions[0]!.map((j) => [j.road, j.dir])).toEqual([[1, 1], [1, -1], [2, 1]]);
+    expect(ends[0]!.z).toBeCloseTo(66.6, 0);
+    expect(ends[1]!.z).toBeCloseTo(-66.6, 0);
+    expect(w.junctions[1]!.map((j) => [j.road, j.dir])).toEqual([[2, -1]]);
   });
 
   it('traffic takes the shortcut sometimes, comes back onto the loop, and stays on the roads', () => {
@@ -48,7 +48,7 @@ describe('the island, layout A (milestone-3 B4)', () => {
   it('"follows the road" drives both the shortcut (through the tunnel) and the bridge, and never into the sea', () => {
     const w = makeWorld(7, 0, 'road', ISLAND);
     let tunnel = 0, bridge = 0, bad = 0, off = 0;
-    run(w, 120, (world) => {
+    run(w, 240, (world) => {
       const kid = world.cars[0]!;
       const g = guardAt(world.guards, world.roads, kid.x, kid.z);
       if (g?.guard.kind === 'tunnel') tunnel++;
@@ -111,12 +111,28 @@ describe('the island, layout A (milestone-3 B4)', () => {
     expect(onLand(w.land, kid.x, kid.z)).toBe(true);
   });
 
+  it('tells the sounds what is under the kid\'s car: the bridge, the tunnel, sand (milestone-3 B6)', () => {
+    const w = makeWorld(7, 0, 'free', ISLAND);
+    const under = (x: number, z: number) => {
+      Object.assign(w.cars[0], { x, z, speed: 0 });
+      step(w, { go: false, brake: true, steer: 0 }, DT);
+      return w.under;
+    };
+    const bridge = w.guards.find((g) => g.kind === 'bridge')!, tunnel = w.guards.find((g) => g.kind === 'tunnel')!;
+    const onBridge = pointAt(w.roads[bridge.road]!, (bridge.s0 + bridge.s1) / 2);
+    const inTunnel = pointAt(w.roads[tunnel.road]!, (tunnel.s0 + tunnel.s1) / 2);
+    expect(under(onBridge.x, onBridge.z)).toEqual({ sand: false, bridge: true, tunnel: false });
+    expect(under(inTunnel.x, inTunnel.z)).toEqual({ sand: false, bridge: false, tunnel: true });
+    expect(under(-36, -85)).toEqual({ sand: true, bridge: false, tunnel: false });
+    expect(under(-36, 36)).toEqual({ sand: false, bridge: false, tunnel: false });
+  });
+
   it('sand on the beach slows the car and kicks up puffs', () => {
     const w = makeWorld(7, 0, 'free', ISLAND);
     w.trees.length = 0;
     // On the beach, heading east along it, at full speed.
-    Object.assign(w.cars[0], { x: -20, z: -46, heading: Math.PI / 2, speed: 17 });
-    expect(onSand(w.sand, -20, -46)).toBe(true);
+    Object.assign(w.cars[0], { x: -36, z: -84, heading: Math.PI / 2, speed: 17 });
+    expect(onSand(w.sand, -36, -84)).toBe(true);
     let puffs = 0, fastest = 0, onFor = 0;
     run(w, 2, (world) => {
       const kid = world.cars[0]!;

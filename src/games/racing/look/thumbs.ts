@@ -3,7 +3,10 @@
 // thrown away straight after, so the game's own renderer is the only one left running.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import type { VehicleKind } from '../sim/sim';
+import { createRenderer } from '../render';
+import type { MapDef } from '../sim/map';
+import { makeWorld, type VehicleKind } from '../sim/sim';
+import { CAMERA_FOV } from '../sim/view';
 import { buildKidVehicle } from './vehicles';
 
 /** One picture per vehicle, as image URLs, `width` by `height` pixels. */
@@ -33,7 +36,10 @@ export function vehicleTiles(kinds: readonly VehicleKind[], kidColor: THREE.Colo
       Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 1, far: 60 });
       scene.add(sun);
 
-      const vehicle = buildKidVehicle(kind, kidColor).group;
+      const model = buildKidVehicle(kind, kidColor);
+      // Posed as if driving: a digger's arm raised, a ladder down.
+      model.animate?.(0, 10);
+      const vehicle = model.group;
       vehicle.traverse((o) => {
         if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
       });
@@ -67,4 +73,28 @@ export function vehicleTiles(kinds: readonly VehicleKind[], kidColor: THREE.Colo
     renderer.dispose();
     renderer.forceContextLoss();
   }
+}
+
+/**
+ * A picture of each map from high above (milestone-3 E), for the picker's map tiles: the whole land in view, as the
+ * game draws it, `width` by `height` pixels. Each is drawn with a renderer thrown away straight after.
+ */
+export function mapTiles(maps: readonly MapDef[], kidColor: THREE.ColorRepresentation, width = 640, height = 300): string[] {
+  return maps.map((map) => {
+    const world = makeWorld(7, Math.min(map.propCount ?? 150, 150), 'free', map);
+    const canvas = document.createElement('canvas');
+    const renderer = createRenderer(canvas, world, kidColor);
+    try {
+      renderer.resize(width, height, 1);
+      const land = world.land;
+      const cx = (land.minX + land.maxX) / 2, cz = (land.minZ + land.maxZ) / 2;
+      // High enough that the land fits both ways, with a little room round it, and tipped a little for depth.
+      const tan = Math.tan((CAMERA_FOV * Math.PI) / 360);
+      const up = Math.max((land.maxZ - land.minZ) / 2 / tan, (land.maxX - land.minX) / 2 / (tan * (width / height))) * 1.08;
+      renderer.render(world, { eye: [cx, up, cz - up * 0.35], target: [cx, 0, cz] });
+      return canvas.toDataURL('image/png');
+    } finally {
+      renderer.dispose();
+    }
+  });
 }

@@ -69,7 +69,9 @@ test.beforeEach(async ({ page }) => {
 test('letters stay hidden until a parent turns them on', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Star kid' }).tap();
-  await expect(page.locator('[data-screen="game-coloring"]')).toBeVisible();
+  // Coloring and Driving on (Driving shows by default), Letters not.
+  await expect(page.locator('[data-screen="home"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Letters', exact: true })).toHaveCount(0);
   await turnOnLetters(page);
   await openLetters(page);
   await expect(page.getByRole('button', { name: 'Practice' })).toBeVisible();

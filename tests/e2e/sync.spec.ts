@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { handler } from '../../server/src/http';
 import { Store } from '../../server/src/store';
-import { SHAPES, openParentArea, pick, tapPage } from './helpers';
+import { SHAPES, openParentArea, pick, tapPage, openColoring } from './helpers';
 
 let dir: string;
 let store: Store;
@@ -62,7 +62,7 @@ test('a picture painted on one device shows up on another', async ({ browser }) 
 
   // Device one: paint, then connect (its first sync sends the picture).
   await one.goto('/');
-  await one.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(one, 'Star kid');
   await one.getByRole('button', { name: 'Shapes', exact: true }).tap();
   await one.getByRole('button', { name: SHAPES.title }).tap();
   await expect(one.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
@@ -82,7 +82,7 @@ test('a picture painted on one device shows up on another', async ({ browser }) 
   await connect(two);
   await expect(two.locator('[data-sync-status]')).toHaveAttribute('data-sync-status', 'ok');
   await two.getByRole('button', { name: 'Back to the kids' }).click();
-  await two.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(two, 'Star kid');
   await pick(two, 'My pictures');
   await expect(two.locator('[data-picture]')).toHaveCount(1);
 });

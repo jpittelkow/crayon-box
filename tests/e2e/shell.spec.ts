@@ -7,7 +7,7 @@ test('Back on the home screen goes to the kid picker, from every game', async ({
   await page.goto('/');
   await openParentArea(page);
   await page.getByText('Show Letters').click();
-  await page.getByText('Show Driving').click();
+  // Driving shows by default.
   await page.getByRole('button', { name: 'Back to the kids' }).click();
 
   for (const game of ['Coloring', 'Letters', 'Driving']) {

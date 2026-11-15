@@ -107,10 +107,12 @@ screen, a browser test and screenshots.
 | **B3. Set pieces, one PR each** | In this order, simplest first; each is a zone plus a short animation and a sound hook (category 7 in [driving-assets.md](driving-assets.md)): **ramp** (a faked hop: the car rises and lands on its wheels, never flips); **car wash** (drive in, brushes turn, the car comes out *bubbly* then rinsed; also washes off *wet*); **beach** (sand surface, wheel puffs, the car slows a little, never stops); **bridge** (a road stretch over water: drawn deck and rails, the car stays on it); **tunnel** (a road stretch under a hill: the hill turns see-through or the camera drops inside, so the car is never hidden, ADR 0021). | no | small to medium each |
 | **B4. The island redrawn** | A new island layout as one map file using B2 and B3: a main loop plus one cross road (one junction each end), the bridge over an inlet, the tunnel through one hill, the beach on one side, the ramp and car wash beside the loop, the flood kept. Still about 30 s end to end. **Layout A chosen by the owner (2026-11-15)**: [the picture](design/island-layout-a.svg), over B ([one winding loop](design/island-layout-b.svg)). So B4 builds junctions: traffic and "follows the road" pick a way at each one. | decided | medium |
 | **B5. Vehicle picker and the kid's colour** | Tiles of the four vehicles that exist, three across, a tap drives off; the last one saved per kid; the kid drives that vehicle (traffic keeps the others). The kid's colour, **mixed (owner, 2026-11-15; [mockup](design/kid-colour-options.png))**: the car and monster truck painted in it, as today; vehicles with a look of their own (police car, school bus, and later the fire truck and others) keep it and fly a flag in the kid's colour. Optional here: the steering wheel overlay and steering sensitivity (below). | decided | medium |
-| **B6. Sounds** | The driving game already plays files (ADR 0032, PR #23) and follows the app-wide switch. Left: each set piece's sound, horns for the monster truck and bus, and a tunnel echo; see "B6, researched" below. | a few choices, below | small to medium |
+| **B6. Sounds** | The driving game already plays files (ADR 0032, PR #23) and follows the app-wide switch. Left: each set piece's sound, horns for the monster truck and bus, and a tunnel echo; see "B6, researched" below. | decided (2026-11-15) | small to medium |
 | **B7. Laptop and kids** | Phase A2 (the frame-rate readout, on the installed app on the family laptop) and the first driving playtest: assist level, a resting hand, whether a finger held still ending in a stop reads as "got there" (ADR 0031), whether the horn and back buttons are found. Fixes from it; accept ADR 0031. | yes: run it | depends on findings |
 
-**Status (2026-11-15):** B1: PR #18 merged; the map-file work with ADR 0031 ported is the PR from `driving/milestone-3-mvp`. Taking those commits off the in-app updates branch waits on the owner. B2: the land as an outline (`sim/land.ts`: depth from the shore, inland direction, placing things; the ground drawn from it) and zones with enter and leave events are built; surfaces and junctions come with B3 (beach) and B4 (the new layout). B3: the **ramp** and the **car wash** are built. B4: **done** (2026-11-15). The game drives the new island, layout A (`maps/island.ts`; the old ring is kept as the tests' map, `maps/ring.ts`), with three-way junctions, a bridge over the bay, a tunnel through a hill that turns see-through while the kid is inside, and a sandy beach. Still to do from B3: animals that answer the horn. B5: **done** (2026-11-15): the game opens on a vehicle picker (four tiles, pictures drawn from the game's own models in the kid's colours, on the kid's tint); the last pick is saved per kid; the kid drives it and the car takes its place in traffic. The kid's colour is mixed, as decided: paint on the car and monster truck, a flag on the police car and bus. The chase camera pulls back for a longer vehicle.
+**Status (2026-11-15):** B1: PR #18 merged; the map-file work with ADR 0031 ported is the PR from `driving/milestone-3-mvp`. Taking those commits off the in-app updates branch waits on the owner. B2: the land as an outline (`sim/land.ts`: depth from the shore, inland direction, placing things; the ground drawn from it) and zones with enter and leave events are built; surfaces and junctions come with B3 (beach) and B4 (the new layout). B3: the **ramp** and the **car wash** are built. B4: **done** (2026-11-15). The game drives the new island, layout A (`maps/island.ts`; the old ring is kept as the tests' map, `maps/ring.ts`), with three-way junctions, a bridge over the bay, a tunnel through a hill that turns see-through while the kid is inside, and a sandy beach. B3 is finished too (2026-11-15): **animals** (sheep and ducks on the island; a cow is built for later maps) wander near home, step aside before the car can reach them, and answer the horn with a hop and their call (stand-in sounds). **Traffic gives way**: a cruising traffic car slows and waits for the kid's car in its lane, at a junction, on the bridge or anywhere. B5: **done** (2026-11-15): the game opens on a vehicle picker (four tiles, pictures drawn from the game's own models in the kid's colours, on the kid's tint); the last pick is saved per kid; the kid drives it and the car takes its place in traffic. The kid's colour is mixed, as decided: paint on the car and monster truck, a flag on the police car and bus. The chase camera pulls back for a longer vehicle.
+
+**B6 status (2026-11-15): built with stand-ins.** The simulation reports what is under the kid's car (`World.under`: sand, bridge, tunnel). The tunnel has an echo and sand a hiss, both made by the app; the bridge's planks knock (the wooden bump, high and quiet); the car wash has a whoosh going in and bubbles popping while the car is soapy (the splash and the app's pop). Still to come: takes of their own for the landing, the car wash and the planks, once new sound files can be fetched or made (needs the owner's OK: a download from OpenGameArt or paid AI takes; ffmpeg is also needed on the dev machine for `tools/sounds/prepare.mjs`).
 
 #### B6, researched (2026-11-15)
 The sound-files work (ADR 0032, PR #23) has landed, so the driving game already plays files from `assets/sounds/drive/` (an engine per vehicle, horn, siren, squeal, brake, bump, boing, puddle, splash), with its own loader in `src/games/racing/sound.ts`, and plays only when its own switch and the app-wide switch are both on. Engines are loops whose playback rate and brightness follow speed; traffic fades with distance. What B6 still has to do:
@@ -119,7 +121,7 @@ The sound-files work (ADR 0032, PR #23) has landed, so the driving game already 
 - **A tunnel echo** on the engine and horn, made in the browser (a delay or reverb while in the tunnel), unless every sound must be a file.
 - **Smaller:** play an effect late rather than skip it before its file has loaded; whether the driving game moves onto the shell's shared sound bank; two stale doc lines (`docs/sound-options.md` still says engines are oscillators).
 
-Owner's choices for B6: which new sounds to make (AI or CC0 recordings), new horns now or with the vehicles of phase D, and whether a browser-made echo is fine.
+Owner's choices for B6 (2026-11-15): the new set-piece sounds may be AI-made or CC0 recordings, whichever sounds better; horns for the monster truck and bus wait for the vehicles of phase D; the tunnel echo may be made by the app (a delay or reverb), not a file.
 
 B2 to B5 can start before B7, but B7's frame rate may turn the look down (ADR 0025's order), so B4 is checked
 on the laptop before B5 adds more.
@@ -143,6 +145,8 @@ One new ADR before any vehicle or map work, superseding ADR 0021's "one small is
 - Mockups added to the canvas for the vehicle picker, the map picker and the garage.
 
 ### D. Vehicles
+**Status (2026-11-15): built** (ADR 0035, Proposed). Ten new vehicles in code (`look/fleet.ts`), each with a moving part (a ladder that rises, a bed that tips, a digger that scoops, a drum that turns, a hook that swings), a feel (`VEHICLE_FEEL`: top speed, how far it knocks toys, wading), a stand-in engine and horn (sirens, a beep-beep, an ice-cream tune). The picker pages five at a time; traffic comes from the vehicles switched on; a parent can switch any vehicle but the car off; a garage on the island's shortcut hands out the next vehicle. Real engine and horn takes wait for new sound files.
+
 - **Candidates** (owner's list plus ideas, to trim in the ADR): fire truck (ladder, siren), ambulance, tow truck,
   digger, dump truck, tractor, garbage truck, cement mixer, ice-cream van, race car. Monster truck, school bus
   and police car exist already.
@@ -162,6 +166,8 @@ One new ADR before any vehicle or map work, superseding ADR 0021's "one small is
   and the laptop still keeps its frame rate with the busiest traffic.
 
 ### E. Bigger maps
+**Status (2026-11-15): built** (ADR 0035). Two maps (`maps/index.ts`): **the island**, layout A grown 1.8 times across (a spur road and a third junction, two ramps, more puddles, herds and toys, boats in the bay), and **the building site** (`maps/site.ts`: dirt tracks, dirt hills, three ramps, mud puddles and a muddy pond, a sand pit, cones and crates, cows, the site office as the garage, the building vehicles first in traffic). **One picker screen**: the maps along the top as pictures from above, the vehicles below; a tap on a map rings it, a tap on a vehicle drives off there; the last map is saved per kid. Things further than 150 m from the chase camera are not drawn. Not built: map tiles (wait for the laptop's numbers, B7) and the map editor (waits for a third map). Every map passes the same rules in `maps/maps.test.ts`.
+
 - **Two or three maps**, each about three to five times the island's area, with more of what the prototype had
   and more water. Ideas to pick from in the ADR:
   - **The island**, grown: the set pieces of phase B, more beach, a harbour.
@@ -184,6 +190,8 @@ One new ADR before any vehicle or map work, superseding ADR 0021's "one small is
   laptop keeps its frame rate everywhere on it.
 
 ### F. Ready for the kids
+**Status (2026-11-15):** the per-map tests (`maps/maps.test.ts`) and the browser tests for the picker are built; `CREDITS.md` says the 3D models are original. Driving shows on the home screen by default since 2026-11-15 (owner); a parent can still hide it under Settings, Games. Left for the owner: the playtest and the laptop check (B7), and accepting ADRs 0031 and 0035. Left for later: the design system artifact's 3D section (the look's rules are in `driving-assets.md` for now), and real sound files to replace the stand-ins.
+
 - Unit tests for each map (the car never leaves it; random input for a minute leaves the car on land and
   moving; traffic follows every road), and the browser tests for the pickers and the garage (ADR 0015).
 - A playtest of vehicles and maps; fixes.
@@ -206,6 +214,12 @@ A2 (laptop)  ──► B (MVP) ──────► E (maps) ──┴──►
 |---|---|
 | Before C | ~~Where vehicle models come from~~: built in code (2026-11-15) |
 | ~~Before B is done~~ | ~~The kid's color~~: mixed, paint where it fits and a flag where it doesn't (2026-11-15) |
-| Before B is done | Browser-made sounds or recorded files (a new ADR if files) |
-| In C | Which vehicles; which maps and how big; one picker screen or two |
+| ~~Before B is done~~ | ~~Browser-made sounds or recorded files~~: files (ADR 0032); the tunnel echo is made by the app (2026-11-15) |
+| ~~In C~~ | Decided 2026-11-15: **all ten new vehicles** (fire truck, ambulance, tow truck; digger, dump truck, cement mixer; tractor, garbage truck; ice-cream van, race car); **two maps**, the island grown and a building site; **one picker screen** with both the vehicles and the maps. Horns for the monster truck and bus come with these vehicles. |
 | After F | Whether Driving shows by default, and whether the folder and id stay `racing` |
+
+## Backlog (after milestone 3)
+- **Targets to collect and hit on the maps** (owner, 2026-11-15). Things placed for the kids to drive into on
+  purpose: stacked boxes to knock over, coins or stars to collect. Each one makes a crazy noise and a big, silly
+  explosion (confetti, puffs, bits flying) when hit, then comes back like the toys do. No score and no way to
+  lose (ADR 0012): hitting them is the fun. Not designed yet; needs an ADR before it is built.

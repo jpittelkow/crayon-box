@@ -118,7 +118,8 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   driving to a touched spot, traffic modes CRUISE/JOIN/ALONG/LEAVE, `World.steer`; input; camera, tree rules and
   `groundPoint` (picture to ground) in `view.ts`) with unit tests; the world comes from a map (`sim/map.ts`: land as an
   outline in `sim/land.ts`, roads with junctions, zones, bridges and tunnels, hills and sand in `sim/ground.ts`;
-  the game drives `maps/island.ts`, layout A; the tests mostly use the old ring, `maps/ring.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
+  the maps are `maps/island.ts` (layout A, grown) and `maps/site.ts` (the building site), listed in `maps/index.ts`;
+  the tests mostly use the old ring, `maps/ring.ts`); fourteen vehicles (`look/vehicles.ts`, `look/fleet.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
   scenery and decor are registered by id (`sim/assets/` definitions, `look/toys.ts` and `look/scenery.ts` looks;
   dev gallery at `/tools/driving-gallery.html`); `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the

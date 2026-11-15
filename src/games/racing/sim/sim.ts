@@ -5,6 +5,8 @@
 import { ISLAND } from '../maps/island';
 import { SCENERY, type SceneryId } from './assets/scenery';
 import { TOYS, type ToyId } from './assets/toys';
+import { makeAnimals, stepAnimals, type Animal } from './animals';
+import type { AnimalCall } from './assets/animals';
 import { buildGuards, buildSand, guardAt, hillReach, onSand, type Guard } from './ground';
 import { buildLand, keepInland, randomInland, shore, type Land } from './land';
 import type { MapDef, OnRoad, ZoneKind } from './map';
@@ -13,6 +15,27 @@ import { buildJunctions, buildRoad, nearestOn, nearestRoad, passes, pointAt, wra
 
 export const MAX_SPEED = 17;
 export const FLOOD_SPEED = 8;
+
+/**
+ * How each vehicle feels (ADR 0035): its top speed, how hard it knocks toys, and how much faster than the rest it
+ * wades the flood. Feel only: nothing a kid has to do is easier with any of them.
+ */
+export const VEHICLE_FEEL: Record<VehicleKind, { top: number; push: number; wade: number }> = {
+  car: { top: 17, push: 1, wade: 0 },
+  police: { top: 19, push: 1, wade: 0 },
+  monster: { top: 17, push: 1.4, wade: 3 },
+  bus: { top: 13, push: 1.1, wade: 0 },
+  fire: { top: 16, push: 1.3, wade: 1 },
+  ambulance: { top: 19, push: 1, wade: 0 },
+  tow: { top: 17, push: 1.1, wade: 0 },
+  digger: { top: 12, push: 1.5, wade: 2 },
+  dump: { top: 14, push: 1.4, wade: 2 },
+  mixer: { top: 13, push: 1.2, wade: 1 },
+  tractor: { top: 12, push: 1.2, wade: 3 },
+  garbage: { top: 13, push: 1.2, wade: 1 },
+  icecream: { top: 13, push: 0.9, wade: 0 },
+  race: { top: 19, push: 0.9, wade: 0 },
+};
 /** How fast a car goes through a car wash (milestone-3 B3): slow enough to see the brushes and the bubbles. */
 export const WASH_SPEED = 5;
 /** Seconds for the bubbles to rinse off after a car wash. */
@@ -44,7 +67,9 @@ const SLOW_FROM = 12;
 export const CRUISE = 0, JOIN = 1, ALONG = 2, LEAVE = 3;
 
 /** The kinds of vehicle (ADR 0025). Each has its own size, look and engine sound. */
-export type VehicleKind = 'car' | 'police' | 'monster' | 'bus';
+export type VehicleKind = 'car' | 'police' | 'monster' | 'bus'
+  // Milestone 3, phase D (ADR 0035).
+  | 'fire' | 'ambulance' | 'tow' | 'digger' | 'dump' | 'mixer' | 'tractor' | 'garbage' | 'icecream' | 'race';
 
 /** Half the length and half the width of each kind, in metres, for bumping into things. */
 export const VEHICLE_SIZE: Record<VehicleKind, { half: number; side: number }> = {
@@ -52,6 +77,16 @@ export const VEHICLE_SIZE: Record<VehicleKind, { half: number; side: number }> =
   police: { half: 2.1, side: 1.0 },
   monster: { half: 2.7, side: 1.6 },
   bus: { half: 4.7, side: 1.3 },
+  fire: { half: 3.5, side: 1.25 },
+  ambulance: { half: 2.8, side: 1.12 },
+  tow: { half: 3.0, side: 1.15 },
+  digger: { half: 2.8, side: 1.25 },
+  dump: { half: 3.3, side: 1.25 },
+  mixer: { half: 3.4, side: 1.2 },
+  tractor: { half: 2.0, side: 1.15 },
+  garbage: { half: 3.6, side: 1.25 },
+  icecream: { half: 2.8, side: 1.12 },
+  race: { half: 2.3, side: 1.0 },
 };
 
 /** Points along a vehicle's middle, front to back, that together cover its length with circles of `side`. */
@@ -106,7 +141,8 @@ export interface Prop {
 export interface Puff { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number }
 
 /** A round patch of water: a shallow puddle, or the deep flood across the road. */
-export interface Water { x: number; z: number; r: number; deep: boolean }
+/** A round patch of water: a shallow puddle, or the deep flood across the road; muddy on a building site. */
+export interface Water { x: number; z: number; r: number; deep: boolean; mud?: boolean }
 
 /** A ring on the water that spreads and disappears. */
 export interface Ripple { x: number; z: number; life: number; size: number }
@@ -179,6 +215,16 @@ export interface World {
   followAt: string;
   /** How sharply "follows the road" wants to turn (radians off the way ahead), to slow for a bend. */
   followTurn: number;
+  /** What is under the kid's car this step, for the sounds (milestone-3 B6): sand, a bridge, a tunnel. */
+  under: { sand: boolean; bridge: boolean; tunnel: boolean };
+  /** The map's animals (milestone-3 B3). */
+  animals: Animal[];
+  /** The kid sounded the horn since the last step (see `honk`). */
+  honked: boolean;
+  /** Animals that answered the horn in the last step, by their call, for the sounds. */
+  calls: AnimalCall[];
+  /** The vehicles the garage hands out, in order (ADR 0035): the ones a parent has on. */
+  pool: VehicleKind[];
 }
 
 /** A map's zone, placed on the ground, and the way it faces. */
@@ -214,12 +260,16 @@ const along = (w: World, on: OnRoad): number => on.at * w.roads[on.road]!.length
  * A world to drive. `kidKind` is the vehicle the kid picked (milestone-3 B5); traffic keeps the others, with the
  * plain car standing in for the one the kid is driving.
  */
-export function makeWorld(seed: number, propCount: number, assist: Assist = 'free', map: MapDef = ISLAND, kidKind: VehicleKind = 'car'): World {
+export function makeWorld(
+  seed: number, propCount: number, assist: Assist = 'free', map: MapDef = ISLAND, kidKind: VehicleKind = 'car',
+  /** Vehicles traffic may be (ADR 0035: every vehicle switched on); without it, the map's own traffic kinds. */
+  pool?: readonly VehicleKind[],
+): World {
   const roads = map.roads.map(buildRoad);
   const w: World = {
     map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [], bubbles: [], bubbleNext: 0,
     junctions: buildJunctions(roads), guards: buildGuards(map.guards, roads), sand: buildSand(map.sand),
-    follow: null, turnNext: true, followAt: '', followTurn: 0,
+    follow: null, turnNext: true, followAt: '', followTurn: 0, under: { sand: false, bridge: false, tunnel: false }, animals: [], honked: false, calls: [], pool: [...(pool ?? [kidKind])],
     rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
@@ -241,20 +291,28 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   w.cars.push(kid);
   w.camHeading = kid.heading;
   w.mark = { x: kid.x, z: kid.z, t: 0 };
-  for (const t of map.traffic) w.cars.push(car(t.kind === kidKind ? 'car' : t.kind, t.on, t.cruise));
+  // Traffic from the pool, a different vehicle in each slot where it can be, never the kid's own; or the map's.
+  // The map's favourites first (the building site's trucks), when they are switched on.
+  const prefer = map.trafficPrefer ?? [];
+  const others = (pool ?? []).filter((k) => k !== kidKind).sort((a, b) => Number(prefer.includes(b)) - Number(prefer.includes(a)));
+  const start = Math.floor(rand(w) * Math.max(1, others.length));
+  map.traffic.forEach((t, i) => {
+    const kind = others.length ? others[(start + i) % others.length]! : t.kind === kidKind ? 'car' : t.kind;
+    w.cars.push(car(kind, t.on, t.cruise));
+  });
 
   // Water: pools placed by hand (the flood), then puddles along the roads, each with a smaller lobe.
   for (const pool of map.water.pools) {
     const p = pointAt(roads[pool.on.road]!, along(w, pool.on), pool.on.offset ?? 0);
-    w.waters.push({ x: p.x, z: p.z, r: pool.r, deep: pool.deep });
+    w.waters.push({ x: p.x, z: p.z, r: pool.r, deep: pool.deep, mud: pool.mud });
   }
   for (const row of map.water.puddles) {
     const road = roads[row.road]!;
     for (const at of row.at) {
       const offset = (rand(w) - 0.5) * row.spread, size = row.size[0] + rand(w) * row.size[1], lobe = rand(w) * Math.PI * 2;
       const { x, z } = pointAt(road, at * road.length, offset);
-      w.waters.push({ x, z, r: size, deep: false });
-      w.waters.push({ x: x + Math.sin(lobe) * size * 0.7, z: z + Math.cos(lobe) * size * 0.7, r: size * 0.65, deep: false });
+      w.waters.push({ x, z, r: size, deep: false, mud: row.mud });
+      w.waters.push({ x: x + Math.sin(lobe) * size * 0.7, z: z + Math.cos(lobe) * size * 0.7, r: size * 0.65, deep: false, mud: row.mud });
     }
   }
 
@@ -307,6 +365,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
       scale: 1, state: HOME, timer: 0, cool: 0,
     });
   }
+  w.animals = makeAnimals(map.animals, () => rand(w));
   for (let i = 0; i < 60; i++) w.bubbles.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 48; i++) w.puffs.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 160; i++) w.drops.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
@@ -401,7 +460,7 @@ function towardSpot(w: World, spot: { x: number; z: number }, dt: number): { go:
   } else if ((g.t += dt) > 2) g.done = true;
   if (g.done) return { go: false, steer: 0, cap: 0 };
   const err = wrap(Math.atan2(g.x - car.x, g.z - car.z) - car.heading);
-  let cap = Math.max(3, MAX_SPEED * Math.min(1, dist / SLOW_FROM));
+  let cap = Math.max(3, VEHICLE_FEEL[car.kind].top * Math.min(1, dist / SLOW_FROM));
   // A spot well off to the side: slow down to turn tightly toward it.
   if (Math.abs(err) > 1.2) cap = Math.min(cap, 6);
   return { go: true, steer: clamp(-err * 2.5, -1, 1), cap };
@@ -409,7 +468,7 @@ function towardSpot(w: World, spot: { x: number; z: number }, dt: number): { go:
 
 function stepKidCar(w: World, input: Input, dt: number): void {
   const car = w.cars[0]!;
-  let go = input.go, brake = input.brake, steer = clamp(input.steer, -1, 1), cap = MAX_SPEED;
+  let go = input.go, brake = input.brake, steer = clamp(input.steer, -1, 1), cap = VEHICLE_FEEL[car.kind].top;
   if (input.spot && w.assist === 'free') {
     const to = towardSpot(w, input.spot, dt);
     ({ steer, cap } = to);
@@ -427,9 +486,10 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   else if (go) car.speed = Math.min(cap, car.speed + 10 * dt);
   else car.speed = Math.max(0, car.speed - 6 * dt);
   // Deep water holds the car back to a wade.
-  if (car.wet === 2 && car.speed > FLOOD_SPEED) car.speed = Math.max(FLOOD_SPEED, car.speed - 30 * dt);
+  const wade = FLOOD_SPEED + VEHICLE_FEEL[car.kind].wade;
+  if (car.wet === 2 && car.speed > wade) car.speed = Math.max(wade, car.speed - 30 * dt);
   // A car wash slows it to a crawl from just before it, so the brushes and the bubbles show.
-  if (inWash(w, car, 5) && car.speed > WASH_SPEED) car.speed = Math.max(WASH_SPEED, car.speed - 30 * dt);
+  if (inWash(w, car, 5, ['car-wash', 'garage']) && car.speed > WASH_SPEED) car.speed = Math.max(WASH_SPEED, car.speed - 30 * dt);
 
   const turn = 2.1 * Math.min(1, car.speed / 5) * (1 - 0.35 * (car.speed / MAX_SPEED));
   if (w.assist === 'road' || w.rescue > 0) steer = roadSteer(w);
@@ -501,6 +561,7 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   }
   // On a bridge or in a tunnel, its sides keep the car on the road: it slides along them (milestone-3 B4).
   const held = guardAt(w.guards, w.roads, car.x, car.z);
+  w.under = { sand: sandy, bridge: held?.guard.kind === 'bridge', tunnel: held?.guard.kind === 'tunnel' };
   if (held) {
     const { spot } = held, limit = w.roads[spot.road]!.def.width / 2 - 0.8;
     if (Math.abs(spot.offset) > limit) {
@@ -526,6 +587,9 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     w.mark = { x: car.x, z: car.z, t: 0 };
   }
 }
+
+/** How far before its stopping point traffic starts to slow for the kid's car in its lane, to give way. */
+const GIVE_WAY = 8;
 
 /** How often traffic takes the other road at a junction. */
 const TURN_CHANCE = 0.5;
@@ -611,6 +675,15 @@ function stepTraffic(w: World, dt: number): void {
     want = clamp(want, 3, MAX_SPEED + 4);
     if (c.wet === 2) want = Math.min(want, FLOOD_SPEED - 1);
     if (inWash(w, c, 5)) want = Math.min(want, WASH_SPEED);
+    // Traffic gives way (driving-assets.md): the kid's car just ahead in its lane, at a junction, on a bridge or
+    // anywhere, and it slows and waits rather than drive into it.
+    if (c.mode === CRUISE) {
+      const dx = kid.x - c.x, dz = kid.z - c.z;
+      const ahead = dx * Math.sin(c.heading) + dz * Math.cos(c.heading), across = -dx * Math.cos(c.heading) + dz * Math.sin(c.heading);
+      // It stops with its front a few metres short of the kid's car, however long it is.
+      const stop = VEHICLE_SIZE[c.kind].half + VEHICLE_SIZE[kid.kind].half + 2.5;
+      if (ahead > 0 && ahead < stop + GIVE_WAY && Math.abs(across) < 2.6) want = Math.min(want, Math.max(0, (ahead - stop) * 1.5));
+    }
     // Brakes harder than it speeds up, so it keeps pace when the kid slows for the flood or a car wash.
     c.speed += clamp(want - c.speed, -16 * dt, 8 * dt);
 
@@ -732,8 +805,10 @@ function stepProps(w: World, dt: number): void {
         }
         if (!hit) continue;
         const len = Math.hypot(dx, dz) || 1;
-        p.vx = fx * car.speed * 0.85 + (dx / len) * car.speed * 0.45 + (rand(w) - 0.5) * 2;
-        p.vz = fz * car.speed * 0.85 + (dz / len) * car.speed * 0.45 + (rand(w) - 0.5) * 2;
+        // A heavier vehicle knocks it further (ADR 0035).
+        const push = VEHICLE_FEEL[car.kind].push;
+        p.vx = (fx * car.speed * 0.85 + (dx / len) * car.speed * 0.45) * push + (rand(w) - 0.5) * 2;
+        p.vz = (fz * car.speed * 0.85 + (dz / len) * car.speed * 0.45) * push + (rand(w) - 0.5) * 2;
         // A tumbling toy flies up; a rolling one only hops and keeps its speed along the ground.
         p.vy = rolls ? 1.5 + rand(w) : 3 + car.speed * 0.32 + rand(w) * 1.5;
         p.wx = (rand(w) - 0.5) * car.speed * 1.2;
@@ -791,9 +866,9 @@ function stepProps(w: World, dt: number): void {
   }
 }
 
-/** Whether a car is inside a car wash's arch, or within `approach` metres of it. */
-function inWash(w: World, c: Car, approach = 0): boolean {
-  return w.zones.some((z) => z.kind === 'car-wash' && Math.hypot(c.x - z.x, c.z - z.z) < z.r + approach);
+/** Whether a car is inside a car wash's arch (or a garage, with `kinds`), or within `approach` metres of it. */
+function inWash(w: World, c: Car, approach = 0, kinds: ZoneKind[] = ['car-wash']): boolean {
+  return w.zones.some((z) => kinds.includes(z.kind) && Math.hypot(c.x - z.x, c.z - z.z) < z.r + approach);
 }
 
 /**
@@ -862,8 +937,19 @@ function stepZones(w: World): void {
     if (i >= 0) {
       w.zone = i;
       w.zoneEvents.push({ zone: i, kind: w.zones[i]!.kind, entered: true });
+      // The garage (ADR 0035): the car comes out as the next vehicle on the list, in a puff.
+      if (w.zones[i]!.kind === 'garage' && w.pool.length > 1) {
+        const at = w.pool.indexOf(kid.kind);
+        kid.kind = w.pool[(at + 1) % w.pool.length]!;
+        for (let k = 0; k < 4; k++) puff(w, kid.x + (rand(w) - 0.5) * 3, 0.6, kid.z + (rand(w) - 0.5) * 3);
+      }
     }
   }
+}
+
+/** The kid sounded the horn: animals nearby answer it (milestone-3 B3). */
+export function honk(w: World): void {
+  w.honked = true;
 }
 
 export function step(w: World, input: Input, dt: number): void {
@@ -872,11 +958,14 @@ export function step(w: World, input: Input, dt: number): void {
   w.splashes.length = 0;
   w.zoneEvents.length = 0;
   w.landings.length = 0;
+  w.calls.length = 0;
   stepKidCar(w, input, dt);
   stepZones(w);
   stepTraffic(w, dt);
   stepHops(w, dt);
   stepWash(w, dt);
+  stepAnimals(w.animals, w.cars[0]!, w.honked, dt, () => rand(w), w.calls);
+  w.honked = false;
   stepWater(w, dt);
   stepProps(w, dt);
   for (const p of w.puffs) {

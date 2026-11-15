@@ -2,7 +2,7 @@
 // simulation decides what each one does (sim/ramps.ts for ramps).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { guardAt, type Guard } from '../sim/ground';
+import { guardAt, hillReach, type Guard } from '../sim/ground';
 import type { HillDef } from '../sim/map';
 import { RAMP } from '../sim/ramps';
 import { pointAt } from '../sim/roads';
@@ -140,7 +140,7 @@ function hill(world: World, h: HillDef): { group: THREE.Group; skins: THREE.Mate
   const g = new THREE.Group();
   // See-through-capable from the start, as switching that later needs the shader rebuilt. The portals fade with
   // the hill: the camera passes right through one on the way in.
-  const skin = new THREE.MeshStandardMaterial({ color: 0x5ea347, roughness: 0.95, transparent: true });
+  const skin = new THREE.MeshStandardMaterial({ color: h.color ?? 0x5ea347, roughness: 0.95, transparent: true });
   const stone = plastic(0x8d8f93, 0.85);
   stone.transparent = true;
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2), skin);
@@ -148,7 +148,12 @@ function hill(world: World, h: HillDef): { group: THREE.Group; skins: THREE.Mate
   dome.position.set(h.x, -0.05, h.z);
   dome.castShadow = dome.receiveShadow = true;
   g.add(dome);
-  const tunnel = world.guards.find((t) => t.kind === 'tunnel');
+  // Its tunnel, if one runs through it: the tunnel's middle is inside the hill.
+  const tunnel = world.guards.find((t) => {
+    if (t.kind !== 'tunnel') return false;
+    const mid = pointAt(world.roads[t.road]!, (t.s0 + t.s1) / 2);
+    return hillReach(h, mid.x, mid.z) < 1;
+  });
   if (tunnel) {
     const road = world.roads[tunnel.road]!, half = road.def.width / 2;
     for (const s of [tunnel.s0, tunnel.s1]) {
@@ -181,12 +186,63 @@ function sand(world: World): THREE.Group {
   return g;
 }
 
+/**
+ * The garage (ADR 0035): a shed over the road with brick-red walls on both sides, a roof that fades while the
+ * camera passes (like the car wash's), and a big spanner on top, so it reads as a garage without any text.
+ */
+function garage(zone: Zone): { group: THREE.Group; roof: THREE.Material[] } {
+  const g = new THREE.Group();
+  const length = 7, across = 6.1, height = 4.6;
+  const brick = plastic(0xb5452f, 0.85), trim = plastic(0xf4f6f8, 0.5);
+  for (const side of [-1, 1]) {
+    g.add(part(rbox(length, height, 0.6, 0.12), brick, 0, height / 2, side * across));
+    g.add(part(new THREE.BoxGeometry(length + 0.1, 0.25, 0.65), trim, 0, 1.2, side * across));
+  }
+  // See-through-capable from the start, as switching that later needs the shader rebuilt.
+  const roofMat = plastic(0x5b6470, 0.6), spannerMat = plastic(0xffc400, 0.4);
+  for (const m of [roofMat, spannerMat]) m.transparent = true;
+  g.add(part(rbox(length + 0.8, 0.5, across * 2 + 1.2, 0.15), roofMat, 0, height + 0.25, 0));
+  // The spanner: a handle and an open jaw.
+  const spanner = new THREE.Group();
+  spanner.add(part(rbox(3.2, 0.5, 0.25, 0.12), spannerMat, 0, 0, 0));
+  spanner.add(part(new THREE.TorusGeometry(0.55, 0.22, 10, 24, Math.PI * 1.5), spannerMat, 1.85, 0, 0));
+  spanner.position.set(0, height + 1.4, 0);
+  spanner.rotation.set(0, Math.PI / 2, 0.35);
+  g.add(spanner);
+  g.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
+  });
+  g.position.set(zone.x, 0, zone.z);
+  g.rotation.y = zone.heading - Math.PI / 2;
+  return { group: g, roof: [roofMat, spannerMat] };
+}
+
+/** A little moored boat, to look at (milestone-3 E): a hull, a cabin and a mast; it bobs on the water. */
+function boat(x: number, z: number, heading: number, color: number): THREE.Group {
+  const g = new THREE.Group();
+  g.add(part(rbox(2.2, 0.8, 5.0, 0.35), plastic(color, 0.45), 0, 0.1, 0));
+  g.add(part(rbox(1.6, 0.9, 1.6, 0.15), plastic(0xf4f6f8, 0.5), 0, 0.9, -0.6));
+  g.add(part(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), plastic(0xc98b4a, 0.7), 0, 2.1, 0.8));
+  g.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
+  });
+  g.position.set(x, -0.3, z);
+  g.rotation.y = heading;
+  return g;
+}
+
 /** Every set piece on the map, and a step for the ones that move. */
 export function buildSetPieces(world: World): { group: THREE.Group; animate(w: World, dt: number): void } {
   const g = new THREE.Group();
   const washes: { zone: Zone; brushes: THREE.Object3D[]; roof: THREE.Material[] }[] = [];
+  const sheds: { zone: Zone; roof: THREE.Material[] }[] = [];
   for (const zone of world.zones) {
     if (zone.kind === 'ramp') g.add(ramp(zone));
+    if (zone.kind === 'garage') {
+      const shed = garage(zone);
+      g.add(shed.group);
+      sheds.push({ zone, roof: shed.roof });
+    }
     if (zone.kind === 'car-wash') {
       const wash = carWash(zone);
       g.add(wash.group);
@@ -194,6 +250,8 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
     }
   }
   g.add(sand(world));
+  const boats = (world.map.boats ?? []).map((b, i) => boat(b.x, b.z, b.heading, [0xe63946, 0x3a86ff, 0xffc400][i % 3]!));
+  for (const b of boats) g.add(b);
   for (const guard of world.guards) if (guard.kind === 'bridge') g.add(bridge(world, guard));
   const hills = (world.map.hills ?? []).map((h) => hill(world, h));
   for (const h of hills) g.add(h.group);
@@ -201,6 +259,10 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
     group: g,
     animate(w, dt) {
       const kid = w.cars[0]!;
+      boats.forEach((b, i) => {
+        b.position.y = -0.3 + Math.sin(w.time * 1.3 + i) * 0.08;
+        b.rotation.z = Math.sin(w.time * 0.9 + i * 2) * 0.04;
+      });
       // A hill turns see-through while the kid's car is in its tunnel, or about to go in or just out.
       const inTunnel = guardAt(w.guards, w.roads, kid.x, kid.z, 6)?.guard.kind === 'tunnel';
       for (const { skins, tunnel } of hills) {
@@ -208,6 +270,14 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
         for (const skin of skins) {
           skin.opacity += Math.max(-3 * dt, Math.min(3 * dt, want - skin.opacity));
           skin.depthWrite = skin.opacity > 0.999;
+        }
+      }
+      // A garage's roof fades while the kid's car is near it, as the car wash's does.
+      for (const { zone, roof } of sheds) {
+        const near = Math.hypot(kid.x - zone.x, kid.z - zone.z) < zone.r + 12;
+        for (const m of roof) {
+          m.opacity += Math.max(-4 * dt, Math.min(4 * dt, (near ? 0.18 : 1) - m.opacity));
+          m.depthWrite = m.opacity > 0.999;
         }
       }
       for (const { zone, brushes, roof } of washes) {

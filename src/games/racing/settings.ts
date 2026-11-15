@@ -4,17 +4,23 @@ import type { GameStorage } from '../../storage/types';
 import type { Assist, VehicleKind } from './sim/sim';
 
 /** The vehicles a kid can pick, in the picker's order. */
-export const VEHICLES: readonly VehicleKind[] = ['car', 'police', 'monster', 'bus'];
+export const VEHICLES: readonly VehicleKind[] = [
+  'car', 'police', 'monster', 'bus', 'fire', 'ambulance', 'tow', 'digger', 'dump', 'mixer', 'tractor', 'garbage', 'icecream', 'race',
+];
 
 export interface KidDriving {
   /** Steers freely (the default) or follows the road. Set by a parent. */
   assist: Assist;
   /** The vehicle picked last time; the picker shows it picked. */
   vehicle: VehicleKind;
+  /** The map picked last time, by id (ADR 0035). */
+  map: string;
 }
 
 export interface DrivingSettings {
   sounds: boolean;
+  /** Vehicles a parent has switched off for the whole family (ADR 0035): not in the picker, the garage or traffic. */
+  hidden: VehicleKind[];
 }
 
 const kidDir = (kidId: string) => `kids/${kidId}/`;
@@ -26,6 +32,7 @@ export async function loadKidDriving(storage: GameStorage, kidId: string): Promi
   return {
     assist: raw?.assist === 'road' ? 'road' : 'free',
     vehicle: VEHICLES.includes(raw?.vehicle as VehicleKind) ? (raw!.vehicle as VehicleKind) : 'car',
+    map: typeof raw?.map === 'string' ? raw.map : 'island',
   };
 }
 
@@ -35,11 +42,17 @@ export async function saveKidDriving(storage: GameStorage, kidId: string, value:
 
 export async function loadDrivingSettings(storage: GameStorage): Promise<DrivingSettings> {
   const raw = await storage.getJson<Partial<DrivingSettings>>(SETTINGS);
-  return { sounds: raw?.sounds !== false };
+  const hidden = Array.isArray(raw?.hidden) ? raw.hidden.filter((k): k is VehicleKind => VEHICLES.includes(k)) : [];
+  return { sounds: raw?.sounds !== false, hidden };
 }
 
 export async function saveDrivingSettings(storage: GameStorage, value: DrivingSettings): Promise<void> {
   await storage.putJson(SETTINGS, value);
+}
+
+/** The vehicles a parent has on, in the picker's order. The car is always on, so there is one to drive. */
+export function shownVehicles(settings: DrivingSettings): VehicleKind[] {
+  return VEHICLES.filter((k) => k === 'car' || !settings.hidden.includes(k));
 }
 
 /** Deletes what the game keeps for a kid, when a parent deletes the kid (ADR 0012). */

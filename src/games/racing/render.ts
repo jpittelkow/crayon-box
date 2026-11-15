@@ -3,6 +3,7 @@
 // Loaded only when the game opens.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { ANIMAL_LOOKS } from './look/animals';
 import { buildGround } from './look/island';
 import { buildSetPieces } from './look/setpieces';
 import { sceneryPieces } from './look/scenery';
@@ -10,13 +11,15 @@ import { toyPieces, type Pieces } from './look/toys';
 import { OWN_COLOR, buildKidVehicle, buildVehicle, type VehicleModel } from './look/vehicles';
 import type { SceneryId } from './sim/assets/scenery';
 import type { ToyId } from './sim/assets/toys';
-import { DROP_LIFE, RIPPLE_LIFE, type World } from './sim/sim';
+import { DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
 import { CAMERA_FOV, chaseView, stepTreeSizes, type View } from './sim/view';
 
 /** The most real pixels drawn per CSS pixel. Built-in laptop graphics (ADR 0021) get no more than this. */
 export const MAX_PIXEL_RATIO = 1.5;
 
 const WATER_Y = 0.09;
+/** Things further than this from where the chase camera looks are not drawn (milestone-3 E). */
+const HIDE_M = 150;
 
 export interface Renderer {
   resize(cssWidth: number, cssHeight: number, pixelRatio: number): void;
@@ -63,7 +66,8 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const scene = new THREE.Scene();
   const sky = skyTexture();
   scene.background = sky;
-  scene.fog = new THREE.Fog(0xdcefff, 90, 340);
+  const haze = new THREE.Fog(0xdcefff, 90, 340);
+  scene.fog = haze;
   const pmrem = new THREE.PMREMGenerator(renderer);
   const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   pmrem.dispose();
@@ -100,15 +104,28 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const placed = new Map<string, number>();
 
   // Vehicles: the kid's car in their colour, traffic in its own colours.
-  const vehicles: VehicleModel[] = world.cars.map((c, i) => {
-    // The kid's vehicle in their colour, or with their flag (milestone-3 B5); traffic in its own colours.
-    const v = i === 0 ? buildKidVehicle(c.kind, kidColor) : buildVehicle(c.kind, OWN_COLOR[c.kind]);
+  // Animals (milestone-3 B3): few, each its own little model.
+  const animals = world.animals.map((a) => {
+    const model = ANIMAL_LOOKS[a.id]();
+    model.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
+    });
+    scene.add(model);
+    return model;
+  });
+
+  // The kid's vehicle in their colour, or with their flag (milestone-3 B5); traffic in its own colours.
+  const vehicleModel = (kind: VehicleKind, kid: boolean): VehicleModel => {
+    const v = kid ? buildKidVehicle(kind, kidColor) : buildVehicle(kind, OWN_COLOR[kind]);
     v.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
     });
     scene.add(v.group);
     return v;
-  });
+  };
+  const vehicles: VehicleModel[] = world.cars.map((c, i) => vehicleModel(c.kind, i === 0));
+  // The kind each model was built as: the garage (ADR 0035) changes the kid's vehicle, and its model with it.
+  const builtAs = world.cars.map((c) => c.kind);
 
   // Splashes, dust and wake rings.
   const effect = (geo: THREE.BufferGeometry, color: number, count: number) => {
@@ -142,7 +159,15 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     for (const mesh of meshes) mesh.instanceMatrix.needsUpdate = true;
   };
 
-  const update = (w: World, view: View = chaseView(w)) => {
+  const update = (w: World, given?: View) => {
+    const view = given ?? chaseView(w);
+    // On a big map (milestone-3 E), what is further than HIDE_M from where the chase camera looks is not drawn; the
+    // haze already hides it. A dev tool's own camera sees everything.
+    const hide = given ? Infinity : HIDE_M;
+    // A dev tool's camera (the picker's map pictures, from high above) sees through the haze.
+    scene.fog = given ? null : haze;
+    const lx = view.target[0], lz = view.target[2];
+    const far = (x: number, z: number) => (x - lx) ** 2 + (z - lz) ** 2 > hide * hide;
     // Trees
     stepTreeSizes(w, treeSizes);
     placed.clear();
@@ -154,26 +179,41 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     w.trees.forEach((t, i) => {
       const size = t.scale * treeSizes[i]!;
       m.compose(v.set(t.x, 0, t.z), q.identity(), s.setScalar(size));
-      place(treeBatches.get(t.kind)!, next(t.kind), size > 0 ? m : zero);
+      place(treeBatches.get(t.kind)!, next(t.kind), size > 0 && !far(t.x, t.z) ? m : zero);
     });
     treeBatches.forEach(dirty);
 
     // Toys
     for (const p of w.props) {
       m.compose(v.set(p.x, p.y, p.z), q.set(p.qx, p.qy, p.qz, p.qw), s.setScalar(p.scale));
-      place(toyBatches.get(p.toy)!, next(p.toy), p.scale > 0 ? m : zero);
+      place(toyBatches.get(p.toy)!, next(p.toy), p.scale > 0 && !far(p.x, p.z) ? m : zero);
     }
     toyBatches.forEach(dirty);
 
+    // Animals: a little bob in their step as they walk, and their hop.
+    w.animals.forEach((a, i) => {
+      const model = animals[i]!;
+      const bob = a.speed > 0.1 ? Math.abs(Math.sin(w.time * 9 + i)) * 0.06 : 0;
+      model.visible = !far(a.x, a.z);
+      model.position.set(a.x, a.h + bob, a.z);
+      model.rotation.y = a.heading;
+    });
+
     // Vehicles
     w.cars.forEach((c, i) => {
+      if (c.kind !== builtAs[i]) {
+        scene.remove(vehicles[i]!.group);
+        vehicles[i] = vehicleModel(c.kind, i === 0);
+        builtAs[i] = c.kind;
+      }
       const model = vehicles[i]!;
+      model.group.visible = i === 0 || !far(c.x, c.z);
       model.group.position.set(c.x, c.y + c.h, c.z);
       // Nose up while climbing a ramp or rising from it, down while coming down (never enough to look like a flip).
       model.group.rotation.set(-Math.max(-0.35, Math.min(0.35, Math.atan2(c.vy, Math.max(c.speed, 2)))), c.heading, 0, 'YXZ');
       // The simulation's spin is for a wheel 0.45 m across; bigger wheels turn slower for the same distance.
       for (const wheel of model.wheels) wheel.rotation.x = (c.spin * 0.45) / wheel.position.y;
-      model.animate?.(w.time);
+      model.animate?.(w.time, c.speed);
     });
 
     // Effects

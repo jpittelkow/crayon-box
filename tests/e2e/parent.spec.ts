@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { RED, SHAPES, WORDS, expectPaint, holdLock, openParentArea, openShapesPage, pick, tapPage } from './helpers';
+import { RED, SHAPES, WORDS, expectPaint, holdLock, openParentArea, openShapesPage, pick, tapPage, openColoring } from './helpers';
 
 /** A generated two-color test image: never a real photo (CLAUDE.md privacy rule). */
 async function testImage(page: Page): Promise<Buffer> {
@@ -99,7 +99,7 @@ test('a hidden page leaves the library', async ({ page }) => {
   await page.getByRole('button', { name: 'Page library' }).click();
   await page.getByText('Show Fish').click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   // Under the sea had only the fish, so its theme button goes too.
   await expect(page.locator('[data-theme]')).toHaveCount(4);
   await expect(page.getByRole('button', { name: 'Under the sea' })).toHaveCount(0);
@@ -126,7 +126,7 @@ test('a parent restores the previous version of a picture, and deletes one', asy
   await page.getByRole('button', { name: 'Pictures' }).click();
   await page.getByRole('button', { name: 'Restore previous Circle, square and triangle' }).click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
-  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await openColoring(page, 'Star kid');
   await pick(page, 'My pictures');
   await page.getByRole('button', { name: 'Circle, square and triangle picture' }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
