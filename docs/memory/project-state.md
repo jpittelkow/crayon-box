@@ -1,6 +1,8 @@
 # Project state
 
-_Last updated: 2026-11-14_
+_Last updated: 2026-11-15_
+
+**What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15).
 
 ## Phase
 **Latest release: 0.7.0** (2026-11-15): milestone 3 (fourteen vehicles, two maps, one picker, Driving on by default).
@@ -78,8 +80,8 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   linked from the [ADR index](../adr/README.md). The canvas has 12 screens and was redrawn on 2026-11-14 to match
   the revised ADRs. The owner reviewed it the same day, asked for more colors and a per-picture coloring mode
   (both now in the mockups and ADRs 0003, 0004, 0007, 0016), and said it is otherwise about ready for an MVP.
-- The mockups assume a 1280 × 800 screen; the real laptop's screen is still an
-  [open question](open-questions.md).
+- The mockups assume a 1280 × 800 screen; the family laptop is 1920 × 1080 (owner, 2026-11-15) and the app
+  works fine on it as is.
 
 ## Code map
 - `src-tauri/`: the Windows shell (ADR 0002, milestone 2 phase A): Tauri 2 config, a `main.rs` that only opens the

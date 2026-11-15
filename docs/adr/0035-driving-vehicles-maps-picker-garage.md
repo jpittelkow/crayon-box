@@ -1,7 +1,6 @@
 # 0035. Driving game: fourteen vehicles, two big maps, one picker screen and a garage
 
-- Status: Proposed. The owner's choices of 2026-11-15 are recorded as decided; the details marked *(proposed)* are
-  Claude's, for the owner to review.
+- Status: Accepted (owner, 2026-11-15)
 - Date: 2026-11-15
 - Supersedes, in [ADR 0021](0021-racing-game.md): "one small island" (now one of several maps) and the car picker
   (now one picker screen for vehicles and maps). Builds on [ADR 0025](0025-driving-game-toy-look-and-engine-sounds.md)
