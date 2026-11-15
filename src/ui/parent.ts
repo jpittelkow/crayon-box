@@ -31,6 +31,43 @@ export function button(label: string, onClick: () => void, kind: ButtonKind = 'd
   return b;
 }
 
+/**
+ * A "working on it" panel for something slow (the AI page maker, playtest of 2026-11-15: with only a line of grey
+ * text, a parent took a running request for a frozen screen). A spinner, what is happening, the seconds so far,
+ * and a moving bar. Hidden until `start`.
+ */
+export function working(): { el: HTMLElement; start(text: string): void; stop(): void } {
+  const text = h('span', { class: 'pw-working-text' });
+  const time = h('span', { class: 'pw-working-time', 'aria-hidden': 'true' });
+  const el = h(
+    'div',
+    { class: 'pw-working', role: 'status', 'aria-live': 'polite', 'data-working': '', hidden: true },
+    h('span', { class: 'pw-spinner', 'aria-hidden': 'true' }),
+    h('div', { class: 'pw-working-body' }, h('div', { class: 'pw-working-line' }, text, time), h('div', { class: 'pw-working-bar', 'aria-hidden': 'true' }, h('span', {}))),
+  );
+  let timer = 0;
+  return {
+    el,
+    start(what) {
+      text.textContent = what;
+      const began = Date.now();
+      const tick = () => {
+        const s = Math.floor((Date.now() - began) / 1000);
+        time.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      };
+      tick();
+      clearInterval(timer);
+      timer = window.setInterval(tick, 1000);
+      el.hidden = false;
+      el.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    },
+    stop() {
+      clearInterval(timer);
+      el.hidden = true;
+    },
+  };
+}
+
 export function card(...children: Child[]): HTMLElement {
   return h('section', { class: 'pw-card' }, ...children);
 }
