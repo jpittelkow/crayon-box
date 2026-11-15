@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 680" font-family="Segoe UI, Arial, sans-serif">
+  <title>Island layout B: one winding loop over a river</title>
+  <defs>
+    <pattern id="waves" width="40" height="20" patternUnits="userSpaceOnUse">
+      <path d="M0 10 Q10 4 20 10 T40 10" fill="none" stroke="#7cc4f2" stroke-width="2" opacity="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="900" height="680" fill="#3d9fe0"/>
+  <rect width="900" height="680" fill="url(#waves)"/>
+  <!-- Island -->
+  <path d="M 110 340 C 110 160 290 80 460 85 C 640 90 800 170 800 330 C 800 500 650 605 460 600 C 270 595 110 510 110 340 Z"
+        fill="#e6c98c" stroke="#e6c98c" stroke-width="28" stroke-linejoin="round"/>
+  <path d="M 110 340 C 110 160 290 80 460 85 C 640 90 800 170 800 330 C 800 500 650 605 460 600 C 270 595 110 510 110 340 Z" fill="#6fb84a"/>
+  <!-- Beach on the east coast -->
+  <path d="M 720 170 C 790 230 810 330 790 420 C 775 480 740 520 700 548 L 680 520 C 740 470 765 400 765 330 C 765 260 735 210 700 185 Z" fill="#ecd29a"/>
+  <text x="790" y="340" font-size="15" fill="#8a6d2e" text-anchor="middle" transform="rotate(80 790 340)">beach</text>
+  <!-- River from the north coast to the south coast -->
+  <path d="M 470 70 C 440 170 520 240 470 330 C 420 420 500 500 450 615" fill="none" stroke="#2f8fd0" stroke-width="44" stroke-linecap="round"/>
+  <!-- Hill with the tunnel, west side -->
+  <ellipse cx="220" cy="340" rx="78" ry="66" fill="#4f8f3a"/>
+  <ellipse cx="220" cy="332" rx="54" ry="42" fill="#5ea347"/>
+  <!-- Trees -->
+  <g fill="#2f7a35">
+    <circle cx="300" cy="140" r="9"/><circle cx="330" cy="125" r="7"/><circle cx="620" cy="130" r="9"/><circle cx="650" cy="150" r="7"/>
+    <circle cx="350" cy="300" r="8"/><circle cx="360" cy="400" r="9"/><circle cx="600" cy="300" r="8"/><circle cx="580" cy="410" r="8"/>
+    <circle cx="300" cy="540" r="9"/><circle cx="640" cy="520" r="8"/><circle cx="200" cy="200" r="8"/><circle cx="210" cy="480" r="8"/>
+  </g>
+  <!-- One winding loop road -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M 220 340 C 220 200 330 165 470 175 C 610 185 690 230 690 330 C 690 430 610 500 470 505 C 330 510 220 470 220 340 Z" stroke="#5a5f66" stroke-width="26"/>
+    <path d="M 220 340 C 220 200 330 165 470 175 C 610 185 690 230 690 330 C 690 430 610 500 470 505 C 330 510 220 470 220 340 Z" stroke="#fff" stroke-width="2" stroke-dasharray="10 10"/>
+  </g>
+  <!-- Tunnel on the west -->
+  <ellipse cx="220" cy="340" rx="50" ry="40" fill="#5ea347" opacity="0.92"/>
+  <rect x="204" y="290" width="32" height="12" rx="6" fill="#2b2b2b"/>
+  <rect x="204" y="378" width="32" height="12" rx="6" fill="#2b2b2b"/>
+  <!-- Two bridges over the river -->
+  <g>
+    <rect x="440" y="159" width="64" height="32" fill="#c98b4a"/>
+    <line x1="440" y1="159" x2="504" y2="159" stroke="#7a4f22" stroke-width="4"/><line x1="440" y1="191" x2="504" y2="191" stroke="#7a4f22" stroke-width="4"/>
+    <rect x="430" y="489" width="64" height="32" fill="#c98b4a"/>
+    <line x1="430" y1="489" x2="494" y2="489" stroke="#7a4f22" stroke-width="4"/><line x1="430" y1="521" x2="494" y2="521" stroke="#7a4f22" stroke-width="4"/>
+  </g>
+  <!-- Flood on the east of the loop; puddles -->
+  <ellipse cx="690" cy="300" rx="40" ry="32" fill="#2f8fd0" opacity="0.9"/>
+  <g fill="#2f8fd0" opacity="0.85">
+    <ellipse cx="330" cy="190" rx="12" ry="8"/><ellipse cx="600" cy="475" rx="13" ry="9"/><ellipse cx="300" cy="470" rx="12" ry="8"/><ellipse cx="620" cy="200" rx="10" ry="7"/>
+  </g>
+  <!-- Car wash on the south -->
+  <rect x="320" y="482" width="56" height="30" rx="5" fill="#f4f6f8" stroke="#e63946" stroke-width="4"/>
+  <circle cx="338" cy="476" r="7" fill="#d8efff"/><circle cx="354" cy="472" r="9" fill="#d8efff"/>
+  <!-- Ramp on the north -->
+  <rect x="580" y="170" width="24" height="28" fill="#ffc83d"/>
+  <path d="M 585 176 L 591 186 L 585 196 M 595 176 L 601 186 L 595 196" stroke="#e63946" stroke-width="3" fill="none"/>
+  <!-- Animals: a field in the middle of the loop, west of the river -->
+  <g fill="#fff" stroke="#555" stroke-width="1.5"><circle cx="340" cy="340" r="7"/><circle cx="370" cy="355" r="7"/><circle cx="330" cy="365" r="6"/></g>
+  <!-- Start -->
+  <path d="M 560 492 l 6 13 14 1 -11 9 4 14 -13 -8 -13 8 4 -14 -11 -9 14 -1 Z" fill="#fff" stroke="#333" stroke-width="2"/>
+  <!-- Number tags -->
+  <g font-size="16" font-weight="700" text-anchor="middle">
+    <g><circle cx="472" cy="135" r="15" fill="#fff"/><text x="472" y="141">1</text></g>
+    <g><circle cx="462" cy="560" r="15" fill="#fff"/><text x="462" y="566">1</text></g>
+    <g><circle cx="140" cy="340" r="15" fill="#fff"/><text x="140" y="346">2</text></g>
+    <g><circle cx="348" cy="440" r="15" fill="#fff"/><text x="348" y="446">3</text></g>
+    <g><circle cx="592" cy="225" r="15" fill="#fff"/><text x="592" y="231">4</text></g>
+    <g><circle cx="690" cy="300" r="15" fill="#fff"/><text x="690" y="306">5</text></g>
+    <g><circle cx="745" cy="430" r="15" fill="#fff"/><text x="745" y="436">6</text></g>
+    <g><circle cx="300" cy="350" r="15" fill="#fff"/><text x="300" y="356">7</text></g>
+  </g>
+  <!-- Legend -->
+  <rect x="900" width="280" height="680" fill="#fffaf0"/>
+  <g font-size="17" fill="#222">
+    <text x="924" y="48" font-size="24" font-weight="700">Layout B</text>
+    <text x="924" y="76" font-size="17" fill="#555">One winding loop over a river</text>
+    <text x="924" y="128">1  Two bridges over the river</text>
+    <text x="924" y="160">2  Tunnel through the hill</text>
+    <text x="924" y="192">3  Car wash</text>
+    <text x="924" y="224">4  Ramp</text>
+    <text x="924" y="256">5  The flood</text>
+    <text x="924" y="288">6  Beach</text>
+    <text x="924" y="320">7  Animals (answer the horn)</text>
+    <text x="924" y="352">★  Where the car starts</text>
+  </g>
+  <g font-size="15" fill="#444">
+    <text x="924" y="410">About the size of today's island.</text>
+    <text x="924" y="434">One road, no junctions: a kid</text>
+    <text x="924" y="456">can't take a wrong turn, and</text>
+    <text x="924" y="478">"follows the road" passes every</text>
+    <text x="924" y="500">set piece in one lap.</text>
+    <text x="924" y="534">Simpler to build. Junctions</text>
+    <text x="924" y="556">wait for the bigger maps (E).</text>
+  </g>
+</svg>
