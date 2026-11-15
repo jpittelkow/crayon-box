@@ -40,8 +40,12 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   await page.getByRole('button', { name: 'Driving', exact: true }).tap();
   const picker = page.locator('.driving-picker');
   await expect(picker).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
-  // Four vehicles, each with a picture; the car is picked to begin with.
-  await expect(picker.locator('.vehicle-tile')).toHaveCount(4);
+  // Fourteen vehicles (ADR 0035): five a page and a "more" tile, each with a picture; the car is picked to begin with.
+  await expect(picker.locator('.vehicle-tile')).toHaveCount(6);
+  await page.getByRole('button', { name: 'More', exact: true }).tap();
+  await expect(page.getByRole('button', { name: 'Ambulance', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'More', exact: true }).tap();
+  await page.getByRole('button', { name: 'More', exact: true }).tap();
   await expect(picker.locator('.vehicle-tile img').first()).toHaveAttribute('src', /^data:image\/png/);
   await expect(page.getByRole('button', { name: 'Car', exact: true })).toHaveAttribute('aria-pressed', 'true');
 

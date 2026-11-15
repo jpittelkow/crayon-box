@@ -2,7 +2,8 @@
 import { drawAvatar } from '../../shell/profiles';
 import type { ParentSectionContext } from '../../shell/types';
 import { card, h, segmented, switchRow } from '../../ui/parent';
-import { loadDrivingSettings, loadKidDriving, saveDrivingSettings, saveKidDriving } from './settings';
+import { VEHICLE_NAMES } from './names';
+import { VEHICLES, loadDrivingSettings, loadKidDriving, saveDrivingSettings, saveKidDriving } from './settings';
 import type { Assist } from './sim/sim';
 
 export async function renderDriving(el: HTMLElement, ctx: ParentSectionContext): Promise<void> {
@@ -43,16 +44,28 @@ export async function renderDriving(el: HTMLElement, ctx: ParentSectionContext):
       h(
         'p',
         { class: 'pw-muted' },
-        'Steers freely: the car heads toward the finger. Follows the road: the car steers itself along the road, and a touch only makes it go.',
+        'Steers freely: the car drives to where the kid touches. Follows the road: the car steers itself along the road, and a touch only makes it go.',
       ),
       rows,
     ),
     card(
       switchRow(
         'Sounds',
-        'Bumps, splashes and the horn. Made by the app as it plays.',
+        'Engines, horns, bumps, splashes and the set pieces.',
         settings.sounds,
-        (on) => void saveDrivingSettings(ctx.storage, { sounds: on }),
+        async (on) => saveDrivingSettings(ctx.storage, { ...(await loadDrivingSettings(ctx.storage)), sounds: on }),
+      ),
+    ),
+    card(
+      h('h2', {}, 'Vehicles'),
+      h('p', { class: 'pw-muted' }, 'Switch off a vehicle a kid finds too loud or scary: it leaves the picker, the garage and traffic. The car is always there.'),
+      ...VEHICLES.filter((k) => k !== 'car').map((kind) =>
+        switchRow(VEHICLE_NAMES[kind], '', !settings.hidden.includes(kind), async (on) => {
+          const now = await loadDrivingSettings(ctx.storage);
+          const hidden = now.hidden.filter((k) => k !== kind);
+          if (!on) hidden.push(kind);
+          await saveDrivingSettings(ctx.storage, { ...now, hidden });
+        }),
       ),
     ),
   );

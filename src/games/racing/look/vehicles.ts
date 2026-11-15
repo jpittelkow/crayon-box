@@ -2,24 +2,24 @@
 // (ADR 0011). Each vehicle's body is baked to one mesh per material; wheels stay separate so they can turn.
 import * as THREE from 'three';
 import type { VehicleKind } from '../sim/sim';
-import { bakedGroup, chrome, glass, lamp, paint, part, plastic, rbox, ROUND, wheel } from './kit';
+import { chrome, glass, lamp, paint, part, plastic, rbox, ROUND } from './kit';
+import { ambulance, cementMixer, digger, dumpTruck, fireTruck, garbageTruck, iceCreamVan, raceCar, towTruck, tractor } from './fleet';
+import { finish, lights, wheelSet, type Parts, type VehicleModel } from './vehicleKit';
 
-export interface VehicleModel {
-  group: THREE.Group;
-  /** Turn these about their x axis by the distance rolled. */
-  wheels: THREE.Object3D[];
-  /** Called each frame with the game's clock: flashing lamps. */
-  animate?(time: number): void;
-}
+export type { VehicleModel } from './vehicleKit';
 
 /** Each vehicle's own colour, as traffic. None is a kid profile colour, so the kid's vehicle is never mistaken. */
-export const OWN_COLOR: Record<VehicleKind, number> = { car: 0xe8402c, police: 0x16181d, monster: 0xd8342c, bus: 0xf7b500 };
+export const OWN_COLOR: Record<VehicleKind, number> = {
+  car: 0xe8402c, police: 0x16181d, monster: 0xd8342c, bus: 0xf7b500,
+  fire: 0xd8141c, ambulance: 0xf6f7f9, tow: 0x2f6fd6, digger: 0xff9a1a, dump: 0xffc400, mixer: 0xf4f5f7,
+  tractor: 0x3aa045, garbage: 0x2e9e4f, icecream: 0xffc8dd, race: 0x1e1f24,
+};
 
 /**
  * Vehicles a kid's colour can paint (milestone-3 B5, owner's choice 2026-11-15). The others have a look of their
  * own (a police car, a school bus) and fly a flag in the kid's colour instead.
  */
-export const PAINTABLE: ReadonlySet<VehicleKind> = new Set<VehicleKind>(['car', 'monster']);
+export const PAINTABLE: ReadonlySet<VehicleKind> = new Set<VehicleKind>(['car', 'monster', 'tow', 'tractor', 'race']);
 
 /** The kid's own vehicle: painted in their colour, or in its own colours with their flag. */
 export function buildKidVehicle(kind: VehicleKind, kidColor: THREE.ColorRepresentation): VehicleModel {
@@ -57,36 +57,17 @@ export function buildVehicle(kind: VehicleKind, color: THREE.ColorRepresentation
     case 'police': return finish(car(0x16181d, true));
     case 'monster': return finish(monster(color));
     case 'bus': return finish(bus());
+    case 'fire': return finish(fireTruck());
+    case 'ambulance': return finish(ambulance());
+    case 'tow': return finish(towTruck(color));
+    case 'digger': return finish(digger());
+    case 'dump': return finish(dumpTruck());
+    case 'mixer': return finish(cementMixer());
+    case 'tractor': return finish(tractor(color));
+    case 'garbage': return finish(garbageTruck());
+    case 'icecream': return finish(iceCreamVan());
+    case 'race': return finish(raceCar(color));
   }
-}
-
-interface Parts { body: THREE.Group; wheels: THREE.Object3D[]; live: THREE.Object3D[]; animate?(time: number): void }
-
-function finish(p: Parts): VehicleModel {
-  const group = new THREE.Group();
-  group.add(bakedGroup(p.body), ...p.wheels, ...p.live);
-  return { group, wheels: p.wheels, animate: p.animate };
-}
-
-function lights(body: THREE.Group, w: number, y: number, front: number, back: number, r = 0.15): void {
-  const lens = new THREE.CylinderGeometry(r, r, 0.08, ROUND).rotateX(Math.PI / 2);
-  const head = lamp(0xfff4d0, 1.4), tail = lamp(0xff2a1a, 1.2);
-  for (const side of [-1, 1]) {
-    body.add(part(lens, head, side * w, y, front));
-    body.add(part(new THREE.BoxGeometry(r * 2.4, r * 1.1, 0.07), tail, side * w, y, back));
-  }
-}
-
-function wheelSet(radius: number, width: number, x: number, zs: number[]): THREE.Object3D[] {
-  const out: THREE.Object3D[] = [];
-  for (const z of zs) {
-    for (const side of [-1, 1]) {
-      const w = wheel(radius, width);
-      w.position.set(side * x, radius, z);
-      out.push(w);
-    }
-  }
-  return out;
 }
 
 /** A chunky toy car. The police version is black with white doors and a light bar that flashes red and blue. */

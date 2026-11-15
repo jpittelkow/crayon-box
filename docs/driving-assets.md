@@ -114,16 +114,16 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 | `vehicle/police` | built | all, town | flashing lamps; horn becomes a siren (phase D) |
 | `vehicle/monster` | built | all, country | pushes toys furthest, wades fastest |
 | `vehicle/bus` | built | all, town | flashing top lamps |
-| `vehicle/fire-truck` | sample | all, town | from `spikes/vehicle-sources/`; ladder could rise when stopped |
-| `vehicle/ambulance` | planned | town | siren, lamps |
-| `vehicle/tow-truck` | planned | all | hook swings |
-| `vehicle/digger` | planned | country | arm scoops when stopped |
-| `vehicle/dump-truck` | planned | country | bed tips when stopped |
-| `vehicle/tractor` | planned | country | slow, big back wheels |
-| `vehicle/garbage-truck` | idea | town | |
-| `vehicle/cement-mixer` | idea | town | drum turns |
-| `vehicle/ice-cream-van` | idea | island | its own original tune as the horn |
-| `vehicle/race-car` | idea | all | quickest |
+| `vehicle/fire-truck` | built (2026-11-15, `look/fleet.ts`) | all, town | ladder rises when it stops; siren (stand-in), lamps flash |
+| `vehicle/ambulance` | built (2026-11-15, `look/fleet.ts`) | town | siren (stand-in, higher), lamps flash |
+| `vehicle/tow-truck` | built (2026-11-15, `look/fleet.ts`) | all | hook swings as it drives |
+| `vehicle/digger` | built (2026-11-15, `look/fleet.ts`) | country | arm scoops when it stops; beep-beep |
+| `vehicle/dump-truck` | built (2026-11-15, `look/fleet.ts`) | country | bed tips when it stops |
+| `vehicle/tractor` | built (2026-11-15, `look/fleet.ts`) | country | slow, big back wheels; painted in the kid's colour |
+| `vehicle/garbage-truck` | built (2026-11-15, `look/fleet.ts`) | town | amber lamp |
+| `vehicle/cement-mixer` | built (2026-11-15, `look/fleet.ts`) | town | drum turns |
+| `vehicle/ice-cream-van` | built (2026-11-15, `look/fleet.ts`) | island | a cone on the roof; its horn is a little tune (stand-in) |
+| `vehicle/race-car` | built (2026-11-15, `look/fleet.ts`) | all | quickest; painted in the kid's colour |
 
 **States every vehicle has** (switched by ground, water and set pieces, not assets of their own):
 | State | Status | Switched on by | Switched off by |
