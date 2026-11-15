@@ -67,9 +67,11 @@ export function buildGround(world: World): THREE.Group {
   // Puddles and the flood: shiny water inside a muddy rim.
   const water = new THREE.MeshPhysicalMaterial({ color: 0x2f8fd0, roughness: 0.04, metalness: 0.1, clearcoat: 1, transparent: true, opacity: 0.9 });
   const rim = new THREE.MeshStandardMaterial({ color: 0x8a7d63, roughness: 0.9 });
+  // Mud on a building site (milestone-3 E): the same puddle, brown and glossy.
+  const mud = new THREE.MeshPhysicalMaterial({ color: 0x6b4a2e, roughness: 0.25, clearcoat: 0.6 });
   for (const p of world.waters) {
     add(new THREE.CircleGeometry(p.r + 0.5, ROUND * 2).rotateX(-Math.PI / 2).translate(p.x, 0.075, p.z), rim);
-    add(new THREE.CircleGeometry(p.r, ROUND * 2).rotateX(-Math.PI / 2).translate(p.x, 0.09, p.z), water);
+    add(new THREE.CircleGeometry(p.r, ROUND * 2).rotateX(-Math.PI / 2).translate(p.x, 0.09, p.z), p.mud ? mud : water);
   }
 
   // Decor (bushes): clumps kept off the roads, out of the water and clear of toys, one mesh per kind.

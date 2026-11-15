@@ -2,7 +2,7 @@
 // simulation decides what each one does (sim/ramps.ts for ramps).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { guardAt, type Guard } from '../sim/ground';
+import { guardAt, hillReach, type Guard } from '../sim/ground';
 import type { HillDef } from '../sim/map';
 import { RAMP } from '../sim/ramps';
 import { pointAt } from '../sim/roads';
@@ -140,7 +140,7 @@ function hill(world: World, h: HillDef): { group: THREE.Group; skins: THREE.Mate
   const g = new THREE.Group();
   // See-through-capable from the start, as switching that later needs the shader rebuilt. The portals fade with
   // the hill: the camera passes right through one on the way in.
-  const skin = new THREE.MeshStandardMaterial({ color: 0x5ea347, roughness: 0.95, transparent: true });
+  const skin = new THREE.MeshStandardMaterial({ color: h.color ?? 0x5ea347, roughness: 0.95, transparent: true });
   const stone = plastic(0x8d8f93, 0.85);
   stone.transparent = true;
   const dome = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2), skin);
@@ -148,7 +148,12 @@ function hill(world: World, h: HillDef): { group: THREE.Group; skins: THREE.Mate
   dome.position.set(h.x, -0.05, h.z);
   dome.castShadow = dome.receiveShadow = true;
   g.add(dome);
-  const tunnel = world.guards.find((t) => t.kind === 'tunnel');
+  // Its tunnel, if one runs through it: the tunnel's middle is inside the hill.
+  const tunnel = world.guards.find((t) => {
+    if (t.kind !== 'tunnel') return false;
+    const mid = pointAt(world.roads[t.road]!, (t.s0 + t.s1) / 2);
+    return hillReach(h, mid.x, mid.z) < 1;
+  });
   if (tunnel) {
     const road = world.roads[tunnel.road]!, half = road.def.width / 2;
     for (const s of [tunnel.s0, tunnel.s1]) {
@@ -212,6 +217,20 @@ function garage(zone: Zone): { group: THREE.Group; roof: THREE.Material[] } {
   return { group: g, roof: [roofMat, spannerMat] };
 }
 
+/** A little moored boat, to look at (milestone-3 E): a hull, a cabin and a mast; it bobs on the water. */
+function boat(x: number, z: number, heading: number, color: number): THREE.Group {
+  const g = new THREE.Group();
+  g.add(part(rbox(2.2, 0.8, 5.0, 0.35), plastic(color, 0.45), 0, 0.1, 0));
+  g.add(part(rbox(1.6, 0.9, 1.6, 0.15), plastic(0xf4f6f8, 0.5), 0, 0.9, -0.6));
+  g.add(part(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), plastic(0xc98b4a, 0.7), 0, 2.1, 0.8));
+  g.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
+  });
+  g.position.set(x, -0.3, z);
+  g.rotation.y = heading;
+  return g;
+}
+
 /** Every set piece on the map, and a step for the ones that move. */
 export function buildSetPieces(world: World): { group: THREE.Group; animate(w: World, dt: number): void } {
   const g = new THREE.Group();
@@ -231,6 +250,8 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
     }
   }
   g.add(sand(world));
+  const boats = (world.map.boats ?? []).map((b, i) => boat(b.x, b.z, b.heading, [0xe63946, 0x3a86ff, 0xffc400][i % 3]!));
+  for (const b of boats) g.add(b);
   for (const guard of world.guards) if (guard.kind === 'bridge') g.add(bridge(world, guard));
   const hills = (world.map.hills ?? []).map((h) => hill(world, h));
   for (const h of hills) g.add(h.group);
@@ -238,6 +259,10 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
     group: g,
     animate(w, dt) {
       const kid = w.cars[0]!;
+      boats.forEach((b, i) => {
+        b.position.y = -0.3 + Math.sin(w.time * 1.3 + i) * 0.08;
+        b.rotation.z = Math.sin(w.time * 0.9 + i * 2) * 0.04;
+      });
       // A hill turns see-through while the kid's car is in its tunnel, or about to go in or just out.
       const inTunnel = guardAt(w.guards, w.roads, kid.x, kid.z, 6)?.guard.kind === 'tunnel';
       for (const { skins, tunnel } of hills) {

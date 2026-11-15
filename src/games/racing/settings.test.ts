@@ -20,9 +20,9 @@ function fakeStorage(): GameStorage {
 describe('the vehicle picker (milestone-3 B5)', () => {
   it('remembers each kid\'s vehicle, starting with the car, and ignores a vehicle it doesn\'t know', async () => {
     const storage = fakeStorage();
-    expect(await loadKidDriving(storage, 'kid-a')).toEqual({ assist: 'free', vehicle: 'car' });
-    await saveKidDriving(storage, 'kid-a', { assist: 'road', vehicle: 'bus' });
-    expect(await loadKidDriving(storage, 'kid-a')).toEqual({ assist: 'road', vehicle: 'bus' });
+    expect(await loadKidDriving(storage, 'kid-a')).toEqual({ assist: 'free', vehicle: 'car', map: 'island' });
+    await saveKidDriving(storage, 'kid-a', { assist: 'road', vehicle: 'bus', map: 'site' });
+    expect(await loadKidDriving(storage, 'kid-a')).toEqual({ assist: 'road', vehicle: 'bus', map: 'site' });
     expect((await loadKidDriving(storage, 'kid-b')).vehicle).toBe('car');
     await storage.putJson('kids/kid-c/driving.json', { vehicle: 'spaceship' });
     expect((await loadKidDriving(storage, 'kid-c')).vehicle).toBe('car');

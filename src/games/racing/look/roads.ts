@@ -65,7 +65,10 @@ export function buildRoads(roads: Road[]): THREE.Group {
   };
   const asphalt = new THREE.MeshStandardMaterial({ color: 0x5a5f66, roughness: 0.85 });
   const white = new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: 0.6 });
+  const dirt = new THREE.MeshStandardMaterial({ color: 0xa47c52, roughness: 0.95 });
   const surfaces: THREE.BufferGeometry[] = [];
+  // Dirt tracks (milestone-3 E): brown, and no painted lines.
+  const tracks: THREE.BufferGeometry[] = [];
   const lines: THREE.BufferGeometry[] = [];
   const junctions = buildJunctions(roads);
   roads.forEach((road, r) => {
@@ -73,6 +76,10 @@ export function buildRoads(roads: Road[]): THREE.Group {
     // A joining road starts and ends at the edge of the road it joins, so the two surfaces never overlap.
     const inset = (on: number | undefined) => (on === undefined ? 0 : roads[on]!.def.width / 2 - 0.2);
     const s0 = inset(road.def.from), s1 = road.length - inset(road.def.to);
+    if (road.def.kind === 'dirt') {
+      tracks.push(roadStrip(road, -half, half, 0.04, s0, s1));
+      return;
+    }
     surfaces.push(roadStrip(road, -half, half, 0.04, s0, s1));
     const count = Math.max(1, Math.round((s1 - s0) / 6));
     for (let i = 0; i < count; i++) {
@@ -99,6 +106,7 @@ export function buildRoads(roads: Road[]): THREE.Group {
   // Dashes are boxes with normals and uvs; the strips have normals only. Merging needs the same attributes.
   for (const geo of lines) if (geo.getAttribute('uv')) geo.deleteAttribute('uv');
   if (surfaces.length) add(mergeGeometries(surfaces)!, asphalt);
+  if (tracks.length) add(mergeGeometries(tracks)!, dirt);
   if (lines.length) add(mergeGeometries(lines)!, white);
   return g;
 }

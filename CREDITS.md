@@ -18,4 +18,5 @@ Third-party assets that ship with the app (ADR 0011). Code dependencies are list
 
 Every sound file is listed with its source in `assets/sounds/sounds.json`; `tools/sounds/` remakes them.
 The fonts are bundled into the app and never loaded from the network (ADR 0016). Icons and the built-in coloring
-pages are original and released as CC0.
+pages are original and released as CC0. The driving game's 3D vehicles, animals, toys, scenery and set pieces are original,
+built in code (ADR 0025, 0035), and released as CC0; no third-party model ships with the app.

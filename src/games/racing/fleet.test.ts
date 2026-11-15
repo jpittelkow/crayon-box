@@ -6,7 +6,7 @@ import { VEHICLE_NAMES } from './names';
 import { VEHICLES, shownVehicles } from './settings';
 import { ENGINES } from './sound';
 import type { MapDef } from './sim/map';
-import { pointAt } from './sim/roads';
+import { nearestOn } from './sim/roads';
 import { VEHICLE_FEEL, VEHICLE_SIZE, makeWorld, step, type VehicleKind, type World } from './sim/sim';
 
 const DT = 1 / 60;
@@ -93,9 +93,6 @@ describe('the garage (ADR 0035)', () => {
     const w = makeWorld(7, 0, 'free', ISLAND);
     const garage = w.zones.find((z) => z.kind === 'garage')!;
     expect(garage).toBeDefined();
-    const shortcut = w.roads[1]!;
-    const near = Array.from({ length: 50 }, (_, i) => pointAt(shortcut, (i / 49) * shortcut.length))
-      .some((p) => Math.hypot(p.x - garage.x, p.z - garage.z) < 1);
-    expect(near).toBe(true);
+    expect(nearestOn(w.roads[1]!, 1, garage.x, garage.z).dist).toBeLessThan(0.5);
   });
 });

@@ -141,7 +141,8 @@ export interface Prop {
 export interface Puff { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number }
 
 /** A round patch of water: a shallow puddle, or the deep flood across the road. */
-export interface Water { x: number; z: number; r: number; deep: boolean }
+/** A round patch of water: a shallow puddle, or the deep flood across the road; muddy on a building site. */
+export interface Water { x: number; z: number; r: number; deep: boolean; mud?: boolean }
 
 /** A ring on the water that spreads and disappears. */
 export interface Ripple { x: number; z: number; life: number; size: number }
@@ -291,7 +292,9 @@ export function makeWorld(
   w.camHeading = kid.heading;
   w.mark = { x: kid.x, z: kid.z, t: 0 };
   // Traffic from the pool, a different vehicle in each slot where it can be, never the kid's own; or the map's.
-  const others = (pool ?? []).filter((k) => k !== kidKind);
+  // The map's favourites first (the building site's trucks), when they are switched on.
+  const prefer = map.trafficPrefer ?? [];
+  const others = (pool ?? []).filter((k) => k !== kidKind).sort((a, b) => Number(prefer.includes(b)) - Number(prefer.includes(a)));
   const start = Math.floor(rand(w) * Math.max(1, others.length));
   map.traffic.forEach((t, i) => {
     const kind = others.length ? others[(start + i) % others.length]! : t.kind === kidKind ? 'car' : t.kind;
@@ -301,15 +304,15 @@ export function makeWorld(
   // Water: pools placed by hand (the flood), then puddles along the roads, each with a smaller lobe.
   for (const pool of map.water.pools) {
     const p = pointAt(roads[pool.on.road]!, along(w, pool.on), pool.on.offset ?? 0);
-    w.waters.push({ x: p.x, z: p.z, r: pool.r, deep: pool.deep });
+    w.waters.push({ x: p.x, z: p.z, r: pool.r, deep: pool.deep, mud: pool.mud });
   }
   for (const row of map.water.puddles) {
     const road = roads[row.road]!;
     for (const at of row.at) {
       const offset = (rand(w) - 0.5) * row.spread, size = row.size[0] + rand(w) * row.size[1], lobe = rand(w) * Math.PI * 2;
       const { x, z } = pointAt(road, at * road.length, offset);
-      w.waters.push({ x, z, r: size, deep: false });
-      w.waters.push({ x: x + Math.sin(lobe) * size * 0.7, z: z + Math.cos(lobe) * size * 0.7, r: size * 0.65, deep: false });
+      w.waters.push({ x, z, r: size, deep: false, mud: row.mud });
+      w.waters.push({ x: x + Math.sin(lobe) * size * 0.7, z: z + Math.cos(lobe) * size * 0.7, r: size * 0.65, deep: false, mud: row.mud });
     }
   }
 

@@ -5,7 +5,9 @@ import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import type { createRenderer as CreateRendererFn } from './render';
+import { MAPS, MAP_NAMES } from './maps';
 import { VEHICLE_NAMES } from './names';
+import type { MapDef } from './sim/map';
 import { forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving, shownVehicles } from './settings';
 import { DRIVE_KEYS, driveInput } from './sim/input';
 import { TOYS } from './sim/assets/toys';
@@ -54,7 +56,7 @@ class DrivingGame {
 
   async start(): Promise<void> {
     const { kid, storage } = this.ctx;
-    const [prefs, settings, { createRenderer }, { vehicleTiles }] = await Promise.all([
+    const [prefs, settings, { createRenderer }, { vehicleTiles, mapTiles }] = await Promise.all([
       loadKidDriving(storage, kid.id),
       loadDrivingSettings(storage),
       import('./render'),
@@ -63,8 +65,9 @@ class DrivingGame {
     if (this.stopped) return;
     const kidColor = this.kidColor();
 
-    // The vehicle picker (milestone-3 B5): a tile for each vehicle, on the kid's colour (ADR 0021); the last one
-    // picked shows picked, and a tap drives off in that vehicle.
+    // The picker (milestone-3 B5 and E, ADR 0035): one screen on the kid's colour (ADR 0021), the maps along the
+    // top and the vehicles below. A tap on a map rings it; a tap on a vehicle drives off on the ringed map. The last
+    // map and vehicle show picked.
     const picker = el('div', 'driving-picker', { 'data-ready': 'false' });
     picker.style.background = `var(--kid-${kid.color}-tint, var(--paper))`;
     picker.append(kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() }));
@@ -72,11 +75,29 @@ class DrivingGame {
     const choose = async (vehicle: VehicleKind) => {
       if (chosen) return;
       chosen = true;
-      await saveKidDriving(storage, kid.id, { ...prefs, vehicle });
+      await saveKidDriving(storage, kid.id, { ...prefs, vehicle, map: map.id });
       if (this.stopped) return;
       picker.remove();
-      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, kidColor, shown);
+      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, kidColor, shown, map);
     };
+    // The maps: wide tiles, each a picture of it from above.
+    let map = MAPS.find((m) => m.id === prefs.map) ?? MAPS[0]!;
+    const mapPictures = mapTiles(MAPS, kidColor);
+    const mapTilesEls = MAPS.map((m, i) => {
+      const tile = kidButton({
+        kind: 'paper', label: MAP_NAMES[m.id] ?? m.id, className: 'map-tile',
+        onTap: () => {
+          map = m;
+          setPicked(mapTilesEls, tile);
+        },
+      });
+      tile.dataset.map = m.id;
+      tile.append(Object.assign(document.createElement('img'), { src: mapPictures[i], alt: '' }));
+      return tile;
+    });
+    setPicked(mapTilesEls, mapTilesEls[MAPS.indexOf(map)]);
+    const mapRow = el('div', 'map-row');
+    mapRow.append(...mapTilesEls);
     // The vehicles a parent has on (ADR 0035).
     const shown = shownVehicles(settings);
     const pictures = vehicleTiles(shown, kidColor);
@@ -102,13 +123,13 @@ class DrivingGame {
     });
     const showPage = () => grid.replaceChildren(...tiles.slice(page * per, page * per + per), ...(pages > 1 ? [more] : []));
     showPage();
-    picker.append(grid);
+    picker.append(mapRow, grid);
     this.root.append(picker);
     picker.dataset.ready = 'true';
   }
 
-  /** The island, driven in the vehicle the kid picked. */
-  private drive(assist: Assist, soundsOn: boolean, createRenderer: CreateRenderer, vehicle: VehicleKind, kidColor: string, shown: VehicleKind[]): void {
+  /** A map, driven in the vehicle the kid picked. */
+  private drive(assist: Assist, soundsOn: boolean, createRenderer: CreateRenderer, vehicle: VehicleKind, kidColor: string, shown: VehicleKind[], map: MapDef): void {
     const screen = el('div', 'driving', { 'data-ready': 'false' });
     const canvas = el('canvas', 'driving-canvas') as DrivingCanvas;
     const back = kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() });
@@ -128,7 +149,7 @@ class DrivingGame {
     this.root.append(screen);
     this.cleanups.push(() => sound.close());
 
-    const world = makeWorld(SEED, PROP_COUNT, assist, undefined, vehicle, shown);
+    const world = makeWorld(SEED, map.propCount ?? PROP_COUNT, assist, map, vehicle, shown);
     canvas.drivingWorld = world;
     let renderer = createRenderer(canvas, world, kidColor);
     this.cleanups.push(() => renderer.dispose());

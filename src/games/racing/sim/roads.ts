@@ -6,8 +6,8 @@
 
 /** A road as a map file gives it. */
 export interface RoadDef {
-  /** The kind of road (driving-assets.md): only `street` so far. */
-  kind: 'street';
+  /** The kind of road (driving-assets.md): a street, or a dirt track (milestone-3 E; drawn brown, no lines). */
+  kind: 'street' | 'dirt';
   /** Width in metres, kerb to kerb. */
   width: number;
   /** The centre line, in order. Close points (about 1.5 m apart) follow a curve well; see `smoothPath`. */

@@ -18,6 +18,8 @@ import { CAMERA_FOV, chaseView, stepTreeSizes, type View } from './sim/view';
 export const MAX_PIXEL_RATIO = 1.5;
 
 const WATER_Y = 0.09;
+/** Things further than this from where the chase camera looks are not drawn (milestone-3 E). */
+const HIDE_M = 150;
 
 export interface Renderer {
   resize(cssWidth: number, cssHeight: number, pixelRatio: number): void;
@@ -64,7 +66,8 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const scene = new THREE.Scene();
   const sky = skyTexture();
   scene.background = sky;
-  scene.fog = new THREE.Fog(0xdcefff, 90, 340);
+  const haze = new THREE.Fog(0xdcefff, 90, 340);
+  scene.fog = haze;
   const pmrem = new THREE.PMREMGenerator(renderer);
   const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   pmrem.dispose();
@@ -156,7 +159,15 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     for (const mesh of meshes) mesh.instanceMatrix.needsUpdate = true;
   };
 
-  const update = (w: World, view: View = chaseView(w)) => {
+  const update = (w: World, given?: View) => {
+    const view = given ?? chaseView(w);
+    // On a big map (milestone-3 E), what is further than HIDE_M from where the chase camera looks is not drawn; the
+    // haze already hides it. A dev tool's own camera sees everything.
+    const hide = given ? Infinity : HIDE_M;
+    // A dev tool's camera (the picker's map pictures, from high above) sees through the haze.
+    scene.fog = given ? null : haze;
+    const lx = view.target[0], lz = view.target[2];
+    const far = (x: number, z: number) => (x - lx) ** 2 + (z - lz) ** 2 > hide * hide;
     // Trees
     stepTreeSizes(w, treeSizes);
     placed.clear();
@@ -168,14 +179,14 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     w.trees.forEach((t, i) => {
       const size = t.scale * treeSizes[i]!;
       m.compose(v.set(t.x, 0, t.z), q.identity(), s.setScalar(size));
-      place(treeBatches.get(t.kind)!, next(t.kind), size > 0 ? m : zero);
+      place(treeBatches.get(t.kind)!, next(t.kind), size > 0 && !far(t.x, t.z) ? m : zero);
     });
     treeBatches.forEach(dirty);
 
     // Toys
     for (const p of w.props) {
       m.compose(v.set(p.x, p.y, p.z), q.set(p.qx, p.qy, p.qz, p.qw), s.setScalar(p.scale));
-      place(toyBatches.get(p.toy)!, next(p.toy), p.scale > 0 ? m : zero);
+      place(toyBatches.get(p.toy)!, next(p.toy), p.scale > 0 && !far(p.x, p.z) ? m : zero);
     }
     toyBatches.forEach(dirty);
 
@@ -183,6 +194,7 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     w.animals.forEach((a, i) => {
       const model = animals[i]!;
       const bob = a.speed > 0.1 ? Math.abs(Math.sin(w.time * 9 + i)) * 0.06 : 0;
+      model.visible = !far(a.x, a.z);
       model.position.set(a.x, a.h + bob, a.z);
       model.rotation.y = a.heading;
     });
@@ -195,6 +207,7 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
         builtAs[i] = c.kind;
       }
       const model = vehicles[i]!;
+      model.group.visible = i === 0 || !far(c.x, c.z);
       model.group.position.set(c.x, c.y + c.h, c.z);
       // Nose up while climbing a ramp or rising from it, down while coming down (never enough to look like a flip).
       model.group.rotation.set(-Math.max(-0.35, Math.min(0.35, Math.atan2(c.vy, Math.max(c.speed, 2)))), c.heading, 0, 'YXZ');

@@ -17,7 +17,11 @@ export type ZoneKind = 'ramp' | 'car-wash' | 'garage';
 export interface GuardDef { kind: 'bridge' | 'tunnel'; road: number; from: number; to: number }
 
 /** A hill: a low dome, `rx` by `rz` metres across its base (half-widths), `height` metres high. */
-export interface HillDef { x: number; z: number; rx: number; rz: number; height: number }
+export interface HillDef {
+  x: number; z: number; rx: number; rz: number; height: number;
+  /** Its colour: grass when left out; dirt on a building site (milestone-3 E). */
+  color?: number;
+}
 
 /** A zone: a round area of radius `r`, placed on a road or by its middle. */
 export interface ZoneDef {
@@ -29,6 +33,12 @@ export interface ZoneDef {
 
 export interface MapDef {
   id: string;
+  /** How many toys to knock around; the game's default when left out. */
+  propCount?: number;
+  /** Vehicles traffic prefers on this map, when they are switched on (the building site's diggers and trucks). */
+  trafficPrefer?: VehicleKind[];
+  /** Boats moored on the water: drawn only, to look at. */
+  boats?: { x: number; z: number; heading: number }[];
   /** The land, as a shoreline of any shape. The car turns back before its edge and can never leave it. */
   land: LandDef;
   /**
@@ -52,9 +62,9 @@ export interface MapDef {
   traffic: { kind: VehicleKind; on: OnRoad; cruise: number }[];
   water: {
     /** Round pools placed by hand: the flood is a deep one. */
-    pools: { on: OnRoad; r: number; deep: boolean }[];
+    pools: { on: OnRoad; r: number; deep: boolean; mud?: boolean }[];
     /** Puddles along a road, each with a smaller lobe so it is not a perfect circle. */
-    puddles: { road: number; at: number[]; spread: number; size: [number, number] }[];
+    puddles: { road: number; at: number[]; spread: number; size: [number, number]; mud?: boolean }[];
   };
   /** Trees scattered over the land, kept off the roads and out of the water; which kinds, by share. */
   trees: {
