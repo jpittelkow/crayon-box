@@ -206,6 +206,6 @@ A2 (laptop)  ──► B (MVP) ──────► E (maps) ──┴──►
 |---|---|
 | Before C | ~~Where vehicle models come from~~: built in code (2026-11-15) |
 | ~~Before B is done~~ | ~~The kid's color~~: mixed, paint where it fits and a flag where it doesn't (2026-11-15) |
-| Before B is done | Browser-made sounds or recorded files (a new ADR if files) |
-| In C | Which vehicles; which maps and how big; one picker screen or two |
+| ~~Before B is done~~ | ~~Browser-made sounds or recorded files~~: files (ADR 0032); the tunnel echo is made by the app (2026-11-15) |
+| ~~In C~~ | Decided 2026-11-15: **all ten new vehicles** (fire truck, ambulance, tow truck; digger, dump truck, cement mixer; tractor, garbage truck; ice-cream van, race car); **two maps**, the island grown and a building site; **one picker screen** with both the vehicles and the maps. Horns for the monster truck and bus come with these vehicles. |
 | After F | Whether Driving shows by default, and whether the folder and id stay `racing` |
