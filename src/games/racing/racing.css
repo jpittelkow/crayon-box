@@ -82,3 +82,83 @@
   justify-content: center;
   background: var(--paper);
 }
+
+/* The joystick (ADR 0036): a ring in the middle of the screen while a finger is down, and a dot under the finger.
+   Neither takes touches. */
+.driving-stick,
+.driving-stick-dot {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.driving-stick {
+  left: 50%;
+  top: 50%;
+  width: 240px;
+  height: 240px;
+  border: 8px solid rgb(255 255 255 / 0.55);
+  box-shadow: 0 0 0 4px rgb(0 0 0 / 0.12);
+}
+.driving-stick-dot {
+  width: 96px;
+  height: 96px;
+  background: rgb(255 255 255 / 0.7);
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.25);
+}
+.driving-stick[hidden],
+.driving-stick-dot[hidden] {
+  display: none;
+}
+
+/* The vehicle's colour (playtest, 2026-11-15): eight paint swatches in two columns down the right-hand side, in the
+   room the picker leaves beside the vehicles. */
+.car-colors {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  grid-template-columns: repeat(2, var(--kid-swatch));
+  gap: 18px 14px;
+}
+
+/* The quick swap (playtest, 2026-11-15): the vehicle being driven, top right; a tap opens a tray of the others. */
+.driving-swap.cb-paper {
+  position: absolute;
+  top: var(--space-6);
+  right: var(--space-6);
+  width: 176px;
+  height: 132px;
+  padding: 6px;
+}
+.driving-swap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.driving-tray {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.35);
+}
+.driving-tray[hidden] {
+  display: none;
+}
+.driving-tray-panel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  max-width: calc(5 * 200px + 4 * 20px);
+  padding: 28px;
+  border-radius: 28px;
+  background: var(--manila);
+}
+.driving-tray-tile.cb-paper {
+  width: 200px;
+  height: 150px;
+}

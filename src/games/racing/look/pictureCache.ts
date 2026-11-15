@@ -2,6 +2,7 @@
 // the picker opened froze the screen for about 6 s). Each picture is kept in memory for the session and, in a
 // release build, on this device under `local/`, keyed by the app's version so a new release draws them afresh.
 import type { GameStorage } from '../../../storage/types';
+import { shippedPicture } from './shippedPictures';
 
 const memory = new Map<string, string>();
 
@@ -9,10 +10,13 @@ const memory = new Map<string, string>();
 export const picturePath = (version: string, key: string) => `local/pictures/${version}/${key.replace(/[^a-z0-9-]/gi, '_')}.png`;
 
 /**
- * A picture's URL: from memory, else from the device, else drawn with `draw` (a data URL) and kept. `storage` is
+ * A picture's URL: shipped with the app (shippedPictures.ts) when there is one, else from memory, else from the
+ * device, else drawn with `draw` (a data URL) and kept. `storage` is
  * left out in development, where the models change without the version changing.
  */
 export async function cachedPicture(key: string, draw: () => string, storage?: GameStorage, version = ''): Promise<string> {
+  const shipped = shippedPicture(key);
+  if (shipped) return shipped;
   const known = memory.get(key);
   if (known) return known;
   const path = picturePath(version, key);
