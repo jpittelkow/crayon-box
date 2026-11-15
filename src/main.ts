@@ -7,6 +7,7 @@ import { appStorage } from './storage/namespaced';
 import type { Backend } from './storage/types';
 import type { FinishedPictures } from './shell/types';
 import { UpdateController, loadUpdateSettings } from './shell/updates';
+import { SyncService } from './sync/service';
 import '@fontsource/fredoka/600.css';
 import './ui/tokens.css';
 import './ui/kid.css';
@@ -52,7 +53,10 @@ async function boot(): Promise<void> {
   const storage = appStorage(backend);
   await deviceInfo(storage.shell);
   const updates = await openUpdates();
-  await new Shell(frame, storage, undefined, { finished, updates }).start();
+  // Family sync runs in the background when a parent has set it up (ADR 0024); kid screens never wait for it.
+  const sync = new SyncService({ backend, shell: storage.shell });
+  await new Shell(frame, storage, undefined, { finished, updates, sync }).start();
+  sync.start();
   // Look for a newer version in the background (ADR 0009). It only shows in the parent area; nothing installs on
   // its own, and a failed check is only reported there too.
   if (updates && (await loadUpdateSettings(storage.shell)).checkOnStart) void updates.check();

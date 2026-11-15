@@ -5,7 +5,7 @@
 //
 // The file system itself is behind `FileSystem`, so the same code runs on Tauri's fs plugin in the Windows app
 // (`shell/tauriFiles.ts`) and on `memoryFs` in the unit tests.
-import { isDeviceOnly, type Backend, type Change, type ItemMeta, type PutOptions, type StoredValue } from './types';
+import { isDeviceOnly, localChange, synced, type Backend, type Change, type ItemMeta, type PutOptions, type StoredValue } from './types';
 
 /** The few file operations the backend needs. Paths are relative to the store's folder and use `/`. */
 export interface FileSystem {
@@ -122,14 +122,14 @@ export async function openFileBackend(fs: FileSystem, opts: FileBackendOptions =
   for (const key of onDisk) {
     const entry = items.get(key);
     if (entry?.value) continue;
-    const meta = isDeviceOnly(key) ? undefined : { modified: nextModified(entry?.meta, stamp) };
+    const meta = isDeviceOnly(key) ? undefined : localChange(entry?.meta, nextModified(entry?.meta, stamp));
     items.set(key, { value: guessValue(key), ...(meta ? { meta } : {}) });
     indexChanged = true;
   }
   for (const [key, entry] of items) {
     if (!entry.value || onDisk.has(key)) continue;
     // The index says it exists but its file is gone (removed by hand): treat it as deleted here.
-    if (entry.meta) items.set(key, { meta: { modified: nextModified(entry.meta, stamp), deleted: true } });
+    if (entry.meta) items.set(key, { meta: localChange(entry.meta, nextModified(entry.meta, stamp), true) });
     else items.delete(key);
     indexChanged = true;
   }
@@ -212,7 +212,7 @@ export async function openFileBackend(fs: FileSystem, opts: FileBackendOptions =
         const prev = items.get(key);
         const meta = isDeviceOnly(key)
           ? undefined
-          : { modified: putOpts?.asDefault ? 0 : nextModified(prev?.meta, now()) };
+          : localChange(prev?.meta, putOpts?.asDefault ? 0 : nextModified(prev?.meta, now()));
         await commit(key, { value: kind, ...(meta ? { meta } : {}) });
       });
     },
@@ -231,7 +231,7 @@ export async function openFileBackend(fs: FileSystem, opts: FileBackendOptions =
         if (!prev.meta) return commit(key, undefined);
         // Something already deleted leaves no new record.
         if (prev.meta.deleted) return;
-        await commit(key, { meta: { modified: nextModified(prev.meta, now()), deleted: true } });
+        await commit(key, { meta: localChange(prev.meta, nextModified(prev.meta, now()), true) });
       });
     },
 
@@ -263,7 +263,7 @@ export async function openFileBackend(fs: FileSystem, opts: FileBackendOptions =
       return serial(async () => {
         const entry = items.get(key);
         if (!entry?.meta || entry.meta.modified !== modified) return;
-        await commit(key, { ...entry, meta: { ...entry.meta, rev } });
+        await commit(key, { ...entry, meta: synced(entry.meta, rev) });
       });
     },
   };

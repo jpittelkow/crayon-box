@@ -110,6 +110,11 @@ _Last updated: 2026-11-14_
 - Node 24 runs `.ts` files directly (type stripping), which is how `release.yml` runs
   `src/tools/releaseManifest.ts`; keep that file to erasable TypeScript (no enums, no parameter properties)
   (2026-11-14).
+- The Windows app's CSP `connect-src` includes `http: https:` so it can reach the family sync server on the
+  home network (any address). The sync server sends CORS headers for the same reason (2026-11-14).
+- Tests can import the sync server (`server/src/*.ts`) directly: vitest and Playwright both run it in-process,
+  which is how the client is tested against the real thing. The root tsconfig allows `.ts` import paths for
+  this (2026-11-14).
 - The browser tests draw WebGL in software; the driving game's toy look takes seconds to start there, so
   `driving.spec.ts` runs its tests one at a time with longer timeouts (2026-11-14).
 - **No Prettier config** (2026-11-14): `npx prettier --write` uses 80 columns and reflows whole files. The code is

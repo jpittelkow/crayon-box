@@ -10,6 +10,7 @@ import { GAMES } from './registry';
 import { WebAudioSound } from './sound';
 import type { FinishedPictures, GameEntry, KidProfile } from './types';
 import type { UpdateController } from './updates';
+import type { SyncService } from '../sync/service';
 
 export class Shell {
   private unmount: (() => Promise<void>) | null = null;
@@ -23,7 +24,7 @@ export class Shell {
     private readonly storage: AppStorage,
     private readonly games: readonly GameEntry[] = GAMES,
     /** What only the Windows app has (milestone 2); empty in the browser. */
-    private readonly platform: { finished?: FinishedPictures; updates?: UpdateController } = {},
+    private readonly platform: { finished?: FinishedPictures; updates?: UpdateController; sync?: SyncService } = {},
   ) {}
 
   async start(): Promise<void> {
@@ -166,6 +167,7 @@ export class Shell {
       games: this.games,
       finished: this.platform.finished,
       updates: this.platform.updates,
+      sync: this.platform.sync,
       onExit: () => void this.showKidPicker(),
     });
     this.stopParent = area.stop;

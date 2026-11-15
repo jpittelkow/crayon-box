@@ -11,6 +11,7 @@ import {
 } from '../shell/profiles';
 import type { FinishedPictures, GameEntry, GameModule, KidProfile, SettingsSection } from '../shell/types';
 import type { UpdateController } from '../shell/updates';
+import type { SyncService } from '../sync/service';
 import type { AppStorage } from '../storage/types';
 import { button, card, h, segmented, switchRow } from '../ui/parent';
 import { wordmark } from '../ui/wordmark';
@@ -26,6 +27,8 @@ export interface ParentAreaOptions {
   finished?: FinishedPictures;
   /** Present in the Windows app only (ADR 0009). */
   updates?: UpdateController;
+  /** Family sync (ADR 0024), in the browser too. */
+  sync?: SyncService;
   onExit(): void;
 }
 
@@ -78,6 +81,11 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     main.replaceChildren();
     main.scrollTop = 0;
     if (id === 'settings') return renderSettings();
+    if (id === 'sync' && opts.sync) {
+      const { renderSync } = await import('./syncScreen');
+      stopScreen = await renderSync(main, opts.sync);
+      return;
+    }
     if (id === 'updates' && opts.updates) {
       const { renderUpdates } = await import('./updatesScreen');
       stopScreen = await renderUpdates(main, opts.updates, storage.shell);
@@ -100,6 +108,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   };
   addNav('settings', 'Settings');
   for (const s of sections) addNav(`${s.game.id}:${s.section.id}`, s.section.title);
+  if (opts.sync) addNav('sync', 'Family sync');
   let stopDot: (() => void) | null = null;
   if (opts.updates) {
     const updates = opts.updates;
@@ -156,8 +165,18 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
       kids.length < MAX_KIDS ? button('Add a kid', () => void editKid(null)) : null,
     );
 
+    // The one-time question (ADR 0024): asked here, in the parent area, never on the kids' screens.
+    let firstRun: HTMLElement | null = null;
+    if (opts.sync) {
+      const s = await opts.sync.settings();
+      if (!s.asked && !s.server) {
+        const { firstRunCard } = await import('./syncScreen');
+        firstRun = firstRunCard(opts.sync, () => void show('sync'));
+      }
+    }
     main.append(
       h('h1', {}, 'Settings'),
+      ...(firstRun ? [firstRun] : []),
       card(
         header,
         h(

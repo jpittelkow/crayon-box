@@ -118,10 +118,26 @@ describe.each(backends)('sync groundwork on %s', (_name, make) => {
     expect(await b.meta('shell/a.json')).toEqual({ modified: 1000, rev: 5 });
 
     c.set(2000);
-    await b.put('shell/a.json', json(2)); // a new change: waiting to be sent again
-    expect(await b.meta('shell/a.json')).toEqual({ modified: 2000 });
+    await b.put('shell/a.json', json(2)); // a new change: waiting to be sent again, made on top of rev 5
+    expect(await b.meta('shell/a.json')).toEqual({ modified: 2000, base: 5 });
     await b.markSynced('shell/a.json', 1000, 6); // the server's answer to the older change arrives late
-    expect(await b.meta('shell/a.json')).toEqual({ modified: 2000 });
+    expect(await b.meta('shell/a.json')).toEqual({ modified: 2000, base: 5 });
+    await b.markSynced('shell/a.json', 2000, 7);
+    expect(await b.meta('shell/a.json')).toEqual({ modified: 2000, rev: 7 });
+  });
+
+  it('remembers which revision a change and a deletion were made on top of', async () => {
+    const c = clock();
+    const b = await make(c.now);
+    await b.applyRemote('shell/a.json', json(1), { modified: 900, rev: 3 });
+    c.set(2000);
+    await b.put('shell/a.json', json(2));
+    c.set(3000);
+    await b.put('shell/a.json', json(3)); // still on top of rev 3: nothing was sent in between
+    expect(await b.meta('shell/a.json')).toEqual({ modified: 3000, base: 3 });
+    c.set(4000);
+    await b.delete('shell/a.json');
+    expect(await b.meta('shell/a.json')).toEqual({ modified: 4000, base: 3, deleted: true });
   });
 
   it('lists what is waiting to be sent', async () => {
