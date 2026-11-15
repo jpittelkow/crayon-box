@@ -3,6 +3,7 @@
 _Last updated: 2026-11-14_
 
 ## Phase
+**Latest release: 0.7.0** (2026-11-15): milestone 3 (fourteen vehicles, two maps, one picker, Driving on by default).
 Milestone 1 (web app) in progress. `npm run dev` opens the kid picker. A kid starts a new picture from the page
 library or continues one from My pictures (ADR 0017), and can fill, paint, erase, undo, start over and switch the
 coloring mode. The page fills the window (ADR 0019). Holding the lock on the kid picker for a second opens the
