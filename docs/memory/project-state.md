@@ -115,8 +115,8 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   coloring screen), `engine/` (ADR 0004), `pictures.ts`, `pages.ts`, `parentSections.ts` (its parent screens).
 - `src/games/racing/` (ADR 0021, 0025, 0031): `sim/` is plain TypeScript (the world with vehicle kinds and sizes,
   driving to a touched spot, traffic modes CRUISE/JOIN/ALONG/LEAVE, `World.steer`; input; camera, tree rules and
-  `groundPoint` (picture to ground) in `view.ts`) with unit tests; the world comes from a map (`sim/map.ts`, the
-  island in `maps/island.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
+  `groundPoint` (picture to ground) in `view.ts`) with unit tests; the world comes from a map (`sim/map.ts`: land as an
+  outline in `sim/land.ts`, roads, zones; the island in `maps/island.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
   scenery and decor are registered by id (`sim/assets/` definitions, `look/toys.ts` and `look/scenery.ts` looks;
   dev gallery at `/tools/driving-gallery.html`); `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the

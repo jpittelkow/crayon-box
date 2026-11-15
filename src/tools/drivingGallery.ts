@@ -10,6 +10,7 @@ import { createRenderer } from '../games/racing/render';
 import { CATEGORIES } from '../games/racing/sim/assets';
 import { SCENERY_IDS } from '../games/racing/sim/assets/scenery';
 import { TOYS, TOY_IDS } from '../games/racing/sim/assets/toys';
+import { roundOutline } from '../games/racing/sim/land';
 import type { MapDef } from '../games/racing/sim/map';
 import { smoothPath } from '../games/racing/sim/roads';
 import { DROP_LIFE, makeWorld, type VehicleKind } from '../games/racing/sim/sim';
@@ -25,7 +26,7 @@ const showRow = (row: RowName) => !only || !(only in ROW) || only === row;
 /** A small map that shows the ground, a road, water, sand, sea, bushes and sky as the game draws them. */
 const GALLERY: MapDef = {
   id: 'gallery',
-  land: { x: 0, z: 0, r: 62, beach: 8 },
+  land: { outline: roundOutline(0, 0, 62), beach: 8 },
   roads: [{ kind: 'street', width: 9, closed: true, points: smoothPath([[-42, -26], [0, -34], [42, -26], [46, 18], [0, 30], [-46, 18]], true) }],
   spawn: { road: 0, at: 0 },
   traffic: [],

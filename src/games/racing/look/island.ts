@@ -2,14 +2,18 @@
 // move. Trees and toys are drawn in batches by the renderer, from look/scenery.ts and look/toys.ts.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { offsetOutline, randomInland } from '../sim/land';
 import { nearestRoad } from '../sim/roads';
 import type { World } from '../sim/sim';
 import { ROUND } from './kit';
 import { buildRoads } from './roads';
 import { DECOR_LOOKS } from './scenery';
 
-function flatRing(inner: number, outer: number, y: number, segs = 128, rings = 1): THREE.BufferGeometry {
-  return new THREE.RingGeometry(inner, outer, segs, rings).rotateX(-Math.PI / 2).translate(0, y, 0);
+/** A flat shape on the ground at height `y`, from an outline in x, z. */
+function flatShape(outline: [number, number][], y: number): THREE.BufferGeometry {
+  // The shape is drawn in x, y and laid down; laying it down maps its y to -z, so z goes in negated.
+  const shape = new THREE.Shape(outline.map(([x, z]) => new THREE.Vector2(x, -z)));
+  return new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2).translate(0, y, 0);
 }
 
 function rng(seed: number): () => number {
@@ -35,22 +39,27 @@ export function buildGround(world: World): THREE.Group {
   const sea = new THREE.Mesh(new THREE.CircleGeometry(900, 64).rotateX(-Math.PI / 2).translate(0, -0.5, 0),
     new THREE.MeshStandardMaterial({ color: 0x3d9fe0, roughness: 0.12, metalness: 0.05 }));
   g.add(sea);
-  const land = world.map.land;
-  const onLand = (geo: THREE.BufferGeometry) => geo.translate(land.x, 0, land.z);
-  add(onLand(flatRing(land.r - land.beach, land.r + 2.5, -0.04, 160, 4)), new THREE.MeshStandardMaterial({ color: 0xe6c98c, roughness: 0.95 }));
+  // The land from its shoreline (milestone-3 B2): sand reaching a little out into the sea, grass on top of it up
+  // to the beach.
+  const land = world.land;
+  add(flatShape(offsetOutline(land, 2.5), -0.04), new THREE.MeshStandardMaterial({ color: 0xe6c98c, roughness: 0.95 }));
 
-  // Patchy grass: lighter and darker in places, as lawns are.
-  const grass = onLand(flatRing(0.01, land.r - 3, 0, 160, 40));
-  const pos = grass.getAttribute('position');
-  const colors = new Float32Array(pos.count * 3);
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i), z = pos.getZ(i);
-    const n = Math.sin(x * 0.21) * Math.cos(z * 0.17) * 0.5 + Math.sin(x * 0.05 + z * 0.07) * 0.5;
-    const c = new THREE.Color(0x5ea83c).offsetHSL(0.01 * n, 0.04 * n, 0.05 * n);
-    colors.set([c.r, c.g, c.b], i * 3);
-  }
-  grass.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  add(grass, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }));
+  // Patchy grass: lighter and darker in places, as lawns are. The shade comes from where a point is on the
+  // ground, so any shape of land gets it.
+  const grassMat = new THREE.MeshStandardMaterial({ color: 0x5ea83c, roughness: 0.95 });
+  grassMat.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGround = (modelMatrix * vec4(position, 1.0)).xz;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
+      .replace('#include <color_fragment>', [
+        '#include <color_fragment>',
+        'float patchy = sin(vGround.x * 0.21) * cos(vGround.y * 0.17) * 0.5 + sin(vGround.x * 0.05 + vGround.y * 0.07) * 0.5;',
+        'diffuseColor.rgb *= 1.0 + 0.09 * patchy;',
+      ].join('\n'));
+  };
+  add(flatShape(offsetOutline(land, -(land.def.beach - 5)), 0), grassMat);
 
   g.add(buildRoads(world.roads));
 
@@ -68,8 +77,7 @@ export function buildGround(world: World): THREE.Group {
     const look = DECOR_LOOKS[decor.id];
     const pieces: THREE.BufferGeometry[] = [];
     for (let i = 0; i < decor.clumps; i++) {
-      const a = r() * Math.PI * 2, d = 6 + r() * (land.r - 12);
-      const x = land.x + Math.sin(a) * d, z = land.z + Math.cos(a) * d;
+      const [x, z] = randomInland(land, r, 6);
       const road = nearestRoad(world.roads, x, z);
       if (road && road.dist < world.roads[road.road]!.def.width / 2 + 1.5) continue;
       if (world.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + 1)) continue;

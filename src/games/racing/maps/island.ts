@@ -1,6 +1,7 @@
 // The prototype's island (ADR 0021) as a map: a round island with one ring road, a flood across the far side,
 // puddles along the road, trees and things to knock around. The first map file (milestone-3 phase B).
 import type { MapDef } from '../sim/map';
+import { roundOutline } from '../sim/land';
 import { circlePath } from '../sim/roads';
 
 /** The island's radius, the ring road's radius and its width, in metres. */
@@ -13,7 +14,7 @@ const around = (angle: number, offset = 0) => ({ road: 0, at: angle / (Math.PI *
 
 export const ISLAND: MapDef = {
   id: 'island',
-  land: { x: 0, z: 0, r: LAND_R, beach: 8 },
+  land: { outline: roundOutline(0, 0, LAND_R), beach: 8 },
   roads: [{ kind: 'street', width: ROAD_W, points: circlePath(ROAD_R), closed: true }],
   spawn: around(0),
   traffic: [

@@ -110,6 +110,8 @@ screen, a browser test and screenshots.
 | **B6. Sounds** | The driving game's sounds from the files of [ADR 0032](adr/0032-sounds-as-files.md) (the sound session is building those), each set piece's sound, and the app-wide Sounds switch. | no (ADR 0032 settled it) | small, once the files exist |
 | **B7. Laptop and kids** | Phase A2 (the frame-rate readout, on the installed app on the family laptop) and the first driving playtest: assist level, a resting hand, whether a finger held still ending in a stop reads as "got there" (ADR 0031), whether the horn and back buttons are found. Fixes from it; accept ADR 0031. | yes: run it | depends on findings |
 
+**Status (2026-11-15):** B1: PR #18 merged; the map-file work with ADR 0031 ported is the PR from `driving/milestone-3-mvp`. Taking those commits off the in-app updates branch waits on the owner. B2: the land as an outline (`sim/land.ts`: depth from the shore, inland direction, placing things; the ground drawn from it) and zones with enter and leave events are built; surfaces and junctions come with B3 (beach) and B4 (the new layout).
+
 B2 to B5 can start before B7, but B7's frame rate may turn the look down (ADR 0025's order), so B4 is checked
 on the laptop before B5 adds more.
 

@@ -2,16 +2,28 @@
 // another map is another file. Plain TypeScript, no three.js.
 import type { DecorId, SceneryId } from './assets/scenery';
 import type { ToyId } from './assets/toys';
+import type { LandDef } from './land';
 import type { RoadDef } from './roads';
 import type { VehicleKind } from './sim';
 
 /** A place on a road: a fraction of the way along it (0 to 1) and metres right of its centre line. */
 export interface OnRoad { road: number; at: number; offset?: number }
 
+/** The kinds of zone a set piece can have (milestone-3 phase B3). */
+export type ZoneKind = 'ramp' | 'car-wash' | 'garage';
+
+/** A zone: a round area of radius `r`, placed on a road or by its middle. */
+export interface ZoneDef { kind: ZoneKind; on: OnRoad | { x: number; z: number }; r: number }
+
 export interface MapDef {
   id: string;
-  /** The land: a round island for now. The car turns back before its edge and can never leave it. */
-  land: { x: number; z: number; r: number; beach: number };
+  /** The land, as a shoreline of any shape. The car turns back before its edge and can never leave it. */
+  land: LandDef;
+  /**
+   * Places where something happens when the kid's car drives in (set pieces, driving-assets.md category 7): a
+   * round area on a road, or anywhere by its middle. Optional; the simulation reports entering and leaving.
+   */
+  zones?: ZoneDef[];
   roads: RoadDef[];
   /** Where the kid's car starts, facing along the road. */
   spawn: OnRoad;

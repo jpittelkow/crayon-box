@@ -5,7 +5,8 @@
 import { ISLAND } from '../maps/island';
 import { SCENERY, type SceneryId } from './assets/scenery';
 import { TOYS, type ToyId } from './assets/toys';
-import type { MapDef, OnRoad } from './map';
+import { buildLand, keepInland, randomInland, shore, type Land } from './land';
+import type { MapDef, OnRoad, ZoneKind } from './map';
 import { buildRoad, nearestOn, nearestRoad, pointAt, wrapAlong, type Road } from './roads';
 
 export const MAX_SPEED = 17;
@@ -134,7 +135,18 @@ export interface World {
   goal: { x: number; z: number; best: number; t: number; done: boolean } | null;
   /** The steering the kid's car used in the last step, -1 to 1, whether from keys, a spot or an assist. */
   steer: number;
+  /** The map's land, ready to ask how far a point is from the shore. */
+  land: Land;
+  /** The map's zones, placed (milestone-3 phase B2). */
+  zones: Zone[];
+  /** The zone the kid's car is in, or -1. */
+  zone: number;
+  /** Zones the kid's car drove into or out of in the last step, for set pieces and sounds. */
+  zoneEvents: { zone: number; kind: ZoneKind; entered: boolean }[];
 }
+
+/** A map's zone, placed on the ground. */
+export interface Zone { kind: ZoneKind; x: number; z: number; r: number }
 
 function rand(w: World): number {
   w.rng = (w.rng + 0x6d2b79f5) | 0;
@@ -157,19 +169,18 @@ function trafficPose(w: World, c: Car): void {
 /** Distance along a road for a map's `OnRoad` place. */
 const along = (w: World, on: OnRoad): number => on.at * w.roads[on.road]!.length;
 
-/** How far a point is from the land's centre. */
-function fromCentre(w: World, x: number, z: number): number {
-  return Math.hypot(x - w.map.land.x, z - w.map.land.z);
-}
-
 export function makeWorld(seed: number, propCount: number, assist: Assist = 'free', map: MapDef = ISLAND): World {
   const roads = map.roads.map(buildRoad);
   const w: World = {
-    map, roads,
+    map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [],
     rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
   };
+  for (const z of map.zones ?? []) {
+    const p = 'road' in z.on ? pointAt(roads[z.on.road]!, along(w, z.on), z.on.offset ?? 0) : z.on;
+    w.zones.push({ kind: z.kind, x: p.x, z: p.z, r: z.r });
+  }
   const car = (kind: VehicleKind, on: OnRoad, cruise: number): Car => {
     const c: Car = {
       kind, x: 0, z: 0, heading: 0, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0,
@@ -201,10 +212,7 @@ export function makeWorld(seed: number, propCount: number, assist: Assist = 'fre
   }
 
   // A random point on the land, no closer than `gap` to its edge.
-  const onLand = (gap: number): [number, number] => {
-    const a = rand(w) * Math.PI * 2, r = Math.sqrt(rand(w)) * (map.land.r - gap);
-    return [map.land.x + Math.sin(a) * r, map.land.z + Math.cos(a) * r];
-  };
+  const onLand = (gap: number): [number, number] => randomInland(w.land, () => rand(w), gap);
   const offRoad = (x: number, z: number, gap: number) =>
     roads.every((road, i) => nearestOn(road, i, x, z).dist > road.def.width / 2 + gap);
 
@@ -289,9 +297,7 @@ const ROAD_LOOKAHEAD = 11.4;
 function towardSpot(w: World, spot: { x: number; z: number }, dt: number): { go: boolean; steer: number; cap: number } {
   const car = w.cars[0]!;
   // A spot off the land is pulled back onto it.
-  const land = w.map.land, edge = land.r - 5;
-  const r = fromCentre(w, spot.x, spot.z), k = r > edge ? edge / r : 1;
-  const sx = land.x + (spot.x - land.x) * k, sz = land.z + (spot.z - land.z) * k;
+  const { x: sx, z: sz } = keepInland(w.land, spot.x, spot.z, 5);
   let g = w.goal;
   if (!g || Math.hypot(sx - g.x, sz - g.z) > 1.5) g = w.goal = { x: sx, z: sz, best: Infinity, t: 0, done: false };
   const dist = Math.hypot(g.x - car.x, g.z - car.z);
@@ -330,12 +336,11 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   car.heading -= steer * turn * dt;
   w.steer = steer;
 
-  // The island's edge turns the car back toward land, harder the closer it gets (ADR 0021: can't get lost).
-  const land = w.map.land;
-  const d = fromCentre(w, car.x, car.z);
-  if (d > land.r - 10) {
-    const k = Math.min(1, (d - (land.r - 10)) / 8);
-    const diff = wrap(Math.atan2(land.x - car.x, land.z - car.z) - car.heading);
+  // The shore turns the car back inland, harder the closer it gets (ADR 0021: can't get lost).
+  const near = shore(w.land, car.x, car.z);
+  if (near.depth < 10) {
+    const k = Math.min(1, (10 - near.depth) / 8);
+    const diff = wrap(Math.atan2(near.nx, near.nz) - car.heading);
     car.heading += clamp(diff * 2, -1, 1) * 3.2 * k * dt * Math.min(1, car.speed / 3);
   }
 
@@ -343,11 +348,8 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   car.z += Math.cos(car.heading) * car.speed * dt;
   car.spin += (car.speed / 0.45) * dt;
 
-  const d2 = fromCentre(w, car.x, car.z);
-  if (d2 > land.r - 1.5) {
-    car.x = land.x + (car.x - land.x) * ((land.r - 1.5) / d2);
-    car.z = land.z + (car.z - land.z) * ((land.r - 1.5) / d2);
-  }
+  // Never past 1.5 m from the shore.
+  if (near.depth < 4) ({ x: car.x, z: car.z } = keepInland(w.land, car.x, car.z, 1.5));
 
   // Trees and traffic are round and never stop the car: it is pushed out and slides along (can't get stuck).
   // Returns the shove the car got, or null if it didn't touch.
@@ -591,7 +593,7 @@ function stepProps(w: World, dt: number): void {
           if (p.vx * p.vx + p.vz * p.vz < 0.15) { p.state = AWAY; p.timer = 0; }
         }
       }
-      if (fromCentre(w, p.x, p.z) > w.map.land.r + 1.5) p.state = SHRINK; // into the water: straight back home
+      if (shore(w.land, p.x, p.z).depth < -1.5) p.state = SHRINK; // into the sea: straight back home
     } else if (p.state === AWAY) {
       // Stand back up where it landed, wait a little, then go home.
       const ty = Math.sin(p.homeYaw / 2), tw = Math.cos(p.homeYaw / 2);
@@ -606,11 +608,31 @@ function stepProps(w: World, dt: number): void {
   }
 }
 
+/** Which zone the kid's car is in; reports driving in and out. Leaving needs a metre past the edge, so a car on the
+ * edge doesn't flicker in and out. */
+function stepZones(w: World): void {
+  const kid = w.cars[0]!;
+  const dist = (i: number) => Math.hypot(kid.x - w.zones[i]!.x, kid.z - w.zones[i]!.z);
+  if (w.zone >= 0 && dist(w.zone) > w.zones[w.zone]!.r + 1) {
+    w.zoneEvents.push({ zone: w.zone, kind: w.zones[w.zone]!.kind, entered: false });
+    w.zone = -1;
+  }
+  if (w.zone < 0) {
+    const i = w.zones.findIndex((z, j) => dist(j) < z.r);
+    if (i >= 0) {
+      w.zone = i;
+      w.zoneEvents.push({ zone: i, kind: w.zones[i]!.kind, entered: true });
+    }
+  }
+}
+
 export function step(w: World, input: Input, dt: number): void {
   w.time += dt;
   w.knocks.length = 0;
   w.splashes.length = 0;
+  w.zoneEvents.length = 0;
   stepKidCar(w, input, dt);
+  stepZones(w);
   stepTraffic(w, dt);
   stepWater(w, dt);
   stepProps(w, dt);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildLand, shore } from './land';
 import { ISLAND, ROAD_R } from '../maps/island';
 import type { MapDef } from './map';
 import { buildRoad, circlePath, nearestOn, nearestRoad, pointAt, smoothPath, wrapAlong } from './roads';
@@ -17,7 +18,8 @@ function run(w: World, seconds: number, input: (w: World, i: number) => Input): 
 const OVAL: MapDef = {
   ...ISLAND,
   id: 'oval-test',
-  land: { x: 20, z: -10, r: 75, beach: 8 },
+  // A lopsided shoreline around the road, 20 m or more from it.
+  land: { outline: smoothPath([[-55, -10], [0, 55], [95, 25], [90, -50], [30, -85], [-35, -60]], true, 2), beach: 8 },
   roads: [{ kind: 'street', width: 9, closed: true, points: smoothPath([[-30, -10], [20, 30], [70, -5], [45, -45], [0, -50]], true) }],
   spawn: { road: 0, at: 0 },
   traffic: [
@@ -101,23 +103,25 @@ describe('a map that is not the ring island', () => {
     expect(travelled).toBeGreaterThan(400);
   });
 
-  it('never leaves an off-centre island, and is never stuck', () => {
+  it('never leaves a lopsided island, and is never stuck', () => {
     const w = makeWorld(3, 120, 'free', OVAL);
     let s = 9;
     const next = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
     let input: Input = { go: true, brake: false, steer: 0 };
-    let far = 0, travelled = 0;
+    const land = buildLand(OVAL.land);
+    let shallowest = Infinity, travelled = 0;
     let px = w.cars[0].x, pz = w.cars[0].z;
     run(w, 60, (world, i) => {
       const car = world.cars[0];
-      far = Math.max(far, Math.hypot(car.x - OVAL.land.x, car.z - OVAL.land.z));
+      shallowest = Math.min(shallowest, shore(land, car.x, car.z).depth);
       travelled += Math.hypot(car.x - px, car.z - pz);
       px = car.x;
       pz = car.z;
       if (i % 45 === 0) input = { go: next() < 0.85, brake: next() < 0.05, steer: next() * 2 - 1 };
       return input;
     });
-    expect(far).toBeLessThan(OVAL.land.r);
+    // Always on the land, never closer than 1.5 m to the shore.
+    expect(shallowest).toBeGreaterThan(1.4);
     expect(travelled).toBeGreaterThan(200);
   }, 30_000);
 
@@ -128,7 +132,7 @@ describe('a map that is not the ring island', () => {
     const start = bus.s;
     let worst = 0;
     // Park the kid far off the road so traffic keeps to its own lane.
-    Object.assign(w.cars[0], { x: OVAL.land.x + 60, z: OVAL.land.z });
+    Object.assign(w.cars[0], { x: 60, z: -60 });
     run(w, road.length / bus.cruise + 2, (world) => {
       worst = Math.max(worst, Math.abs(nearestOn(road, 0, world.cars[1].x, world.cars[1].z).offset - bus.home));
       return { go: false, brake: true, steer: 0 };
