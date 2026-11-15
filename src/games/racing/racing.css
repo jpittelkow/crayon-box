@@ -23,3 +23,36 @@
   bottom: var(--space-6);
   background: var(--crayon-yellow, #ffd23f);
 }
+
+/* The vehicle picker (milestone-3 B5): big tiles, three across (ADR 0016 rule 6), on the kid's colour. */
+.driving-picker {
+  position: absolute;
+  inset: 0;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vehicle-grid {
+  --tile-w: min(calc((100cqw - 2 * 152px - 2 * 28px) / 3), calc((100cqh - 2 * 120px - 30px) / 1.5));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px 28px;
+  width: calc(3 * var(--tile-w) + 2 * 28px);
+  margin-top: 64px;
+}
+.vehicle-tile.cb-paper {
+  width: var(--tile-w);
+  height: calc(var(--tile-w) * 0.75);
+}
+.vehicle-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* The vehicle picked last time: the design system's picked ring, a little bigger. */
+.vehicle-tile.cb-paper.is-picked {
+  box-shadow: var(--ring-picked);
+  transform: scale(1.06);
+}

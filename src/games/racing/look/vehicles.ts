@@ -12,6 +12,45 @@ export interface VehicleModel {
   animate?(time: number): void;
 }
 
+/** Each vehicle's own colour, as traffic. None is a kid profile colour, so the kid's vehicle is never mistaken. */
+export const OWN_COLOR: Record<VehicleKind, number> = { car: 0xe8402c, police: 0x16181d, monster: 0xd8342c, bus: 0xf7b500 };
+
+/**
+ * Vehicles a kid's colour can paint (milestone-3 B5, owner's choice 2026-11-15). The others have a look of their
+ * own (a police car, a school bus) and fly a flag in the kid's colour instead.
+ */
+export const PAINTABLE: ReadonlySet<VehicleKind> = new Set<VehicleKind>(['car', 'monster']);
+
+/** The kid's own vehicle: painted in their colour, or in its own colours with their flag. */
+export function buildKidVehicle(kind: VehicleKind, kidColor: THREE.ColorRepresentation): VehicleModel {
+  if (PAINTABLE.has(kind)) return buildVehicle(kind, kidColor);
+  const model = buildVehicle(kind, OWN_COLOR[kind]);
+  model.group.add(kidFlag(model.group, kidColor));
+  return model;
+}
+
+/** A pennant on a white pole, standing on the roof at the back corner, in the kid's colour. */
+function kidFlag(vehicle: THREE.Object3D, color: THREE.ColorRepresentation): THREE.Group {
+  vehicle.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(vehicle);
+  const g = new THREE.Group();
+  const pole = part(new THREE.CylinderGeometry(0.055, 0.055, 1.9, 12), plastic(0xf4f6f8, 0.4), 0, 0.95, 0);
+  const pennantShape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(-1.3, -0.38), new THREE.Vector2(0, -0.76)]);
+  // The pennant streams back from the pole (toward -z) and shows from either side.
+  const pennant = new THREE.Mesh(new THREE.ShapeGeometry(pennantShape).rotateY(-Math.PI / 2).translate(0, 1.88, 0),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.5, side: THREE.DoubleSide }));
+  const knob = part(new THREE.SphereGeometry(0.09, 12, 8), plastic(color, 0.4), 0, 1.93, 0);
+  g.add(pole, pennant, knob);
+  // Stand it on the roof at the back corner: find the roof there by looking straight down.
+  const x = box.max.x - 0.4, z = box.min.z + 0.7;
+  const hit = new THREE.Raycaster(new THREE.Vector3(x, 20, z), new THREE.Vector3(0, -1, 0)).intersectObject(vehicle, true)[0];
+  g.position.set(x, (hit?.point.y ?? box.max.y) - 0.02, z);
+  g.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = true;
+  });
+  return g;
+}
+
 export function buildVehicle(kind: VehicleKind, color: THREE.ColorRepresentation): VehicleModel {
   switch (kind) {
     case 'car': return finish(car(color, false));

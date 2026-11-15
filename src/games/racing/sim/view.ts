@@ -1,6 +1,6 @@
 // Where the camera goes and which trees step aside for it (ADR 0021): plain maths, so it can be unit-tested.
 import { SCENERY } from './assets/scenery';
-import type { World } from './sim';
+import { VEHICLE_SIZE, type World } from './sim';
 
 export interface View { eye: [number, number, number]; target: [number, number, number] }
 
@@ -9,13 +9,18 @@ export const CAMERA_FOV = 55;
 /** A touch on the sky or near the horizon picks a spot this far from the car, in the direction touched. */
 export const FAR_SPOT = 40;
 
-/** Behind and above the kid's car, following its heading a little late. A kid can't move it. */
+/**
+ * Behind and above the kid's car, following its heading a little late. A kid can't move it. A longer vehicle (a
+ * school bus, milestone-3 B5) gets the camera further back and higher, so it doesn't fill the picture.
+ */
 export function chaseView(w: World): View {
   const kid = w.cars[0]!;
   const fx = Math.sin(w.camHeading), fz = Math.cos(w.camHeading);
+  const longer = Math.max(0, VEHICLE_SIZE[kid.kind].half - VEHICLE_SIZE.car.half);
+  const back = 10 + longer * 1.6, up = 5.5 + longer * 0.6;
   return {
     // The camera rises a little with a car hopping off a ramp, so the hop shows but the car stays in view.
-    eye: [kid.x - fx * 10, 5.5 + kid.y + kid.h * 0.6, kid.z - fz * 10],
+    eye: [kid.x - fx * back, up + kid.y + kid.h * 0.6, kid.z - fz * back],
     target: [kid.x + fx * 5, 1.2 + kid.h * 0.6, kid.z + fz * 5],
   };
 }

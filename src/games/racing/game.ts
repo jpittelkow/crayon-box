@@ -1,13 +1,14 @@
-// The driving game (ADR 0021), prototype: one car on a small island with traffic, things to knock around, puddles
-// and a flood. Touch a spot and the car drives there (ADR 0031), or drive with the arrow keys or W, A, S, D.
+// The driving game (ADR 0021): a vehicle picker (milestone-3 B5), then an island with traffic, things to knock around,
+// water and set pieces. Touch a spot and the car drives there (ADR 0031), or drive with the arrow keys or W, A, S, D.
 // three.js loads only when the game opens; the parent area can load this file without it.
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
-import { el, kidButton } from '../../ui/kid';
-import { forgetKid, loadDrivingSettings, loadKidDriving } from './settings';
+import { el, kidButton, setPicked } from '../../ui/kid';
+import type { createRenderer as CreateRendererFn } from './render';
+import { VEHICLES, forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving } from './settings';
 import { DRIVE_KEYS, driveInput } from './sim/input';
 import { TOYS } from './sim/assets/toys';
-import { makeWorld, step, type World } from './sim/sim';
+import { makeWorld, step, type Assist, type VehicleKind, type World } from './sim/sim';
 import { groundPoint } from './sim/view';
 import { DrivingSound } from './sound';
 import './racing.css';
@@ -18,6 +19,11 @@ const SEED = 7;
 const STEP = 1 / 60;
 /** A touch reported wider than this (CSS px) is a palm, and is ignored (ADR 0003 rule 3). */
 const PALM_CSS_PX = 80;
+
+type CreateRenderer = typeof CreateRendererFn;
+
+/** The vehicles' names, for screen readers and tests only: the picker shows no text (ADR 0003). */
+const VEHICLE_NAMES: Record<VehicleKind, string> = { car: 'Car', police: 'Police car', monster: 'Monster truck', bus: 'School bus' };
 
 /** The canvas carries the running world, for tests and the dev tools only. */
 export type DrivingCanvas = HTMLCanvasElement & { drivingWorld?: World };
@@ -49,18 +55,51 @@ class DrivingGame {
 
   async start(): Promise<void> {
     const { kid, storage } = this.ctx;
-    const [prefs, settings, { createRenderer }] = await Promise.all([
+    const [prefs, settings, { createRenderer }, { vehicleTiles }] = await Promise.all([
       loadKidDriving(storage, kid.id),
       loadDrivingSettings(storage),
       import('./render'),
+      import('./look/thumbs'),
     ]);
     if (this.stopped) return;
+    const kidColor = this.kidColor();
 
+    // The vehicle picker (milestone-3 B5): a tile for each vehicle, on the kid's colour (ADR 0021); the last one
+    // picked shows picked, and a tap drives off in that vehicle.
+    const picker = el('div', 'driving-picker', { 'data-ready': 'false' });
+    picker.style.background = `var(--kid-${kid.color}-tint, var(--paper))`;
+    picker.append(kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() }));
+    let chosen = false;
+    const choose = async (vehicle: VehicleKind) => {
+      if (chosen) return;
+      chosen = true;
+      await saveKidDriving(storage, kid.id, { ...prefs, vehicle });
+      if (this.stopped) return;
+      picker.remove();
+      this.drive(prefs.assist, settings.sounds, createRenderer, vehicle, kidColor);
+    };
+    const pictures = vehicleTiles(VEHICLES, kidColor);
+    const tiles = VEHICLES.map((vehicle, i) => {
+      const tile = kidButton({ kind: 'paper', label: VEHICLE_NAMES[vehicle], className: 'vehicle-tile', onTap: () => void choose(vehicle) });
+      tile.dataset.vehicle = vehicle;
+      tile.append(Object.assign(document.createElement('img'), { src: pictures[i], alt: '' }));
+      return tile;
+    });
+    setPicked(tiles, tiles[VEHICLES.indexOf(prefs.vehicle)]);
+    const grid = el('div', 'vehicle-grid');
+    grid.append(...tiles);
+    picker.append(grid);
+    this.root.append(picker);
+    picker.dataset.ready = 'true';
+  }
+
+  /** The island, driven in the vehicle the kid picked. */
+  private drive(assist: Assist, soundsOn: boolean, createRenderer: CreateRenderer, vehicle: VehicleKind, kidColor: string): void {
     const screen = el('div', 'driving', { 'data-ready': 'false' });
     const canvas = el('canvas', 'driving-canvas') as DrivingCanvas;
     const back = kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'driving-back', onTap: () => this.ctx.exitToHome() });
     // The game's own sounds switch, and the app's (ADR 0032 settles what ADR 0025 left open: both must be on).
-    const sound = new DrivingSound(settings.sounds && this.ctx.sound.enabled !== false);
+    const sound = new DrivingSound(soundsOn && this.ctx.sound.enabled !== false);
     // Start decoding the sound files now (that needs no touch), so the first honk isn't silent.
     sound.unlock();
     const hornButton = kidButton({ kind: 'action-lg', label: 'Horn', html: icons.horn(), className: 'driving-horn', onTap: () => sound.horn() });
@@ -70,9 +109,8 @@ class DrivingGame {
     this.root.append(screen);
     this.cleanups.push(() => sound.close());
 
-    const world = makeWorld(SEED, PROP_COUNT, prefs.assist);
+    const world = makeWorld(SEED, PROP_COUNT, assist, undefined, vehicle);
     canvas.drivingWorld = world;
-    const kidColor = this.kidColor();
     let renderer = createRenderer(canvas, world, kidColor);
     this.cleanups.push(() => renderer.dispose());
 
