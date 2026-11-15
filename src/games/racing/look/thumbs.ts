@@ -16,7 +16,8 @@ export interface VehiclePainter {
   dispose(): void;
 }
 
-export function vehiclePainter(width = 480, height = 360): VehiclePainter {
+/** `type` and `quality` are for `canvas.toDataURL`: WebP for the pictures that ship with the app. */
+export function vehiclePainter(width = 480, height = 360, type = 'image/png', quality?: number): VehiclePainter {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -66,7 +67,7 @@ export function vehiclePainter(width = 480, height = 360): VehiclePainter {
       camera.position.set(mid.x + 10, mid.y + 7, mid.z + 12);
       camera.lookAt(mid.x, mid.y * 0.8, mid.z);
       renderer.render(scene, camera);
-      const url = canvas.toDataURL('image/png');
+      const url = canvas.toDataURL(type, quality);
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           o.geometry.dispose();
@@ -90,7 +91,7 @@ export function vehiclePainter(width = 480, height = 360): VehiclePainter {
  * A picture of a map from high above (milestone-3 E), for the picker's map tiles: the whole land in view, as the
  * game draws it, `width` by `height` pixels, as an image URL. Drawn with a renderer thrown away straight after.
  */
-export function mapPicture(map: MapDef, kidColor: THREE.ColorRepresentation, width = 640, height = 300): string {
+export function mapPicture(map: MapDef, kidColor: THREE.ColorRepresentation, width = 640, height = 300, type = 'image/png', quality?: number): string {
   {
     const world = makeWorld(7, Math.min(map.propCount ?? 150, 150), 'free', map);
     const canvas = document.createElement('canvas');
@@ -103,7 +104,7 @@ export function mapPicture(map: MapDef, kidColor: THREE.ColorRepresentation, wid
       const tan = Math.tan((CAMERA_FOV * Math.PI) / 360);
       const up = Math.max((land.maxZ - land.minZ) / 2 / tan, (land.maxX - land.minX) / 2 / (tan * (width / height))) * 1.08;
       renderer.render(world, { eye: [cx, up, cz - up * 0.35], target: [cx, 0, cz] });
-      return canvas.toDataURL('image/png');
+      return canvas.toDataURL(type, quality);
     } finally {
       renderer.dispose(true);
     }

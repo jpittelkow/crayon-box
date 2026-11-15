@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "pictures:driving": "node scripts/render-driving-pictures.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

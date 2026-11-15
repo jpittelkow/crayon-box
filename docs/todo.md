@@ -8,11 +8,9 @@ New maps come last on purpose: first every piece a map is made from (vehicles, t
 editor, loading a map from a folder), then the maps themselves.
 
 ## 1. Finish what is in flight
-- **PR #40, playtest fixes part 2:** the screen as a joystick, car colours on the picker, a quick swap in the
-  game, the picker's pictures shipped with the app. Merge.
-- **PR #42, AI pages:** show that a page is being made, say why when only one of two came back. Merge.
-- **The unlock window** (`parent/unlock-window`): finish, PR, merge.
-- **Release 0.8.0** once those are in: milestone 3 is then done ([release checklist](release-checklist.md)).
+- **PR #43, the unlock window** (unlock the window for a parent's visit, paste in text boxes): merge.
+- **Release 0.8.0** once it is in, with the playtest fixes (PR #40) and AI page progress (PR #42) already on
+  `main`: milestone 3 is then done ([release checklist](release-checklist.md)).
 
 ## 2. Coloring: finish milestone 1
 - **The Outside theme** (trees, flowers, sun, a house and garden), six pages, made like the animal pages

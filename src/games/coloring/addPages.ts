@@ -4,7 +4,7 @@
 import type { ParentSectionContext } from '../../shell/types';
 import type { AiPageMaker } from '../../sync/service';
 import { modelPicker } from './aiModelPicker';
-import { button, card, h, segmented } from '../../ui/parent';
+import { button, card, h, segmented, working } from '../../ui/parent';
 import { OUR_THEME_META } from './catalog';
 import { addFamilyPage, OUR_THEME, type FamilyPageMeta } from './family';
 import { IMPORT_ACCEPT, ImportProblem, importFile, titleFromName, type CleanedPage } from './importPage';
@@ -89,6 +89,9 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
     let way: Way = 'idea';
     let detail: 'simple' | 'more' = 'simple';
     const status = h('p', { class: 'pw-muted', role: 'status', 'data-ai-status': '' });
+    // While a page is being made: a spinner, the seconds so far and a moving bar (playtest, 2026-11-15: a line of
+    // grey text alone looked like a frozen screen).
+    const busy = working();
     const result = h('div', { style: 'display: flex; flex-direction: column; gap: 14px' });
     const idea = h('input', { class: 'pw-input', id: 'ai-idea', type: 'text', maxlength: '300', placeholder: 'a fire truck with a ladder' });
     const photo = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', id: 'ai-photo', class: 'pw-file' });
@@ -131,7 +134,18 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
             return;
           }
           name = chosen.name;
-          request = { kind: 'photo', image: await photoDataUrl(chosen), detail };
+          make.disabled = true;
+          make.textContent = 'Making…';
+          busy.start('Getting the photo ready…');
+          try {
+            request = { kind: 'photo', image: await photoDataUrl(chosen), detail };
+          } catch (err) {
+            busy.stop();
+            make.disabled = false;
+            make.textContent = 'Make it';
+            status.textContent = err instanceof Error ? err.message : String(err);
+            return;
+          }
         } else {
           const text = idea.value.trim();
           if (!text) {
@@ -147,8 +161,10 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
         const second = count === 'two' ? picker?.second() : undefined;
         const requests = second ? [request, { ...request, model: second }] : [request];
         make.disabled = true;
+        make.textContent = 'Making…';
         result.replaceChildren();
-        status.textContent = requests.length > 1 ? 'Making two pages to choose from… this can take up to a minute.' : 'Making a page… this can take up to a minute.';
+        status.textContent = '';
+        busy.start(requests.length > 1 ? 'Making two pages to choose from. This can take up to a minute.' : 'Making a page. This can take up to a minute.');
         status.dataset.aiStatus = 'working';
         const added = (message: string) => {
           status.textContent = message;
@@ -167,13 +183,19 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
           used.textContent = usage();
           const pages = made.flatMap((m) => (m.status === 'fulfilled' ? [m.value] : []));
           const failed = made.flatMap((m) => (m.status === 'rejected' ? [m.reason instanceof Error ? m.reason.message : String(m.reason)] : []));
+          // Which model each failure came from, by name, for the notice below.
+          const failedBy = made.flatMap((m, i) => (m.status === 'rejected' ? [picker?.nameOf(requests[i]!.model ?? '') || requests[i]!.model || 'The other model'] : []));
           if (!pages.length) throw new Error(failed[0] ?? 'No page came back.');
           if (pages.length === 1) {
             const by = pages[0]!.by ? ` Made by ${pages[0]!.by}.` : '';
-            const other = failed.length ? ` (The other model had a problem: ${failed[0]})` : '';
-            status.textContent = `Here it is.${by}${other} Not quite right? Make it again, or try another model.`;
+            status.textContent = `Here it is.${by} Not quite right? Make it again, or try another model.`;
             status.dataset.aiStatus = 'ready';
             showResult(result, 'ai', name, pages[0]!.page, 'ai', added);
+            // Two were asked for and one failed: say so plainly, above the page, with why (playtest, 2026-11-15:
+            // tucked into the status line in brackets, it read as "two to choose from shows one").
+            if (failed.length) {
+              result.prepend(h('p', { class: 'pw-problem', role: 'alert', 'data-ai-other': '' }, `Only one page came back. ${failedBy[0]} had a problem: ${failed[0]}`));
+            }
           } else {
             status.textContent = 'Here are two. Pick the one to keep, or make them again.';
             status.dataset.aiStatus = 'choose';
@@ -183,7 +205,11 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
           status.textContent = err instanceof Error ? err.message : String(err);
           status.dataset.aiStatus = 'problem';
         } finally {
+          busy.stop();
           make.disabled = false;
+          make.textContent = 'Make it';
+          // Show what came back (or the problem), not the form above it.
+          (result.firstElementChild ?? status).scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
         }
       },
       'primary',
@@ -226,6 +252,7 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
         (d) => (detail = d),
       ),
       h('div', { class: 'pw-row' }, make),
+      busy.el,
       used,
       status,
       result,

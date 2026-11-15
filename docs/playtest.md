@@ -19,11 +19,12 @@ real test of the interaction rules (ADR 0015).
 Playing on another device than the dev machine: run `npm run dev -- --host` and open the address it prints. Over
 plain `http` from another device the browser may clear stored pictures (ADR 0014), so prefer the dev machine.
 
-### Trying the driving game (optional)
-The driving game is a first try (ADR 0021) and is off at first. To try it: hold the lock, open the parent area,
-and under Settings, Games turn on **Show Driving**. Kids then pick a game after picking themselves. Under
-**Driving** in the parent area, each kid can be set to *Steers freely* or *Follows the road* (the car steers
-itself and a touch only makes it go).
+### The driving game
+Driving shows on the home screen by default (since 0.7.0); a parent can hide it under Settings, Games. A kid picks
+a map and a vehicle (and a colour) on one screen, then drives. The screen is a joystick (ADR 0036): a finger above
+the middle goes, left and right of it turn, below it backs up. Under **Driving** in the parent area, each kid can be
+set to *Steers freely* or *Follows the road* (the car steers itself and a touch only makes it go), and any vehicle
+can be switched off (say, one whose siren is too loud).
 
 ## What to watch
 Write down what happened, not what should have happened. One line per moment is enough.
@@ -38,7 +39,9 @@ Write down what happened, not what should have happened. One line per moment is 
 | Bucket taps that fill the wrong area, or leave white edges | The fill grows 2 px under lines and picks the nearest area within 8 px | Fill tuning, page art |
 | Finding New picture and My pictures, and getting back | One way back, top-left (ADR 0016) | Start screen layout |
 | A kid finding their own badge by photo or name | Names and photos are new (ADR 0018) | Badge design |
-| Driving (if on): a kid who can't make the car go where they want, a resting hand that makes it drive, or a picture that stutters | The controls and the laptop's graphics are untested (ADR 0021) | Assist default, palm handling, picture size |
+| Driving: a kid who can't make the car go where they want, backs up by mistake, or rests a hand that moves it | The joystick is new (ADR 0036) | Joystick numbers, palm handling |
+| Driving: a picture that stutters or freezes, on the big maps or near traffic | The laptop's graphics are unmeasured; the game turns its picture down when slow | Map size, the look |
+| Driving: the picker (14 vehicles, 2 maps, colours) too busy; a siren too loud or scary | ADR 0035 | Picker layout, which vehicles are on |
 | Curiosity about the lock in the corner | It should be ignored (ADR 0008) | Lock size and contrast |
 | Boredom: what the kids ask for that isn't there | Pages, colors, sounds | What to build next |
 
