@@ -22,9 +22,13 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    with the unsigned installer (`release.yml`). **Phase B (files) merged 2026-11-14** (PR #3):
    unit- and browser-tested, not yet tried in the installed app. **Phase E (updates) merged 2026-11-14** (PR #5),
    ahead of C and D (owner's call); signed draft release 0.2.1 made, the update itself not yet tried.
-   **Phase D (kiosk lock) built 2026-11-14** (overnight run, owner's plan: letters fix, D, C, F, H, then a
-   published release): not yet tried on the family laptop; see milestone-2.md and
-   [laptop-setup.md](../laptop-setup.md).
+   **Overnight 2026-11-14** (owner's plan: the letters fix, then D, C, F, H, then a published release), all
+   merged: D kiosk lock (PR #8), C1 sync server (PR #9, image `ghcr.io/jpittelkow/crayon-box-sync`, public), C2
+   sync client (PR #10), F family pages (PR #11), H the [release checklist](../release-checklist.md) (PR #12).
+   Release 0.3.0 has all of it. **Left in milestone 2:** G (AI page maker, waits on the image model), and trying
+   it all on Windows: install 0.2.1, update to 0.3.0 from the parent area, the checklist, the server on Unraid.
+   Next with the owner (2026-11-14): sync server on Unraid, sound design choices, then the racing game's maps,
+   vehicle choice and customizing (the main focus after that).
 3. **Racing game** (ADR 0012): second game module. Its design is [ADR 0021](../adr/0021-racing-game.md),
    **Accepted** on 2026-11-14: a small 3D island to roam, no races, traffic that drives alongside, things to
    knock around, puddles and a flood, touch to go plus arrow and WASD keys, three.js. **Step 1, the prototype,
@@ -45,7 +49,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
 4. **Sync between devices:** [ADR 0024](../adr/0024-family-sync-server.md), Accepted 2026-11-14. A small
    self-hosted server on the family's Unraid machine (image published from this repo); the device stays the
    working copy and syncs in the background; Windows first. Order: storage groundwork (**done 2026-11-14**, see
-   the code map), then the server and sync client right after the installer's file storage.
+   the code map), then the server and sync client right after the installer's file storage. **Server and client
+   built 2026-11-14** (milestone 2 phase C); not yet run on Unraid.
 6. **Letter practice** (asked by the owner 2026-11-14): a third game module (ADR 0012) where a kid traces big
    letters with a finger or a stylus. Design: [ADR 0026](../adr/0026-letter-practice.md), **Accepted**
    2026-11-14 (mockups on the canvas, boards 19–24). **Built 2026-11-14** in the web app: practice and the game
@@ -90,6 +95,13 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   `applyRemote`, `markSynced`); `ids.ts` makes cross-device ids and the device id. No sync client or server yet.
   `files.ts` is the installed app's backend: one file per item under `items\`, temp file then rename, and an
   `index.json` with each item's kind and change record; reopening mends what a crash left.
+- `server/`: the family sync server (ADR 0024): Node 24, no dependencies, `node:sqlite`; API in `server/src/api.ts`
+  (shared with the client), Dockerfile, Unraid template, `server.yml` publishes the image. `src/sync/`: the client
+  (`engine.ts` conflict rules, `service.ts` background rounds), Parent area › Family sync.
+- `src/shell/kiosk.ts` + `src-tauri/src/kiosk.rs`: the kiosk lock (ADR 0014): keyboard hook, full screen, Quit;
+  Parent area › This laptop. Device-only settings go under `local/`.
+- `src/games/coloring/family.ts`, `catalog.ts`, `importPage.ts`, `folderImport.ts`, `addPages.ts`: family pages
+  (phase F), kept in the game's storage so they sync; Parent area › Add pages; the Pages folder inbox.
 - `src/shell/tauriFiles.ts`: the Windows app's files (phase B), loaded only in Tauri: the storage backend's file
   system, and `FinishedPictures` (`Pictures\Coloring Book\Art\<kid id>\<page>-<started>.png`), which games and
   parent sections get as an optional `finished` in their context. What the page may touch is listed in
