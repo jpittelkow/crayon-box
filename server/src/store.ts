@@ -138,6 +138,21 @@ export class Store {
     this.setSetting('ai_count', String(used + 1));
   }
 
+  // ---- AI pages: the family's favorite models (ADR 0033) ----
+
+  aiFavorites(): string[] {
+    try {
+      const list = JSON.parse(this.setting('ai_favorites') ?? '[]') as unknown;
+      return Array.isArray(list) ? list.filter((id): id is string => typeof id === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  setAiFavorites(ids: string[]): void {
+    this.setSetting('ai_favorites', JSON.stringify(ids));
+  }
+
   newPairingCode(): string {
     const code = newPairingCode();
     this.setSetting('pairing_code', code);
