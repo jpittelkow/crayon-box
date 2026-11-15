@@ -23,7 +23,7 @@ export type Pt = { x: number; y: number };
 
 export async function openShapesPage(page: Page, kid = 'Star kid'): Promise<void> {
   await page.goto('/');
-  await page.getByRole('button', { name: kid }).tap();
+  await openColoring(page, kid);
   // A kid with no pictures lands on the page library (ADR 0017); the shapes page is in the Shapes theme.
   await page.getByRole('button', { name: 'Shapes', exact: true }).tap();
   await page.getByRole('button', { name: SHAPES.title }).tap();
@@ -128,4 +128,15 @@ export async function pick(page: Page, name: string): Promise<void> {
   const screen = await page.locator('[data-screen]').last().elementHandle();
   await page.getByRole('button', { name, exact: true }).tap();
   await screen?.waitForElementState('hidden');
+}
+
+/**
+ * Taps a kid on the kid picker and opens coloring: straight in when it is the only game shown, through the home
+ * screen when there are more (ADR 0012; Driving shows by default since milestone 3).
+ */
+export async function openColoring(page: Page, kid = 'Star kid'): Promise<void> {
+  await page.getByRole('button', { name: kid }).tap();
+  const home = page.locator('[data-screen="home"]');
+  await expect(home.or(page.locator('[data-screen="game-coloring"]'))).toBeVisible();
+  if (await home.isVisible()) await page.getByRole('button', { name: 'Coloring', exact: true }).tap();
 }

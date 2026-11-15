@@ -18,11 +18,9 @@ function car(page: Page): Promise<CarState> {
   });
 }
 
+/** Opens the app. Driving shows by default (owner, 2026-11-15), so there is nothing to turn on. */
 async function turnOnDriving(page: Page): Promise<void> {
   await page.goto('/');
-  await openParentArea(page);
-  await page.getByText('Show Driving').click();
-  await page.getByRole('button', { name: 'Back to the kids' }).click();
 }
 
 /** Opens the game and picks a vehicle on the picker (milestone-3 B5), then waits for the island. */
@@ -68,16 +66,19 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   await expect(page.getByRole('button', { name: 'School bus', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('the driving game stays hidden until a parent turns it on', async ({ page }) => {
+test('the driving game shows on the home screen by default, and a parent can hide it', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Star kid' }).tap();
-  // One game on: straight into coloring, no home screen (ADR 0012).
-  await expect(page.locator('[data-screen="game-coloring"]')).toBeVisible();
-
-  await turnOnDriving(page);
   await page.getByRole('button', { name: 'Star kid' }).tap();
   await expect(page.locator('[data-screen="home"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Driving', exact: true })).toBeVisible();
+
+  // Hidden again: one game on, so straight into coloring, no home screen (ADR 0012).
+  await page.goto('/');
+  await openParentArea(page);
+  await page.getByText('Show Driving').click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await expect(page.locator('[data-screen="game-coloring"]')).toBeVisible();
 });
 
 test('a touch drives the car to that spot and it stops there; lifting early stops it too', async ({ page }) => {
