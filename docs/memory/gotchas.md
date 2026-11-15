@@ -55,3 +55,14 @@ _Last updated: 2026-11-14_
 - Page art traps the check caught: a wheel top within ~6 px of the body line, a flagpole running beside a seat,
   and a smile ending a few px short of an outline. Lines should either cross clearly or keep 20 px apart
   (2026-11-14).
+- **Rules for anything that saves data, so sync keeps working (ADR 0024):** save through the storage interface
+  only; one file per thing that can change on its own (kids are `kids/<id>/profile.json`, not one list), because
+  the newest change wins per file; device-only data goes under `local/`; new ids come from `randomId`; built-in
+  defaults are written with `asDefault` so a family's real data replaces them on first sync.
+- Deleted items leave a record forever (so deletions reach other devices). Nothing prunes them yet; revisit when
+  the sync server exists.
+- If every kid were deleted across two devices, a device would re-create the three starting profiles, and the
+  remembered deletions would remove them again on the next sync. Not handled; the parent area already refuses to
+  delete the last kid on one device (2026-11-14).
+- Playwright's `reuseExistingServer` reuses whatever answers on its port. Another session's dev server on 5180
+  made all 27 browser tests fail by serving a different page. The tests now use port 5391 (found 2026-11-14).

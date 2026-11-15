@@ -6,7 +6,7 @@ import type { Backend } from './types';
 
 const backends: [string, () => Promise<Backend>][] = [
   ['memory', async () => memoryBackend()],
-  ['indexeddb', () => openIdbBackend(new IDBFactory(), IDBKeyRange, 'test')],
+  ['indexeddb', () => openIdbBackend({ factory: new IDBFactory(), keyRange: IDBKeyRange, name: 'test' })],
 ];
 
 describe.each(backends)('storage on %s', (_name, make) => {

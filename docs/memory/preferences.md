@@ -16,7 +16,9 @@ _Last confirmed: 2026-11-14_
   My pictures (asked 2026-11-14, ADR 0017).
 - **The coloring page should be as big as possible**; accepted 64 px color buttons for it (2026-11-14, ADR 0019).
 - **Profiles get names and photos**, names shown under the badges as a setting (asked 2026-11-14, ADR 0018). The
-  owner's view: the privacy rule is about what gets committed to the repo, not settings inside the app.
+  owner's view: the privacy rule is about what gets committed to the repo, not settings inside the app. Said
+  again for sync (2026-11-14): the app and the family's own server need no privacy limits; don't raise it as a
+  design concern, only keep private data out of the repo.
 - Would like settings (and maybe more) to **sync across devices** later, knowing it is a big lift (2026-11-14).
 - Wants lots of pages and an easy way for the family to add more, including from photos via AI (ADR 0005, 0006).
 - A car theme matters to at least one kid; asked for a well-known animated car franchise, which was replaced by
@@ -36,6 +38,8 @@ _Last confirmed: 2026-11-14_
 - The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to
   `crayon-box` on 2026-11-14; the local checkout folder may still be called `kidsapp`.
 - GitHub Releases are only for the Windows installer; keep the release workflow focused on that (ADR 0009).
+- The sync server's container image **is** published from this repo (GitHub's container registry), with an Unraid
+  template (yes on 2026-11-14, ADR 0024). The declined image was the web app's, not this.
 - The web app runs from the dev server only: no local container (dropped 2026-11-14, ADR 0020), no online
   hosting, no published image, and no home-server setup for this app (ADR 0014).
 - Install from GitHub and update inside the app; no dev tools on the family laptop (ADR 0009).

@@ -18,6 +18,8 @@ export interface KidProfile {
   hasPhoto?: boolean;
   /** Where this kid's new pictures start (ADR 0004, 0007). */
   startMode: ColoringMode;
+  /** When the profile was made (ISO time). Kids are shown in this order. */
+  created: string;
 }
 
 export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing';

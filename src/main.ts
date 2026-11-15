@@ -1,6 +1,7 @@
 import { fitFrame, fullscreenOnFirstTouch, installGuards } from './shell/guards';
 import { Shell } from './shell/shell';
 import { memoryBackend, openIdbBackend } from './storage/idb';
+import { deviceInfo } from './storage/ids';
 import { appStorage } from './storage/namespaced';
 import '@fontsource/fredoka/600.css';
 import './ui/tokens.css';
@@ -29,7 +30,9 @@ async function boot(): Promise<void> {
   app.replaceChildren(frame);
   fitFrame(frame);
 
-  await new Shell(frame, appStorage(backend)).start();
+  const storage = appStorage(backend);
+  await deviceInfo(storage.shell);
+  await new Shell(frame, storage).start();
 }
 
 void boot();

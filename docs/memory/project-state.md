@@ -19,9 +19,10 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    **Proposed** on 2026-11-14 and waiting on the owner to accept: a small 3D island to roam, no races, traffic
    that drives alongside, touch to go plus arrow and WASD keys, three.js. Its step 1, a throwaway prototype
    hidden behind a parent switch, is agreed to be built during milestone 1 so it can join a playtest.
-4. **Sync between devices** (asked by the owner on 2026-11-14, "maybe a later milestone"): settings, profiles and
-   maybe pictures saved to a server. Not designed yet; needs its own ADR, and changes ADR 0014 (nothing hosted
-   online) and ADR 0018 (names and photos stay on the device). See [open questions](open-questions.md).
+4. **Sync between devices:** [ADR 0024](../adr/0024-family-sync-server.md), Accepted 2026-11-14. A small
+   self-hosted server on the family's Unraid machine (image published from this repo); the device stays the
+   working copy and syncs in the background; Windows first. Order: storage groundwork (**done 2026-11-14**, see
+   the code map), then the server and sync client right after the installer's file storage.
 
 Built in this order (owner's decision, 2026-11-14). The racing game is last because it needs 3D models and a lot
 of design; only its prototype comes early. Deferred: printing and export (ADR 0010).
@@ -38,9 +39,13 @@ of design; only its prototype comes early. Deferred: printing and export (ADR 00
 
 ## Code map
 - `src/shell/`: app shell (ADR 0012): kid picker with the lock, home screen (skipped with one game), game
-  registry, guards against escape hatches (ADR 0003 rule 4), profiles and shell settings.
+  registry, guards against escape hatches (ADR 0003 rule 4), profiles (one folder per kid, `kids/<id>/`) and
+  shell settings.
 - `src/parent/`: gate (ADR 0008), parent area, kid editor, photo cropping. Loaded only when the gate opens.
 - `src/storage/`: storage interface (ADR 0007) with an IndexedDB backend and an in-memory one for tests.
+  Sync-ready (ADR 0024): every item has a change record (`modified`, `deleted`, `rev`) in a `meta` store;
+  `local/` at the top of a namespace is device-only; the backend has the sync client's hooks (`changes`,
+  `applyRemote`, `markSynced`); `ids.ts` makes cross-device ids and the device id. No sync client or server yet.
 - `src/ui/`: Crayon Box tokens as CSS custom properties, kid components, icons, the palette, and the parent
   world kit with bundled fonts (ADR 0016).
 - `src/games/coloring/`: the game (lazy-loaded): `game.ts` (start, library, My pictures), `session.ts` (the

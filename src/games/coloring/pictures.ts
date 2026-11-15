@@ -1,6 +1,7 @@
 // A kid's pictures in the game's storage (ADR 0007): `art/<kid>/<picture>/` holds `paint.png` (the paint layer),
 // `prev.png` (the version before the picture was last reopened) and `art.json`.
 import type { ColoringMode, KidProfile } from '../../shell/types';
+import { randomId } from '../../storage/ids';
 import type { GameStorage } from '../../storage/types';
 
 export interface ArtMeta {
@@ -39,7 +40,9 @@ export function newPicture(kid: KidProfile, pageId: string, now = new Date()): P
   const stamp = now.toISOString();
   return {
     kid: kid.id,
-    id: `${slug}-${now.getTime().toString(36)}`,
+    // The time keeps a kid's pictures in order by name; the random part keeps two devices from ever picking the
+    // same id for pictures started in the same moment (ADR 0024).
+    id: `${slug}-${now.getTime().toString(36)}-${randomId(4)}`,
     meta: { pageId, mode: kid.startMode, created: stamp, updated: stamp },
   };
 }

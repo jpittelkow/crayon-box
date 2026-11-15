@@ -3,11 +3,12 @@ import {
   KID_COLORS,
   KID_SYMBOLS,
   MAX_NAME_LENGTH,
+  deleteProfile,
   drawAvatar,
   kidLabel,
   newProfile,
   putPhoto,
-  saveProfiles,
+  saveProfile,
 } from '../shell/profiles';
 import type { KidColor, KidProfile, KidSymbol } from '../shell/types';
 import type { AppStorage } from '../storage/types';
@@ -120,8 +121,7 @@ export async function kidEditor(opts: KidEditorOptions): Promise<HTMLElement> {
       await putPhoto(storage.shell, draft.id, photo);
       draft.hasPhoto = photo !== null;
     }
-    const next = existing ? kids.map((k) => (k.id === draft.id ? draft : k)) : [...kids, draft];
-    await saveProfiles(storage.shell, next);
+    await saveProfile(storage.shell, draft);
     cleanup();
     opts.done();
   };
@@ -150,11 +150,7 @@ export async function kidEditor(opts: KidEditorOptions): Promise<HTMLElement> {
             'Delete',
             async () => {
               await opts.forgetKid(existing.id);
-              await putPhoto(storage.shell, existing.id, null);
-              await saveProfiles(
-                storage.shell,
-                kids.filter((k) => k.id !== existing.id),
-              );
+              await deleteProfile(storage.shell, existing.id);
               cleanup();
               opts.done();
             },

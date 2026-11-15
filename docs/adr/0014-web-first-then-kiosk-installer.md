@@ -1,6 +1,6 @@
 # 0014. Web app first, then an installer with a kiosk lock
 
-- Status: Accepted (by the owner, 2026-11-14); local container and kiosk stopgap superseded by [0020](0020-web-app-from-the-dev-server.md)
+- Status: Accepted (by the owner, 2026-11-14); local container and kiosk stopgap superseded by [0020](0020-web-app-from-the-dev-server.md); milestone order extended by [0024](0024-family-sync-server.md)
 - Date: 2026-11-14
 
 ## Context

@@ -1,6 +1,6 @@
 # 0009. Install and in-app updates from GitHub Releases
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); [0024](0024-family-sync-server.md) adds a published container image for the sync server
 - Date: 2026-11-14
 
 ## Context

@@ -1,6 +1,6 @@
 # 0018. Kid profiles with names and photos
 
-- Status: Accepted (by the owner, 2026-11-14)
+- Status: Accepted (by the owner, 2026-11-14); "device only" superseded by [0024](0024-family-sync-server.md)
 - Date: 2026-11-14
 - Supersedes: in ADR 0007, "each kid has a color and a picture symbol (star, heart, ...) instead of a name" and
   "`<kid>` is the profile's symbol name (`star`, `heart`), never a real name". In ADR 0016, rule 1 gains one

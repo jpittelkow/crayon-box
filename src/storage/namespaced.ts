@@ -1,4 +1,4 @@
-import type { AppStorage, Backend, GameStorage } from './types';
+import type { AppStorage, Backend, GameStorage, PutOptions } from './types';
 
 function checkPath(path: string): void {
   if (path === '' || path.startsWith('/') || path.split('/').some((part) => part === '..' || part === '')) {
@@ -19,8 +19,8 @@ export function namespaced(backend: Backend, prefix: string): GameStorage {
       if (value.kind !== 'json') throw new Error(`Not JSON: ${path}`);
       return JSON.parse(value.json) as T;
     },
-    async putJson(path, value) {
-      await backend.put(key(path), { kind: 'json', json: JSON.stringify(value) });
+    async putJson(path, value, opts?: PutOptions) {
+      await backend.put(key(path), { kind: 'json', json: JSON.stringify(value) }, opts);
     },
     async getBlob(path) {
       const value = await backend.get(key(path));
@@ -28,10 +28,10 @@ export function namespaced(backend: Backend, prefix: string): GameStorage {
       if (value.kind !== 'bytes') throw new Error(`Not a file: ${path}`);
       return new Blob([value.bytes], { type: value.type });
     },
-    async putBlob(path, blob) {
+    async putBlob(path, blob, opts?: PutOptions) {
       // Stored as bytes, not as a Blob, so every backend (and the test double) can keep it.
       const bytes = await blob.arrayBuffer();
-      await backend.put(key(path), { kind: 'bytes', type: blob.type, bytes });
+      await backend.put(key(path), { kind: 'bytes', type: blob.type, bytes }, opts);
     },
     async list(listPrefix) {
       const full = prefix + listPrefix;
@@ -46,6 +46,7 @@ export function namespaced(backend: Backend, prefix: string): GameStorage {
 
 export function appStorage(backend: Backend): AppStorage {
   return {
+    backend,
     shell: namespaced(backend, 'shell/'),
     game(id: string) {
       if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`Bad game id: "${id}"`);

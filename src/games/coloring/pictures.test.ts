@@ -15,8 +15,14 @@ import {
   savePicture,
 } from './pictures';
 
-const star: KidProfile = { id: 'star', symbol: 'star', color: 'orange', startMode: 'free' };
-const heart: KidProfile = { id: 'heart', symbol: 'heart', color: 'purple', startMode: 'lines' };
+const star: KidProfile = { id: 'star', symbol: 'star', color: 'orange', startMode: 'free', created: '2000-01-01T00:00:00.000Z' };
+const heart: KidProfile = {
+  id: 'heart',
+  symbol: 'heart',
+  color: 'purple',
+  startMode: 'lines',
+  created: '2000-01-01T00:00:01.000Z',
+};
 const png = (byte: number) => new Blob([new Uint8Array([byte])], { type: 'image/png' });
 
 describe('pictures', () => {
@@ -58,9 +64,12 @@ describe('pictures', () => {
 
   it('of the same page can be many (ADR 0017)', async () => {
     const storage = appStorage(memoryBackend()).game('coloring');
-    const a = newPicture(star, 'builtin:shapes/x', new Date('2026-11-14T10:00:00Z'));
-    const b = newPicture(star, 'builtin:shapes/x', new Date('2026-11-14T10:00:01Z'));
+    // Even two pictures started in the same millisecond, as on two devices, get different ids (ADR 0024).
+    const at = new Date('2026-11-14T10:00:00Z');
+    const a = newPicture(star, 'builtin:shapes/x', at);
+    const b = newPicture(star, 'builtin:shapes/x', at);
     expect(a.id).not.toBe(b.id);
+    expect(a.id).toMatch(/^shapes-x-[0-9a-z]+-[0-9a-z]{4}$/);
     await savePicture(storage, a, png(1));
     await savePicture(storage, b, png(2));
     expect(await listPictures(storage, 'star')).toHaveLength(2);

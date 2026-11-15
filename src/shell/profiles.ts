@@ -1,11 +1,19 @@
 // Kid profiles and shell settings (ADR 0007, 0018), kept in the shell's storage namespace.
+// Each kid is its own folder, `kids/<id>/` with `profile.json` and `photo.jpg`, so that when devices sync
+// (ADR 0024) a change to one kid on one device never overwrites a change to another kid made elsewhere.
+import { randomId } from '../storage/ids';
 import type { GameStorage } from '../storage/types';
 import { symbolIcon } from '../ui/icons';
 import type { ColoringMode, KidColor, KidProfile, KidSymbol } from './types';
 
-const PROFILES = 'profiles.json';
 const SETTINGS = 'settings.json';
-const photoPath = (id: string) => `photos/${id}.jpg`;
+const kidDir = (id: string) => `kids/${id}/`;
+const profilePath = (id: string) => `${kidDir(id)}profile.json`;
+const photoPath = (id: string) => `${kidDir(id)}photo.jpg`;
+
+/** Where the first web build kept all profiles and photos. Moved to per-kid folders on first load. */
+const LEGACY_PROFILES = 'profiles.json';
+const legacyPhotoPath = (id: string) => `photos/${id}.jpg`;
 
 export const KID_COLORS: readonly KidColor[] = ['orange', 'pink', 'purple', 'green', 'blue', 'teal'];
 export const KID_SYMBOLS: readonly KidSymbol[] = ['star', 'heart', 'moon', 'flower', 'sun', 'leaf'];
@@ -13,11 +21,15 @@ export const KID_SYMBOLS: readonly KidSymbol[] = ['star', 'heart', 'moon', 'flow
 export const MAX_KIDS = KID_COLORS.length;
 export const MAX_NAME_LENGTH = 30;
 
-/** Profiles every new install starts with. Parents rename, change or delete them in the parent area. */
+/**
+ * Profiles every new install starts with. Parents rename, change or delete them in the parent area. Their ids
+ * and creation times are the same on every device, so two fresh devices that sync end up with three kids, not
+ * six.
+ */
 export const DEFAULT_PROFILES: KidProfile[] = [
-  { id: 'star', symbol: 'star', color: 'orange', startMode: 'free' },
-  { id: 'heart', symbol: 'heart', color: 'purple', startMode: 'free' },
-  { id: 'moon', symbol: 'moon', color: 'teal', startMode: 'free' },
+  { id: 'star', symbol: 'star', color: 'orange', startMode: 'free', created: '2000-01-01T00:00:00.000Z' },
+  { id: 'heart', symbol: 'heart', color: 'purple', startMode: 'free', created: '2000-01-01T00:00:01.000Z' },
+  { id: 'moon', symbol: 'moon', color: 'teal', startMode: 'free', created: '2000-01-01T00:00:02.000Z' },
 ];
 
 export interface ShellSettings {
@@ -36,20 +48,65 @@ export function normalizeProfile(raw: Partial<KidProfile> & { id: string }): Kid
     symbol,
     color: raw.color && KID_COLORS.includes(raw.color) ? raw.color : 'orange',
     startMode: raw.startMode === 'lines' ? 'lines' : 'free',
+    created: raw.created ?? DEFAULT_PROFILES.find((d) => d.id === raw.id)?.created ?? new Date().toISOString(),
     ...(name ? { name } : {}),
     ...(raw.hasPhoto ? { hasPhoto: true } : {}),
   };
 }
 
+/** Kids in the order they were added. */
+function inOrder(kids: KidProfile[]): KidProfile[] {
+  return kids.sort((a, b) => a.created.localeCompare(b.created) || a.id.localeCompare(b.id));
+}
+
+async function migrateLegacy(shell: GameStorage): Promise<boolean> {
+  const legacy = await shell.getJson<(Partial<KidProfile> & { id: string })[]>(LEGACY_PROFILES);
+  if (!legacy) return false;
+  const base = Date.now();
+  for (const [i, raw] of legacy.entries()) {
+    // Keep the old list's order by spacing the creation times a second apart.
+    const kid = normalizeProfile({ ...raw, created: raw.created ?? new Date(base + i * 1000).toISOString() });
+    const photo = await shell.getBlob(legacyPhotoPath(kid.id));
+    if (photo) {
+      await shell.putBlob(photoPath(kid.id), photo);
+      await shell.delete(legacyPhotoPath(kid.id));
+    }
+    await shell.putJson(profilePath(kid.id), kid);
+  }
+  await shell.delete(LEGACY_PROFILES);
+  return legacy.length > 0;
+}
+
 export async function loadProfiles(shell: GameStorage): Promise<KidProfile[]> {
-  const saved = await shell.getJson<(Partial<KidProfile> & { id: string })[]>(PROFILES);
-  if (saved && saved.length > 0) return saved.map(normalizeProfile);
-  await shell.putJson(PROFILES, DEFAULT_PROFILES);
+  const read = async () => {
+    const paths = (await shell.list('kids/')).filter((p) => p.endsWith('/profile.json'));
+    const kids: KidProfile[] = [];
+    for (const path of paths) {
+      const raw = await shell.getJson<Partial<KidProfile> & { id: string }>(path);
+      if (raw?.id) kids.push(normalizeProfile(raw));
+    }
+    return inOrder(kids);
+  };
+
+  let kids = await read();
+  if (kids.length > 0) return kids;
+  if (await migrateLegacy(shell)) kids = await read();
+  if (kids.length > 0) return kids;
+
+  // First run: the three starting profiles, marked as defaults so that whatever the family has already set up on
+  // another device replaces them when this one first syncs (ADR 0024).
+  for (const kid of DEFAULT_PROFILES) await shell.putJson(profilePath(kid.id), kid, { asDefault: true });
   return DEFAULT_PROFILES.map((p) => ({ ...p }));
 }
 
-export async function saveProfiles(shell: GameStorage, kids: KidProfile[]): Promise<void> {
-  await shell.putJson(PROFILES, kids.map(normalizeProfile));
+/** Saves one kid. Other kids' files are not touched. */
+export async function saveProfile(shell: GameStorage, kid: KidProfile): Promise<void> {
+  await shell.putJson(profilePath(kid.id), normalizeProfile(kid));
+}
+
+/** Removes a kid's profile and photo. Their games' data is removed by each game (GameModule.forgetKid). */
+export async function deleteProfile(shell: GameStorage, kidId: string): Promise<void> {
+  for (const path of await shell.list(kidDir(kidId))) await shell.delete(path);
 }
 
 export async function loadShellSettings(shell: GameStorage): Promise<ShellSettings> {
@@ -69,11 +126,9 @@ export async function putPhoto(shell: GameStorage, kidId: string, photo: Blob | 
   else await shell.delete(photoPath(kidId));
 }
 
-/** A storage id that never carries the kid's name (ADR 0018). */
-export function newKidId(random: () => number = Math.random): string {
-  return `kid-${Math.floor(random() * 36 ** 6)
-    .toString(36)
-    .padStart(6, '0')}`;
+/** A storage id that never carries the kid's name (ADR 0018) and is unique across devices (ADR 0024). */
+export function newKidId(random?: () => number): string {
+  return `kid-${randomId(8, random)}`;
 }
 
 /** A new profile with a color and symbol no other kid has. */
@@ -82,7 +137,7 @@ export function newProfile(kids: KidProfile[], startMode: ColoringMode = 'free')
   const symbol = KID_SYMBOLS.find((s) => !kids.some((k) => k.symbol === s)) ?? 'star';
   let id = newKidId();
   while (kids.some((k) => k.id === id)) id = newKidId();
-  return { id, color, symbol, startMode };
+  return { id, color, symbol, startMode, created: new Date().toISOString() };
 }
 
 export function kidLabel(kid: KidProfile): string {

@@ -6,7 +6,7 @@ import {
   kidLabel,
   loadProfiles,
   loadShellSettings,
-  saveProfiles,
+  saveProfile,
   saveShellSettings,
 } from '../shell/profiles';
 import type { GameEntry, GameModule, KidProfile, SettingsSection } from '../shell/types';
@@ -109,7 +109,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
           kid.startMode,
           (mode) => {
             kid.startMode = mode;
-            void saveProfiles(storage.shell, kids);
+            void saveProfile(storage.shell, kid);
           },
         ),
         h('div', { class: 'pw-grow' }),
