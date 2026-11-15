@@ -49,7 +49,12 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    2026-11-14 (mockups on the canvas, boards 19–24). **Built 2026-11-14** in the web app: practice and the game
    path, capitals, small letters and numbers, start dots, arrows and the finger, stroke order, pen palm
    rejection, Windows speech or a parent's recordings, the parent Letters screen. Off until a parent turns on
-   "Show Letters" under Settings, Games. Not yet playtested with the kids or tried with a real pen.
+   "Show Letters" under Settings, Games. Not yet playtested with the kids or tried with a real pen. Since
+   2026-11-14 the whole letter must be traced and the kid taps a check to finish
+   ([ADR 0028](../adr/0028-letter-tracing-whole-letter-and-confirm.md)), and the strokes follow how US schools
+   teach print letters (Zaner-Bloser).
+   **Later** (asked by the owner 2026-11-14; nothing designed yet): **writing words**, a next level after single
+   letters (tracing short words letter by letter). Needs its own ADR.
 
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
 3D models and a lot of design; only its prototype came early. Deferred: printing and export (ADR 0010).

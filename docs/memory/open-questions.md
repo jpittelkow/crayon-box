@@ -21,8 +21,9 @@ _Last updated: 2026-11-14_
 - **After the driving MVP** (see project state, milestones 3 and 5): which vehicles, how many maps and how big,
   and how the home map's private folder gets onto the device or the family's server.
 - **Letter practice** ([ADR 0026](../adr/0026-letter-practice.md), built 2026-11-14): for a playtest, tracing
-  tolerance (15 units for a finger, 9 for a pen) and the 85 % to finish (the owner found it finishes too soon,
-  2026-11-14: see known-bugs),
+  tolerance (15 units for a finger, 9 for a pen), whether tracing the whole letter (ADR 0028: both ends of every
+  stroke, 95 % of the letter) and tapping the check are manageable at 4, which handwriting program the kids'
+  school uses (the strokes follow Zaner-Bloser; D'Nealian or another style would change `glyphs.ts`),
   whether the start dot and arrow are understood, whether Windows speech is good enough or a parent records the
   letters, a picture per letter as a reward, and whether the laptop has a pen.
 - **Brush sizes:** the three dots paint 40, 80 and 130 page pixels wide (about 15, 30 and 49 px on the
