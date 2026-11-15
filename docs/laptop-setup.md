@@ -32,4 +32,4 @@ the app under Parent area › This laptop.
 ## Checking the lock (milestone 2, phase D's "done when")
 With the app open on a kid's screen, try each of these; none should leave the app: the Windows key, Alt+Tab,
 Alt+Esc, Ctrl+Esc, Alt+F4, F11, Esc, three- and four-finger swipes, swipes from each screen edge, the taskbar
-(it shouldn't show). Then Ctrl+Shift+Q should save and quit, and Parent area › This laptop › Quit should too.
+(it shouldn't show). Then Ctrl+Shift+Q should save and quit, and Parent area › Quit the app (bottom of the menu) should too.

@@ -15,7 +15,7 @@ the draft release's page or in a copy of this file; note anything that fails in 
 - [ ] The installer runs without admin rights. SmartScreen asks first (More info › Run anyway); that's expected
       until the app is code-signed.
 - [ ] The app opens full screen on the kid picker, with the wordmark.
-- [ ] Color a picture, go back, close the app from Parent area › This laptop › Quit, reopen: the picture is in My
+- [ ] Color a picture, go back, close the app from Parent area › Quit the app (bottom of the menu), reopen: the picture is in My
       pictures and in `Pictures\Coloring Book\Art\<kid id>\`.
 
 ## Update from the previous version
@@ -30,7 +30,7 @@ With *Keep the app full screen* and *Lock the keyboard* on, on a kid's screen:
 - [ ] Three- and four-finger swipes and swipes from each screen edge don't leave it (with the laptop setup done).
 - [ ] The driving game drives with the arrows, W A S D and space; other keys do nothing.
 - [ ] In the parent area every key types (a kid's name, the sync address).
-- [ ] Ctrl+Shift+Q saves the open picture and quits. So does Parent area › This laptop › Quit.
+- [ ] Ctrl+Shift+Q saves the open picture and quits. So does Parent area › Quit the app (bottom of the menu).
 - [ ] Ctrl+Alt+Del and Win+L still work (nothing can block them).
 - [ ] Windows Defender doesn't flag the app. If it does, note it, and turn *Lock the keyboard* off until the app is
       signed.

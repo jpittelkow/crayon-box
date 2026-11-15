@@ -217,6 +217,12 @@
   color: var(--on-action);
   font-weight: 700;
 }
+.pw-nav .pw-nav-quit {
+  text-align: center;
+  font-weight: 700;
+  border: 2px solid var(--on-slate-muted);
+  margin-bottom: 8px;
+}
 .pw-nav-note {
   padding: 0 14px 12px;
   font-size: 15px;
