@@ -1,5 +1,8 @@
 // ADR 0003 rule 4 and ADR 0014: block what a web page can of the escape hatches.
 
+/** Fired on the window when Ctrl+Shift+Q reaches the page. */
+export const QUIT_KEYS_EVENT = 'crayonbox:quit-keys';
+
 export function installGuards(win: Window = window): void {
   const doc = win.document;
   const block = (e: Event) => e.preventDefault();
@@ -21,11 +24,13 @@ export function installGuards(win: Window = window): void {
   win.addEventListener(
     'keydown',
     (e) => {
-      // The one shortcut that stays: Ctrl+Shift+Q, the parent's quit (ADR 0008). The browser can't quit a tab, so
-      // in the web milestone it only leaves full screen.
+      // The one shortcut that stays: Ctrl+Shift+Q, the parent's quit (ADR 0008). The Windows app quits on
+      // QUIT_KEYS_EVENT (with the keyboard lock on, its hook catches the keys before the page does). The browser
+      // can't quit a tab, so there it only leaves full screen.
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'q') {
         e.preventDefault();
         if (doc.fullscreenElement) void doc.exitFullscreen().catch(() => {});
+        win.dispatchEvent(new Event(QUIT_KEYS_EVENT));
         return;
       }
       // While developing, keep reload and the dev tools reachable.

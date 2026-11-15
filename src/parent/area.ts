@@ -10,6 +10,7 @@ import {
   saveShellSettings,
 } from '../shell/profiles';
 import type { FinishedPictures, GameEntry, GameModule, KidProfile, SettingsSection } from '../shell/types';
+import type { KioskControl } from '../shell/kiosk';
 import type { UpdateController } from '../shell/updates';
 import type { AppStorage } from '../storage/types';
 import { button, card, h, segmented, switchRow } from '../ui/parent';
@@ -26,6 +27,10 @@ export interface ParentAreaOptions {
   finished?: FinishedPictures;
   /** Present in the Windows app only (ADR 0009). */
   updates?: UpdateController;
+  /** Present in the Windows app only (ADR 0014). */
+  kiosk?: KioskControl;
+  /** Quits the Windows app, saving first. */
+  quit?(): void;
   onExit(): void;
 }
 
@@ -78,6 +83,11 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
     main.replaceChildren();
     main.scrollTop = 0;
     if (id === 'settings') return renderSettings();
+    if (id === 'laptop' && opts.kiosk) {
+      const { renderLaptop } = await import('./laptopScreen');
+      await renderLaptop(main, opts.kiosk, storage.shell, () => opts.quit?.());
+      return;
+    }
     if (id === 'updates' && opts.updates) {
       const { renderUpdates } = await import('./updatesScreen');
       stopScreen = await renderUpdates(main, opts.updates, storage.shell);
@@ -100,6 +110,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
   };
   addNav('settings', 'Settings');
   for (const s of sections) addNav(`${s.game.id}:${s.section.id}`, s.section.title);
+  if (opts.kiosk) addNav('laptop', 'This laptop');
   let stopDot: (() => void) | null = null;
   if (opts.updates) {
     const updates = opts.updates;

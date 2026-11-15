@@ -22,6 +22,18 @@ tauri-plugin-opener = "2"
 tauri-plugin-updater = "2"
 # The `plugins` section of tauri.conf.json is compiled in by `generate_context!`, which needs serde_json here.
 serde_json = "1"
+# "Start when Windows starts" (phase D, ADR 0014).
+tauri-plugin-autostart = "2"
+
+# The keyboard lock's low-level hook (phase D, ADR 0014). The same version Tauri already pulls in.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Threading",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+] }
 
 [profile.release]
 codegen-units = 1
