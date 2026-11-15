@@ -24,7 +24,8 @@ export type Pt = { x: number; y: number };
 export async function openShapesPage(page: Page, kid = 'Star kid'): Promise<void> {
   await page.goto('/');
   await page.getByRole('button', { name: kid }).tap();
-  // A kid with no pictures lands on the page library (ADR 0017).
+  // A kid with no pictures lands on the page library (ADR 0017); the shapes page is in the Shapes theme.
+  await page.getByRole('button', { name: 'Shapes', exact: true }).tap();
   await page.getByRole('button', { name: SHAPES.title }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
 }

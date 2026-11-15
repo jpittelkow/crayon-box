@@ -12,7 +12,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
 
 ## Milestones (defined in ADR 0014)
 1. **Web app:** a stepping stone. Coloring game in a browser (Edge), browser storage behind the storage
-   interface. Runs locally only: the Vite dev server, or a local container on the dev machine. Never hosted
+   interface. Runs from the Vite dev server on the dev machine only (no container, ADR 0020). Never hosted
    online. Used to test with the kids early. Art made here is throwaway.
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
 3. **Racing game** (ADR 0012): second game module, needs its own ADR first.
@@ -44,12 +44,14 @@ and a lot of design. Deferred: printing and export (ADR 0010).
   coloring screen), `engine/` (ADR 0004), `pictures.ts`, `pages.ts`, `parentSections.ts` (its parent screens).
 - `pages/`: three original CC0 placeholder pages in the ADR 0005 format.
 
-## Milestone 1: what is left (ADR 0014 "In")
-- The theme strip on the page library (ADR 0016); only three pages exist so far.
-- The rendered page check in CI (open shapes, tiny regions; ADR 0005). Only the page.json/license part exists.
-- The local container (Dockerfile) for a steadier copy (ADR 0014).
-- Sounds (none exist yet; the app is silent, and there is no Sounds setting).
-- Optional PIN instead of number words at the gate (ADR 0008).
-- The ~48 real built-in pages (see open questions).
-- The design system and mockup artifacts still show 80 px swatches, no names, and the old page flow; they need
-  updating to ADRs 0017–0019.
+## Milestone 1: remaining phases (agreed with the owner 2026-11-14)
+- **A. Playtest and fixes:** prep done 2026-11-14: [playtest guide](../playtest.md) and
+  `scripts/playtest.cmd` (Edge app window, ADR 0020). **Waiting on the owner** to run the playtest; findings then
+  get fixed or recorded (swatch size, brush sizes, touch-down or lift).
+- **B. Page pipeline:** done 2026-11-14: [page guide](../../pages/README.md), the rendered page check in CI
+  (`tests/e2e/pages.spec.ts`, ADR 0005), the theme strip and blank page. Still open for C: who draws the pages.
+- **C. The real page library:** about 48 pages in 8 themes, in batches, each through the check; the test-only
+  shapes page leaves the kids' library. Needs B's check first.
+- **D. Polish:** sounds with a Settings switch, optional gate PIN, reduce-motion check, design system and mockups
+  updated to ADRs 0017–0020, optionally the two-finger undo limit.
+A and B can run in parallel; D fits anywhere.

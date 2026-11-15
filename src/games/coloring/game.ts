@@ -1,9 +1,9 @@
 // The coloring game (ADR 0004, 0007, 0016, 0017). Loaded only when the game is opened (ADR 0012).
 import type { GameContext, GameModule } from '../../shell/types';
-import { icons } from '../../ui/icons';
-import { el, kidButton } from '../../ui/kid';
+import { icons, themeIcon } from '../../ui/icons';
+import { el, kidButton, setPicked } from '../../ui/kid';
 import './coloring.css';
-import { libraryPages, pageById, type Page } from './pages';
+import { BLANK_PAGE, builtinThemes, libraryPages, pageById, type Page } from './pages';
 import { forgetKid, getPaint, keepPreviousVersion, listPictures, newPicture, type Picture } from './pictures';
 import { ColoringSession } from './session';
 import { loadSettings } from './settings';
@@ -36,6 +36,8 @@ class ColoringGame {
   private session: ColoringSession | null = null;
   private urls: string[] = [];
   private offsets = { library: 0, pictures: 0 };
+  /** The theme picked in the strip; kept while the game is open. */
+  private theme: string | null = null;
 
   constructor(
     private readonly root: HTMLElement,
@@ -129,13 +131,50 @@ class ColoringGame {
     await this.closeSession();
     this.revokeUrls();
     const settings = await loadSettings(this.ctx.storage);
-    const pages = libraryPages(settings.hiddenPages);
+    const all = libraryPages(settings.hiddenPages);
+    // The theme strip (ADR 0016): one round button per theme that has pages to show, then the blank page. A theme
+    // with every page hidden has no button, so nothing on the strip leads to an empty screen.
+    const themes = builtinThemes();
+    const shownThemes = [...new Set(all.map((p) => p.theme))];
+    if (!this.theme || !shownThemes.includes(this.theme)) this.theme = shownThemes[0] ?? null;
+    const pages = all.filter((p) => p.theme === this.theme);
     // Back goes to the start screen, or to the kid picker when the kid has no pictures (and so no start screen).
     const back = async () => {
       if ((await listPictures(this.ctx.storage, this.ctx.kid.id)).length > 0) await this.start();
       else this.ctx.exitToHome();
     };
     const screen = this.screen('page-library', () => void back());
+    screen.classList.add('has-strip');
+    const strip = el('div', 'cb-panel theme-strip', { role: 'group', 'aria-label': 'Themes' });
+    const themeButtons: HTMLElement[] = [];
+    for (const id of shownThemes) {
+      const meta = themes.get(id);
+      const b = kidButton({
+        kind: 'choice',
+        label: meta?.name ?? id,
+        html: themeIcon(meta?.icon ?? id),
+        className: 'theme-button',
+        onTap: () => {
+          this.ctx.sound.play('tap');
+          this.theme = id;
+          this.offsets.library = 0;
+          void this.showLibrary();
+        },
+      });
+      b.style.background = meta?.color ?? 'var(--paper)';
+      b.dataset.theme = id;
+      themeButtons.push(b);
+    }
+    setPicked(themeButtons, themeButtons[shownThemes.indexOf(this.theme ?? '')]);
+    const blank = kidButton({
+      kind: 'choice',
+      label: 'Blank page',
+      html: themeIcon('blank page'),
+      className: 'theme-button',
+      onTap: () => void this.openNew(BLANK_PAGE, () => void this.showLibrary()),
+    });
+    strip.append(...themeButtons, blank);
+    screen.append(strip);
     const grid = await this.tileGrid(
       pages,
       'library',

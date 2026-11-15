@@ -31,4 +31,4 @@ the journal is append-only history. Newest entry is the place to pick up from.
 
 ## Entries
 - [2026-11-14](2026-11-14.md): design ADRs, memory and journal set up; web app scaffold and coloring engine; new
-  picture flow, kid names and photos, parent area
+  picture flow, kid names and photos, parent area; milestone 1 phases A and B

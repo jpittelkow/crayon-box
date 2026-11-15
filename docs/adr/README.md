@@ -19,12 +19,13 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0011](0011-line-art-licensing.md) | Licensing policy: line art, sounds, icons and code | Accepted |
 | [0012](0012-multi-game-shell.md) | Multi-game shell (coloring now, racing next) | Accepted |
 | [0013](0013-code-hosting.md) | Code hosting: GitHub (Gitea optional mirror) | Accepted |
-| [0014](0014-web-first-then-kiosk-installer.md) | Web app first, then installer with a kiosk lock | Accepted |
+| [0014](0014-web-first-then-kiosk-installer.md) | Web app first, then installer with a kiosk lock | Accepted, partly superseded by 0020 |
 | [0015](0015-testing-approach.md) | Testing approach | Accepted |
 | [0016](0016-visual-design-language.md) | Visual design language: Crayon Box | Accepted, partly superseded by 0017–0019 |
 | [0017](0017-new-pictures-and-my-pictures.md) | New pictures from the page library, old ones from My pictures | Accepted |
 | [0018](0018-kid-names-and-photos.md) | Kid profiles with names and photos | Accepted |
 | [0019](0019-bigger-coloring-page.md) | A bigger coloring page: fills the window, 64 px color buttons | Accepted |
+| [0020](0020-web-app-from-the-dev-server.md) | The web app runs from the dev server; playtests use an Edge app window | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H

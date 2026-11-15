@@ -23,7 +23,13 @@ test('the kid picker opens the pages, then a page, on the kid’s color', async 
   await page.getByRole('button', { name: 'Heart kid' }).tap();
   // No pictures yet, so the game opens straight on the page library (ADR 0017).
   await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
-  await expect(page.locator('[data-page]')).toHaveCount(3);
+  // The theme strip: one button per theme with pages, in theme order, then the blank page (ADR 0016).
+  await expect(page.locator('[data-theme]')).toHaveCount(3);
+  await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'race-cars');
+  await expect(page.getByRole('button', { name: 'Blank page' })).toBeVisible();
+  await expect(page.locator('[data-page]')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Shapes', exact: true }).tap();
+  await expect(page.getByRole('button', { name: 'Shapes', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: SHAPES.title }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
   await expect(page.locator('#app')).toHaveCSS('background-color', 'rgb(232, 220, 250)'); // kid-purple-tint
@@ -194,6 +200,7 @@ test('a picture and its mode are kept when the kid leaves and comes back', async
   await pick(page, 'Back');
   await pick(page, 'Back');
   await page.getByRole('button', { name: 'Moon kid' }).tap();
+  await page.getByRole('button', { name: 'Shapes', exact: true }).tap();
   await page.getByRole('button', { name: SHAPES.title }).tap();
   await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
   await expectBlank(page, SHAPES.inCircle);
@@ -228,4 +235,20 @@ test('a page opened and left without painting adds nothing to My pictures', asyn
   await expect(page.locator('[data-screen="kid-picker"]')).toBeVisible();
   await page.getByRole('button', { name: 'Star kid' }).tap();
   await expect(page.locator('[data-screen="page-library"]')).toBeVisible();
+});
+
+test('the blank page is one big area to fill', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await page.getByRole('button', { name: 'Blank page' }).tap();
+  await expect(page.locator('.coloring-page')).toHaveAttribute('data-ready', 'true');
+  await pick(page, 'Paint bucket');
+  await pick(page, 'Red');
+  await tapPage(page, SHAPES.inCircle);
+  await expectPaint(page, { x: 5, y: 5 }, RED);
+  await expectPaint(page, { x: 2040, y: 1530 }, RED);
+  await pick(page, 'Back');
+  await pick(page, 'Back');
+  await pick(page, 'My pictures');
+  await expect(page.getByRole('button', { name: 'Blank page picture' })).toBeVisible();
 });

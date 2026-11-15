@@ -118,8 +118,9 @@ test('a hidden page leaves the library', async ({ page }) => {
   await page.getByText('Show Fish').click();
   await page.getByRole('button', { name: 'Back to coloring' }).click();
   await page.getByRole('button', { name: 'Star kid' }).tap();
-  await expect(page.locator('[data-page]')).toHaveCount(2);
-  await expect(page.getByRole('button', { name: 'Fish page' })).toHaveCount(0);
+  // Under the sea had only the fish, so its theme button goes too.
+  await expect(page.locator('[data-theme]')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'Under the sea' })).toHaveCount(0);
 });
 
 test('a parent restores the previous version of a picture, and deletes one', async ({ page }) => {

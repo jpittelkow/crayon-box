@@ -63,6 +63,18 @@ export function libraryPages(hidden: readonly string[]): Page[] {
   return allBuiltinPages().filter((p) => !set.has(p.id));
 }
 
+/** The blank page: the last button in the theme strip (ADR 0016). One area, the whole sheet. */
+export const BLANK_PAGE: Page = {
+  id: 'builtin:blank',
+  theme: '',
+  slug: 'blank',
+  meta: { title: 'Blank page', tags: [], source: 'original', license: 'CC0', detail: 'simple' },
+  url:
+    'data:image/svg+xml,' +
+    encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1536" viewBox="0 0 2048 1536"/>'),
+};
+
 export function pageById(id: string): Page | undefined {
+  if (id === BLANK_PAGE.id) return BLANK_PAGE;
   return allBuiltinPages().find((p) => p.id === id);
 }

@@ -148,3 +148,30 @@
   align-items: center;
   justify-content: center;
 }
+
+/* ---- Theme strip on the page library (ADR 0016) ---- */
+.theme-strip {
+  position: absolute;
+  top: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  height: 104px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 52px;
+  gap: var(--kid-gap-min);
+}
+.theme-button svg {
+  pointer-events: none;
+}
+.tile-screen.has-strip {
+  align-items: flex-start;
+  padding-top: 152px;
+  box-sizing: border-box;
+}
+.has-strip .tile-grid {
+  /* The container is measured inside its padding, so the strip is already taken off 100cqh. */
+  --tile-w: min(calc((100cqw - 2 * 152px - 2 * 28px) / 3), calc((100cqh - 24px - 30px) / 1.5));
+  margin-top: 0;
+}
+

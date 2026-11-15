@@ -30,9 +30,8 @@ _Last confirmed: 2026-11-14_
 - The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to
   `crayon-box` on 2026-11-14; the local checkout folder may still be called `kidsapp`.
 - GitHub Releases are only for the Windows installer; keep the release workflow focused on that (ADR 0009).
-- The web app runs locally only (dev server or a local container on the dev machine). No online hosting, no
-  published container image, and no home-server setup for this app (ADR 0014). Asked on 2026-11-14 to drop a
-  proposed home-server container and template.
+- The web app runs from the dev server only: no local container (dropped 2026-11-14, ADR 0020), no online
+  hosting, no published image, and no home-server setup for this app (ADR 0014).
 - Install from GitHub and update inside the app; no dev tools on the family laptop (ADR 0009).
 - GitHub is fine as the main host; a self-hosted Gitea exists and may mirror (ADR 0013).
 - Uses OpenRouter for AI image models, with their own key (ADR 0006).

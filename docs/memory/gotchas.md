@@ -37,3 +37,13 @@ _Last updated: 2026-11-14_
   typed in. Browser shortcuts (Ctrl/Alt) stay blocked there too (2026-11-14).
 - Scripts outside the repo can't import `@playwright/test` by name; import it by file URL from the repo's
   `node_modules` (found 2026-11-14).
+- Edge kiosk mode (`--kiosk`, both kiosk types) always runs InPrivate, so IndexedDB is gone when the window closes.
+  Playtests use an Edge app window instead (`--app`, own `--user-data-dir`; ADR 0020). Checked in Microsoft's
+  kiosk-mode docs on 2026-11-14.
+- Container query units (`cqh`, `cqw`) measure the container inside its padding: don't subtract the padding again
+  (found 2026-11-14, page library tiles).
+- The page check treats a strip of paper narrower than 6 px between a line and the page edge as a gap and fills
+  it. Real pages should keep about 40 px of margin; test fixtures need margins wider than the gap limit
+  (found 2026-11-14).
+- Running a `.cmd` from the Bash tool with `cmd //c` executes it for real; `scripts/playtest.cmd` opened an Edge
+  window that way once. Check scripts' parts separately (2026-11-14).
