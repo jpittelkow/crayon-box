@@ -5,7 +5,8 @@
   accepted it without mockups: the built screens are judged instead. The words batch ships take 1 of every line
   (as for letters); for each slow word the stretched take is used and the other kept beside it, so a word can be
   swapped after listening. **Part 1 built 2026-11-16** (everything but family words and the pictures, which are part
-  2); where the build differs from the text below is listed under [Built](#built-part-1-2026-11-16)
+  2); where the build differs from the text below is listed under [Built](#built-part-1-2026-11-16). **Part 2
+  built 2026-11-16:** family words, see [Built, part 2](#built-part-2-2026-11-16)
 - Date: 2026-11-15
 - Builds on: [ADR 0026](0026-letter-practice.md), [0028](0028-letter-tracing-whole-letter-and-confirm.md),
   [0032](0032-sounds-as-files.md) and [0037](0037-letters-sound-tips-and-how-to.md). Supersedes nothing
@@ -138,6 +139,29 @@ differs from, or adds to, the text above:
 - **After the check** the picture comes back big below the boxes, so the kid's own letters stay in view.
 - Saved: `prefs.json` has `words: true` when Words is on; `progress.json` has `words` (the word stars) and
   `nextSaid`; both go with a parent's "Reset stars and game".
+
+## Built (part 2, 2026-11-16)
+**Family words** (W8). Code: `src/games/letters/familyWords.ts` (saving), `familyCells` and `wordOrder` in
+`words.ts`, the family-word list in `parentSection.ts`, the tiles and saying in `game.ts`; tests in `words.test.ts`
+and `tests/e2e/words.spec.ts`. Where the build differs from, or adds to, the text above:
+- **Saved:** `words/<id>.json` holds `{ text, added }`; the photo is `words/<id>.jpg` (cropped square and scaled to
+  320 px, as a kid's photo, ADR 0018) and the recording `voice/family-<id>.<ext>`. The id is `fam-` and 8 random
+  characters, never made from the word. Deleting a word deletes all three; kids' stars for it stay in their
+  progress, unused.
+- **At most 10 family words** and 16 characters each, so all the tiles still fit one screen: past 25 tiles the
+  grid goes to six a row (and six rows past 30). A word needs at least one letter A to Z to be kept.
+- **Letters:** handled like the name (gaps, accents, symbols), but with small letters on each letter **keeps the
+  case the parent typed** ("pup" stays small, "Pup" starts with a capital), since a family word can be a name or a
+  thing. Without small letters, capitals.
+- **Order:** oldest first, after My name and before the 24 words; "Next word" runs through them in that order.
+- **Said:** with a recording, "Let's write a word." and the recording to open, the recording again as the boxes
+  light (evenly through it, like a name), and the recording in place of "You wrote a word!" after the check (the
+  cheer still plays). Without one: a word the narrator already has a clip for (the spares: mom, dad, car…) opens
+  with it and uses its slow take when there is one; any other word opens with "Let's write a word.", lights its
+  boxes with its letters' sounds, and gets the cheer and "You wrote a word!". The word's text is only ever matched
+  against the shipped clips' names; it is never spoken by a browser voice or sent anywhere.
+- **Tiles and picture:** the photo, square, in the tile and as the word's picture; without one, the word's letters
+  in ink with a gap between its parts.
 
 ## Narrator lines to add before 2026-12-13
 **Settled by the owner on 2026-11-15 (W1): add them.** They are the `words` batch of `tools/sounds/generate.mjs`
