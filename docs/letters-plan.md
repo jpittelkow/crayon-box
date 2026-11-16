@@ -50,7 +50,7 @@ that plays some of them comes months later.
 |---|---|---|
 | 2026-11-15 (Sun) | This plan, the research and ADR 0037 (Proposed) in a PR | Claude |
 | ~~2026-11-21 (Sat)~~ | Owner decides D1 to D12: **done 2026-11-15**, every recommendation taken | Owner |
-| 2026-11-25 (Wed) | `generate.mjs` gets the new lines; one run in the container: 3 takes of every line, plus 10 sample lines in Maisie for comparison; the audition page. **Script and page ready 2026-11-15** | Owner starts the run |
+| 2026-11-25 (Wed) | `generate.mjs` gets the new lines; one run in the container: 3 takes of every line, plus 10 sample lines in Maisie for comparison; the audition page. **Done 2026-11-15:** 246 takes and the 10 Maisie samples, no errors, about $0.34 on the server's key; the takes are on the laptop in `C:\tmp\gen3` (not in the repo) | Claude, on the owner's request |
 | 2026-11-29 (Sun) | Owner picks a take of every line by ear; flags lines to redo | Owner |
 | 2026-12-06 (Sun) | Second run: redos and any lines the owner added; `prepare.mjs`; clips committed | Claude |
 | 2026-12-13 (Sun) | **Last planned run:** lines found missing while building phases B–D | Claude |
@@ -123,6 +123,19 @@ example word (`sound-A-alt` "ah… apple", and E egg, I igloo, O octopus, U umbr
 plain sound or the one with the word: **82 lines**, 3 takes each (246 requests), plus 10 Maisie samples.
 The letter's name when it opens (phase B) reuses today's clips; no new lines.
 
+**Coloring screen lines** (added 2026-11-15, asked by the owner): to-do section 2's "buttons a kid can work out"
+will want each coloring button's name said and a short demo; its design isn't settled, but the clips must be in
+Matilda's voice, so they go in the same schedule. `ONLY=coloring` in `generate.mjs`, 3 takes each, into
+`/tmp/gen3/coloring/`, picked on the same audition page. **Made 2026-11-15:** 120 takes, no errors, about $0.13. 40 lines:
+- Tools (`tool-…`): "Paint bucket." · "Brush." · "Eraser." · "Undo." · "Start over." · "Back."
+- What they do (`do-…`): bucket "Tap a space to fill it." · brush "Draw with your finger." · eraser "Rub it out." ·
+  undo "Take it back." · start over "A fresh page."
+- Sizes and modes: `size-small` "Small." · `size-medium` "Medium." · `size-big` "Big." · `mode-free` "Color
+  anywhere." · `mode-lines` "Stay in the lines."
+- Colours (`color-<token>`, the 24 in `src/ui/palette.ts`, said by their labels): "Light pink.", "Pink.", "Red." …
+  "Black.", "Rainbow."
+- The demo's "Watch me." and "Your turn!" are the letters lines `demo-watch` and `demo-your-turn`.
+
 **Maisie through OpenRouter is not certain.** OpenRouter's page for ElevenLabs v4 lists only the default voices
 by name (Matilda among them), not Maisie or custom voice ids (checked 2026-11-15). The script asks for Maisie by
 her ElevenLabs voice id and logs an error if that is refused. If it is, options 2 and 3 below would need a direct
@@ -158,6 +171,9 @@ That is one more reason to make everything now.
 - **Tests:** `src/shell/sound.test.ts` already checks every shipped file has a source and license; add a test that
   every id the letters game asks for has a file.
 - **Done when:** every line has a picked take committed before 2026-12-13, or a note of who will record it.
+  **Done 2026-11-15:** the owner listened to every take, found no difference between them and chose take 1 of
+  every line; for the short vowels the take with the word ("ah… apple") ships as `sound-A` (likewise E, I, O,
+  U). 117 clips added to `assets/sounds/voice/` (letters and coloring), with `NARRATOR_ONLY=1 prepare.mjs`.
 
 ### B. More sound while tracing
 - **Builds:**
