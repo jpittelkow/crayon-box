@@ -1,4 +1,5 @@
-// Picking narrator takes by ear (ADR 0032, 0037). Works on the folder generate.mjs writes with ONLY=letters2 and ONLY=coloring
+// Picking narrator takes by ear (ADR 0032, 0037, 0039). Works on the folder generate.mjs writes with ONLY=letters2,
+// ONLY=coloring and ONLY=words
 // (copied back from the container, e.g. to C:\tmp\gen3).
 //
 //   node tools/sounds/audition.mjs page <gen folder>
@@ -15,7 +16,7 @@ if (!gen || (cmd !== 'page' && cmd !== 'apply') || (cmd === 'apply' && (!picksFi
   console.error('usage: audition.mjs page <gen folder> | apply <gen folder> <picks.json> <sources folder>');
   process.exit(1);
 }
-// Every batch in the folder: manifest.json (letters2) and manifest-<batch>.json (coloring, …).
+// Every batch in the folder: manifest.json (letters2) and manifest-<batch>.json (coloring, words, …).
 const manifests = readdirSync(gen).filter((f) => /^manifest(-[a-z0-9]+)?\.json$/.test(f))
   .sort((a, b) => (a === 'manifest.json' ? -1 : b === 'manifest.json' ? 1 : a.localeCompare(b)))
   .map((f) => JSON.parse(readFileSync(join(gen, f), 'utf8')));
@@ -61,7 +62,8 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const group = (id) => id.split('-')[0];
 const GROUPS = { sound: 'Letter sounds', tip: 'Tips', stroke: 'Stroke words', demo: 'How-to demo', praise: 'Praise',
   shape: 'Lines and shapes', level: 'Later levels', word: 'Words', tool: 'Coloring: tools', do: 'Coloring: what they do',
-  size: 'Coloring: brush sizes', mode: 'Coloring: modes', color: 'Coloring: colours' };
+  size: 'Coloring: brush sizes', mode: 'Coloring: modes', color: 'Coloring: colours', build: 'Words: build it',
+  way: 'Words: your way', slow: 'Words, said slowly (two ways of asking each: pick one, leave the other)' };
 let html = '';
 let last = '';
 for (const line of lines()) {

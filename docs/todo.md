@@ -71,8 +71,13 @@ items first, with mockups.
 - **Narrator deadline:** the new lines need the same voice as today's clips, and ElevenLabs retires it on
   2026-12-31. Make every new line before then, or pick a new voice and remake the whole set. That is a reason to
   do this section sooner; nothing above it depends on it.
-- **Tracing short words** letter by letter, the next level after single letters (owner, 2026-11-14). Needs its
-  own ADR (ADR 0026 covers single letters). It uses the tips and sounds above.
+- **Writing words**, the next level after single letters (owner, 2026-11-14). Researched 2026-11-15:
+  [research/words-learning.md](research/words-learning.md) and a draft
+  [ADR 0039](adr/0039-writing-words.md) (Proposed): the kid's own name first, then short words, one big letter
+  at a time. W1 is settled (owner, 2026-11-15): 84 more narrator lines, the `words` batch of
+  `tools/sounds/generate.mjs`. Run 2026-11-15: 213 of 252 takes made, then the OpenRouter balance ran out.
+  **Next:** add credits and redo the 16 lines left (the journal has the list), then pick takes, all before
+  2026-12-13 (the voice ends on 2026-12-31); the owner's choices W2 to W10; then mockups, then the build. It uses the tips and sounds above.
 
 ## 6. More maps (last)
 - **A very large map: a highway round a big building site.** Planned 2026-11-15 on the owner's request:

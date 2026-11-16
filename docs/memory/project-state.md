@@ -72,8 +72,12 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    2026-11-14 the whole letter must be traced and the kid taps a check to finish
    ([ADR 0028](../adr/0028-letter-tracing-whole-letter-and-confirm.md)), and the strokes follow how US schools
    teach print letters (Zaner-Bloser).
-   **Later** (asked by the owner 2026-11-14; nothing designed yet): **writing words**, a next level after single
-   letters (tracing short words letter by letter). Needs its own ADR.
+   **Writing words** (asked by the owner 2026-11-14), the next level after single letters: researched and
+   drafted 2026-11-15 as [ADR 0039](../adr/0039-writing-words.md) (Proposed, a draft), from
+   [research/words-learning.md](../research/words-learning.md). W1 settled 2026-11-15: 84 more narrator lines
+   (`ONLY=words` in `tools/sounds/generate.mjs`). Run 2026-11-15: 213 of 252 takes, stopped by an empty OpenRouter
+   balance; 16 lines to redo once credits are added, then picks, before 2026-12-13. Waiting on the
+   owner's choices W2 to W10. Nothing built.
 
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
 3D models and a lot of design; only its prototype came early. Deferred: printing and export (ADR 0010).
