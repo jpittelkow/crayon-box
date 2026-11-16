@@ -114,6 +114,24 @@ export const ISLAND: MapDef = {
     nearRoad: 0.55, spread: 4, edgeGap: 5, spawnGap: 7,
   },
   decor: [{ id: 'decor/bush', clumps: 220, perClump: 3 }],
+  // Targets (ADR 0041): rows of stars on the roads, for "follows the road" to collect too, and stacks of boxes just
+  // off them, all round the island. The loop goes clockwise from the west (north first), so a negative offset is
+  // outside it.
+  targets: [
+    { id: 'toy/star', on: onLoop([-41, -19]), count: 5 },
+    { id: 'toy/star', on: onLoop([-14, 36]), count: 4 },
+    { id: 'toy/star', on: onLoop([32, 27]), count: 4 },
+    { id: 'toy/star', on: onLoop([26, -32]), count: 4 },
+    { id: 'toy/star', on: { road: 1, at: atShortcut(18) }, count: 3 },
+    { id: 'toy/star', on: { road: 2, at: 0.5 }, count: 3 },
+    { id: 'toy/box-stack', on: onLoop([-47, 4], -6) },
+    { id: 'toy/box-stack', on: onLoop([-20, 35], 6) },
+    { id: 'toy/box-stack', on: onLoop([12, 37], -6) },
+    { id: 'toy/box-stack', on: onLoop([40, -20], 6) },
+    { id: 'toy/box-stack', on: onLoop([-10, -37], -6) },
+    { id: 'toy/box-stack', on: { road: 1, at: atShortcut(31), offset: 6 } },
+    { id: 'toy/box-stack', on: { road: 2, at: 0.25, offset: 6 } },
+  ],
   // Animals that answer the horn, in the fields, as in the layout picture (milestone-3 B3).
   animals: [
     { id: 'animal/sheep', ...spot([20, 18]), count: 4, roam: 9 },

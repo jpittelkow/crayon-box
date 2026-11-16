@@ -2,7 +2,7 @@
 // another map is another file. Plain TypeScript, no three.js.
 import type { AnimalId } from './assets/animals';
 import type { DecorId, SceneryId } from './assets/scenery';
-import type { ToyId } from './assets/toys';
+import type { TargetId, ToyId } from './assets/toys';
 import type { LandDef } from './land';
 import type { RoadDef } from './roads';
 import type { VehicleKind } from './sim';
@@ -75,6 +75,12 @@ export interface MapDef {
   props: { kinds: { id: ToyId; share: number }[]; nearRoad: number; spread: number; edgeGap: number; spawnGap: number };
   /** Decor scattered in clumps, off the roads and out of the water (drawn only; the car drives through it). */
   decor: { id: DecorId; clumps: number; perClump: number }[];
+  /**
+   * Targets (ADR 0041), at fixed spots on the roads: a stack of boxes to knock over, or a star to collect. With
+   * `count`, a row of them along the road from `on`, `gap` metres apart (4 when left out), all at its offset. A
+   * stack faces along its road.
+   */
+  targets?: { id: TargetId; on: OnRoad; count?: number; gap?: number }[];
   /** Herds of animals (driving-assets.md category 8): `count` of one kind wandering within `roam` metres of a spot. */
   animals?: { id: AnimalId; x: number; z: number; count: number; roam: number }[];
 }

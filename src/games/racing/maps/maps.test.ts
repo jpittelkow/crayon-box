@@ -5,7 +5,7 @@ import { guardAt, hillReach } from '../sim/ground';
 import { onLand } from '../sim/land';
 import { nearestRoad } from '../sim/roads';
 import { VEHICLES } from '../settings';
-import { makeWorld, step, type Input, type World } from '../sim/sim';
+import { makeWorld, step, waterAt, type Input, type World } from '../sim/sim';
 import { MAPS, MAP_NAMES } from '.';
 
 const DT = 1 / 60;
@@ -27,6 +27,34 @@ describe.each(MAPS.map((m) => [MAP_NAMES[m.id], m] as const))('the %s', (_name, 
       for (let j = i + 1; j < w.zones.length; j++) {
         expect(Math.hypot(w.zones[i]!.x - w.zones[j]!.x, w.zones[i]!.z - w.zones[j]!.z)).toBeGreaterThan(w.zones[i]!.r + w.zones[j]!.r + 4);
       }
+    }
+  });
+
+  it('has targets (ADR 0041): stars on the roads and stacks just off them, clear of everything else', () => {
+    const w = makeWorld(7, map.propCount ?? 150, 'free', map);
+    const stars = w.props.filter((p) => p.toy === 'toy/star');
+    const stacks = w.stacks.map((s) => w.props[s[0]!]!);
+    expect(stars.length).toBeGreaterThanOrEqual(15);
+    expect(stacks.length).toBeGreaterThanOrEqual(5);
+    const kid = w.cars[0]!;
+    for (const t of [...stars, ...stacks]) {
+      const where = `${t.toy} at ${t.homeX.toFixed(0)}, ${t.homeZ.toFixed(0)}`;
+      const road = nearestRoad(w.roads, t.homeX, t.homeZ)!;
+      expect(onLand(w.land, t.homeX, t.homeZ), where).toBe(true);
+      expect(waterAt(w, t.homeX, t.homeZ), where).toBeLessThan(2);
+      expect(guardAt(w.guards, w.roads, t.homeX, t.homeZ, 3), where).toBeNull();
+      expect((w.map.hills ?? []).some((h) => hillReach(h, t.homeX, t.homeZ, 2) < 1), where).toBe(false);
+      for (const z of w.zones) expect(Math.hypot(t.homeX - z.x, t.homeZ - z.z), where).toBeGreaterThan(z.r + 3);
+      expect(Math.hypot(t.homeX - kid.x, t.homeZ - kid.z), where).toBeGreaterThan(10);
+      // Stars on the road, where "follows the road" goes; stacks off it, but near (the yard's within 16 m).
+      if (t.toy === 'toy/star') expect(road.dist, where).toBeLessThan(2.5);
+      else expect(road.dist, where).toBeGreaterThan(map.roads[road.road]!.width / 2);
+      if (t.toy !== 'toy/star') expect(road.dist, where).toBeLessThan(16);
+    }
+    // No scattered toy inside a stack.
+    for (const s of stacks) {
+      const others = w.props.filter((p) => p.stack < 0 && p.toy !== 'toy/star');
+      for (const o of others) expect(Math.hypot(o.homeX - s.homeX, o.homeZ - s.homeZ)).toBeGreaterThan(2);
     }
   });
 
