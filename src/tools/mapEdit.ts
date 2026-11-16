@@ -388,6 +388,11 @@ export function deleteRoad(doc: Doc, i: number): Doc {
     m.water.puddles = m.water.puddles.filter((p) => p.road !== i);
     for (const list of [m.zones ?? [], m.targets ?? [], m.traffic, m.water.pools]) for (const o of list) move(o.on);
     for (const g of m.guards ?? []) g.road = renum(g.road);
+    // Traffic by a rule (map tiles): the roads it may use.
+    if (m.trafficNear?.roads) {
+      m.trafficNear.roads = m.trafficNear.roads.filter((r) => r !== i).map(renum);
+      if (!m.trafficNear.roads.length) delete m.trafficNear.roads;
+    }
     for (const p of m.water.puddles) p.road = renum(p.road);
   });
 }
@@ -697,17 +702,17 @@ export function setItemValue(doc: Doc, item: Item, value: unknown): Doc {
   });
 }
 
-/** The map's settings that aren't placed on it (scattered trees, toys and decor, traffic's favourites, the id). */
+/** The map's settings that aren't placed on it (scattered trees, toys and decor, traffic's rules, the id). */
 export function settingsValue(doc: Doc): Record<string, unknown> {
-  const { id, propCount, trafficPrefer, trees, props, decor } = doc.map;
-  return { id, propCount, trafficPrefer, trees, props, decor };
+  const { id, propCount, trafficPrefer, trafficNear, trees, props, decor } = doc.map;
+  return { id, propCount, trafficPrefer, trafficNear, trees, props, decor };
 }
 
 export function setSettings(doc: Doc, value: unknown): Doc {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('It needs to be an object { }.');
   const v = copy(value) as Partial<MapDef>;
   return edit(doc, (d) => {
-    for (const k of ['id', 'propCount', 'trafficPrefer', 'trees', 'props', 'decor'] as const) {
+    for (const k of ['id', 'propCount', 'trafficPrefer', 'trafficNear', 'trees', 'props', 'decor'] as const) {
       if (v[k] === undefined) delete d.map[k];
       else (d.map as unknown as Record<string, unknown>)[k] = v[k];
     }
@@ -835,7 +840,8 @@ export function editorProblems(map: MapDef): Problem[] {
         out.push({ text: `roads[${i}]'s ${name} is a dead end: drag it onto another road to join it.`, x, z });
       } else if (roads[joins]) {
         const gap = nearestOn(roads[joins]!, joins, x, z).dist;
-        if (gap > 1) out.push({ text: `roads[${i}]'s ${name} is ${gap.toFixed(0)} m from road ${joins}, which it joins: drag it back onto that road.`, x, z });
+        // A metre or two off is how hand-made maps join (the large stand-in's do); further is a road pulled away.
+        if (gap > 2) out.push({ text: `roads[${i}]'s ${name} is ${gap.toFixed(0)} m from road ${joins}, which it joins: drag it back onto that road.`, x, z });
       }
     }
   });

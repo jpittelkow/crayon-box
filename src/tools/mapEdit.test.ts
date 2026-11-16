@@ -156,6 +156,9 @@ describe('editing roads', () => {
     expect((m.targets ?? []).some((t) => t.on.road === 2 && t.on.at === 0.5)).toBe(false);
     expect(mapProblems(m)).toEqual([]);
     expect(() => deleteRoad(doc, ISLAND.spawn.road)).toThrow(/start/);
+    // Traffic by a rule keeps to the roads that are left, renumbered.
+    const ruled = deleteRoad({ ...doc, map: { ...doc.map, trafficNear: { count: 4, roads: [1, 2, 4], cruise: [6, 9] } } }, 2);
+    expect(ruled.map.trafficNear!.roads).toEqual([1, 3]);
   });
 });
 

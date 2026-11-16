@@ -4,6 +4,7 @@
 import { MAPS, MAP_NAMES } from '../games/racing/maps';
 import { parseMapFile } from '../games/racing/maps/file';
 import example from '../games/racing/maps/examples/test-loop.json?raw';
+import { STRESS } from '../games/racing/maps/stress';
 import type { MapDef, ZoneKind } from '../games/racing/sim/map';
 
 export interface NamedMap { name: string; map: MapDef }
@@ -14,6 +15,8 @@ export function builtInMaps(): Record<string, NamedMap> {
   for (const map of MAPS) out[map.id] = { name: MAP_NAMES[map.id] ?? map.id, map };
   const parsed = parseMapFile(example);
   if (parsed.ok) out[parsed.map.id] = { name: parsed.name, map: parsed.map };
+  // The map tiles' stand-in for a very large map (never in the picker).
+  out[STRESS.id] = { name: 'Stand-in large map', map: STRESS };
   return out;
 }
 
