@@ -50,7 +50,7 @@ that plays some of them comes months later.
 |---|---|---|
 | 2026-11-15 (Sun) | This plan, the research and ADR 0037 (Proposed) in a PR | Claude |
 | ~~2026-11-21 (Sat)~~ | Owner decides D1 to D12: **done 2026-11-15**, every recommendation taken | Owner |
-| 2026-11-25 (Wed) | `generate.mjs` gets the new lines; one run in the container: 3 takes of every line, plus 10 sample lines in Maisie for comparison; an audition page like the one of 2026-11-15 | Claude, owner starts the run |
+| 2026-11-25 (Wed) | `generate.mjs` gets the new lines; one run in the container: 3 takes of every line, plus 10 sample lines in Maisie for comparison; the audition page. **Script and page ready 2026-11-15** | Owner starts the run |
 | 2026-11-29 (Sun) | Owner picks a take of every line by ear; flags lines to redo | Owner |
 | 2026-12-06 (Sun) | Second run: redos and any lines the owner added; `prepare.mjs`; clips committed | Claude |
 | 2026-12-13 (Sun) | **Last planned run:** lines found missing while building phases B–D | Claude |
