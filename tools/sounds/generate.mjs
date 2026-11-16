@@ -9,19 +9,21 @@
 // every new line in Matilda into /tmp/gen3/narrator/<id>-<take>.mp3, and one take of ten sample lines in Maisie,
 // her suggested replacement, into /tmp/gen3/maisie/. Then tools/sounds/audition.mjs makes a page to pick takes by
 // ear. DRY=1 lists the lines and makes nothing (no key needed). TAKES=1 makes one take each (for a redo run), and
-// IDS=a,b,c makes only those lines.
+// IDS=a,b,c makes only those lines (a redo run: the batch's manifest keeps the other lines' takes).
+// ONLY=coloring does the same for the coloring screen's lines into /tmp/gen3/coloring/ and manifest-coloring.json.
 //
 // ElevenLabs retires Matilda on 2026-12-31: clips made later need her replacement or a new voice for the whole set.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const KEY = process.env.OPENROUTER_API_KEY;
 const DRY = process.env.DRY === '1';
+const LATER_BATCHES = ['letters2', 'coloring'];
 if (!KEY && !DRY) { console.error('no key'); process.exit(1); }
-if (DRY && process.env.ONLY !== 'letters2') { console.error('DRY=1 works with ONLY=letters2'); process.exit(1); }
-// ONLY=narrator or ONLY=effects makes just that half; ONLY=letters2 the second letters batch (see above).
+if (DRY && !LATER_BATCHES.includes(process.env.ONLY)) { console.error('DRY=1 works with ONLY=letters2 or ONLY=coloring'); process.exit(1); }
+// ONLY=narrator or ONLY=effects makes just that half; ONLY=letters2 or coloring a later batch (see above).
 const ONLY = process.env.ONLY ?? '';
 const OUT = '/tmp/gen2';
-if (ONLY !== 'letters2' && !DRY) {
+if (!LATER_BATCHES.includes(ONLY) && !DRY) {
   mkdirSync(`${OUT}/narrator`, { recursive: true });
   mkdirSync(`${OUT}/effects`, { recursive: true });
 }
@@ -62,6 +64,7 @@ const SOUNDS = {
   L: 'lll', M: 'mmm', N: 'nnn', O: 'aw', P: 'puh', Q: 'kwuh', R: 'rrr', S: 'sss', T: 'tuh', U: 'uh', V: 'vvv',
   W: 'wuh', X: 'ks', Y: 'yuh', Z: 'zzz',
 };
+// Shipped (owner, 2026-11-15): the take with the word, as sound-A … sound-U; the plain vowel takes were not used.
 const VOWEL_WORDS = { A: 'apple', E: 'egg', I: 'igloo', O: 'octopus', U: 'umbrella' };
 const WORDS = ['cat', 'dog', 'sun', 'bus', 'pig', 'hat', 'cup', 'bed', 'box', 'fox', 'hen', 'bug', 'map', 'pan',
   'pin', 'sat', 'tap', 'top', 'red', 'run', 'hop', 'big', 'mud', 'jam'];
@@ -106,22 +109,49 @@ const maisieLines = [
   ['tip-start-dot', '[warmly] Start at the green dot.'], ['stroke-down', '[warmly] Down.'],
   ['demo-your-turn', '[excited] Your turn!'], ['sound-M', '[warmly] mmm.'], ['word-cat', '[warmly] cat.'],
 ];
-if (ONLY === 'letters2') {
+// ---- The coloring screen's lines (asked by the owner 2026-11-15): what each button is called and does, for a
+// spoken name and a short demo (design not settled yet). Made now because Matilda ends on 2026-12-31. The demo's
+// "Watch me." and "Your turn!" are the letters batch's `demo-watch` and `demo-your-turn`.
+const COLORS = [['light-pink', 'Light pink'], ['pink', 'Pink'], ['red', 'Red'], ['apricot', 'Apricot'],
+  ['orange', 'Orange'], ['dark-red', 'Dark red'], ['yellow', 'Yellow'], ['lime', 'Light green'], ['green', 'Green'],
+  ['dark-green', 'Dark green'], ['teal', 'Teal'], ['sky', 'Light blue'], ['pale-blue', 'Pale blue'], ['blue', 'Blue'],
+  ['navy', 'Dark blue'], ['lavender', 'Lavender'], ['purple', 'Purple'], ['gray', 'Gray'], ['peach', 'Peach'],
+  ['tan', 'Tan'], ['brown', 'Brown'], ['dark-brown', 'Dark brown'], ['black', 'Black'], ['rainbow', 'Rainbow']];
+const coloring = [
+  ['tool-bucket', '[warmly] Paint bucket.'], ['tool-brush', '[warmly] Brush.'], ['tool-eraser', '[warmly] Eraser.'],
+  ['tool-undo', '[warmly] Undo.'], ['tool-start-over', '[warmly] Start over.'], ['tool-back', '[warmly] Back.'],
+  ['do-bucket', '[warmly] Tap a space to fill it.'], ['do-brush', '[warmly] Draw with your finger.'],
+  ['do-eraser', '[warmly] Rub it out.'], ['do-undo', '[warmly] Take it back.'], ['do-start-over', '[warmly] A fresh page.'],
+  ['size-small', '[warmly] Small.'], ['size-medium', '[warmly] Medium.'], ['size-big', '[warmly] Big.'],
+  ['mode-free', '[warmly] Color anywhere.'], ['mode-lines', '[warmly] Stay in the lines.'],
+  // The token names are the palette's (src/ui/palette.ts); the words are its labels.
+  ...COLORS.map(([token, name]) => [`color-${token}`, `[warmly] ${name}.`]),
+];
+const BATCHES = { letters2: { lines: letters2, samples: maisieLines, dir: 'narrator' }, coloring: { lines: coloring, samples: [], dir: 'coloring' } };
+if (BATCHES[ONLY]) {
   const OUT3 = '/tmp/gen3';
+  const batch = BATCHES[ONLY];
   const takes = Number(process.env.TAKES ?? 3);
   const ids = process.env.IDS ? new Set(process.env.IDS.split(',')) : null;
-  const lines = letters2.filter(([id]) => !ids || ids.has(id));
-  const samples = ids ? [] : maisieLines;
+  const lines = batch.lines.filter(([id]) => !ids || ids.has(id));
+  const samples = ids ? [] : batch.samples;
   if (DRY) {
     for (const [id, input] of lines) console.log(`${id}  ${input}`);
     console.log(`${lines.length} lines x ${takes} takes = ${lines.length * takes} requests, plus ${samples.length} in Maisie`);
     process.exit(0);
   }
-  mkdirSync(`${OUT3}/narrator`, { recursive: true });
+  mkdirSync(`${OUT3}/${batch.dir}`, { recursive: true });
   mkdirSync(`${OUT3}/maisie`, { recursive: true });
-  const m = { model: 'elevenlabs/eleven-v4', voice: 'matilda', clips: [], maisie: [], errors: [] };
+  // One manifest per batch. A redo run (IDS) replaces those lines' takes and keeps the rest.
+  const manifestFile = `${OUT3}/${ONLY === 'letters2' ? 'manifest.json' : `manifest-${ONLY}.json`}`;
+  const m = { model: 'elevenlabs/eleven-v4', voice: 'matilda', batch: ONLY, clips: [], maisie: [], errors: [] };
+  if (ids && existsSync(manifestFile)) {
+    const old = JSON.parse(readFileSync(manifestFile, 'utf8'));
+    m.clips = old.clips.filter((c) => !ids.has(c.id));
+    m.maisie = old.maisie ?? [];
+  }
   for (const [id, input] of lines) for (let take = 1; take <= takes; take++) {
-    const file = `narrator/${id}-${take}.mp3`;
+    const file = `${batch.dir}/${id}-${take}.mp3`;
     try {
       writeFileSync(`${OUT3}/${file}`, await speak({ model: m.model, voice: 'matilda', input, response_format: 'mp3' }));
       m.clips.push({ id, take, input, file });
@@ -135,7 +165,7 @@ if (ONLY === 'letters2') {
       m.maisie.push({ id, input, file });
     } catch (e) { m.errors.push(`maisie ${id}: ${e.message}`); }
   }
-  writeFileSync(`${OUT3}/manifest.json`, JSON.stringify(m, null, 1));
+  writeFileSync(manifestFile, JSON.stringify(m, null, 1));
   console.log(`clips ${m.clips.length}, maisie ${m.maisie.length}, errors ${m.errors.length}`);
   for (const e of m.errors) console.log('ERR', e);
   process.exit(0);
