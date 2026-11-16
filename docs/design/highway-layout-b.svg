@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 680" font-family="Segoe UI, Arial, sans-serif">
+  <title>Highway layout B: a figure of eight that crosses itself on an overpass</title>
+  <defs>
+    <pattern id="waves" width="40" height="20" patternUnits="userSpaceOnUse">
+      <path d="M0 10 Q10 4 20 10 T40 10" fill="none" stroke="#7cc4f2" stroke-width="2" opacity="0.5"/>
+    </pattern>
+  </defs>
+  <!-- Sea. About 1.3 m to a pixel: the land is about 1,080 m by 660 m. -->
+  <rect width="900" height="680" fill="#3d9fe0"/>
+  <rect width="900" height="680" fill="url(#waves)"/>
+  <!-- The land: two round parts joined in the middle -->
+  <g fill="#e6c98c" stroke="#e6c98c" stroke-width="16">
+    <ellipse cx="262" cy="340" rx="222" ry="252"/><ellipse cx="648" cy="340" rx="216" ry="252"/>
+  </g>
+  <g fill="#6fb84a"><ellipse cx="262" cy="340" rx="222" ry="252"/><ellipse cx="648" cy="340" rx="216" ry="252"/></g>
+  <!-- The quarry lake in the east loop, and its way out to the sea -->
+  <g fill="#3d9fe0">
+    <ellipse cx="672" cy="340" rx="112" ry="150"/>
+    <rect x="770" y="314" width="110" height="52"/>
+  </g>
+  <ellipse cx="672" cy="340" rx="112" ry="150" fill="url(#waves)"/>
+  <!-- The building site in the west loop: dirt ground -->
+  <ellipse cx="258" cy="340" rx="132" ry="158" fill="#cfa973"/>
+  <!-- Quarry shore: dirt between the overpass and the lake -->
+  <path d="M 500 250 C 540 280 560 300 560 340 C 560 380 540 400 500 430 C 480 400 472 370 472 340 C 472 310 480 280 500 250 Z" fill="#cfa973"/>
+  <!-- Tunnel hill on the west loop -->
+  <ellipse cx="118" cy="205" rx="56" ry="46" fill="#4f8f3a"/>
+  <ellipse cx="118" cy="199" rx="38" ry="30" fill="#5ea347"/>
+  <!-- Quarry hills and mud -->
+  <g fill="#9a6b42"><ellipse cx="520" cy="318" rx="17" ry="13"/><ellipse cx="530" cy="366" rx="14" ry="11"/></g>
+  <g fill="#6b4a2e"><ellipse cx="215" cy="408" rx="24" ry="14"/><ellipse cx="190" cy="388" rx="11" ry="7"/></g>
+  <!-- Roads -->
+  <g fill="none" stroke-linecap="round">
+    <!-- Site tracks and the quarry track (dirt) -->
+    <g stroke="#8a6238" stroke-width="8">
+      <ellipse cx="262" cy="340" rx="98" ry="112"/>
+      <path d="M 85 340 L 360 340"/>
+      <path d="M 265 135 L 262 545"/>
+      <path d="M 506 222 C 552 280 552 400 506 458"/>
+    </g>
+    <!-- The highway: one figure of eight, about 3.1 km -->
+    <path id="eight" d="M 452 340 C 410 260 370 135 265 135 C 150 135 85 230 85 340 C 85 450 150 545 265 545 C 370 545 410 420 452 340 C 494 260 540 125 655 125 C 770 125 835 230 835 340 C 835 450 770 555 655 555 C 540 555 494 420 452 340 Z"
+          stroke="#4a4f57" stroke-width="15"/>
+    <!-- The overpass: the south-west to north-east side goes over the other -->
+    <path d="M 430 382 L 474 298" stroke="#c8ccd2" stroke-width="23" stroke-linecap="butt"/>
+    <path d="M 426 389 L 478 291" stroke="#4a4f57" stroke-width="15"/>
+    <path d="M 452 340 C 410 260 370 135 265 135 C 150 135 85 230 85 340 C 85 450 150 545 265 545 C 370 545 410 420 452 340 C 494 260 540 125 655 125 C 770 125 835 230 835 340 C 835 450 770 555 655 555 C 540 555 494 420 452 340 Z"
+          stroke="#fff" stroke-width="1.5"/>
+    <path d="M 430 382 L 474 298" stroke="#4a4f57" stroke-width="13" stroke-linecap="butt"/>
+    <path d="M 426 389 L 478 291" stroke="#fff" stroke-width="1.5"/>
+    <!-- Road works on the top of the east loop: one side still dirt -->
+    <path d="M 600 137 Q 655 118 712 138" stroke="#a47c52" stroke-width="6" transform="translate(0 -4)"/>
+  </g>
+  <g fill="#ff7a1a">
+    <circle cx="606" cy="140" r="3.5"/><circle cx="630" cy="132" r="3.5"/><circle cx="655" cy="129" r="3.5"/><circle cx="680" cy="132" r="3.5"/><circle cx="704" cy="140" r="3.5"/>
+  </g>
+  <!-- Tunnel -->
+  <ellipse cx="118" cy="201" rx="36" ry="28" fill="#5ea347" opacity="0.92"/>
+  <rect x="88" y="244" width="20" height="10" rx="5" fill="#2b2b2b" transform="rotate(-70 98 249)"/>
+  <rect x="141" y="158" width="20" height="10" rx="5" fill="#2b2b2b" transform="rotate(-42 151 163)"/>
+  <!-- The long bridge over the lake's way out -->
+  <rect x="824" y="304" width="22" height="72" fill="#c8ccd2"/>
+  <line x1="824" y1="304" x2="824" y2="376" stroke="#6b7280" stroke-width="3"/>
+  <line x1="846" y1="304" x2="846" y2="376" stroke="#6b7280" stroke-width="3"/>
+  <line x1="835" y1="304" x2="835" y2="376" stroke="#fff" stroke-width="1.5"/>
+  <!-- Rest stop (a garage) at the bottom of the east loop -->
+  <rect x="632" y="570" width="46" height="18" rx="3" fill="#f4f6f8" stroke="#e63946" stroke-width="3"/>
+  <!-- Tower crane -->
+  <line x1="296" y1="296" x2="352" y2="266" stroke="#ffc400" stroke-width="5" stroke-linecap="round"/>
+  <line x1="296" y1="296" x2="278" y2="306" stroke="#ffc400" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="296" cy="296" r="8" fill="#ffc400" stroke="#8a6d00" stroke-width="2"/>
+  <rect x="342" y="270" width="9" height="9" fill="#b5523b"/>
+  <!-- Car wash and site office on the cross track -->
+  <rect x="300" y="330" width="30" height="20" rx="4" fill="#f4f6f8" stroke="#e63946" stroke-width="3"/>
+  <rect x="140" y="328" width="26" height="24" fill="#b5523b" stroke="#7a2f20" stroke-width="2"/>
+  <!-- Toll gates, for show -->
+  <rect x="101" y="456" width="28" height="7" fill="#ffc83d" stroke="#e63946" stroke-width="2" transform="rotate(-30 115 460)"/>
+  <!-- Gravel chute and silo in the quarry -->
+  <rect x="500" y="392" width="20" height="14" fill="#9aa1ab" stroke="#555" stroke-width="2"/>
+  <circle cx="530" cy="412" r="9" fill="#c8ccd2" stroke="#555" stroke-width="2"/>
+  <!-- Pipe yard: giant pipes to drive through -->
+  <g fill="#c8ccd2" stroke="#6b7280" stroke-width="2">
+    <rect x="186" y="262" width="30" height="9" rx="4"/><rect x="192" y="275" width="30" height="9" rx="4"/><circle cx="180" cy="286" r="5"/>
+  </g>
+  <!-- Ramps by the quarry -->
+  <rect x="534" y="333" width="16" height="14" fill="#ffc83d" stroke="#e63946" stroke-width="2"/>
+  <!-- Cows -->
+  <g fill="#fff" stroke="#555" stroke-width="1.5"><circle cx="420" cy="150" r="5"/><circle cx="436" cy="160" r="5"/><circle cx="408" cy="164" r="4"/></g>
+  <!-- Boats -->
+  <g fill="#fff" stroke="#e63946" stroke-width="2"><ellipse cx="690" cy="290" rx="9" ry="4"/><ellipse cx="700" cy="400" rx="9" ry="4" transform="rotate(30 700 400)"/></g>
+  <!-- Junctions -->
+  <g fill="none" stroke="#ff6b9d" stroke-width="4">
+    <circle cx="86" cy="340" r="17"/><circle cx="265" cy="136" r="17"/><circle cx="264" cy="545" r="17"/><circle cx="506" cy="222" r="15"/><circle cx="506" cy="458" r="15"/>
+  </g>
+  <!-- Start -->
+  <path d="M 180 508 l 6 13 14 1 -11 9 4 14 -13 -8 -13 8 4 -14 -11 -9 14 -1 Z" fill="#fff" stroke="#333" stroke-width="2"/>
+  <!-- Scale -->
+  <line x1="36" y1="656" x2="190" y2="656" stroke="#fff" stroke-width="4"/>
+  <text x="113" y="648" font-size="14" fill="#fff" text-anchor="middle">200 m</text>
+  <!-- Number tags -->
+  <g font-size="14" font-weight="700" text-anchor="middle">
+    <g><circle cx="560" cy="150" r="13" fill="#fff"/><text x="560" y="155">1</text></g>
+    <g><circle cx="410" cy="340" r="13" fill="#fff"/><text x="410" y="345">2</text></g>
+    <g><circle cx="872" cy="292" r="13" fill="#fff"/><text x="872" y="297">3</text></g>
+    <g><circle cx="70" cy="160" r="13" fill="#fff"/><text x="70" y="165">4</text></g>
+    <g><circle cx="712" cy="590" r="13" fill="#fff"/><text x="712" y="595">5</text></g>
+    <g><circle cx="740" cy="118" r="13" fill="#fff"/><text x="740" y="123">6</text></g>
+    <g><circle cx="318" cy="256" r="13" fill="#fff"/><text x="318" y="261">7</text></g>
+    <g><circle cx="578" cy="340" r="13" fill="#fff"/><text x="578" y="345">8</text></g>
+    <g><circle cx="230" cy="436" r="13" fill="#fff"/><text x="230" y="441">9</text></g>
+    <g><circle cx="153" cy="312" r="13" fill="#fff"/><text x="153" y="317">10</text></g>
+    <g><circle cx="388" cy="140" r="13" fill="#fff"/><text x="388" y="145">11</text></g>
+    <g><circle cx="80" cy="486" r="13" fill="#fff"/><text x="80" y="491">12</text></g>
+    <g><circle cx="500" cy="436" r="13" fill="#fff"/><text x="500" y="441">13</text></g>
+    <g><circle cx="204" cy="242" r="13" fill="#fff"/><text x="204" y="247">14</text></g>
+  </g>
+  <!-- Legend -->
+  <rect x="900" width="280" height="680" fill="#fffaf0"/>
+  <g font-size="15" fill="#222">
+    <text x="920" y="40" font-size="23" font-weight="700">Highway layout B</text>
+    <text x="920" y="64" font-size="15" fill="#555">A figure of eight with an overpass</text>
+    <text x="920" y="98">1  The highway: four lanes, an eight</text>
+    <text x="920" y="121">2  Overpass: it crosses over itself</text>
+    <text x="920" y="144">3  Long bridge</text>
+    <text x="920" y="167">4  Tunnel through the hill</text>
+    <text x="920" y="190">5  Rest stop (a garage)</text>
+    <text x="920" y="213">6  Road works: cones, dirt, a roller</text>
+    <text x="920" y="236">7  Tower crane yard</text>
+    <text x="920" y="259">8  Quarry: hills, ramps, a lake</text>
+    <text x="920" y="282">9  Mud flats and the car wash</text>
+    <text x="920" y="305">10  Site office (a garage)</text>
+    <text x="920" y="328">11  Cows</text>
+    <text x="920" y="351">12  Toll gates (they always open)</text>
+    <text x="920" y="374">13  Gravel chute and silo</text>
+    <text x="920" y="397">14  Pipe yard</text>
+    <text x="920" y="420">○  Junctions (pink rings)   ★  Start</text>
+  </g>
+  <!-- Today's island at the same scale -->
+  <rect x="920" y="440" width="240" height="176" rx="8" fill="#3d9fe0"/>
+  <ellipse cx="1040" cy="528" rx="94" ry="77" fill="#e6c98c"/>
+  <ellipse cx="1040" cy="528" rx="88" ry="71" fill="#6fb84a"/>
+  <ellipse cx="1040" cy="528" rx="65" ry="51" fill="none" stroke="#5a5f66" stroke-width="7"/>
+  <line x1="1040" y1="477" x2="1040" y2="579" stroke="#5a5f66" stroke-width="7"/>
+  <g font-size="15" fill="#444">
+    <text x="920" y="640">Today's island, at the same scale.</text>
+    <text x="920" y="662">Roads on two levels come first.</text>
+  </g>
+</svg>

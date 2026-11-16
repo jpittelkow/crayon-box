@@ -21,6 +21,10 @@ _Last updated: 2026-11-15_
   2026-11-14): accept or not; which iPad and Pencil model the family has (hover needs an M2 iPad Pro or later).
   The family's server can have HTTPS, which the ADR requires (owner, 2026-11-14).
 
+- **The very large map** ([ADR 0040](../adr/0040-driving-very-large-map-highway-and-building-site.md), Proposed 2026-11-15): when it starts. The to-do list's order
+  stands (its pieces in section 4, the map last) unless the owner moves it up. Accepting the ADR waits for the
+  two-level road to be proven on a small test map.
+
 Closed by the owner on 2026-11-15: the playtest questions (brush sizes, colour buttons, touch-down or lift,
 letter tracing, the driving playtest), the sounds by ear and new sound files (the stand-ins are fine for now), the
 laptop check, the default AI models, and search for AI pages from an idea (dropped). What is left to build is in

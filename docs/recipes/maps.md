@@ -8,6 +8,10 @@ two so far are `island.ts` and `site.ts`; `ring.ts` is the tests' small map. The
 Per the [to-do list](../todo.md), new maps wait until the map pieces are built (targets, more set pieces, map
 tiles, the map editor, maps from a folder). Until the editor exists, maps are written by hand as below.
 
+A **very large map** (many times the island) needs more than this recipe: see the draft recipe, patterns and
+anti-recipes in [highway-map-plan.md](../highway-map-plan.md) (planned 2026-11-15). They move into this file as
+each one is proven by building it.
+
 ## Recipe
 1. **A theme and a picture first:** what the map is (a town, the countryside), its set pieces, its garage, and a
    rough top-down sketch in `docs/design/` like [island-layout-a.svg](../design/island-layout-a.svg). The owner

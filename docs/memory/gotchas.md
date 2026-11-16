@@ -3,7 +3,7 @@
 Non-obvious traps, workarounds and lessons learned. Add one bullet per gotcha with the date found and, if it
 came from a session, the journal entry.
 
-_Last updated: 2026-11-14_
+_Last updated: 2026-11-15_
 
 - ADRs are never rewritten once Accepted; a change gets a new ADR that supersedes the old one (ADR 0001).
   Proposed ADRs may still be edited before acceptance.
@@ -51,7 +51,8 @@ _Last updated: 2026-11-14_
 - A helper script saved as `$TEMP/types.py` shadowed Python's own `types` module for every later script run from
   `$TEMP`. Run throwaway scripts with `python -I`, and don't name them after standard modules (2026-11-14).
 - Several Claude sessions can work in this folder at once (a racing-game session wrote ADR 0021 while this one
-  was writing ADRs). Check `ls docs/adr` right before numbering a new ADR, and commit only your own files
+  was writing ADRs). Check `ls docs/adr` right before numbering a new ADR (and `origin/main` and other branches after a
+  `git fetch`: 0038 was taken on `main` and again on a branch on 2026-11-15), and commit only your own files
   (found 2026-11-14).
 - Page art traps the check caught: a wheel top within ~6 px of the body line, a flagpole running beside a seat,
   and a smile ending a few px short of an outline. Lines should either cross clearly or keep 20 px apart
@@ -128,3 +129,8 @@ _Last updated: 2026-11-14_
   starts Vite itself (`spikes/*/shoot.mjs`) (2026-11-15).
 - TRELLIS.2 Space: decimation target can't go below 50,000 triangles; cut down afterwards (meshoptimizer's
   simplifier ships in `three/addons/libs`). Its GLBs face +x; turn them +90° about y to face +z (2026-11-15).
+- The driving simulation's step time grows with toys times vehicles (every vehicle checks every toy): 1.24 ms on
+  the island, 105 ms on a stand-in map four times as wide. Nothing spatial is indexed yet. Measured 2026-11-15;
+  the fix is planned in `docs/highway-map-plan.md`, phase 2.
+- ADR 0035 says every reachable place is within 25 m of a road. Neither map keeps that (farthest 46 m, about a
+  quarter of the land over 25 m) and no test checks it (measured 2026-11-15). Don't quote 25 m as a tested rule.

@@ -36,7 +36,9 @@ In this order; each one makes the next map richer or easier to build.
   doesn't), a ford through a river, a roundabout, traffic lights for show only (they never stop the kid), a
   harbour. Each a zone plus an animation and a sound, like the ramp and car wash.
 - **Map tiles:** cut a map into tiles and draw only the ones near the camera, with simpler far trees and props,
-  so a much bigger map keeps its frame rate. The laptop is fine on today's two maps (owner, 2026-11-15).
+  so a much bigger map keeps its frame rate. The laptop is fine on today's two maps (owner, 2026-11-15). Measured
+  2026-11-15: the simulation needs it before the drawing does (every vehicle checks every toy); the steps are in
+  [highway-map-plan.md](highway-map-plan.md), phases 1 and 2.
 - **The map editor** (`tools/map-editor.html`, a dev tool, not in the app): draw roads, paint water and ground,
   place props, set pieces, targets and the garage on a top-down view; save a map file that passes
   `maps/maps.test.ts`.
@@ -78,6 +80,14 @@ items first, with mockups.
   2026-12-13 (the voice ends on 2026-12-31); the owner's choices W2 to W10; then mockups, then the build. It uses the tips and sounds above.
 
 ## 6. More maps (last)
+- **A very large map: a highway round a big building site.** Planned 2026-11-15 on the owner's request:
+  [highway-map-plan.md](highway-map-plan.md), with a draft recipe for a map this size. The owner chose
+  **layout B** the same day: a figure of eight that crosses over itself
+  ([picture](design/highway-layout-b.svg)), so roads on two levels (the plan's phase 7) are built and proven on a
+  small test map before the big one is drawn. Its phases 1 to 5 are section 4's map tiles, set pieces and the
+  looking half of the map editor; the map itself is built here. The owner's choices are in
+  [ADR 0040](adr/0040-driving-very-large-map-highway-and-building-site.md) (Proposed). **Next:** the owner says when it starts (D10); then the plan's phase 1 (measure a
+  stand-in map on the laptop) and phase 7 (the small figure of eight).
 - **New maps** made with the editor: ideas are a town (streets in blocks, a fire station garage, a park) and the
   countryside (a farm, a river with fords and a bridge, a flooded field). Which ones: the owner's pick.
 - **The home map** (milestone 5): a map of the family's own area from real map and terrain data, with the house
