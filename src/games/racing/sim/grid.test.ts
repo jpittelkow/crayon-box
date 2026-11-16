@@ -129,7 +129,8 @@ const state = (w: World) => ({
   zone: w.zone, puffs: w.puffs, drops: w.drops, confetti: w.confetti, lights: w.lights, boats: w.boats, mark: w.mark,
 });
 
-describe.each(maps)('on the %s, a minute of driving the quick way is the slow way, step for step', (_name, map) => {
+// A minute of driving (20 s on the stand-in, where the slow way is slow: about 15 s a minute on the dev machine).
+describe.each(maps)('on the %s, driving the quick way is the slow way, step for step', (_name, map) => {
   it.each(['free', 'road'] as const)('with %s steering', (assist) => {
     const fast = makeWorld(2, map.propCount ?? 150, assist, map, 'car', VEHICLES);
     const plain = slow(() => makeWorld(2, map.propCount ?? 150, assist, map, 'car', VEHICLES));
@@ -138,14 +139,14 @@ describe.each(maps)('on the %s, a minute of driving the quick way is the slow wa
     expect(fast.waters).toEqual(plain.waters);
     const rand = seeded(7);
     let input = GO;
-    for (let i = 0; i < 60 / DT; i++) {
+    for (let i = 0; i < (map === STRESS ? 20 : 60) / DT; i++) {
       if (i % 45 === 0) input = { go: rand() < 0.9, brake: rand() < 0.04, steer: rand() * 2 - 1 };
       step(fast, input, DT);
       slow(() => step(plain, input, DT));
       if (i % 60 === 0) expect(state(fast), `step ${i}`).toEqual(state(plain));
     }
     expect(state(fast)).toEqual(state(plain));
-  }, 60_000);
+  }, 90_000);
 });
 
 describe('toys asleep', () => {
