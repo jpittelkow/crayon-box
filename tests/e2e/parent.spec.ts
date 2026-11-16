@@ -101,7 +101,7 @@ test('a hidden page leaves the library', async ({ page }) => {
   for (const title of ['Fish', 'Octopus', 'Sea turtle', 'Whale', 'Crab']) await page.getByText(`Show ${title}`, { exact: true }).click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
   await openColoring(page, 'Star kid');
-  await expect(page.locator('[data-theme]')).toHaveCount(7);
+  await expect(page.locator('[data-theme]')).toHaveCount(8); // nine themes, one hidden
   await expect(page.getByRole('button', { name: 'Under the sea' })).toHaveCount(0);
 });
 
