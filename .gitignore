@@ -16,3 +16,9 @@ spikes/vehicle-sources/shots/
 
 # AI sample sheets (server/tools/ai-samples.ts): may hold family photos, never committed
 .ai-samples/
+
+# Driving map files (ADR 0043): a home map is made and kept outside the repo and dropped in the device's maps
+# folder. A guard in case one is made in a checkout; the generic examples live in src/games/racing/maps/examples/.
+/maps/
+/home-map*/
+*.home-map.json
