@@ -8,7 +8,9 @@ import { buildGround } from './look/island';
 import { buildSetPieces } from './look/setpieces';
 import { sceneryPieces } from './look/scenery';
 import { CONFETTI_COLORS, TOY_TINTS, toyPieces, type Pieces } from './look/toys';
+import { mudCoat, type MudCoat } from './look/states';
 import { OWN_COLOR, buildKidVehicle, buildVehicle, type VehicleModel } from './look/vehicles';
+import { MUD_FLY } from './sim/mud';
 import type { SceneryId } from './sim/assets/scenery';
 import type { ToyId } from './sim/assets/toys';
 import { CONFETTI_LIFE, DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
@@ -131,15 +133,20 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   });
 
   // The kid's vehicle in their colour, or with their flag (milestone-3 B5); traffic in its own colours.
-  const vehicleModel = (kind: VehicleKind, kid: boolean): VehicleModel => {
+  // Each with its coat of mud (ADR 0042), shown as muddy as the vehicle is.
+  const mudMat = new THREE.MeshStandardMaterial({ color: 0x5a3b22, roughness: 0.55 });
+  const coats: MudCoat[] = [];
+  const vehicleModel = (kind: VehicleKind, kid: boolean, i: number): VehicleModel => {
     const v = kid ? buildKidVehicle(kind, kidColor) : buildVehicle(kind, OWN_COLOR[kind]);
     v.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
     });
+    coats[i] = mudCoat(v.group, kind, mudMat);
+    v.group.add(coats[i]!.mesh);
     scene.add(v.group);
     return v;
   };
-  const vehicles: VehicleModel[] = world.cars.map((c, i) => vehicleModel(c.kind, i === 0));
+  const vehicles: VehicleModel[] = world.cars.map((c, i) => vehicleModel(c.kind, i === 0, i));
   // The kind each model was built as: the garage (ADR 0035) changes the kid's vehicle, and its model with it.
   const builtAs = world.cars.map((c) => c.kind);
 
@@ -154,6 +161,8 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const puffs = effect(new THREE.IcosahedronGeometry(1, 1), 0xffffff, world.puffs.length);
   const drops = effect(new THREE.SphereGeometry(1, 8, 6), 0xd6efff, world.drops.length);
   const ripples = effect(new THREE.RingGeometry(0.9, 1, 32).rotateX(-Math.PI / 2), 0xffffff, world.ripples.length);
+  // Bits of mud off the wheels (ADR 0042, `fx/mud`).
+  const muds = effect(new THREE.IcosahedronGeometry(1, 1), 0x5a3b22, world.muds.length);
   // Car wash bubbles: pale, see-through and shiny.
   const bubbles = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8),
     new THREE.MeshPhysicalMaterial({ color: 0xffffff, emissive: 0x9ab8cc, roughness: 0.05, clearcoat: 1, transparent: true, opacity: 0.8 }), world.bubbles.length);
@@ -227,10 +236,11 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     w.cars.forEach((c, i) => {
       if (c.kind !== builtAs[i]) {
         scene.remove(vehicles[i]!.group);
-        vehicles[i] = vehicleModel(c.kind, i === 0);
+        vehicles[i] = vehicleModel(c.kind, i === 0, i);
         builtAs[i] = c.kind;
       }
       const model = vehicles[i]!;
+      coats[i]!.show(c.mud);
       model.group.visible = i === 0 || !far(c.x, c.z);
       model.group.position.set(c.x, c.y + c.h, c.z);
       // Nose up while climbing a ramp or rising from it, down while coming down (never enough to look like a flip).
@@ -247,6 +257,7 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
       const size = r.size * (1 + 2.2 * (1 - r.life / RIPPLE_LIFE));
       ripples.setMatrixAt(i, r.life > 0 ? m.compose(v.set(r.x, WATER_Y + 0.012, r.z), q.identity(), s.setScalar(size)) : zero);
     });
+    w.muds.forEach((d, i) => muds.setMatrixAt(i, d.life > 0 ? m.compose(v.set(d.x, d.y, d.z), q.identity(), s.setScalar(0.1 + 0.12 * (d.life / MUD_FLY))) : zero));
     // Bubbles swell a little, then shrink away as they rise.
     w.bubbles.forEach((b, i) => bubbles.setMatrixAt(i, b.life > 0 ? m.compose(v.set(b.x, b.y, b.z), q.identity(), s.setScalar(0.12 + 0.16 * Math.min(1, b.life))) : zero));
     // Confetti turns over and over as it flutters down, lies flat once it lands, and shrinks away at the end.
@@ -257,7 +268,7 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
       else turn.set(-Math.PI / 2, 0, c.phase);
       confetti.setMatrixAt(i, m.compose(v.set(c.x, c.y, c.z), q.setFromEuler(turn), s.setScalar(Math.min(1, c.life / 0.3))));
     });
-    for (const e of [puffs, drops, ripples, bubbles, confetti]) e.instanceMatrix.needsUpdate = true;
+    for (const e of [puffs, drops, ripples, muds, bubbles, confetti]) e.instanceMatrix.needsUpdate = true;
 
     // Moving set pieces (car wash brushes).
     setPieces.animate(w, Math.max(0, Math.min(0.1, w.time - lastTime)));

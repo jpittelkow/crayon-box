@@ -3,11 +3,14 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { guardAt, hillReach, type Guard } from '../sim/ground';
+import { onLand } from '../sim/land';
+import { lampFor, lightsJunction, type Lamp, type Post, type Way } from '../sim/lights';
 import type { HillDef } from '../sim/map';
 import { RAMP } from '../sim/ramps';
-import { pointAt } from '../sim/roads';
+import { nearestRoad, pointAt, type Road } from '../sim/roads';
 import type { World, Zone } from '../sim/sim';
-import { part, plastic, rbox } from './kit';
+import { flatShape } from './island';
+import { ROUND, lamp, part, plastic, rbox } from './kit';
 import { roadStrip } from './roads';
 
 /** A ramp: a yellow plastic hump with red chevrons on both slopes, so it reads as "go over me" either way. */
@@ -231,11 +234,251 @@ function boat(x: number, z: number, heading: number, color: number): THREE.Group
   return g;
 }
 
+/** A small seeded random stream, so a set piece looks the same every time it is built. */
+function seeded(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), s | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** One mesh from many little pieces of one material (their uvs dropped, so boxes and spheres merge). */
+function merged(geos: THREE.BufferGeometry[], mat: THREE.Material, shadows = true): THREE.Mesh {
+  const flat = geos.map((geo) => {
+    const g = geo.index ? geo.toNonIndexed() : geo;
+    if (g.getAttribute('uv')) g.deleteAttribute('uv');
+    return g;
+  });
+  const m = new THREE.Mesh(mergeGeometries(flat)!, mat);
+  m.castShadow = shadows;
+  m.receiveShadow = true;
+  return m;
+}
+
+/** A wobbly round outline, `r` across on average, round a middle. */
+function blob(x: number, z: number, r: number, seed: number): [number, number][] {
+  return Array.from({ length: 48 }, (_, i): [number, number] => {
+    const a = (i / 48) * Math.PI * 2;
+    const k = 1 + 0.1 * Math.sin(3 * a + seed) + 0.06 * Math.sin(7 * a + seed * 2);
+    return [x + Math.sin(a) * r * k, z + Math.cos(a) * r * k];
+  });
+}
+
+/** The look of mud (ADR 0042): its glossy brown and the darker brown of its rim, lumps and ruts. */
+const MUD = { glossy: 0x6b4a2e, rim: 0x4a3220, lump: 0x553a24 };
+
+/**
+ * A patch of mud (ADR 0042): glossy brown over the track inside a darker wobbly rim, two ruts along the road where
+ * wheels go, lumps round the edge, and mud bubbles that swell and pop (`animate`).
+ */
+function mudPatch(world: World, zone: Zone, seed: number): { group: THREE.Group; bubbles: THREE.Object3D[] } {
+  const g = new THREE.Group();
+  const r = seeded(seed * 97 + 5);
+  // Wet-looking, but not so shiny that the sun turns it white.
+  const glossy = new THREE.MeshPhysicalMaterial({ color: MUD.glossy, roughness: 0.45, clearcoat: 0.25, clearcoatRoughness: 0.35 });
+  const dark = plastic(MUD.rim, 0.9), lumpy = plastic(MUD.lump, 0.85);
+  const ground = (geo: THREE.BufferGeometry, mat: THREE.Material) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.receiveShadow = true;
+    g.add(m);
+  };
+  ground(flatShape(blob(zone.x, zone.z, zone.r + 0.7, seed), 0.062), dark);
+  ground(flatShape(blob(zone.x, zone.z, zone.r, seed + 1), 0.07), glossy);
+  // Ruts where the wheels of both lanes go, along the road.
+  if (zone.road !== undefined && zone.s !== undefined) {
+    const road = world.roads[zone.road]!, len = zone.r * 0.8;
+    const ruts = [-3.1, -1.3, 1.3, 3.1].map((at) => roadStrip(road, at - 0.3, at + 0.3, 0.074, zone.s! - len, zone.s! + len));
+    g.add(merged(ruts, dark, false));
+  }
+  const lumps: THREE.BufferGeometry[] = [];
+  for (let i = 0; i < 14; i++) {
+    const a = r() * Math.PI * 2, d = zone.r * (0.88 + r() * 0.2), size = 0.22 + r() * 0.25;
+    lumps.push(new THREE.SphereGeometry(1, 14, 8).scale(size * 1.3, size * 0.45, size).rotateY(r() * Math.PI)
+      .translate(zone.x + Math.sin(a) * d, 0.07, zone.z + Math.cos(a) * d));
+  }
+  g.add(merged(lumps, lumpy));
+  const bubbles: THREE.Object3D[] = [];
+  const bubbleGeo = new THREE.SphereGeometry(0.24, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+  for (let i = 0; i < 5; i++) {
+    const a = r() * Math.PI * 2, d = zone.r * (0.2 + r() * 0.55);
+    const b = part(bubbleGeo, glossy, zone.x + Math.sin(a) * d, 0.07, zone.z + Math.cos(a) * d);
+    bubbles.push(b);
+    g.add(b);
+  }
+  return { group: g, bubbles };
+}
+
+/**
+ * A stream and its ford (ADR 0042): shallow water along the stream's path inside a muddy bank, from a round spring
+ * to the shore; where a road crosses it the road shows through the water. Reeds and pebbles stand on its banks, off
+ * the roads (the car drives through them), and little ripples drift downstream (`animate`).
+ */
+function stream(world: World, path: Road, seed: number): { group: THREE.Group; ripples: THREE.InstancedMesh; end: number } {
+  const g = new THREE.Group();
+  const half = path.def.width / 2;
+  // Only the part on the land is water.
+  let end = 0;
+  while (end < path.length && onLand(world.land, pointAt(path, end).x, pointAt(path, end).z)) end += 0.5;
+  end = Math.max(1, end - 0.5);
+  // Not see-through: the strip folds over itself on the inside of a bend, and see-through water would show darker
+  // there. A lighter blue than the flood's, as shallow water is.
+  const water = new THREE.MeshPhysicalMaterial({ color: 0x45a2dc, roughness: 0.18, metalness: 0.05, clearcoat: 0.4, clearcoatRoughness: 0.2 });
+  const bank = plastic(0x8a7d63, 0.9);
+  const start = pointAt(path, 0);
+  const flat = (geo: THREE.BufferGeometry, mat: THREE.Material) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.receiveShadow = true;
+    g.add(m);
+  };
+  flat(roadStrip(path, -half - 0.7, half + 0.7, 0.078, 0, end, 1), bank);
+  flat(new THREE.CircleGeometry(half + 1.6, ROUND * 2).rotateX(-Math.PI / 2).translate(start.x, 0.078, start.z), bank);
+  flat(roadStrip(path, -half, half, 0.088, 0, end, 1), water);
+  flat(new THREE.CircleGeometry(half + 0.9, ROUND * 2).rotateX(-Math.PI / 2).translate(start.x, 0.088, start.z), water);
+  // Reeds and pebbles along the banks, never on a road.
+  const r = seeded(seed * 31 + 7);
+  const offRoad = (x: number, z: number) => {
+    const near = nearestRoad(world.roads, x, z);
+    return !near || near.dist > world.roads[near.road]!.def.width / 2 + 1.5;
+  };
+  const reeds: THREE.BufferGeometry[] = [], tops: THREE.BufferGeometry[] = [], pebbles: THREE.BufferGeometry[] = [];
+  for (let s = 2; s < end - 1; s += 2.2) {
+    for (const side of [-1, 1]) {
+      const p = pointAt(path, s + r() * 1.5, side * (half + 0.4 + r() * 0.6));
+      if (!offRoad(p.x, p.z)) continue;
+      if (r() < 0.45) {
+        const size = 0.18 + r() * 0.2;
+        pebbles.push(new THREE.IcosahedronGeometry(size, 0).scale(1.2, 0.55, 1).translate(p.x, 0.1, p.z));
+        continue;
+      }
+      if (r() < 0.4) continue;
+      for (let k = 0; k < 5; k++) {
+        const h = 0.8 + r() * 0.6, lean = (r() - 0.5) * 0.4;
+        const dx = (r() - 0.5) * 0.5, dz = (r() - 0.5) * 0.5;
+        reeds.push(new THREE.ConeGeometry(0.05, h, 4).translate(0, h / 2, 0).rotateZ(lean).rotateY(r() * Math.PI).translate(p.x + dx, 0.05, p.z + dz));
+        if (k < 2) tops.push(new THREE.CylinderGeometry(0.06, 0.06, 0.26, 6).translate(0, h * 0.85, 0).rotateZ(lean).translate(p.x + dx, 0.05, p.z + dz));
+      }
+    }
+  }
+  if (reeds.length) g.add(merged(reeds, plastic(0x5c8f3a, 0.8)));
+  if (tops.length) g.add(merged(tops, plastic(0x7a5230, 0.8)));
+  if (pebbles.length) g.add(merged(pebbles, plastic(0xa3a6a8, 0.85)));
+  // Ripples: pale rings that drift downstream, stretched along the flow.
+  const ripples = new THREE.InstancedMesh(new THREE.RingGeometry(0.34, 0.44, 20).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0.7 }), Math.max(1, Math.round(end / 4)));
+  ripples.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  ripples.frustumCulled = false;
+  g.add(ripples);
+  return { group: g, ripples, end };
+}
+
+/** How fast a stream's ripples drift downstream, m/s. */
+const FLOW = 1.4;
+
+/**
+ * Foam along a ford's road edges (ADR 0042): a white band where the stream runs over the road's sides, which
+ * shimmers (`animate`).
+ */
+function fordFoam(world: World, zone: Zone): THREE.Mesh | null {
+  if (zone.road === undefined || zone.s === undefined) return null;
+  const road = world.roads[zone.road]!, half = road.def.width / 2;
+  const across = (world.map.water.streams ?? []).reduce((w, s) => Math.max(w, s.width), 4) / 2;
+  const foam = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false });
+  const strips = [-1, 1].map((side) => roadStrip(road, side * half - 0.35, side * half + 0.35, 0.095, zone.s! - across, zone.s! + across, 0.5));
+  return merged(strips, foam, false);
+}
+
+/** The lamps' colours lit and unlit, top to bottom. */
+const LAMPS = { red: [0xff2a1a, 0x4a1410], amber: [0xffb000, 0x4a3410], green: [0x22dd55, 0x0f3a1c] } as const;
+
+/**
+ * Traffic lights (ADR 0042): a grey pole beside the road with a lamp head on top, red, amber and green under
+ * visors, facing the traffic that comes at it. Pictures only, no text (ADR 0003).
+ */
+function lightPole(post: Post, lamps: Record<Lamp, THREE.MeshStandardMaterial>): THREE.Group {
+  const g = new THREE.Group();
+  const grey = plastic(0x3b4048, 0.5), head = plastic(0x24272c, 0.5), visor = plastic(0x24272c, 0.5);
+  visor.side = THREE.DoubleSide;
+  g.add(part(new THREE.CylinderGeometry(0.3, 0.36, 0.25, 16), grey, 0, 0.12, 0));
+  g.add(part(new THREE.CylinderGeometry(0.11, 0.13, 3.4, 12), grey, 0, 1.7, 0));
+  g.add(part(rbox(0.66, 1.66, 0.46, 0.12), head, 0, 3.95, 0));
+  (['red', 'amber', 'green'] as const).forEach((lamp, i) => {
+    const y = 4.45 - i * 0.5;
+    g.add(part(new THREE.CylinderGeometry(0.19, 0.19, 0.08, 20).rotateX(Math.PI / 2), lamps[lamp], 0, y, 0.24));
+    // A visor over each lamp, a half tube jutting toward the traffic.
+    g.add(part(new THREE.CylinderGeometry(0.23, 0.23, 0.28, 14, 1, true, Math.PI / 2, Math.PI).rotateX(Math.PI / 2), visor, 0, y, 0.38));
+  });
+  g.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
+  });
+  g.position.set(post.x, 0, post.z);
+  g.rotation.y = post.facing;
+  return g;
+}
+
+/** Stop lines across each lane that comes into the lights (picture only: nobody has to stop at them). */
+function stopLines(world: World, zone: Zone): THREE.Mesh | null {
+  if (zone.road === undefined || zone.s === undefined) return null;
+  const road = world.roads[zone.road]!, half = road.def.width / 2 - 0.4, d = zone.r + 0.3;
+  const lines = [roadStrip(road, 0, half, 0.06, zone.s - d - 0.45, zone.s - d), roadStrip(road, -half, 0, 0.06, zone.s + d, zone.s + d + 0.45)];
+  const j = lightsJunction(zone, world.junctions);
+  if (j) {
+    const branch = world.roads[j.road]!, bh = branch.def.width / 2 - 0.4, at = road.def.width / 2 + 0.6;
+    lines.push(j.dir > 0 ? roadStrip(branch, -bh, 0, 0.06, at, at + 0.45) : roadStrip(branch, 0, bh, 0.06, branch.length - at - 0.45, branch.length - at));
+  }
+  return merged(lines, plastic(0xf4f4f0, 0.6), false);
+}
+
 /** Every set piece on the map, and a step for the ones that move. */
 export function buildSetPieces(world: World): { group: THREE.Group; animate(w: World, dt: number): void } {
   const g = new THREE.Group();
   const washes: { zone: Zone; brushes: THREE.Object3D[]; roof: THREE.Material[] }[] = [];
   const sheds: { zone: Zone; roof: THREE.Material[] }[] = [];
+  const muds: THREE.Object3D[][] = [];
+  const foams: THREE.Material[] = [];
+  const lights: { light: number; lamps: Record<Way, Record<Lamp, THREE.MeshStandardMaterial>> }[] = [];
+  world.zones.forEach((zone, i) => {
+    if (zone.kind === 'mud') {
+      const patch = mudPatch(world, zone, i);
+      g.add(patch.group);
+      muds.push(patch.bubbles);
+    }
+    if (zone.kind === 'ford') {
+      const foam = fordFoam(world, zone);
+      if (foam) {
+        g.add(foam);
+        foams.push(foam.material as THREE.Material);
+      }
+    }
+    if (zone.kind === 'lights') {
+      const make = () => ({ red: lamp(LAMPS.red[0], 2.4), amber: lamp(LAMPS.amber[0], 2.4), green: lamp(LAMPS.green[0], 2.4) });
+      const lamps = { main: make(), cross: make() };
+      for (const post of world.posts.filter((p) => p.zone === i)) g.add(lightPole(post, lamps[post.way]));
+      const lines = stopLines(world, zone);
+      if (lines) g.add(lines);
+      lights.push({ light: world.lights.findIndex((l) => l.zone === i), lamps });
+    }
+  });
+  const streams = world.streams.map((path, i) => stream(world, path, i));
+  for (const s of streams) g.add(s.group);
+  const rippleAt = new THREE.Matrix4(), turn = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+  const at = new THREE.Vector3(), size = new THREE.Vector3();
+  const showLights = (w: World) => {
+    for (const { light, lamps } of lights) {
+      const phase = w.lights[light]?.phase ?? 0;
+      for (const way of ['main', 'cross'] as const) {
+        for (const name of ['red', 'amber', 'green'] as const) {
+          const on = lampFor(phase, way) === name, m = lamps[way][name];
+          m.color.setHex(LAMPS[name][on ? 0 : 1]);
+          m.emissive.setHex(LAMPS[name][on ? 0 : 1]);
+          m.emissiveIntensity = on ? 2.4 : 0.15;
+        }
+      }
+    }
+  };
+  showLights(world);
   for (const zone of world.zones) {
     if (zone.kind === 'ramp') g.add(ramp(zone));
     if (zone.kind === 'garage') {
@@ -259,6 +502,27 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
     group: g,
     animate(w, dt) {
       const kid = w.cars[0]!;
+      // Mud bubbles swell slowly and pop, each on its own beat (ADR 0042).
+      muds.forEach((bubbles, k) => bubbles.forEach((b, i) => {
+        const beat = 2.1 + i * 0.37 + k * 0.23, t = ((w.time + i * 0.9 + k) % beat) / beat;
+        b.scale.setScalar(t < 0.8 ? 0.2 + t : 0.01);
+      }));
+      // A ford's foam shimmers.
+      for (const m of foams) m.opacity = 0.5 + 0.2 * Math.sin(w.time * 5);
+      // Ripples drift downstream, swelling as they go, then start again upstream.
+      for (const s of streams) {
+        const n = s.ripples.count, path = w.streams[streams.indexOf(s)]!;
+        for (let i = 0; i < n; i++) {
+          const along = (i * (s.end / n) + w.time * FLOW) % s.end;
+          const life = along / s.end, p = pointAt(path, along, Math.sin(i * 2.3) * path.def.width * 0.25);
+          turn.setFromAxisAngle(up, p.heading);
+          const grow = 0.6 + 0.6 * ((w.time * 0.7 + i * 0.37) % 1);
+          rippleAt.compose(at.set(p.x, 0.092, p.z), turn, size.set(grow * 0.9, 1, grow * 2 * Math.min(1, life * 20)));
+          s.ripples.setMatrixAt(i, rippleAt);
+        }
+        s.ripples.instanceMatrix.needsUpdate = true;
+      }
+      showLights(w);
       boats.forEach((b, i) => {
         b.position.y = -0.3 + Math.sin(w.time * 1.3 + i) * 0.08;
         b.rotation.z = Math.sin(w.time * 0.9 + i * 2) * 0.04;
