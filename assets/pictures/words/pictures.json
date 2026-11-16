@@ -1,0 +1,200 @@
+{
+ "_about": "The built-in words’ pictures (ADR 0039, W9). Made 2026-11-16 with openai/gpt-5-image-mini through OpenRouter: the same style prompt for every word with the word’s subject put in, two takes each, the better one picked and checked by a person, then cut to 512 px WebP with near-white made pure white. Owned by the project, released as CC0.",
+ "model": "openai/gpt-5-image-mini",
+ "made": "2026-11-16",
+ "prompt": "A simple, friendly flat cartoon colour picture for a 3-year-old child. The picture shows: {subject}. One clear subject, centred, filling most of the square picture with a little white space around it. Bold, rounded, simple shapes with smooth dark outlines, bright cheerful colours, flat colour fills with no gradients, no texture and no shading. Plain white background with nothing else in the picture: no ground, no frame, no border. Absolutely no text, no letters, no numbers, no words, no signs or labels anywhere in the picture. Original design, not any well-known cartoon character or brand. Square image.",
+ "pictures": [
+  {
+   "file": "cat.webp",
+   "word": "cat",
+   "shows": "an orange tabby cat sitting, facing us",
+   "subject": "a cat, a happy orange cat sitting and facing us",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "dog.webp",
+   "word": "dog",
+   "shows": "a brown puppy sitting, facing us",
+   "subject": "a dog, a happy brown puppy sitting and facing us",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "sun.webp",
+   "word": "sun",
+   "shows": "a round yellow sun with a smiling face and short rays",
+   "subject": "the sun, a big round yellow sun with short rays and a happy smiling face",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "bus.webp",
+   "word": "bus",
+   "shows": "a yellow school bus from the side",
+   "subject": "a bus, a yellow school bus seen from the side, with round wheels and windows",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "pig.webp",
+   "word": "pig",
+   "shows": "a pink pig standing, from the side",
+   "subject": "a pig, a happy pink pig standing, seen from the side",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "hat.webp",
+   "word": "hat",
+   "shows": "a red hat with a round brim and a band",
+   "subject": "a hat, one simple red hat with a round brim",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "cup.webp",
+   "word": "cup",
+   "shows": "a blue mug with steam rising",
+   "subject": "a cup, one blue mug with a handle and a little steam on top",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "bed.webp",
+   "word": "bed",
+   "shows": "a small bed with a pink pillow and a yellow blanket",
+   "subject": "a bed, one small cosy bed with a pillow and a blanket, seen from the side",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "box.webp",
+   "word": "box",
+   "shows": "a closed cardboard box with tape",
+   "subject": "a box, one closed brown cardboard box",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "fox.webp",
+   "word": "fox",
+   "shows": "an orange fox sitting, with a white-tipped tail",
+   "subject": "a fox, a happy orange fox with a fluffy white-tipped tail, sitting",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "hen.webp",
+   "word": "hen",
+   "shows": "a brown hen with a red comb",
+   "subject": "a hen, a plump brown hen with a red comb, standing",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "bug.webp",
+   "word": "bug",
+   "shows": "a red ladybug with black spots, from above",
+   "subject": "a bug, a red ladybug with black spots, seen from above",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "map.webp",
+   "word": "map",
+   "shows": "a paper map with green land, blue water, trees and a dotted path",
+   "subject": "a map, one unfolded paper map with green land, blue water, a few small trees and a winding dotted path, with no letters and no X mark",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "pan.webp",
+   "word": "pan",
+   "shows": "a black frying pan",
+   "subject": "a pan, one black frying pan with a handle, seen from slightly above",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "pin.webp",
+   "word": "pin",
+   "shows": "a red push pin, point down",
+   "subject": "a pin, one big red push pin (a drawing pin) standing point down",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "sat.webp",
+   "word": "sat",
+   "shows": "a teddy bear sitting on a little wooden chair",
+   "subject": "a teddy bear sitting on a little wooden chair",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "tap.webp",
+   "word": "tap",
+   "shows": "a silver water tap with a drop falling",
+   "subject": "a tap, one shiny silver water tap (faucet) with a drop of water falling from it",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "top.webp",
+   "word": "top",
+   "shows": "a striped spinning top",
+   "subject": "a spinning top, one colourful striped toy spinning top balanced on its point",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "red.webp",
+   "word": "red",
+   "shows": "a red crayon beside a red scribble",
+   "subject": "the colour red: one red crayon and a big red scribble beside it",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "run.webp",
+   "word": "run",
+   "shows": "a cartoon child running, with motion lines",
+   "subject": "a happy little cartoon child running fast, with small motion lines behind",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "hop.webp",
+   "word": "hop",
+   "shows": "a white bunny in mid-hop above a dotted arc",
+   "subject": "a white bunny hopping, in mid-air, with a little curved dotted line under it showing the hop",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "big.webp",
+   "word": "big",
+   "shows": "a big grey elephant beside a tiny mouse",
+   "subject": "a big grey elephant standing next to a tiny mouse, to show big and small",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "mud.webp",
+   "word": "mud",
+   "shows": "yellow rain boots standing in a brown mud puddle",
+   "subject": "a big brown mud puddle with mud splashes and one pair of yellow rain boots standing in it",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  },
+  {
+   "file": "jam.webp",
+   "word": "jam",
+   "shows": "a jar of red jam with a strawberry beside it",
+   "subject": "a jar of jam, one glass jar of red strawberry jam with a plain lid and a strawberry beside it, the jar has no label text",
+   "source": "Made with GPT-5 Image Mini (OpenAI) through OpenRouter for this project",
+   "license": "CC0"
+  }
+ ]
+}
