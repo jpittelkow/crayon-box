@@ -376,6 +376,8 @@ class DrivingGame {
         if (world.landings.includes(0)) sound.bump('thump');
         // Traffic lights changing nearby (ADR 0042): a click, and a ding when the kid's way turns green.
         for (const change of world.lightChanges) if (lightHeard(world, change.light)) sound.lights(change.green);
+        // A ship's horn answering the kid's in a harbour (ADR 0042).
+        if (world.shipHorns.length) sound.shipHorn();
         owed -= STEP;
       }
       sound.update(world, input);

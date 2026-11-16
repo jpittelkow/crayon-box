@@ -21,6 +21,11 @@ export interface RoadDef {
    */
   from?: number;
   to?: number;
+  /**
+   * Traffic drives it one way only, forward along its points (ADR 0042: a roundabout's ring), and "follows the road"
+   * goes that way too. The kid's own steering may still go either way: nothing stops it.
+   */
+  oneWay?: boolean;
 }
 
 /**
@@ -158,6 +163,17 @@ export function circlePath(r: number, count = 160): [number, number][] {
     const a = (i / count) * Math.PI * 2;
     return [Math.sin(a) * r, Math.cos(a) * r] as [number, number];
   });
+}
+
+/**
+ * A roundabout's ring (ADR 0042, `road/roundabout`): a one-way loop of radius `r` round (`x`, `z`), starting at its
+ * north point and going anticlockwise seen from above (north, then west, as `circlePath`), so traffic keeping right
+ * goes round it the way it should.
+ */
+export function ringRoad(x: number, z: number, r: number, width: number): RoadDef {
+  // Close points (every 25 cm): on so tight a curve, a lane offset from a coarse path would jump back at each corner.
+  const count = Math.max(24, Math.round((Math.PI * 2 * r) / 0.25));
+  return { kind: 'street', width, closed: true, oneWay: true, points: circlePath(r, count).map(([px, pz]) => [x + px, z + pz]) };
 }
 
 /** Every road's junctions, from the open roads' `from` and `to`: one list per road. */

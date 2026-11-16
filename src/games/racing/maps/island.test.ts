@@ -18,13 +18,18 @@ const allowed = (w: World, x: number, z: number) => onLand(w.land, x, z) || guar
 const inHill = (w: World, x: number, z: number) => hillReach(ISLAND.hills![0]!, x, z) < 0.8 && !guardAt(w.guards, w.roads, x, z);
 
 describe('the island, layout A (milestone-3 B4)', () => {
-  it('has a junction at each end of the shortcut and at the spur\'s start on the loop, and the spur\'s end on the shortcut', () => {
+  it('has a junction at each end of the shortcut and at the spur\'s start on the loop, and the roundabout where they meet', () => {
     const w = makeWorld(7, 0, 'free', ISLAND);
     const ends = w.junctions[0]!.map((j) => pointAt(w.roads[0]!, j.s));
-    expect(w.junctions[0]!.map((j) => [j.road, j.dir])).toEqual([[1, 1], [1, -1], [2, 1]]);
+    // The shortcut's north half (1), the spur (2) and the shortcut's south half (4) on the loop.
+    expect(w.junctions[0]!.map((j) => [j.road, j.dir])).toEqual([[1, 1], [2, 1], [4, -1]]);
     expect(ends[0]!.z).toBeCloseTo(66.6, 0);
-    expect(ends[1]!.z).toBeCloseTo(-66.6, 0);
-    expect(w.junctions[1]!.map((j) => [j.road, j.dir])).toEqual([[2, -1]]);
+    expect(ends[2]!.z).toBeCloseTo(-66.6, 0);
+    // The roundabout's ring (ADR 0042), one-way, with all three joining it: the shortcut from the north and on to
+    // the south, and the spur from the west.
+    expect(w.roads[3]!.def.oneWay).toBe(true);
+    expect(w.junctions[3]!.map((j) => [j.road, j.dir])).toEqual([[1, -1], [2, -1], [4, 1]]);
+    expect(w.zones.find((z) => z.kind === 'roundabout')?.ring).toBe(3);
   });
 
   it('traffic takes the shortcut sometimes, comes back onto the loop, and stays on the roads', () => {
@@ -61,6 +66,22 @@ describe('the island, layout A (milestone-3 B4)', () => {
     expect(bridge).toBeGreaterThan(60);
     expect(bad).toBe(0);
     // It cuts the corner at a junction a little, but stays close to the road.
+    expect(off).toBeLessThan(ISLAND.roads[0]!.width / 2 + 4);
+  }, 30_000);
+
+  it('"follows the road" goes round the roundabout and leaves it by each of its three roads (ADR 0042)', () => {
+    const w = makeWorld(7, 0, 'road', ISLAND);
+    w.cars = w.cars.slice(0, 1);
+    const exits = new Set<number>();
+    let road = -1, off = 0;
+    run(w, 400, (world) => {
+      const now = world.follow?.road ?? -1;
+      if (road === 3 && now !== 3 && now >= 0) exits.add(now);
+      road = now;
+      off = Math.max(off, nearestRoad(world.roads, world.cars[0]!.x, world.cars[0]!.z)!.dist);
+      return GO;
+    });
+    expect([...exits].sort()).toEqual([1, 2, 4]);
     expect(off).toBeLessThan(ISLAND.roads[0]!.width / 2 + 4);
   }, 30_000);
 

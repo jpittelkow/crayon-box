@@ -18,11 +18,14 @@ each one is proven by building it.
    picks the layout.
 2. **The land:** `land`, a shoreline of any shape. The car turns back before its edge.
 3. **Roads:** `roads`, point paths joined at junctions (`from`, `to`). Loops and junctions only, no dead ends; wide
-   enough for the biggest vehicle; gentle curves.
+   enough for the biggest vehicle; gentle curves. A roundabout's ring is `ringRoad` (one-way, ADR 0042); the roads
+   that meet there end or start on it.
 4. **Road pieces:** `guards` for bridges and tunnels (fractions along a road), `hills` (a tunnel goes through one),
    `sand`, `water` (pools, the flood, puddles along roads, `mud`, `streams`: shallow water along a path, ADR 0042).
 5. **Set pieces:** `zones` (ramps, car wash, the **garage**, which every map needs; mud, a ford where a road
-   crosses a stream, traffic lights at a junction, ADR 0042). Keep zones apart.
+   crosses a stream, traffic lights at a junction, a roundabout by its ring's middle, a harbour on a road along the
+   shore with the shore drawn 2 m past the road's edge there and a `sail` path out to sea, ADR 0042). Keep zones
+   apart.
 6. **Filling:** `trees`, `props` (toys by share, some near the roads), `targets` (rows of stars on the roads,
    stacks of boxes just off them, ADR 0041), `decor` clumps, `animals` herds, `boats`.
 7. **Traffic and the start:** `spawn` on a road, `traffic` (kind, place, cruise speed), `trafficPrefer` for the

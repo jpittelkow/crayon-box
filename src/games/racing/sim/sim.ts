@@ -10,10 +10,12 @@ import type { AnimalCall } from './assets/animals';
 import { buildGuards, buildSand, guardAt, hillReach, onSand, type Guard } from './ground';
 import { buildLand, keepInland, randomInland, shore, type Land } from './land';
 import { FORD_SPEED, buildStreams } from './ford';
+import { HARBOUR_HEARS, SHIP_HORN, harbourBoats, quayGuard, stepBoats, type Boat } from './harbour';
 import { LIGHTS_NEAR, lampFor, lightPosts, lightsJunction, stepLight, wayAt, wayOf, type Light, type Post } from './lights';
 import type { MapDef, OnRoad, ZoneKind } from './map';
 import { MUD_FLY, MUD_POOL, MUD_RINSE, MUD_SPEED, MUD_UP, MUD_WASH, MUD_WATER, zoneAt } from './mud';
 import { HOP_GRAVITY, groundHeight } from './ramps';
+import { BASIN_R, ROUNDABOUT_SPEED, ringOf } from './roundabout';
 import { buildJunctions, buildRoad, nearestOn, nearestRoad, passes, pointAt, wrapAlong, type Junction, type Road } from './roads';
 
 export const MAX_SPEED = 17;
@@ -287,13 +289,23 @@ export interface World {
   posts: Post[];
   /** Lights that changed in the last step, for the sounds: `green` when the kid's own way just turned green. */
   lightChanges: { light: number; green: boolean }[];
+  /** The harbours' boats (ADR 0042): moored along a quay, bobbing; one sails out now and then. */
+  boats: Boat[];
+  /** Harbours whose ship's horn answered the kid's horn in the last step (zone indices), for the sounds. */
+  shipHorns: number[];
+  /** A ship's horn on its way (seconds until it sounds, and from which harbour), and seconds before it may again. */
+  shipHorn: { in: number; zone: number; rest: number };
 }
 
 /**
  * A map's zone, placed on the ground, and the way it faces. One placed on a road also knows which, and how far
  * along it (traffic lights find their junction that way).
  */
-export interface Zone { kind: ZoneKind; x: number; z: number; r: number; heading: number; road?: number; s?: number }
+export interface Zone {
+  kind: ZoneKind; x: number; z: number; r: number; heading: number; road?: number; s?: number;
+  /** A roundabout's ring road (ADR 0042), by index. */
+  ring?: number;
+}
 
 function rand(w: World): number {
   w.rng = (w.rng + 0x6d2b79f5) | 0;
@@ -350,6 +362,7 @@ export function makeWorld(
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
     muds: [], mudNext: 0, streams: [], lights: [], posts: [], lightChanges: [],
+    boats: [], shipHorns: [], shipHorn: { in: -1, zone: -1, rest: 0 },
   };
   for (const z of map.zones ?? []) {
     const p = 'road' in z.on ? pointAt(roads[z.on.road]!, along(w, z.on), z.on.offset ?? 0) : z.on;
@@ -361,6 +374,15 @@ export function makeWorld(
     if (zone.kind !== 'lights') return;
     w.lights.push({ zone: i, phase: 0, t: 0, heading: zone.heading, road: zone.road ?? 0, cross: lightsJunction(zone, w.junctions)?.road });
     w.posts.push(...lightPosts(zone, i, roads, w.junctions));
+  });
+  // Roundabouts know their ring; a harbour's quay is guarded on its sea side, with boats moored along it (ADR 0042).
+  w.zones.forEach((zone, i) => {
+    if (zone.kind === 'roundabout') zone.ring = ringOf(zone, roads);
+    if (zone.kind !== 'harbour') return;
+    const quay = quayGuard(zone, roads, w.land);
+    if (!quay) return;
+    w.guards.push(quay);
+    w.boats.push(...harbourBoats(i, quay, roads, map.zones![i]!.sail));
   });
   const car = (kind: VehicleKind, on: OnRoad, cruise: number): Car => {
     const c: Car = {
@@ -424,6 +446,7 @@ export function makeWorld(
     if (!offRoad(x, z, trees.roadGap)) continue;
     if (w.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + trees.waterGap)) continue;
     if (onHill(x, z, 2) || onSand(w.sand, x, z)) continue;
+    if (w.zones.some((zone) => zone.kind === 'roundabout' && Math.hypot(x - zone.x, z - zone.z) < zone.r + 1)) continue;
     w.trees.push({ kind: pick(trees.kinds), x, z, scale: trees.scale[0] + rand(w) * trees.scale[1] });
   }
 
@@ -534,7 +557,7 @@ export function roadSteer(w: World): number {
   // none yet or the car has wandered far from it.
   let f = w.follow;
   if (!f || nearestOn(w.roads[f.road]!, f.road, car.x, car.z).dist > w.roads[f.road]!.def.width / 2 + 8) {
-    f = w.follow = { road: near.road, dir: Math.cos(car.heading - near.heading) >= 0 ? 1 : -1 };
+    f = w.follow = { road: near.road, dir: wayAlong(w.roads[near.road]!, car.heading, near.heading) };
   }
   let road = w.roads[f.road]!;
   let spot = nearestOn(road, f.road, car.x, car.z);
@@ -561,7 +584,7 @@ export function roadSteer(w: World): number {
       const from = f.road, junction = w.junctions[parent]!.find((j) => j.road === from && j.dir === (f!.dir > 0 ? -1 : 1));
       road = w.roads[parent]!;
       const at = junction ? pointAt(road, junction.s) : nearestOn(road, parent, car.x, car.z);
-      f = w.follow = { road: parent, dir: Math.cos(car.heading - at.heading) >= 0 ? 1 : -1 };
+      f = w.follow = { road: parent, dir: wayAlong(road, car.heading, at.heading) };
       if (junction) w.followAt = key(parent, junction.s);
       spot = nearestOn(road, parent, car.x, car.z);
     }
@@ -571,6 +594,14 @@ export function roadSteer(w: World): number {
   const err = wrap(Math.atan2(ahead.x - car.x, ahead.z - car.z) - car.heading);
   w.followTurn = Math.abs(err);
   return clamp(-err * 2.5, -1, 1);
+}
+
+/**
+ * Which way along a road "follows the road" goes: the way the car already faces, or forward on a one-way road (a
+ * roundabout's ring, ADR 0042), where it goes round with the traffic.
+ */
+function wayAlong(road: Road, heading: number, roadHeading: number): 1 | -1 {
+  return road.def.oneWay || Math.cos(heading - roadHeading) >= 0 ? 1 : -1;
 }
 
 /** How far ahead of a junction "follows the road" decides which way to go, in metres. */
@@ -659,7 +690,8 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   // The shore turns the car back inland, harder the closer it gets (ADR 0021: can't get lost). Not on a bridge or
   // close to one, where the road itself crosses the water.
   const near = shore(w.land, car.x, car.z);
-  const bridged = guardAt(w.guards, w.roads, car.x, car.z, 12) !== null;
+  // A harbour's quay (ADR 0042) holds the car itself, so the shore lets go only on it, not past its ends.
+  const bridged = w.guards.some((g) => guardAt([g], w.roads, car.x, car.z, g.kind === 'quay' ? 0 : 12) !== null);
   if (near.depth < 6 && !bridged) {
     const k = Math.min(1, (6 - near.depth) / 4.5);
     const diff = wrap(Math.atan2(near.nx, near.nz) - car.heading);
@@ -694,6 +726,8 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   for (const t of w.trees) pushOut(t.x, t.z, SCENERY[t.kind].radius * t.scale + 1.3, 0.985);
   // The traffic lights' poles (ADR 0042): thin, beside the road; the car slides past one it touches.
   for (const p of w.posts) pushOut(p.x, p.z, VEHICLE_SIZE[car.kind].side + POST_R, 0.99);
+  // A roundabout's fountain (ADR 0042): its basin is round, and the car slides round it.
+  for (const zone of w.zones) if (zone.kind === 'roundabout') pushOut(zone.x, zone.z, VEHICLE_SIZE[car.kind].side + BASIN_R, 0.99);
   // A bump with traffic is a toy bump (ADR 0031): both cars shove apart and the kid's car barely slows.
   const own = VEHICLE_SIZE[car.kind].side;
   for (let i = 1; i < w.cars.length; i++) {
@@ -721,12 +755,13 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     const side = Math.sin(car.heading) * dz - Math.cos(car.heading) * dx;
     car.heading += (side > 0 ? -1 : 1) * 1.6 * dt;
   }
-  // On a bridge or in a tunnel, its sides keep the car on the road: it slides along them (milestone-3 B4).
+  // On a bridge or in a tunnel, its sides keep the car on the road: it slides along them (milestone-3 B4). A quay's
+  // low edge does the same on its sea side (ADR 0042).
   const held = guardAt(w.guards, w.roads, car.x, car.z);
   w.under = { sand: sandy, bridge: held?.guard.kind === 'bridge', tunnel: held?.guard.kind === 'tunnel' };
   if (held) {
     const { spot } = held, limit = w.roads[spot.road]!.def.width / 2 - 0.8;
-    if (Math.abs(spot.offset) > limit) {
+    if (Math.abs(spot.offset) > limit && (held.guard.side === undefined || Math.sign(spot.offset) === held.guard.side)) {
       const back = spot.offset - Math.sign(spot.offset) * limit;
       // Right of the road is (−cos h, sin h).
       car.x += Math.cos(spot.heading) * back;
@@ -839,11 +874,16 @@ function stepTraffic(w: World, dt: number): void {
     if (inWash(w, c, 5)) want = Math.min(want, WASH_SPEED);
     const slow = wadeSpeed(w, c);
     if (slow !== null) want = Math.min(want, slow);
+    // A roundabout (ADR 0042): a gentle swing round the ring.
+    if (zoneAt(w.zones, 'roundabout', c.x, c.z)) want = Math.min(want, ROUNDABOUT_SPEED);
     // Traffic lights (ADR 0042): on its own, traffic waits at red and amber, stopping short of the junction.
     if (c.mode === CRUISE) want = Math.min(want, lightsWant(w, c));
     // Traffic gives way (driving-assets.md): the kid's car just ahead in its lane, at a junction, on a bridge or
     // anywhere, and it slows and waits rather than drive into it.
-    if (c.mode === CRUISE) {
+    // On a roundabout's tight ring (ADR 0042) a straight line ahead cuts across the other lane, so there the kid's
+    // car is only in the way when it is in this car's lane: one in the other lane is passed, as on a straight road.
+    const passing = road.def.oneWay === true && kidOn.dist < road.def.width / 2 + 1.5 && Math.abs(kidLane - c.lane) > 2.6;
+    if (c.mode === CRUISE && !passing) {
       const dx = kid.x - c.x, dz = kid.z - c.z;
       const ahead = dx * Math.sin(c.heading) + dz * Math.cos(c.heading), across = -dx * Math.cos(c.heading) + dz * Math.sin(c.heading);
       // It stops with its front a few metres short of the kid's car, however long it is.
@@ -1250,6 +1290,28 @@ function stepMud(w: World, dt: number): void {
   }
 }
 
+/**
+ * Harbours (ADR 0042): the boats bob and the sailing one makes its trips; the kid's horn in or near a harbour is
+ * answered by a ship's horn a moment later (once, however many times the kid honks in between).
+ */
+function stepHarbour(w: World, dt: number): void {
+  if (!w.boats.length) return;
+  stepBoats(w.boats, w.time, dt);
+  const kid = w.cars[0]!, horn = w.shipHorn;
+  horn.rest = Math.max(0, horn.rest - dt);
+  if (w.honked && horn.in < 0 && horn.rest === 0) {
+    const zone = zoneAt(w.zones, 'harbour', kid.x, kid.z, HARBOUR_HEARS);
+    if (zone) {
+      horn.in = SHIP_HORN.delay;
+      horn.zone = w.zones.indexOf(zone);
+    }
+  }
+  if (horn.in >= 0 && (horn.in -= dt) < 0) {
+    w.shipHorns.push(horn.zone);
+    horn.rest = SHIP_HORN.rest;
+  }
+}
+
 /** Whether a car is inside a car wash's arch (or a garage, with `kinds`), or within `approach` metres of it. */
 function inWash(w: World, c: Car, approach = 0, kinds: ZoneKind[] = ['car-wash']): boolean {
   return w.zones.some((z) => kinds.includes(z.kind) && Math.hypot(c.x - z.x, c.z - z.z) < z.r + approach);
@@ -1361,6 +1423,7 @@ export function step(w: World, input: Input, dt: number): void {
   w.landings.length = 0;
   w.calls.length = 0;
   w.lightChanges.length = 0;
+  w.shipHorns.length = 0;
   stepKidCar(w, input, dt);
   stepZones(w);
   stepLights(w, dt);
@@ -1369,6 +1432,7 @@ export function step(w: World, input: Input, dt: number): void {
   stepWash(w, dt);
   stepMud(w, dt);
   stepAnimals(w.animals, w.cars[0]!, w.honked, dt, () => rand(w), w.calls);
+  stepHarbour(w, dt);
   w.honked = false;
   stepWater(w, dt);
   stepProps(w, dt);
