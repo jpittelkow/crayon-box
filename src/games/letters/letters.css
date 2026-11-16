@@ -351,12 +351,50 @@
 }
 .words-grid {
   --gap: 18px;
-  /* Five rows of five tiles, each 3 : 2. */
-  --h: min(calc((100cqh - 4 * var(--gap)) / 5), calc((100cqw - 4 * var(--gap)) / 5 * 2 / 3));
+  /* Five rows of five tiles, each 3 : 2; with family words, as many rows (and six a row) as it takes to fit. */
+  --cols: 5;
+  --rows: 5;
+  --h: min(
+    calc((100cqh - (var(--rows) - 1) * var(--gap)) / var(--rows)),
+    calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols) * 2 / 3)
+  );
   display: grid;
-  grid-template-columns: repeat(5, calc(var(--h) * 1.5));
+  grid-template-columns: repeat(var(--cols), calc(var(--h) * 1.5));
   grid-auto-rows: var(--h);
   gap: var(--gap);
+}
+/* A family word's photo (ADR 0039): square, cropped like a kid's, as big as the tile or picture lets it be. */
+.words-photo,
+.cb-paper img.words-photo {
+  position: static;
+  display: block;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 4px solid var(--ink);
+  box-sizing: border-box;
+  border-radius: 14%;
+  pointer-events: none;
+}
+/* A built-in word's picture (ADR 0039, W9): square, whole, as big as the tile or picture lets it be. */
+.words-art,
+.cb-paper img.words-art {
+  position: static;
+  display: block;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* The pictures are drawn on white: on a tinted tile the white takes the tile's tint. */
+.words-tile img.words-art {
+  mix-blend-mode: multiply;
+}
+/* A gap between two parts of a family word's letters (a space or hyphen), half a letter wide. */
+.words-letters > span.words-letters-gap {
+  flex: 0 1 calc(50% / max(var(--n), 3));
 }
 .words-tile.cb-paper {
   width: 100%;

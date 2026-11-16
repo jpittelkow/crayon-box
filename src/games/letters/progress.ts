@@ -8,6 +8,7 @@
 //   voice/<key>.<ext>        a parent's own recording of a letter's name
 //   voice/sound-<a-z>.<ext>  a parent's own recording of a letter's sound (one per letter: A and a share it)
 //   voice/name-<kid id>.<ext> a parent's recording of a kid's name, said when the kid writes it (ADR 0039)
+//   words/<id>.json, .jpg    a family word, and its photo; voice/family-<id>.<ext> its recording (familyWords.ts)
 // Letters are stored by a key that keeps capitals and small letters apart on a file system that ignores case
 // (Windows, the installer's file storage): `cap-A`, `small-a`, `num-3`.
 import type { GameStorage } from '../../storage/types';
@@ -260,10 +261,14 @@ export async function findRecording(storage: GameStorage, ch: string, what: Said
   return (await storage.list(prefix))[0];
 }
 
+/** A recording's file extension, from what the browser recorded it as. */
+export function audioExt(blob: Blob): string {
+  return /ogg/.test(blob.type) ? 'ogg' : /mp4|aac/.test(blob.type) ? 'm4a' : /wav/.test(blob.type) ? 'wav' : 'webm';
+}
+
 export async function saveRecording(storage: GameStorage, ch: string, blob: Blob, what: Said = 'name'): Promise<void> {
   const old = await findRecording(storage, ch, what);
-  const ext = /ogg/.test(blob.type) ? 'ogg' : /mp4|aac/.test(blob.type) ? 'm4a' : 'webm';
-  const path = `${VOICE_DIR}${recordingKey(ch, what)}.${ext}`;
+  const path = `${VOICE_DIR}${recordingKey(ch, what)}.${audioExt(blob)}`;
   if (old && old !== path) await storage.delete(old);
   await storage.putBlob(path, blob);
 }
@@ -285,8 +290,7 @@ export async function findNameRecording(storage: GameStorage, kidId: string): Pr
 
 export async function saveNameRecording(storage: GameStorage, kidId: string, blob: Blob): Promise<void> {
   const old = await findNameRecording(storage, kidId);
-  const ext = /ogg/.test(blob.type) ? 'ogg' : /mp4|aac/.test(blob.type) ? 'm4a' : 'webm';
-  const path = `${namePrefix(kidId)}${ext}`;
+  const path = `${namePrefix(kidId)}${audioExt(blob)}`;
   if (old && old !== path) await storage.delete(old);
   await storage.putBlob(path, blob);
 }

@@ -1,10 +1,27 @@
 // The letters game's screen in the parent area (ADR 0008, 0012, 0026, 0037): each kid's letter sets and stroke order,
 // resetting a kid's stars and game, showing a kid the first-time how-to again, a note for parents, what is said with
 // a letter (its name, its sound or both), the voice that says it (with recordings of names and sounds), sounds, and
-// whether the hints' tips are spoken. Words (ADR 0039): turned on per kid, and a recording of each kid's name.
+// whether the hints' tips are spoken. Words (ADR 0039): turned on per kid, a recording of each kid's name, and the
+// family's own words (each with an optional recording and photo).
+import { preparePhoto } from '../../parent/photo';
 import { drawAvatar } from '../../shell/profiles';
 import type { ParentSectionContext } from '../../shell/types';
 import { button, card, confirmInline, h, segmented, switchRow } from '../../ui/parent';
+import {
+  cleanWordText,
+  deleteFamilyPhoto,
+  deleteFamilyRecording,
+  deleteFamilyWord,
+  hasLetters,
+  loadFamilyWords,
+  MAX_FAMILY_WORDS,
+  MAX_WORD_LENGTH,
+  newFamilyId,
+  saveFamilyPhoto,
+  saveFamilyRecording,
+  saveFamilyWord,
+  type FamilyWordFiles,
+} from './familyWords';
 import { allChars, SET_ORDER, type SetId } from './glyphs';
 import {
   deleteNameRecording,
@@ -26,7 +43,8 @@ import {
   type Voice,
 } from './progress';
 import { recordClip } from './voice';
-import { nameCells } from './words';
+import { cellLetters, wordLettersMarkup } from './wordView';
+import { familyCells, nameCells } from './words';
 
 /** How long a recording of a kid's name runs: a name can be longer than a letter. */
 const NAME_RECORD_MS = 2200;
@@ -148,7 +166,8 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
       h(
         'p',
         { class: 'pw-muted' },
-        'With Words on for a kid (above), Letters shows a third tile: their own name first, then 24 short words. Each ' +
+        'With Words on for a kid (above), Letters shows a third tile: their own name first, then the family words ' +
+          'below, then 24 short words. Each ' +
           'letter is traced big, one at a time, and drops into a row of boxes; then the word is said slowly and the ' +
           "kid taps the check. A name comes from the kid's profile; spaces and hyphens are skipped and accents are " +
           'traced plain. Capitals, or small letters once those are on for the kid.',
@@ -160,6 +179,17 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
           '"You wrote your name!". Recordings stay on this device and your own sync server.',
       ),
       await nameRecordings(ctx),
+      h('h3', {}, 'Family words'),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        `Words for every kid on this device, after their name and before the 24 words: people, pets, a favourite ` +
+          `thing (up to ${MAX_FAMILY_WORDS}). Record how you say it, and add a photo for its tile if you like; ` +
+          "without a photo the tile shows the word's letters. Letters A to Z are traced; spaces and hyphens are " +
+          'skipped and accents traced plain. With small letters on, the letters keep the case you type. Words, ' +
+          'recordings and photos stay on this device and your own sync server.',
+      ),
+      await familyWords(ctx),
       h(
         'p',
         { class: 'pw-muted' },
@@ -308,6 +338,190 @@ async function nameRecordings(ctx: ParentSectionContext): Promise<HTMLElement> {
   }
   box.append(status);
   return box;
+}
+
+/** Plays a parent's recording from storage once. */
+async function playStored(ctx: ParentSectionContext, path: string | undefined): Promise<void> {
+  const blob = path ? await ctx.storage.getBlob(path) : undefined;
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  audio.addEventListener('ended', () => URL.revokeObjectURL(url));
+  void audio.play().catch(() => URL.revokeObjectURL(url));
+}
+
+/**
+ * The family's own words (ADR 0039): add one, change its text, record it, give it a photo, delete it. Each word is
+ * its own file; shared by every kid on the device.
+ */
+async function familyWords(ctx: ParentSectionContext): Promise<HTMLElement> {
+  const { storage } = ctx;
+  const list = h('div', { style: 'display: flex; flex-direction: column' });
+  const status = h('p', { class: 'pw-muted', 'aria-live': 'polite' });
+  const input = h('input', {
+    class: 'pw-input',
+    type: 'text',
+    maxlength: String(MAX_WORD_LENGTH),
+    autocomplete: 'off',
+    spellcheck: 'false',
+    'aria-label': 'A new family word',
+    placeholder: 'A new word',
+    style: 'max-width: 240px',
+  });
+  const addRow = h('div', { class: 'pw-row', style: 'gap: 8px' }, input, button('Add word', () => void add(), 'primary'));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') void add();
+  });
+  let busy = false;
+  let thumbs: string[] = [];
+
+  const redraw = async () => {
+    for (const url of thumbs) URL.revokeObjectURL(url);
+    thumbs = [];
+    const words = await loadFamilyWords(storage);
+    list.replaceChildren(...(await Promise.all(words.map(row))));
+    if (words.length === 0) list.append(h('p', { class: 'pw-muted' }, 'No family words yet.'));
+    addRow.hidden = words.length >= MAX_FAMILY_WORDS;
+  };
+
+  // Adds run one after another, and the field is emptied at once: a word typed while the last one saves is kept.
+  let adding: Promise<void> = Promise.resolve();
+  const add = () => {
+    const text = cleanWordText(input.value);
+    if (!hasLetters(text)) {
+      status.textContent = 'Type a word with at least one letter A to Z.';
+      return adding;
+    }
+    input.value = '';
+    adding = adding.then(async () => {
+      const words = await loadFamilyWords(storage);
+      if (words.length >= MAX_FAMILY_WORDS) return;
+      // Always after the last word, even when two are added within the same millisecond.
+      const last = Date.parse(words.at(-1)?.added ?? '');
+      const added = new Date(Math.max(Date.now(), Number.isFinite(last) ? last + 1 : 0)).toISOString();
+      await saveFamilyWord(storage, { id: newFamilyId(), text, added });
+      status.textContent = `Added "${text}". Record how you say it below.`;
+      await redraw();
+    });
+    return adding;
+  };
+
+  const row = async (word: FamilyWordFiles): Promise<HTMLElement> => {
+    const r = h('div', {
+      class: 'pw-row',
+      'data-family-word': word.id,
+      style: 'gap: 8px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid #e3e7ec',
+    });
+    const thumb = h('span', {
+      'aria-hidden': 'true',
+      style:
+        'flex: none; width: 56px; height: 56px; box-sizing: border-box; padding: 4px; border: 2px solid #d3d9e0; ' +
+        'border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff',
+    });
+    const photo = word.photo ? await storage.getBlob(word.photo).catch(() => undefined) : undefined;
+    if (photo) {
+      const url = URL.createObjectURL(photo);
+      thumbs.push(url);
+      thumb.style.padding = '0';
+      thumb.append(h('img', { src: url, alt: '', style: 'width: 100%; height: 100%; object-fit: cover' }));
+    } else {
+      // Drawn from the glyphs' own paths (letters A to Z only), never from the typed text.
+      thumb.innerHTML = wordLettersMarkup(cellLetters(familyCells(word.text, true)), 16);
+    }
+
+    const text = h('input', {
+      class: 'pw-input',
+      type: 'text',
+      maxlength: String(MAX_WORD_LENGTH),
+      autocomplete: 'off',
+      spellcheck: 'false',
+      'aria-label': `Family word ${word.text}`,
+      style: 'max-width: 200px',
+    });
+    text.value = word.text;
+    text.addEventListener('change', async () => {
+      const t = cleanWordText(text.value);
+      if (!hasLetters(t)) {
+        status.textContent = 'Type a word with at least one letter A to Z.';
+        text.value = word.text;
+        return;
+      }
+      await saveFamilyWord(storage, { ...word, text: t });
+      status.textContent = `Changed to "${t}".`;
+      await redraw();
+    });
+
+    const file = h('input', { type: 'file', accept: 'image/*', hidden: true, 'aria-label': `Photo for ${word.text}` });
+    file.addEventListener('change', async () => {
+      const chosen = file.files?.[0];
+      file.value = '';
+      if (!chosen) return;
+      try {
+        await saveFamilyPhoto(storage, word.id, await preparePhoto(chosen));
+        status.textContent = `"${word.text}" has a photo.`;
+        await redraw();
+      } catch {
+        status.textContent = 'That file could not be read as a picture. Try a JPG or PNG photo.';
+      }
+    });
+
+    const record = async () => {
+      if (busy) return;
+      busy = true;
+      status.textContent = `Recording "${word.text}"… say it now.`;
+      try {
+        await saveFamilyRecording(storage, word.id, await recordClip(NAME_RECORD_MS));
+        status.textContent = `"${word.text}" is recorded.`;
+      } catch {
+        status.textContent = 'No microphone could be used. Check that one is plugged in and allowed.';
+      } finally {
+        busy = false;
+        await redraw();
+      }
+    };
+
+    r.append(
+      thumb,
+      text,
+      button(word.recording ? 'Record again' : 'Record the word', () => void record()),
+      ...(word.recording
+        ? [
+            button('Play', () => void playStored(ctx, word.recording)),
+            button('Remove recording', async () => {
+              await deleteFamilyRecording(storage, word.id);
+              status.textContent = '';
+              await redraw();
+            }),
+          ]
+        : []),
+      button(word.photo ? 'Change photo' : 'Add photo', () => file.click()),
+      ...(word.photo
+        ? [
+            button('Remove photo', async () => {
+              await deleteFamilyPhoto(storage, word.id);
+              status.textContent = '';
+              await redraw();
+            }),
+          ]
+        : []),
+      file,
+      h('div', { class: 'pw-grow' }),
+      button(
+        'Delete',
+        () =>
+          confirmInline(r, `Delete "${word.text}" with its recording and photo?`, 'Delete', async () => {
+            await deleteFamilyWord(storage, word.id);
+            status.textContent = `Deleted "${word.text}".`;
+            await redraw();
+          }),
+        'danger',
+      ),
+    );
+    return r;
+  };
+
+  await redraw();
+  return h('div', { style: 'display: flex; flex-direction: column; gap: 8px', 'data-family-words': '' }, list, addRow, status);
 }
 
 /** Recordings of each letter's name, and below them each letter's sound (ADR 0037). */

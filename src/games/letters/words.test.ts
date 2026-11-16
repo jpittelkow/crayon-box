@@ -2,6 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { narratorClip, soundClip } from '../../shell/soundFiles';
 import { memoryBackend } from '../../storage/idb';
 import { appStorage } from '../../storage/namespaced';
+import {
+  cleanWordText,
+  deleteFamilyPhoto,
+  deleteFamilyRecording,
+  deleteFamilyWord,
+  findFamilyRecording,
+  hasLetters,
+  isFamilyId,
+  loadFamilyWords,
+  MAX_WORD_LENGTH,
+  newFamilyId,
+  saveFamilyPhoto,
+  saveFamilyRecording,
+  saveFamilyWord,
+  WORDS_DIR,
+} from './familyWords';
 import { glyph } from './glyphs';
 import {
   findNameRecording,
@@ -20,6 +36,7 @@ import {
   BOX_MIN,
   BUILT_IN_WORDS,
   boxSize,
+  familyCells,
   HELD_SOUNDS,
   lettersIn,
   NAME,
@@ -29,6 +46,7 @@ import {
   slowClipId,
   wordCells,
   wordKey,
+  wordOrder,
   type Cell,
 } from './words';
 
@@ -103,6 +121,102 @@ describe('the built-in words', () => {
     expect(nextWord(NAME)).toBe('sun');
     expect(nextWord('sun')).toBe('sat');
     expect(nextWord(BUILT_IN_WORDS.at(-1)!.id)).toBeNull();
+  });
+});
+
+describe('the tiles’ order', () => {
+  it('is My name, then the family words, then the built-in words', () => {
+    const order = wordOrder(['fam-a', 'fam-b']);
+    expect(order.slice(0, 4)).toEqual([NAME, 'fam-a', 'fam-b', 'sun']);
+    expect(order).toHaveLength(27);
+    expect(wordOrder(['fam-a'], false).slice(0, 2)).toEqual(['fam-a', 'sun']);
+    expect(wordOrder()).toEqual([NAME, ...BUILT_IN_WORDS.map((w) => w.id)]);
+  });
+
+  it('the next word runs from the name through the family words into the built-in ones', () => {
+    const order = wordOrder(['fam-a', 'fam-b']);
+    expect(nextWord(NAME, order)).toBe('fam-a');
+    expect(nextWord('fam-a', order)).toBe('fam-b');
+    expect(nextWord('fam-b', order)).toBe('sun');
+    expect(nextWord('fam-gone', order)).toBeNull();
+  });
+});
+
+describe('a family word as letters', () => {
+  it('capitals while small letters are off; with them on, the case the parent typed', () => {
+    expect(letters(familyCells('pup', false))).toBe('PUP');
+    expect(letters(familyCells('pup', true))).toBe('pup');
+    expect(letters(familyCells('Pup', true))).toBe('Pup');
+    expect(letters(familyCells('MOON', true))).toBe('MOON');
+  });
+
+  it('is handled like the name: gaps for spaces and hyphens, accents plain, anything else left out', () => {
+    expect(letters(familyCells('big  moon', true))).toBe('big moon');
+    expect(letters(familyCells('-star-', false))).toBe('STAR');
+    expect(letters(familyCells('Crème', true))).toBe('Creme');
+    expect(letters(familyCells('Straße', true))).toBe('Strasse');
+    expect(letters(familyCells('pup 2 ★', true))).toBe('pup');
+    expect(familyCells('★ 7', true)).toEqual([]);
+  });
+
+  it('can only be kept with a letter to trace; spaces are tidied and the length capped', () => {
+    expect(hasLetters('pup')).toBe(true);
+    expect(hasLetters('★ 7 !')).toBe(false);
+    expect(cleanWordText('  big   moon ')).toBe('big moon');
+    expect(cleanWordText('a'.repeat(40))).toHaveLength(MAX_WORD_LENGTH);
+  });
+});
+
+describe('family words saved', () => {
+  it('one file per word under words/, read back oldest first', async () => {
+    const s = storage();
+    await saveFamilyWord(s, { id: 'fam-bbb', text: 'moon', added: '2026-11-16T10:00:00.000Z' });
+    await saveFamilyWord(s, { id: 'fam-aaa', text: ' star ', added: '2026-11-16T09:00:00.000Z' });
+    expect(await s.list(WORDS_DIR)).toEqual(['words/fam-aaa.json', 'words/fam-bbb.json']);
+    expect(await s.getJson('words/fam-aaa.json')).toEqual({ text: 'star', added: '2026-11-16T09:00:00.000Z' });
+    expect((await loadFamilyWords(s)).map((w) => w.text)).toEqual(['star', 'moon']);
+    // A change rewrites only that word's file.
+    await saveFamilyWord(s, { id: 'fam-bbb', text: 'big moon', added: '2026-11-16T10:00:00.000Z' });
+    expect((await loadFamilyWords(s)).map((w) => w.text)).toEqual(['star', 'big moon']);
+  });
+
+  it('a new id is random and never made from the word', () => {
+    const a = newFamilyId();
+    expect(isFamilyId(a)).toBe(true);
+    expect(a).not.toBe(newFamilyId());
+    expect(isFamilyId('sun')).toBe(false);
+  });
+
+  it('has its recording under voice/ and its photo beside it; deleting the word deletes all three', async () => {
+    const s = storage();
+    await saveFamilyWord(s, { id: 'fam-pup', text: 'pup', added: '2026-11-16T09:00:00.000Z' });
+    await saveFamilyWord(s, { id: 'fam-sun', text: 'sun', added: '2026-11-16T09:30:00.000Z' });
+    await saveFamilyRecording(s, 'fam-pup', new Blob(['x'], { type: 'audio/webm' }));
+    await saveFamilyRecording(s, 'fam-pup', new Blob(['y'], { type: 'audio/ogg' }));
+    await saveFamilyPhoto(s, 'fam-pup', new Blob(['p'], { type: 'image/jpeg' }));
+    expect(await findFamilyRecording(s, 'fam-pup')).toBe('voice/family-fam-pup.ogg');
+    const [pup, sun] = await loadFamilyWords(s);
+    expect(pup).toMatchObject({ id: 'fam-pup', photo: 'words/fam-pup.jpg', recording: 'voice/family-fam-pup.ogg' });
+    expect(sun.photo).toBeUndefined();
+    expect(sun.recording).toBeUndefined();
+    await deleteFamilyRecording(s, 'fam-pup');
+    expect(await s.list('voice/')).toEqual([]);
+    await saveFamilyRecording(s, 'fam-pup', new Blob(['z'], { type: 'audio/webm' }));
+    await deleteFamilyPhoto(s, 'fam-pup');
+    expect((await loadFamilyWords(s))[0].photo).toBeUndefined();
+    await saveFamilyPhoto(s, 'fam-pup', new Blob(['p'], { type: 'image/jpeg' }));
+    await deleteFamilyWord(s, 'fam-pup');
+    expect(await s.list(WORDS_DIR)).toEqual(['words/fam-sun.json']);
+    expect(await s.list('voice/')).toEqual([]);
+    expect((await loadFamilyWords(s)).map((w) => w.id)).toEqual(['fam-sun']);
+  });
+
+  it('skips a file that does not read as a word', async () => {
+    const s = storage();
+    await s.putJson('words/fam-odd.json', { text: '★' });
+    await s.putJson('words/not-a-word.json', { text: 'star' });
+    await s.putJson('words/fam-old.json', { text: 'star' });
+    expect(await loadFamilyWords(s)).toEqual([{ id: 'fam-old', text: 'star', added: '' }]);
   });
 });
 
