@@ -8,10 +8,14 @@ New maps come last on purpose: first every piece a map is made from (vehicles, t
 editor, loading a map from a folder), then the maps themselves.
 
 ## 1. Finish what is in flight
-- **Release 0.8.0:** the playtest fixes (PR #40), AI page progress (PR #42) and the unlock window (PR #43) are
-  on `main`; releasing them finishes milestone 3 ([release checklist](release-checklist.md)).
+- **Release 0.9.0** when there is enough to ship: the Outside theme (PR #48) is on `main` and in no release yet.
+  (0.8.0, released 2026-11-15, finished milestone 3.)
 
 ## 2. Coloring: finish milestone 1
+- **Planned 2026-11-15:** [coloring-buttons-plan.md](coloring-buttons-plan.md), with research, and
+  [ADR 0038](adr/0038-coloring-buttons-a-kid-can-work-out.md) (Proposed). The owner took every recommendation (C1 to
+  C8) on 2026-11-15. **Next:** the coloring narrator lines (in the batch script, PR #51; run waiting), mockups on
+  the canvas, then the build phases B to F.
 - **Buttons a kid can work out:** a kid in a playtest didn't know what any coloring button does. Design first,
   with no text (ADR 0003), for example a short demo when a button is pressed and held; mockup, then an ADR.
 - **A colour wheel** next to the swatches (asked in the same playtest). Design with the item above.
@@ -52,8 +56,8 @@ items first, with mockups.
 - **More sound:**
   - the letter's name said when it opens, not only when it is done;
   - its sound as well as its name ("B, buh"), a parent setting;
-  - a soft drawing sound while the finger is on the line, a chime as each stroke is finished, a gentle "boop"
-    when the finger wanders off the line;
+  - a soft drawing sound while the finger is on the line, a chime as each stroke is finished; going off the
+    line only stops the drawing sound, no "boop" (owner, D4, 2026-11-15);
   - all as files, made like the narrator's clips ([sounds recipe](recipes/sounds.md)).
 - **Tips when a kid is stuck**, spoken and shown: "start at the dot", "follow the arrow", "now the next line",
   "tap the check". They come after a pause, after a few tries off the line, or when a kid lifts too early. They
