@@ -93,6 +93,7 @@ export class Narrator {
       this.timer = undefined;
       void this.counter.said(b.key);
       this.say(clip);
+      this.settle();
     }, NAME_DELAY_MS);
   }
 
@@ -103,9 +104,18 @@ export class Narrator {
     try {
       const audio = new Audio(url);
       this.audio = audio;
-      void audio.play().catch(() => {});
+      const done = () => {
+        if (this.audio !== audio) return;
+        this.audio = null;
+        this.settle();
+      };
+      audio.onended = done;
+      audio.onerror = done;
+      void audio.play().catch(done);
     } catch {
       // No audio here: stay quiet.
+      this.audio = null;
+      this.settle();
     }
   }
 
@@ -115,5 +125,18 @@ export class Narrator {
     this.timer = undefined;
     this.audio?.pause();
     this.audio = null;
+    this.settle();
+  }
+
+  private readonly waiting: (() => void)[] = [];
+
+  private settle(): void {
+    if (this.timer === undefined && !this.audio) for (const w of this.waiting.splice(0)) w();
+  }
+
+  /** Resolves once nothing is being said or waiting to be said (at once when the narrator is quiet). */
+  quiet(): Promise<void> {
+    if (this.timer === undefined && !this.audio) return Promise.resolve();
+    return new Promise((resolve) => this.waiting.push(resolve));
   }
 }
