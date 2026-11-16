@@ -2,7 +2,8 @@
 // docs/design/island-layout-a.svg), grown to about three times its first area. A loop road round the island, a
 // shortcut through a hill in the middle and a spur from the loop to the shortcut, all joined at three-way
 // junctions; a bridge where the loop crosses a bay on the east, with boats moored in the bay; a wide beach on the
-// south coast; two ramps, the car wash, the garage and the flood; sheep and ducks in the fields.
+// south coast; two ramps, the car wash, the garage and the flood; a stream with a ford and traffic lights (ADR
+// 0042); sheep and ducks in the fields.
 //
 // Places below are written as in the layout picture, x east and z north, at its first size; `at` scales them by
 // GROW and turns them round, as the simulation's x grows westward (seen from above with north up).
@@ -58,6 +59,17 @@ const atLoop = (p: [number, number]) => {
 const onLoop = (p: [number, number], offset = 0): OnRoad => ({ road: 0, at: atLoop(p), offset });
 const atShortcut = (north: number) => nearestOn(shortcut, 1, 0, north * GROW).s / shortcut.length;
 
+/**
+ * A stream (ADR 0042): from a spring inside the loop, south-west of the hill, down across the loop road and the
+ * beach to the sea. Shallow all along; the loop crosses it at a ford.
+ */
+const STREAM = smoothPath(([[-14, -21], [-15, -26], [-18, -31], [-20, -37], [-21, -45], [-23, -58]] as [number, number][]).map(at), false, 1.5);
+/** Where the loop crosses the stream: the stream's point nearest the loop. */
+const FORD_AT = (() => {
+  const near = STREAM.map(([x, z]) => nearestOn(loop, 0, x, z)).sort((a, b) => a.dist - b.dist)[0]!;
+  return near.s / loop.length;
+})();
+
 /** The beach: the south coast below the loop road, out to the shoreline. */
 const BEACH_EDGE = -43 * GROW;
 const beachShore = SHORE.filter(([x, z]) => z < BEACH_EDGE && -x > -44 * GROW && -x < 48 * GROW);
@@ -86,6 +98,10 @@ export const ISLAND: MapDef = {
     { kind: 'car-wash', on: { road: 1, at: atShortcut(-26) }, r: 4 },
     // The garage (ADR 0035): drive in, come out as the next vehicle.
     { kind: 'garage', on: { road: 1, at: atShortcut(24) }, r: 4 },
+    // ADR 0042: the ford where the loop crosses the stream, and traffic lights where the shortcut meets the loop in
+    // the south (for show: traffic may wait at red, the kid never does).
+    { kind: 'ford', on: { road: 0, at: FORD_AT }, r: 6 },
+    { kind: 'lights', on: onLoop([0, -37]), r: 5 },
   ],
   traffic: [
     { kind: 'bus', on: onLoop([30, 28], -2.2), cruise: 6.5 },
@@ -99,9 +115,10 @@ export const ISLAND: MapDef = {
     pools: [{ on: onLoop([-32, 27]), r: 13, deep: true }],
     puddles: [{
       road: 0,
-      at: ([[28, 30], [36, -24], [-16, -35], [-44, -12], [10, 37], [42, 16], [-26, 33], [16, -36]] as [number, number][]).map(atLoop),
+      at: ([[28, 30], [36, -24], [-44, -12], [10, 37], [42, 16], [-26, 33], [16, -36]] as [number, number][]).map(atLoop),
       spread: 6, size: [2, 1.6],
     }, { road: 2, at: [0.4, 0.75], spread: 4, size: [2, 1.2] }],
+    streams: [{ points: STREAM, width: 6 }],
   },
   trees: {
     kinds: [{ id: 'scenery/pine', share: 2 }, { id: 'scenery/round-tree', share: 1 }],
