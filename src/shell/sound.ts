@@ -44,6 +44,9 @@ export const SOUNDS: Record<SoundKind, SoundSpec> = {
   nothing: { file: 'ui/tap.wav', gain: 0.4, rate: 0.75 },
   cheer: { file: 'ui/cheer.wav', gain: 1, rate: 1 },
   page: { file: 'ui/page.wav', gain: 0.8, rate: 1 },
+  // A stroke of a letter traced (ADR 0037): quieter and higher than the finished letter's bell. Stand-in: the bell
+  // itself, pitched up, until a CC0 chime of its own (sounds recipe, way B).
+  chime: { file: 'ui/cheer.wav', gain: 0.4, rate: 1.6 },
 };
 
 /** The kinds that answer a touch: they stay under 300 ms (ADR 0016). */
@@ -125,10 +128,15 @@ export class WebAudioSound implements Sound {
   private crayon: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   private crayonStop: ReturnType<typeof setTimeout> | undefined;
   private crayonLevel = 0;
+  private crayonRate = 1;
 
-  /** The crayon sound: `level` 0 fades it out, up to 1 for a fast scribble. Called on every move of a drawing finger. */
-  scratch(level: number): void {
+  /**
+   * The crayon sound: `level` 0 fades it out, up to 1 for a fast scribble; `rate` above 1 plays it higher. Called on
+   * every move of a drawing finger.
+   */
+  scratch(level: number, rate = 1): void {
     this.crayonLevel = level;
+    this.crayonRate = rate;
     try {
       clearTimeout(this.crayonStop);
       if (level <= 0) {
@@ -163,6 +171,7 @@ export class WebAudioSound implements Sound {
           src.start(0, Math.random() * buf.duration);
           this.crayon = { src, gain };
         }
+        this.crayon.src.playbackRate.value = this.crayonRate;
         this.crayon.gain.gain.setTargetAtTime(CRAYON.gain * Math.min(1, this.crayonLevel), ctx.currentTime, 0.03);
       });
     } catch {

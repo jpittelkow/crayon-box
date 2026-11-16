@@ -23,7 +23,7 @@ export interface KidProfile {
   created: string;
 }
 
-export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer' | 'page';
+export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer' | 'page' | 'chime';
 
 /**
  * A game's own short sound from a shipped file (ADR 0032), e.g. a coloring button's (ADR 0038): which file under
@@ -43,8 +43,11 @@ export interface Sound {
   effect?(effect: Effect): void;
   /** Starts loading effects' files ahead of the first touch. Optional for test doubles. */
   preload?(files: readonly string[]): void;
-  /** The crayon sound while a finger draws (ADR 0032): 0 is silent, 1 a fast scribble. Optional for test doubles. */
-  scratch?(level: number): void;
+  /**
+   * The crayon sound while a finger draws (ADR 0032): 0 is silent, 1 a fast scribble. `rate` raises its pitch (1 is
+   * the coloring crayon). Optional for test doubles.
+   */
+  scratch?(level: number, rate?: number): void;
   /** False when a parent turned sounds off. Games that make other sounds (a voice) follow it too. */
   readonly enabled?: boolean;
 }

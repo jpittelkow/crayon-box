@@ -20,9 +20,31 @@ export function narratorClip(name: string): string | undefined {
   return soundUrl(`voice/${name}.mp3`);
 }
 
-/** The narrator's praise words, said after a finished letter's cheer (ADR 0032). */
-export const PRAISE = ['yay', 'you-did-it', 'great-job', 'wow'] as const;
+/**
+ * The narrator saying a letter's sound ("buh" for B; the short vowels with their word, "ah… apple"), for the
+ * "name then sound" and "sound only" settings (ADR 0037). Small letters share their capital's; digits have none.
+ */
+export function soundClip(ch: string): string | undefined {
+  return /^[a-z]$/i.test(ch) ? soundUrl(`voice/sound-${ch.toUpperCase()}.mp3`) : undefined;
+}
 
-export function praiseClip(word: (typeof PRAISE)[number]): string | undefined {
+/**
+ * The narrator's praise, said after a finished letter's cheer (ADR 0032): the first four from the first batch, the
+ * last four about what the kid did (ADR 0037, D11). `by-yourself` is only for a letter done without a hint.
+ */
+export const PRAISE = [
+  'yay',
+  'you-did-it',
+  'great-job',
+  'wow',
+  'all-the-way',
+  'kept-going',
+  'whole-letter',
+  'by-yourself',
+] as const;
+
+export type Praise = (typeof PRAISE)[number];
+
+export function praiseClip(word: Praise): string | undefined {
   return soundUrl(`voice/praise-${word}.mp3`);
 }
