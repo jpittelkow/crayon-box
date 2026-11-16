@@ -1,101 +1,80 @@
 # To-do
 
-The one ordered list of what is left, agreed with the owner on 2026-11-15. Work top to bottom; a later part can
-start early only when it doesn't depend on an earlier one. Tick items off by deleting them (history goes in the
-[journal](journal/README.md)); details live in the linked plans and ADRs.
+The one ordered list of what is left, agreed with the owner on 2026-11-15 and brought up to date on 2026-11-16
+after the overnight build (the old sections 2, 4 and 5 were built, PRs #59 to #74). Work top to bottom; a later
+part can start early only when it doesn't depend on an earlier one. Tick items off by deleting them (history goes
+in the [journal](journal/README.md)); details live in the linked plans and ADRs.
 
-New maps come last on purpose: first every piece a map is made from (vehicles, targets, set pieces, tiles, the
-editor, loading a map from a folder), then the maps themselves.
+New maps come last on purpose: every piece a map is made from now exists (targets, set pieces, tiles, the editor,
+loading a map from a folder), but more vehicles come first.
 
-## 1. Finish what is in flight
-- **Release 0.9.0** when there is enough to ship: the Outside theme (PR #48) is on `main` and in no release yet.
-  (0.8.0, released 2026-11-15, finished milestone 3.)
+## 1. Look, listen and playtest what was built overnight
+Nothing built on 2026-11-16 has been heard, seen on the laptop or played by a kid. The owner's choices it raised
+are in [open questions](memory/open-questions.md).
+- **Release 0.9.0** (coloring buttons and wheel; letters sound, tips, how-to and shapes; writing words; driving
+  targets, set pieces and folder maps). The release checklist's hand checks on the laptop have not been run.
+- **On the laptop:** the Windows display scale (at 125 % the colour wheel stays hidden); drop
+  `maps/examples/test-loop.json` into the maps folder and check it shows; measure the driving frame rate
+  (`tools/driving-frames.html`, highway plan phase 1's budgets).
+- **Listen:** the stand-in sounds (coloring buttons, the letters drawing sound and chime, targets, mud, ford,
+  fountain, waves, ship's horn) and the words clips; pick stretched or plain for each slow word (`SLOW_TAKES` in
+  `src/games/letters/words.ts`).
+- **A kid playtest:** coloring names, badge, demos and wheel; the letters hint ladder's timings, the how-to and
+  shapes; writing a name and a word; stars, stacks, mud, the ford, the roundabout and the harbour.
+- **Look:** the word pictures for pin, tap, red and run; the island's reshaped bay.
 
-## 2. Coloring: finish milestone 1
-- **Planned 2026-11-15:** [coloring-buttons-plan.md](coloring-buttons-plan.md), with research, and
-  [ADR 0038](adr/0038-coloring-buttons-a-kid-can-work-out.md) (Proposed). The owner took every recommendation (C1 to
-  C8) on 2026-11-15. **Next:** the coloring narrator lines (in the batch script, PR #51; run waiting), mockups on
-  the canvas, then the build phases B to F.
-- **Buttons a kid can work out:** a kid in a playtest didn't know what any coloring button does. Design first,
-  with no text (ADR 0003), for example a short demo when a button is pressed and held; mockup, then an ADR.
-- **A colour wheel** next to the swatches (asked in the same playtest). Design with the item above.
+## 2. Coloring: after the playtest
+- The undo icon checked with a kid (plan phase F); revisit modes on the kid screen (C8).
+- The design system's `tokens.json` and the mockup canvas: add the wheel's 12 colours and the new bucket, brush
+  and undo icons (both are artifacts, see gotchas).
+- The wheel's own colour names ("Coral.") need narrator lines **before 2026-12-31** if wanted; today each segment
+  says the nearest plain colour word.
 
 ## 3. Driving: more vehicles
 - **Pick the next vehicles with the owner** (ideas: digger loader, crane, street sweeper, mail van, taxi, camper
-  van, quad bike, forklift, helicopter on a pad for show). Built in code like the fourteen in `look/fleet.ts`:
-  each with a moving part, a feel (`VEHICLE_FEEL`), an engine and horn, a parent switch, and a place in traffic
-  and the garage (ADR 0035). The picker already pages five at a time.
+  van, quad bike, forklift, helicopter on a pad for show; the highway plan adds a road roller and a big lorry).
+  Built in code like the fourteen in `look/fleet.ts`: each with a moving part, a feel (`VEHICLE_FEEL`), an engine
+  and horn, a parent switch, and a place in traffic and the garage (ADR 0035). The picker already pages five at
+  a time.
 - **Steering feel** (optional, from [milestone-3.md](milestone-3.md)): a steering wheel shown on screen and a
   per-kid steering sensitivity in the parent Driving screen.
 
-## 4. Driving: the pieces maps are made of
-In this order; each one makes the next map richer or easier to build.
-- **Targets to collect and hit** (owner, 2026-11-15): stacked boxes to knock over, coins or stars to collect, a
-  silly noise and a confetti burst, then they come back. No score, no losing (ADR 0012). Needs an ADR first.
-- **More set pieces and zone kinds** for the maps after these: a mud zone (mud puddles exist; a zone kind
-  doesn't), a ford through a river, a roundabout, traffic lights for show only (they never stop the kid), a
-  harbour. Each a zone plus an animation and a sound, like the ramp and car wash.
-- **Map tiles:** cut a map into tiles and draw only the ones near the camera, with simpler far trees and props,
-  so a much bigger map keeps its frame rate. The laptop is fine on today's two maps (owner, 2026-11-15). Measured
-  2026-11-15: the simulation needs it before the drawing does (every vehicle checks every toy); the steps are in
-  [highway-map-plan.md](highway-map-plan.md), phases 1 and 2.
-- **The map editor** (`tools/map-editor.html`, a dev tool, not in the app): draw roads, paint water and ground,
-  place props, set pieces, targets and the garage on a top-down view; save a map file that passes
-  `maps/maps.test.ts`.
-- **Maps from a folder:** the game loads a map file from a folder outside the repo (dropped on the device or
-  synced from the family server). Needed by the home map; the repo holds only the loading code.
+## 4. Driving: what the map pieces still lack
+All five items of the old section 4 are built: [ADR 0041](adr/0041-driving-targets-to-collect-and-hit.md)
+(targets), [0042](adr/0042-driving-more-set-pieces.md) (mud, ford, lights, roundabout, harbour),
+[0043](adr/0043-driving-maps-from-a-folder.md) (maps from a folder), map tiles
+([highway-map-plan.md](highway-map-plan.md) phases 1 and 2), and the editor and viewer
+(`tools/map-editor.html`, `tools/driving-map.html`). Left:
+- The editor can't draw bridges, tunnels or a harbour's sail route (numbers only), place single trees or toys,
+  or make districts and overpasses (not in the map format yet: highway plan phases 5 and 7).
+- The highway plan's stricter map tests (phase 5), including "no place further than 45 m from a road" (D6):
+  `maps/check.ts` has `farFromRoad`; the island has 27 cells too far, the building site 59.
+- Landmarks (drawn simpler far away) wait for the first landmark asset.
+- Maps from the folder synced from the family server; today a file is dropped on the device by hand.
 
-## 5. Letters: sound, tips and how-to, then words
-Asked by the owner on 2026-11-15. Today a letter has its name said when finished, a word of praise, the app's
-touch sounds, start dots and arrows, a finger on the first dot, a fingertip hint after a pause, and dots on what
-is left (ADR 0026, 0028). Everything below is spoken or shown, never written (ADR 0003). One ADR for the three
-items first, with mockups.
-- **Planned 2026-11-15:** [letters-plan.md](letters-plan.md), from the research in
-  [research/letters-learning.md](research/letters-learning.md), with [ADR 0037](adr/0037-letters-sound-tips-and-how-to.md)
-  (Proposed). The owner took every recommendation (D1 to D12) on 2026-11-15. **Next:** the narrator batch on
-  the plan's schedule (first run by 2026-11-25, last planned run 2026-12-13), then mockups and the build phases B
-  to E.
-- **More sound:**
-  - the letter's name said when it opens, not only when it is done;
-  - its sound as well as its name ("B, buh"), a parent setting;
-  - a soft drawing sound while the finger is on the line, a chime as each stroke is finished; going off the
-    line only stops the drawing sound, no "boop" (owner, D4, 2026-11-15);
-  - all as files, made like the narrator's clips ([sounds recipe](recipes/sounds.md)).
-- **Tips when a kid is stuck**, spoken and shown: "start at the dot", "follow the arrow", "now the next line",
-  "tap the check". They come after a pause, after a few tries off the line, or when a kid lifts too early. They
-  grow from a quiet one (the dot pulses) to a full one (the fingertip demo with the narrator). Each tip says less
-  once the kid has done that letter well before.
-- **How to trace, the first time:** a short demo before a kid's first letter. The narrator says what to do while
-  a hand traces an easy letter (an `L` or an `O`), then the kid tries the same letter. A parent can replay it from
-  the parent Letters screen, and it can come back for a kid who hasn't played for a while.
-- **Narrator deadline:** the new lines need the same voice as today's clips, and ElevenLabs retires it on
-  2026-12-31. Make every new line before then, or pick a new voice and remake the whole set. That is a reason to
-  do this section sooner; nothing above it depends on it.
-- **Writing words**, the next level after single letters (owner, 2026-11-14). Researched 2026-11-15:
-  [research/words-learning.md](research/words-learning.md) and a draft
-  [ADR 0039](adr/0039-writing-words.md) (Proposed): the kid's own name first, then short words, one big letter
-  at a time. W1 is settled (owner, 2026-11-15): 84 more narrator lines, the `words` batch of
-  `tools/sounds/generate.mjs`. Made 2026-11-15: all 252 takes, on the laptop, not yet listened to.
-  **Next:** pick takes on the audition page and bring the clips in, before the voice ends on 2026-12-31; the owner's choices W2 to W10; then mockups, then the build. It uses the tips and sounds above.
+## 5. Letters: after the playtest
+- Plan phase F (fade the guide, then draw beside it), after the playtest (D10).
+- Writing words, the later steps of [ADR 0039](adr/0039-writing-words.md): "build it" with letter tiles (W10,
+  after the first playtest), less help on a word done before, "write it your way" (its own ADR). Their narrator
+  lines are already made.
+- **Narrator deadline:** every line the plans need is shipped; any new line (wheel colour names, a word the family
+  wants said) must be made before the voice retires on 2026-12-31.
 
 ## 6. More maps (last)
-- **A very large map: a highway round a big building site.** Planned 2026-11-15 on the owner's request:
-  [highway-map-plan.md](highway-map-plan.md), with a draft recipe for a map this size. The owner chose
-  **layout B** the same day: a figure of eight that crosses over itself
-  ([picture](design/highway-layout-b.svg)), so roads on two levels (the plan's phase 7) are built and proven on a
-  small test map before the big one is drawn. Its phases 1 to 5 are section 4's map tiles, set pieces and the
-  looking half of the map editor; the map itself is built here. The owner's choices are in
-  [ADR 0040](adr/0040-driving-very-large-map-highway-and-building-site.md) (Proposed). **Next:** the owner says when it starts (D10); then the plan's phase 1 (measure a
-  stand-in map on the laptop) and phase 7 (the small figure of eight).
+- **A very large map: a highway round a big building site.** [highway-map-plan.md](highway-map-plan.md), layout
+  B ([picture](design/highway-layout-b.svg)),
+  [ADR 0040](adr/0040-driving-very-large-map-highway-and-building-site.md) (Proposed). Phases 1 and 2 are built
+  (2026-11-16: a 1 km stand-in steps in about 0.55 ms on the dev machine). **Next:** the owner says when it
+  starts (D10); then phase 7 (roads on two levels on a small test map), phases 3 to 5, then the map.
 - **New maps** made with the editor: ideas are a town (streets in blocks, a fire station garage, a park) and the
   countryside (a farm, a river with fords and a bridge, a flooded field). Which ones: the owner's pick.
 - **The home map** (milestone 5): a map of the family's own area from real map and terrain data, with the house
-  and a few neighbours'. Built only in the private folder, never committed ([privacy rule](../CLAUDE.md)). Needs a
-  short design first: where the data comes from and how the folder reaches the device.
+  and a few neighbours'. Built only in the private folder, never committed ([privacy rule](../CLAUDE.md)); it
+  loads through the maps folder (ADR 0043). Needs a short design first: where the data comes from.
 
 ## Parked (not planned)
 - iPad version ([ADR 0030](adr/0030-ipad-home-screen-web-app.md), a draft kept for later).
 - Printing and export (ADR 0010, Deferred).
-- Real sound files for the driving stand-ins (set pieces, the new vehicles' engines and horns): the stand-ins are
-  fine for now (owner, 2026-11-15).
+- Real sound files for the driving stand-ins (set pieces, targets, the new vehicles' engines and horns): the
+  stand-ins are fine for now (owner, 2026-11-15).
 - The design system artifact's 3D section (the rules are in [driving-assets.md](driving-assets.md) for now).
