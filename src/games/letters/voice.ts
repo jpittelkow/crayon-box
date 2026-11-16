@@ -7,9 +7,10 @@
 // While a finger is on the letter no new line starts; a line asked for meanwhile waits, and a newer one replaces
 // it. Opening a letter, finishing it or tapping it cuts in at once instead (`say`, `sayFinished`). A hint's line
 // (`tip`) is never kept for later: it is dropped when a finger is down, and a finger going down drops it if it waits.
-import { PRAISE, letterClip, praiseClip, soundClip, type Praise } from '../../shell/soundFiles';
+import { PRAISE, letterClip, narratorClip, praiseClip, soundClip, type Praise } from '../../shell/soundFiles';
 import type { Sound } from '../../shell/types';
 import type { GameStorage } from '../../storage/types';
+import { SHAPES } from './glyphs';
 import { findRecording, spoken, type LettersSettings, type Said, type Saying } from './progress';
 
 /** One clip of a line: a shipped file, a parent's recording (a storage path), or the browser's voice. */
@@ -30,12 +31,33 @@ export function pickPraise(last: Praise | null, helped: boolean, random: () => n
   return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))]!;
 }
 
+/**
+ * The narrator's clip naming a shape (ADR 0037, D9): the three lines are "Line.", the X is the letter X's clip; the
+ * others are said by name ("Circle.").
+ */
+const SHAPE_CLIPS: Record<string, string> = {
+  'line-down': 'shape-line',
+  'line-across': 'shape-line',
+  circle: 'shape-circle',
+  cross: 'shape-cross',
+  slant: 'shape-line',
+  square: 'shape-square',
+  x: 'letter-X',
+  triangle: 'shape-triangle',
+};
+
+/** The narrator's clip with a letter's, number's or shape's name. */
+export function nameClip(ch: string): string | undefined {
+  const shape = SHAPES[ch];
+  return shape ? narratorClip(SHAPE_CLIPS[shape.key]) : letterClip(ch);
+}
+
 /** The parts that say a letter: each from a parent's recording when chosen and made, else the narrator. */
 export async function letterParts(storage: GameStorage, settings: LettersSettings, ch: string): Promise<Part[]> {
   const out: Part[] = [];
   for (const what of partsFor(settings.saying, ch)) {
     const own = settings.voice === 'own' ? await findRecording(storage, ch, what) : undefined;
-    const clip = what === 'sound' ? soundClip(ch) : letterClip(ch);
+    const clip = what === 'sound' ? soundClip(ch) : nameClip(ch);
     out.push(own ? { own } : clip ? { clip } : { speech: spoken(ch) });
   }
   return out;
@@ -74,10 +96,23 @@ export class LetterVoice {
    * dropped when a finger is on the letter: the kid has moved on.
    */
   tip(clips: (string | undefined)[]): void {
+    void this.cue(clips, this.tipsOn);
+  }
+
+  /**
+   * A line of the first-time how-to ("Watch me.", its stroke words, "Your turn!"): like a tip, but it is not a hint,
+   * so only the Sounds switches silence it. Resolves when it has been said (at once when it waits or is dropped).
+   */
+  howTo(clips: (string | undefined)[]): Promise<void> {
+    return this.cue(clips, this.on);
+  }
+
+  private cue(clips: (string | undefined)[], allowed: boolean): Promise<void> {
     const parts = clips.filter((c): c is string => !!c).map((clip) => ({ clip }));
-    if (!this.tipsOn || this.held || parts.length === 0) return;
-    void this.line(parts);
+    if (!allowed || this.held || parts.length === 0) return Promise.resolve();
+    const said = this.line(parts);
     if (this.waiting === parts) this.waitingTip = true;
+    return said;
   }
 
   /** Says the letter as the setting asks, cutting in: when a letter opens, or a finished one is tapped. */
@@ -133,7 +168,7 @@ export class LetterVoice {
     } catch {
       // Storage failed: the narrator alone.
       return partsFor(this.settings.saying, ch).map((what) => ({
-        clip: (what === 'sound' ? soundClip(ch) : letterClip(ch)) ?? '',
+        clip: (what === 'sound' ? soundClip(ch) : nameClip(ch)) ?? '',
       }));
     }
   }

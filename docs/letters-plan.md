@@ -286,7 +286,7 @@ whole thing in one place with its numbers, so a playtest can tune it.
     bigger dot and the arrow are held still and larger, and the show draws each stroke whole at its turn.
   - Not built: the parent area showing the help counts; per-kid spoken tips (the switch is per family, like Sounds).
 
-### D. The first-time how-to
+### D. The first-time how-to (built 2026-11-15)
 - **Builds:** before a kid's first letter ever (and after 14 days without Letters, D7), the tracing screen opens on
   the demo letter (D6, `L`: a line down and a line across, the first two strokes small kids can make, research
   1.3). The narrator says "Watch me.", a hand traces each stroke with its stroke word ("Down." … "Across."), the
@@ -302,8 +302,25 @@ whole thing in one place with its numbers, so a playtest can tune it.
 - **Tests:** unit: the demo is due on first play, after 14 days, after a parent's replay, and not otherwise. Browser:
   a new kid sees the demo then traces `L`; a touch cuts it short; the replay button brings it back.
 - **Done when:** a new kid's first visit starts with the demo, and a parent can bring it back.
+- **Built 2026-11-15** (not yet seen by the kids). As built, where it differs from or adds to the above:
+  - It plays when the kid picks a letter (from the grid or the path) while it is due: the trace screen opens on `L`
+    instead, and after the kid's `L` the next arrow goes to the letter they picked. Picking `L` itself goes on as
+    usual after it.
+  - The order: "Watch me." (the letter's name is not said on open), the show starts once that line ends (at least
+    0.6 s, at most 2 s), the fingertip draws `L` with "Down." and "Across.", the drawing clears, the start dot
+    pulses bigger and "Your turn!". About 4 to 5 seconds. The show is `playDemo` as step 3 uses it.
+  - Its lines follow only the Sounds switches, not "Spoken tips": the how-to is not a hint (`LetterVoice.howTo`).
+  - While it plays the hint ladder waits; its 5 s start from the end of the how-to. A touch anywhere ends it at once
+    (`data-how-to="stopped"`), without "Your turn!", and it counts as seen.
+  - `KidProgress.demoSeen` is set when the how-to opens; `lastPlayed` (`YYYY-MM-DD`, the device's clock) is set each
+    time a letter opens. It is due when not seen, or after 14 days with no letter opened (`HOWTO_AGAIN_DAYS`; the
+    letter and the timings are at the top of `hints.ts` with the other numbers). Progress files from before have no
+    `demoSeen`, so a kid who already played sees it once. A parent's "Reset stars and game" also brings it back.
+  - The `L` counts like any letter: a star, and a step on the game path when the path has `L` open.
+  - Parent area: "Show how to trace again" in each kid's row (`showDemoAgain`), and a "Helping a kid learn" card
+    with the note about sitting with the youngest and crayons on paper.
 
-### E. Easier order and a lines-and-shapes set (if the owner wants them, D8, D9)
+### E. Easier order and a lines-and-shapes set (D8, D9; built 2026-11-15)
 - **Easy first on the game path** (D8): the game path walks capitals as straight lines first, then the ones with
   curves and slants, in groups that share a start (research 1.2): `L F E H T I` · `D P B R` · `C O Q G S` ·
   `U J` · `N M K` · `A V W X Y Z`. The practice grid stays alphabetical. No study proves one order better, so this
@@ -318,6 +335,25 @@ whole thing in one place with its numbers, so a playtest can tune it.
 - **Tests:** the existing glyph tests (in its box, no gaps, a good trace finishes in both modes) run over the
   shapes too; the game path order; old progress files load.
 - **Done when:** the chosen order is on the path and shapes can be turned on for a kid.
+- **Built 2026-11-15** (not yet seen by the kids). As built, where it differs from or adds to the above:
+  - The order is the table `GAME_GROUPS` in `progress.ts`, one row per set; only capitals differ from practice
+    (`LFEHTI DPBR COQGS UJ NMK AVWXYZ`). `lettersOf` builds the game path from it; the practice grid and its next
+    arrow still use `SET_CHARS` (A to Z). Old game progress needs no change: done letters keep their stars and stay
+    open; a kid who had done A B C now has L next. With capitals on and shapes off, the how-to's `L` is the first
+    stop, so the how-to also counts as the first step of the game when played from the path.
+  - The shapes are a set, `shapes`, first in `SET_ORDER`, with symbols as ids that are no letter or digit
+    (`|-○+\□×△`; kids never see them, the tiles and stops draw the shape). `SHAPES` in `glyphs.ts` gives each a key
+    for progress (`shape-circle`) and a name for screen readers ("Circle", "X shape"). `allChars()` stays the 62
+    letters and numbers (`LETTER_SETS`), so a parent's recordings and the stroke table are unchanged.
+  - The strokes, all in the capitals' box: line down; line across; circle (counterclockwise from the top, like O);
+    cross (down, then across); slant (top left to bottom right, like X's first stroke); square (down the left side,
+    then across, down and back across in one stroke, built like D); X (two slants); triangle (both slants from the
+    top, then across the bottom, built like A).
+  - The narrator: "Line." for line down, line across and slant; "Circle.", "Cross.", "Square.", "Triangle."; the X
+    says the letter X's clip (`nameClip` in `voice.ts`). Shapes have no sound, so every saying setting says the name.
+  - The parent switch is a fourth button in each kid's set row, `○ □ △`, off by default; the "What each kid traces"
+    card explains it and the game's order. Practice shows a "Lines and shapes" tab first, eight tiles in two rows.
+  - Not built: a parent's own recording of a shape's name (the recordings grid stays letters and numbers).
 
 ### F. Later, after a playtest: fade the guide, then draw beside it
 Not built until the kids have played with B–D. Research 1.1 and 2.3 say help should fade and freehand copying
