@@ -47,6 +47,11 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    E two or three bigger maps with a map picker, F ready for the kids. Phase A1 built 2026-11-15: a fire truck three
    ways in `spikes/vehicle-sources/` (in code, Kenney CC0 kit, AI-made with TRELLIS.2); the owner chose
    **built in code** the same day. Asset categories and catalog: [driving-assets.md](../driving-assets.md). A2 (laptop check) not started.
+   **A third, very large map** (a highway round a big building site; asked by the owner 2026-11-15) is planned in
+   [highway-map-plan.md](../highway-map-plan.md): about 1 km across, engine work first. The owner chose
+   **layout B** (2026-11-15): a figure of eight that crosses over itself, so roads on two levels are built
+   before the map. The owner's choices are in [ADR 0040](../adr/0040-driving-very-large-map-highway-and-building-site.md) (Proposed, 2026-11-15); when it starts is
+   open. Nothing built.
 5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
    of the family's own area, made from real map and terrain data, with the roads, the family's house and a few
    neighbours' houses. It must never be committed: it lives in a folder kept out of the repo that can be dropped

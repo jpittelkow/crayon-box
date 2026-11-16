@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 680" font-family="Segoe UI, Arial, sans-serif">
+  <title>Highway layout A: a ring road round a lake, the building site in the middle</title>
+  <defs>
+    <pattern id="waves" width="40" height="20" patternUnits="userSpaceOnUse">
+      <path d="M0 10 Q10 4 20 10 T40 10" fill="none" stroke="#7cc4f2" stroke-width="2" opacity="0.5"/>
+    </pattern>
+  </defs>
+  <!-- Sea. About 1.3 m to a pixel: the land is about 1,040 m by 750 m. -->
+  <rect width="900" height="680" fill="#3d9fe0"/>
+  <rect width="900" height="680" fill="url(#waves)"/>
+  <!-- The land: a ring. In the map file it is one shoreline that runs round the outside, in through the river
+       mouth, round the lake and round the site. -->
+  <path d="M 50 340 C 50 150 220 50 450 50 C 680 50 850 150 850 340 C 850 530 680 630 450 630 C 220 630 50 530 50 340 Z"
+        fill="#e6c98c" stroke="#e6c98c" stroke-width="16" stroke-linejoin="round"/>
+  <path d="M 50 340 C 50 150 220 50 450 50 C 680 50 850 150 850 340 C 850 530 680 630 450 630 C 220 630 50 530 50 340 Z" fill="#6fb84a"/>
+  <!-- The lake and the river mouth to the sea -->
+  <g fill="#3d9fe0">
+    <path d="M 115 340 C 115 200 260 112 450 112 C 640 112 785 200 785 340 C 785 480 640 568 450 568 C 260 568 115 480 115 340 Z"/>
+    <rect x="770" y="312" width="110" height="56"/>
+  </g>
+  <path d="M 115 340 C 115 200 260 112 450 112 C 640 112 785 200 785 340 C 785 480 640 568 450 568 C 260 568 115 480 115 340 Z" fill="url(#waves)"/>
+  <!-- The building site: a dirt peninsula joined to the ring on the west -->
+  <path d="M 100 298 L 236 298 C 286 222 350 190 420 190 C 540 190 630 250 630 340 C 630 430 540 490 420 490 C 350 490 286 458 236 382 L 100 382 Z" fill="#cfa973"/>
+  <!-- The ford: shallow water on the south link -->
+  <ellipse cx="428" cy="529" rx="34" ry="40" fill="#8fd0f5"/>
+  <!-- Tunnel hill on the north-west of the ring -->
+  <ellipse cx="190" cy="157" rx="58" ry="44" fill="#4f8f3a"/>
+  <ellipse cx="190" cy="151" rx="40" ry="28" fill="#5ea347"/>
+  <!-- Quarry hills: dirt mounds the car drives round -->
+  <g fill="#9a6b42">
+    <ellipse cx="335" cy="282" rx="26" ry="19"/><ellipse cx="376" cy="262" rx="18" ry="13"/><ellipse cx="372" cy="300" rx="15" ry="11"/>
+  </g>
+  <!-- Mud flats -->
+  <g fill="#6b4a2e">
+    <ellipse cx="500" cy="398" rx="26" ry="15"/><ellipse cx="535" cy="382" rx="13" ry="9"/><ellipse cx="470" cy="416" rx="11" ry="7"/>
+  </g>
+  <!-- Roads -->
+  <g fill="none" stroke-linecap="round">
+    <!-- Site tracks (dirt): a loop, a cross, links north and south, a small loop in two yards -->
+    <g stroke="#8a6238" stroke-width="8">
+      <path d="M 260 340 C 260 265 330 230 425 230 C 520 230 590 265 590 340 C 590 415 520 450 425 450 C 330 450 260 415 260 340 Z"/>
+      <path d="M 90 340 L 590 340"/>
+      <path d="M 425 230 L 430 84"/>
+      <path d="M 425 450 L 430 596"/>
+      <circle cx="505" cy="287" r="28"/>
+      <circle cx="345" cy="394" r="28"/>
+    </g>
+    <!-- The highway: four lanes, one ring of about 2.6 km -->
+    <path d="M 83 340 C 83 190 240 81 450 81 C 660 81 817 190 817 340 C 817 490 660 599 450 599 C 240 599 83 490 83 340 Z" stroke="#4a4f57" stroke-width="15"/>
+    <path d="M 83 340 C 83 190 240 81 450 81 C 660 81 817 190 817 340 C 817 490 660 599 450 599 C 240 599 83 490 83 340 Z" stroke="#fff" stroke-width="1.5"/>
+    <!-- Road works: one side of the highway still dirt -->
+    <path d="M 632 119 Q 722 150 775 222" stroke="#a47c52" stroke-width="6" transform="translate(3 -3)"/>
+  </g>
+  <!-- Road works: cones -->
+  <g fill="#ff7a1a">
+    <circle cx="640" cy="125" r="3.5"/><circle cx="662" cy="134" r="3.5"/><circle cx="684" cy="145" r="3.5"/><circle cx="705" cy="158" r="3.5"/>
+    <circle cx="725" cy="173" r="3.5"/><circle cx="744" cy="190" r="3.5"/><circle cx="760" cy="208" r="3.5"/>
+  </g>
+  <!-- Tunnel: the hill covers the highway; a portal at each end -->
+  <ellipse cx="190" cy="153" rx="38" ry="26" fill="#5ea347" opacity="0.92"/>
+  <rect x="147" y="181" width="20" height="10" rx="5" fill="#2b2b2b" transform="rotate(-52 157 186)"/>
+  <rect x="216" y="118" width="20" height="10" rx="5" fill="#2b2b2b" transform="rotate(-36 226 123)"/>
+  <!-- The long bridge over the river mouth -->
+  <rect x="806" y="302" width="22" height="76" fill="#c8ccd2"/>
+  <line x1="806" y1="302" x2="806" y2="378" stroke="#6b7280" stroke-width="3"/>
+  <line x1="828" y1="302" x2="828" y2="378" stroke="#6b7280" stroke-width="3"/>
+  <line x1="817" y1="302" x2="817" y2="378" stroke="#fff" stroke-width="1.5"/>
+  <!-- The small bridge on the north link -->
+  <rect x="420" y="108" width="15" height="86" fill="#c98b4a"/>
+  <line x1="420" y1="108" x2="420" y2="194" stroke="#7a4f22" stroke-width="3"/>
+  <line x1="435" y1="108" x2="435" y2="194" stroke="#7a4f22" stroke-width="3"/>
+  <!-- Rest stop with the fuel station (a garage) -->
+  <rect x="610" y="578" width="46" height="18" rx="3" fill="#f4f6f8" stroke="#e63946" stroke-width="3" transform="rotate(-19 633 587)"/>
+  <!-- Toll gates, for show -->
+  <rect x="136" y="486" width="28" height="7" fill="#ffc83d" stroke="#e63946" stroke-width="2" transform="rotate(38 150 489)"/>
+  <!-- Tower crane: seen from everywhere -->
+  <line x1="505" y1="287" x2="566" y2="258" stroke="#ffc400" stroke-width="5" stroke-linecap="round"/>
+  <line x1="505" y1="287" x2="485" y2="296" stroke="#ffc400" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="505" cy="287" r="8" fill="#ffc400" stroke="#8a6d00" stroke-width="2"/>
+  <rect x="556" y="262" width="9" height="9" fill="#b5523b"/>
+  <!-- Gravel chute and silo -->
+  <rect x="580" y="318" width="20" height="14" fill="#9aa1ab" stroke="#555" stroke-width="2"/>
+  <circle cx="606" cy="352" r="9" fill="#c8ccd2" stroke="#555" stroke-width="2"/>
+  <!-- Car wash on the cross track -->
+  <rect x="520" y="330" width="30" height="20" rx="4" fill="#f4f6f8" stroke="#e63946" stroke-width="3"/>
+  <!-- Pipe yard: giant pipes to drive through -->
+  <g fill="#c8ccd2" stroke="#6b7280" stroke-width="2">
+    <rect x="330" y="386" width="30" height="9" rx="4"/><rect x="336" y="399" width="30" height="9" rx="4"/><circle cx="322" cy="410" r="5"/>
+  </g>
+  <!-- Site office (a garage) -->
+  <rect x="186" y="328" width="26" height="24" fill="#b5523b" stroke="#7a2f20" stroke-width="2"/>
+  <!-- Cows in a field by the highway -->
+  <g fill="#fff" stroke="#555" stroke-width="1.5"><circle cx="296" cy="80" r="5"/><circle cx="312" cy="75" r="5"/><circle cx="282" cy="86" r="4"/></g>
+  <!-- Boats on the lake -->
+  <g fill="#fff" stroke="#e63946" stroke-width="2"><ellipse cx="705" cy="300" rx="9" ry="4"/><ellipse cx="718" cy="410" rx="9" ry="4" transform="rotate(30 718 410)"/></g>
+  <!-- Junctions: where the site's links meet the highway -->
+  <g fill="none" stroke="#ff6b9d" stroke-width="4">
+    <circle cx="86" cy="340" r="17"/><circle cx="430" cy="83" r="17"/><circle cx="430" cy="597" r="17"/>
+  </g>
+  <!-- Start -->
+  <path d="M 300 563 l 6 13 14 1 -11 9 4 14 -13 -8 -13 8 4 -14 -11 -9 14 -1 Z" fill="#fff" stroke="#333" stroke-width="2"/>
+  <!-- Scale -->
+  <line x1="36" y1="656" x2="190" y2="656" stroke="#fff" stroke-width="4"/>
+  <text x="113" y="648" font-size="14" fill="#fff" text-anchor="middle">200 m</text>
+  <!-- Number tags -->
+  <g font-size="14" font-weight="700" text-anchor="middle">
+    <g><circle cx="560" cy="70" r="13" fill="#fff"/><text x="560" y="75">1</text></g>
+    <g><circle cx="856" cy="290" r="13" fill="#fff"/><text x="856" y="295">2</text></g>
+    <g><circle cx="140" cy="118" r="13" fill="#fff"/><text x="140" y="123">3</text></g>
+    <g><circle cx="690" cy="596" r="13" fill="#fff"/><text x="690" y="601">4</text></g>
+    <g><circle cx="118" cy="522" r="13" fill="#fff"/><text x="118" y="527">5</text></g>
+    <g><circle cx="768" cy="150" r="13" fill="#fff"/><text x="768" y="155">6</text></g>
+    <g><circle cx="528" cy="250" r="13" fill="#fff"/><text x="528" y="255">7</text></g>
+    <g><circle cx="614" cy="304" r="13" fill="#fff"/><text x="614" y="309">8</text></g>
+    <g><circle cx="318" cy="250" r="13" fill="#fff"/><text x="318" y="255">9</text></g>
+    <g><circle cx="560" cy="408" r="13" fill="#fff"/><text x="560" y="413">10</text></g>
+    <g><circle cx="300" cy="420" r="13" fill="#fff"/><text x="300" y="425">11</text></g>
+    <g><circle cx="199" cy="312" r="13" fill="#fff"/><text x="199" y="317">12</text></g>
+    <g><circle cx="262" cy="62" r="13" fill="#fff"/><text x="262" y="67">13</text></g>
+    <g><circle cx="470" cy="150" r="13" fill="#fff"/><text x="470" y="155">14</text></g>
+    <g><circle cx="472" cy="530" r="13" fill="#fff"/><text x="472" y="535">15</text></g>
+  </g>
+  <!-- Legend -->
+  <rect x="900" width="280" height="680" fill="#fffaf0"/>
+  <g font-size="15" fill="#222">
+    <text x="920" y="40" font-size="23" font-weight="700">Highway layout A</text>
+    <text x="920" y="64" font-size="15" fill="#555">A ring road round a lake</text>
+    <text x="920" y="98">1  The highway: four lanes, a ring</text>
+    <text x="920" y="121">2  Long bridge over the river mouth</text>
+    <text x="920" y="144">3  Tunnel through the hill</text>
+    <text x="920" y="167">4  Rest stop (a garage)</text>
+    <text x="920" y="190">5  Toll gates (they always open)</text>
+    <text x="920" y="213">6  Road works: cones, dirt, a roller</text>
+    <text x="920" y="236">7  Tower crane yard</text>
+    <text x="920" y="259">8  Gravel chute and silo</text>
+    <text x="920" y="282">9  Quarry hills and ramps</text>
+    <text x="920" y="305">10  Mud flats and the car wash</text>
+    <text x="920" y="328">11  Pipe yard</text>
+    <text x="920" y="351">12  Site office (a garage)</text>
+    <text x="920" y="374">13  Cows</text>
+    <text x="920" y="397">14  Small bridge  15  Ford</text>
+    <text x="920" y="420">○  Junctions (pink rings)   ★  Start</text>
+  </g>
+  <!-- Today's island at the same scale -->
+  <rect x="920" y="440" width="240" height="176" rx="8" fill="#3d9fe0"/>
+  <ellipse cx="1040" cy="528" rx="94" ry="77" fill="#e6c98c"/>
+  <ellipse cx="1040" cy="528" rx="88" ry="71" fill="#6fb84a"/>
+  <ellipse cx="1040" cy="528" rx="65" ry="51" fill="none" stroke="#5a5f66" stroke-width="7"/>
+  <line x1="1040" y1="477" x2="1040" y2="579" stroke="#5a5f66" stroke-width="7"/>
+  <text x="920" y="640" font-size="15" fill="#444">Today's island, at the same scale.</text>
+  <text x="920" y="662" font-size="15" fill="#444">Flat: no road crosses over another.</text>
+</svg>
