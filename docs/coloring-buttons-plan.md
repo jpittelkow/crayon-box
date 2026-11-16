@@ -2,7 +2,8 @@
 
 To-do section 2. In the playtest of 2026-11-15 a kid didn't know what any coloring button does, and the owner asked
 for a colour wheel next to the swatches. Drafted 2026-11-15; the decision is
-[ADR 0038](adr/0038-coloring-buttons-a-kid-can-work-out.md) (Proposed). Nothing here is built yet.
+[ADR 0038](adr/0038-coloring-buttons-a-kid-can-work-out.md) (Accepted). **Built 2026-11-15:** phases B (names and
+sounds) and C (the tool at the finger); see "As built" under Phases. D, E and F are not built.
 
 ## The screen today
 Left rail: back, paint bucket, brush, eraser, undo, start over. Under the page: three brush-size dots and two
@@ -103,6 +104,28 @@ Six parts. Parts 1 to 3 are the core; 4 is for the parent; 5 is the wheel; 6 is 
 | F. Icons | plainer bucket, brush and undo, checked by eye | a kid playtest |
 
 Then a playtest: do kids pick the tool they mean, does the badge help, do the demos get watched or skipped.
+
+### As built (B and C, 2026-11-15)
+- **Where:** `src/games/coloring/buttons.ts` (each button's sound and narrator clip, and the `Narrator` that plays
+  them), `names.ts` (the per-kid counter and the parent setting), `badge.ts` (the badge), wired in `session.ts`.
+  Pick buttons use `onPress` (`src/ui/kid.ts`); the shell's `Sound` gained `effect` and `preload` for a game's own
+  sounds. Tests: `names.test.ts`, `tests/e2e/buttons.spec.ts`.
+- **Names:** the sound plays at once and the name about 0.2 s later; a new pick cuts off a name still waiting or
+  being said. A name counts when it is said (not when it is skipped or cut off), up to 3, kept per kid in the game's
+  `kids/<id>/names.json`; nothing more is written after 3. Back, undo and start over say their names too (their clips
+  were made), still on lift; undo with nothing to undo keeps its quiet "nothing" tap. Names follow the Sounds switch.
+- **Parent setting:** Parent area › Coloring (a new screen, where D's "Show the buttons" will go): "First 3 times"
+  (default), "Every time", "Never", for every kid (`button-names.json`).
+- **Stand-in sounds** (ADR 0032, all under 0.3 s): bucket a raised splash (`drive/splash.wav`), brush a quick swish
+  and eraser a slow soft rub (both cut from `ui/crayon.wav`), undo `ui/undo.wav`, start over the start of
+  `ui/page.wav`, sizes the tap at three pitches, color anywhere a boing, stay in the lines a soft bump, every colour a
+  short crayon dab, back the tap.
+- **Badge:** on the whole coloring screen (so it can stand out over the margin), centred about 56 px right of and
+  70 px above the first finger on the page; left of it near the right edge, below it near the top. 68, 80 or 94 px
+  with the size (the bucket's is the middle one), the icon on a white disc; white for the eraser; the bucket's icon
+  tips back and forth (it holds still with reduce motion on). Palms and second fingers don't move it.
+- **Rail:** the picked tool is scaled 1.12; under the bucket the sizes are grey (grayscale, 40 % opacity) and none is
+  ringed; tapping one still picks it and the brush.
 
 ## Decisions for the owner
 **Settled 2026-11-15:** the owner took every recommendation, C1 to C8.
