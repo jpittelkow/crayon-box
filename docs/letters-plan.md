@@ -266,6 +266,11 @@ teaches most.
 - Needs its own short ADR when it is picked up.
 
 ### G. Then words (own ADR)
+Drafted 2026-11-15 as [ADR 0038](adr/0038-writing-words.md) (Proposed), from
+[research/words-learning.md](research/words-learning.md). It asks for more narrator lines in this plan's second
+run (its decision W1) and proposes every word open rather than only words made of starred letters (W6). The
+outline it started from:
+
 ADR 0026 covers single letters, so words need their own ADR; it builds on B–D. The outline, from research 1.7:
 1. **The kid's own name** first: the letters come from the profile name a parent typed (ADR 0018); it never
    leaves the device. The narrator can't say a name it doesn't know, so the finished name plays the parent's own

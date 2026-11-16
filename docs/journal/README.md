@@ -33,4 +33,4 @@ the journal is append-only history. Newest entry is the place to pick up from.
 - [2026-11-14](2026-11-14.md): design ADRs, memory and journal set up; web app scaffold and coloring engine; new
   picture flow, kid names and photos, parent area; milestone 1 phases A and B; racing game ADR proposed;
   three.js and Babylon.js test, with water
-- [2026-11-15](2026-11-15.md): sound options, the milestone 3 plan for the driving game, driving to a spot (ADR 0031); letters research and plan (ADR 0037 proposed)
+- [2026-11-15](2026-11-15.md): sound options, the milestone 3 plan for the driving game, driving to a spot (ADR 0031); letters research and plan (ADR 0037 proposed); words research and a draft ADR 0038

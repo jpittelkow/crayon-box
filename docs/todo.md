@@ -65,8 +65,11 @@ items first, with mockups.
 - **Narrator deadline:** the new lines need the same voice as today's clips, and ElevenLabs retires it on
   2026-12-31. Make every new line before then, or pick a new voice and remake the whole set. That is a reason to
   do this section sooner; nothing above it depends on it.
-- **Tracing short words** letter by letter, the next level after single letters (owner, 2026-11-14). Needs its
-  own ADR (ADR 0026 covers single letters). It uses the tips and sounds above.
+- **Writing words**, the next level after single letters (owner, 2026-11-14). Researched 2026-11-15:
+  [research/words-learning.md](research/words-learning.md) and a draft
+  [ADR 0038](adr/0038-writing-words.md) (Proposed): the kid's own name first, then short words, one big letter
+  at a time. **Next:** the owner's choices W1 to W10 in the ADR. W1 (more narrator lines) is needed by 2026-12-06,
+  because the voice ends on 2026-12-31. Then mockups, then the build. It uses the tips and sounds above.
 
 ## 6. More maps (last)
 - **New maps** made with the editor: ideas are a town (streets in blocks, a fire station garage, a park) and the
