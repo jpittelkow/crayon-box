@@ -105,6 +105,8 @@ Six parts. Parts 1 to 3 are the core; 4 is for the parent; 5 is the wheel; 6 is 
 Then a playtest: do kids pick the tool they mean, does the badge help, do the demos get watched or skipped.
 
 ## Decisions for the owner
+**Settled 2026-11-15:** the owner took every recommendation, C1 to C8.
+
 | # | Decision | Options | Recommended |
 |---|---|---|---|
 | C1 | Names spoken | first 3 picks per button per kid · always · never | **first 3**, parent setting to change |

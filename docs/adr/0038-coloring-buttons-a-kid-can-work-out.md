@@ -1,7 +1,7 @@
 # 0038. Coloring buttons a kid can work out: names and sounds, the tool at the finger, a show-how, a colour wheel
 
-- Status: Proposed (drafted 2026-11-15 from [coloring-buttons-plan.md](../coloring-buttons-plan.md)); the owner's
-  choices C1 to C8 and the mockups are still to come
+- Status: Proposed (drafted 2026-11-15 from [coloring-buttons-plan.md](../coloring-buttons-plan.md)); the owner
+  settled C1 to C8 on 2026-11-15, taking every recommendation; acceptance waits on the mockups
 - Date: 2026-11-15
 - Builds on: [ADR 0003](0003-toddler-first-interaction-rules.md), [0016](0016-visual-design-language.md),
   [0019](0019-bigger-coloring-page.md), [0032](0032-sounds-as-files.md). Would supersede, in ADR 0003: rule 1's
