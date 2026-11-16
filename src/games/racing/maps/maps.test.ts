@@ -1,12 +1,15 @@
 // Every map keeps the driving game's rules (ADR 0021, 0035; milestone-3 F): the car never ends up in the sea or
-// inside a hill, is never stuck, traffic stays on its roads, and "follows the road" stays close to them.
+// inside a hill, is never stuck, traffic stays on its roads, and "follows the road" stays close to them. The rules
+// that need no driving are in `check.ts`, which also checks maps from the device's folder as they load (ADR 0043);
+// the generic example map file is held to all of them here too.
 import { describe, expect, it } from 'vitest';
-import { guardAt, hillReach } from '../sim/ground';
-import { onLand } from '../sim/land';
 import { nearestRoad } from '../sim/roads';
 import { VEHICLES } from '../settings';
-import { makeWorld, step, waterAt, type Input, type World } from '../sim/sim';
+import { makeWorld, step, type Input, type World } from '../sim/sim';
 import { MAPS, MAP_NAMES } from '.';
+import { allowedAt as allowed, inHill, MAP_ID, mapProblems } from './check';
+import { parseMapFile } from './file';
+import example from './examples/test-loop.json?raw';
 
 const DT = 1 / 60;
 const GO: Input = { go: true, brake: false, steer: 0 };
@@ -14,48 +17,23 @@ const GO: Input = { go: true, brake: false, steer: 0 };
 function run(w: World, seconds: number, input: (w: World, i: number) => Input): void {
   for (let i = 0; i < Math.round(seconds / DT); i++) step(w, input(w, i), DT);
 }
-const allowed = (w: World, x: number, z: number) => onLand(w.land, x, z) || guardAt(w.guards, w.roads, x, z)?.guard.kind === 'bridge';
-const inHill = (w: World, x: number, z: number) =>
-  (w.map.hills ?? []).some((h) => hillReach(h, x, z) < 0.8) && !guardAt(w.guards, w.roads, x, z);
 
-describe.each(MAPS.map((m) => [MAP_NAMES[m.id], m] as const))('the %s', (_name, map) => {
-  it('has a name, roads, a garage, and zones that don\'t sit on each other', () => {
-    expect(MAP_NAMES[map.id]).toBeTruthy();
-    const w = makeWorld(7, 0, 'free', map);
-    expect(w.zones.some((z) => z.kind === 'garage')).toBe(true);
-    for (let i = 0; i < w.zones.length; i++) {
-      for (let j = i + 1; j < w.zones.length; j++) {
-        expect(Math.hypot(w.zones[i]!.x - w.zones[j]!.x, w.zones[i]!.z - w.zones[j]!.z)).toBeGreaterThan(w.zones[i]!.r + w.zones[j]!.r + 4);
-      }
-    }
+const parsed = parseMapFile(example);
+if (!parsed.ok) throw new Error(`The example map file doesn't load: ${parsed.reason}`);
+const NAMES: Record<string, string> = { ...MAP_NAMES, [parsed.map.id]: parsed.name };
+
+describe.each([...MAPS, parsed.map].map((m) => [NAMES[m.id], m] as const))('the %s', (_name, map) => {
+  it('has a name and keeps the rules a map is checked against as it loads (check.ts)', () => {
+    expect(NAMES[map.id]).toBeTruthy();
+    expect(map.id).toMatch(MAP_ID);
+    // Roads, a garage, zones that don't sit on each other; targets (ADR 0041) clear of everything else.
+    expect(mapProblems(map)).toEqual([]);
   });
 
-  it('has targets (ADR 0041): stars on the roads and stacks just off them, clear of everything else', () => {
+  it('has enough targets (ADR 0041): rows of stars and stacks of boxes', () => {
     const w = makeWorld(7, map.propCount ?? 150, 'free', map);
-    const stars = w.props.filter((p) => p.toy === 'toy/star');
-    const stacks = w.stacks.map((s) => w.props[s[0]!]!);
-    expect(stars.length).toBeGreaterThanOrEqual(15);
-    expect(stacks.length).toBeGreaterThanOrEqual(5);
-    const kid = w.cars[0]!;
-    for (const t of [...stars, ...stacks]) {
-      const where = `${t.toy} at ${t.homeX.toFixed(0)}, ${t.homeZ.toFixed(0)}`;
-      const road = nearestRoad(w.roads, t.homeX, t.homeZ)!;
-      expect(onLand(w.land, t.homeX, t.homeZ), where).toBe(true);
-      expect(waterAt(w, t.homeX, t.homeZ), where).toBeLessThan(2);
-      expect(guardAt(w.guards, w.roads, t.homeX, t.homeZ, 3), where).toBeNull();
-      expect((w.map.hills ?? []).some((h) => hillReach(h, t.homeX, t.homeZ, 2) < 1), where).toBe(false);
-      for (const z of w.zones) expect(Math.hypot(t.homeX - z.x, t.homeZ - z.z), where).toBeGreaterThan(z.r + 3);
-      expect(Math.hypot(t.homeX - kid.x, t.homeZ - kid.z), where).toBeGreaterThan(10);
-      // Stars on the road, where "follows the road" goes; stacks off it, but near (the yard's within 16 m).
-      if (t.toy === 'toy/star') expect(road.dist, where).toBeLessThan(2.5);
-      else expect(road.dist, where).toBeGreaterThan(map.roads[road.road]!.width / 2);
-      if (t.toy !== 'toy/star') expect(road.dist, where).toBeLessThan(16);
-    }
-    // No scattered toy inside a stack.
-    for (const s of stacks) {
-      const others = w.props.filter((p) => p.stack < 0 && p.toy !== 'toy/star');
-      for (const o of others) expect(Math.hypot(o.homeX - s.homeX, o.homeZ - s.homeZ)).toBeGreaterThan(2);
-    }
+    expect(w.props.filter((p) => p.toy === 'toy/star').length).toBeGreaterThanOrEqual(15);
+    expect(w.stacks.length).toBeGreaterThanOrEqual(5);
   });
 
   it('after a minute of random driving the car is on the land and has gone somewhere; never in the sea or a hill', () => {
