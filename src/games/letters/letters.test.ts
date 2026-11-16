@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PRAISE, letterClip, soundClip, type Praise } from '../../shell/soundFiles';
 import { memoryBackend } from '../../storage/idb';
 import { appStorage } from '../../storage/namespaced';
 import { allChars, arrowFor, arrowsFor, glyph, SET_CHARS, type Glyph, type Pt } from './glyphs';
@@ -9,14 +10,19 @@ import {
   isOpenInGame,
   keyOf,
   lettersOf,
+  loadLettersSettings,
   loadPrefs,
   loadProgress,
   nextInSet,
   resetProgress,
+  saveLettersSettings,
   savePrefs,
+  saveRecording,
   spoken,
+  type LettersSettings,
 } from './progress';
-import { TOLERANCE, Tracer } from './trace';
+import { ROAD_HALF, TOLERANCE, Tracer } from './trace';
+import { LetterVoice, letterParts, partsFor, pickPraise, type Part } from './voice';
 
 /** Traces every stroke of a glyph as drawn, each as its own touch, with a small wobble. */
 function traceGlyph(t: Tracer, g: Glyph, opts: { reverse?: boolean; skip?: number; wobble?: number } = {}): void {
@@ -269,5 +275,193 @@ describe('progress and the game path (ADR 0026)', () => {
 
   it('every letter has a name to say', () => {
     for (const ch of allChars()) expect(spoken(ch), ch).toMatch(/^[a-z ]+$/);
+  });
+});
+
+describe('sound while tracing (ADR 0037)', () => {
+  it('knows when a point is on the road: the drawing sound plays only there', () => {
+    const t = new Tracer(glyph('L'), { ordered: false });
+    const [down] = glyph('L').strokes;
+    const mid = down[Math.floor(down.length / 2)];
+    expect(t.near(mid)).toBe(true);
+    expect(t.near({ x: mid.x + ROAD_HALF - 1, y: mid.y })).toBe(true);
+    expect(t.near({ x: mid.x + ROAD_HALF + 2, y: mid.y })).toBe(false);
+    // Inside the L's corner but well away from both lines, and far off the card.
+    expect(t.near({ x: 70, y: 40 })).toBe(false);
+    expect(t.near({ x: -50, y: 200 })).toBe(false);
+  });
+
+  it('reports each stroke once, as it is traced, in both modes; a wipe starts again', () => {
+    for (const ordered of [false, true]) {
+      const g = glyph('E');
+      const t = new Tracer(g, { ordered });
+      const told: number[] = [];
+      const traceAll = () =>
+        g.strokes.forEach((stroke, s) => {
+          stroke.forEach((p) => told.push(...t.add(s, p, TOLERANCE.finger)));
+          t.lift(s);
+        });
+      traceAll();
+      expect(told, ordered ? 'in order' : 'lenient').toEqual(g.strokes.map((_, i) => i));
+      // Tracing it all again reports nothing new.
+      traceAll();
+      expect(told).toHaveLength(g.strokes.length);
+      t.reset();
+      told.length = 0;
+      traceAll();
+      expect(told).toHaveLength(g.strokes.length);
+    }
+  });
+
+  it('does not report a stroke traced only most of the way', () => {
+    const g = glyph('T');
+    const t = new Tracer(g, { ordered: false });
+    const told: number[] = [];
+    const down = g.strokes[0];
+    down.slice(0, Math.floor(down.length * 0.7)).forEach((p) => told.push(...t.add(1, p, TOLERANCE.finger)));
+    expect(told).toEqual([]);
+    down.forEach((p) => told.push(...t.add(2, p, TOLERANCE.finger)));
+    expect(told).toEqual([0]);
+  });
+
+  it('never says the same praise twice in a row, and "All by yourself!" only without a hint', () => {
+    let last: Praise | null = null;
+    const seen = new Set<string>();
+    let r = 0.123;
+    const random = () => (r = (r * 9301 + 0.49297) % 1);
+    for (let i = 0; i < 400; i++) {
+      const helped = i % 3 === 0;
+      const word = pickPraise(last, helped, random);
+      expect(word).not.toBe(last);
+      if (helped) expect(word).not.toBe('by-yourself');
+      seen.add(word);
+      last = word;
+    }
+    // Every word comes up: the four from before and the four about the effort.
+    expect([...seen].sort()).toEqual([...PRAISE].sort());
+    // The edges of the random range stay in the list.
+    expect(PRAISE).toContain(pickPraise(null, false, () => 0));
+    expect(PRAISE).toContain(pickPraise(null, false, () => 0.9999999));
+  });
+
+  it('says the name, the name then the sound, or the sound; a digit always its name', () => {
+    expect(partsFor('name', 'B')).toEqual(['name']);
+    expect(partsFor('name-sound', 'B')).toEqual(['name', 'sound']);
+    expect(partsFor('sound', 'b')).toEqual(['sound']);
+    expect(partsFor('sound', '7')).toEqual(['name']);
+    expect(partsFor('name-sound', '7')).toEqual(['name']);
+  });
+
+  it("keeps the setting, name by default, and cleans what it doesn't know", async () => {
+    const s = appStorage(memoryBackend()).game('letters');
+    expect(await loadLettersSettings(s)).toEqual({ sounds: true, voice: 'windows', saying: 'name' });
+    await saveLettersSettings(s, { sounds: true, voice: 'own', saying: 'name-sound' });
+    expect((await loadLettersSettings(s)).saying).toBe('name-sound');
+    await s.putJson('settings.json', { sounds: false, voice: 'windows', saying: 'shout' });
+    expect(await loadLettersSettings(s)).toEqual({ sounds: false, voice: 'windows', saying: 'name' });
+    await saveLettersSettings(s, { sounds: true, voice: 'windows', saying: 'nope' } as unknown as LettersSettings);
+    expect(await s.getJson('settings.json')).toEqual({ sounds: true, voice: 'windows', saying: 'name' });
+  });
+
+  it("uses a parent's recordings of names and of sounds where there are some, else the narrator", async () => {
+    const s = appStorage(memoryBackend()).game('letters');
+    const blob = new Blob(['x'], { type: 'audio/webm' });
+    await saveRecording(s, 'B', blob, 'name');
+    await saveRecording(s, 'm', blob, 'sound');
+    const settings = (saying: LettersSettings['saying'], voice: LettersSettings['voice'] = 'own'): LettersSettings => ({
+      sounds: true,
+      voice,
+      saying,
+    });
+    expect(await letterParts(s, settings('name-sound'), 'B')).toEqual([{ own: 'voice/cap-B.webm' }, { clip: soundClip('B') }]);
+    // One sound recording serves the capital and the small letter.
+    expect(await letterParts(s, settings('sound'), 'M')).toEqual([{ own: 'voice/sound-m.webm' }]);
+    expect(await letterParts(s, settings('sound'), 'm')).toEqual([{ own: 'voice/sound-m.webm' }]);
+    expect(await letterParts(s, settings('name-sound'), 'm')).toEqual([{ clip: letterClip('m') }, { own: 'voice/sound-m.webm' }]);
+    // The app's voice chosen: recordings are kept but not used.
+    expect(await letterParts(s, settings('name-sound', 'windows'), 'B')).toEqual([
+      { clip: letterClip('B') },
+      { clip: soundClip('B') },
+    ]);
+  });
+});
+
+describe('the line queue (ADR 0037)', () => {
+  /** A stand-in for the browser's audio element: records what starts, and ends a clip when told. */
+  class FakeAudio extends EventTarget {
+    static started: string[] = [];
+    static playing: FakeAudio[] = [];
+    constructor(readonly src: string) {
+      super();
+    }
+    play(): Promise<void> {
+      FakeAudio.started.push(this.src);
+      FakeAudio.playing.push(this);
+      return Promise.resolve();
+    }
+    pause(): void {
+      this.dispatchEvent(new Event('pause'));
+    }
+  }
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const endCurrent = async () => {
+    FakeAudio.playing.shift()?.dispatchEvent(new Event('ended'));
+    await tick();
+  };
+  const settings: LettersSettings = { sounds: true, voice: 'windows', saying: 'name' };
+  const voice = (enabled = true) => new LetterVoice(appStorage(memoryBackend()).game('letters'), settings, { play() {}, enabled });
+  const clip = (c: string): Part => ({ clip: c });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    FakeAudio.started = [];
+    FakeAudio.playing = [];
+  });
+
+  it('says one line at a time; a line asked for meanwhile waits, and a newer one replaces it', async () => {
+    vi.stubGlobal('Audio', FakeAudio);
+    const v = voice();
+    void v.line([clip('a1'), clip('a2')]);
+    await tick();
+    void v.line([clip('b')]);
+    void v.line([clip('c')]);
+    expect(FakeAudio.started).toEqual(['a1']);
+    await endCurrent();
+    expect(FakeAudio.started).toEqual(['a1', 'a2']);
+    await endCurrent();
+    expect(FakeAudio.started).toEqual(['a1', 'a2', 'c']);
+  });
+
+  it('starts nothing while a finger is on the letter, then says the newest line', async () => {
+    vi.stubGlobal('Audio', FakeAudio);
+    const v = voice();
+    v.hold(true);
+    void v.line([clip('a')]);
+    void v.line([clip('b')]);
+    await tick();
+    expect(FakeAudio.started).toEqual([]);
+    v.hold(false);
+    await tick();
+    expect(FakeAudio.started).toEqual(['b']);
+  });
+
+  it('a stop drops the line waiting', async () => {
+    vi.stubGlobal('Audio', FakeAudio);
+    const v = voice();
+    void v.line([clip('a')]);
+    await tick();
+    void v.line([clip('b')]);
+    v.stop();
+    await endCurrent();
+    expect(FakeAudio.started).toEqual(['a']);
+  });
+
+  it("is silent when the app's sounds are off", async () => {
+    vi.stubGlobal('Audio', FakeAudio);
+    const v = voice(false);
+    await v.line([clip('a')]);
+    await v.say('A');
+    await v.sayFinished('A', false);
+    expect(FakeAudio.started).toEqual([]);
   });
 });
