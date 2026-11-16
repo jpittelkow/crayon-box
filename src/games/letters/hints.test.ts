@@ -11,6 +11,8 @@ import {
   DEMO_HOLD_MS,
   demoPlan,
   Hints,
+  HOWTO_AGAIN_DAYS,
+  HOWTO_LETTER,
   isKnown,
   KEEP_GOING_MS,
   KNOWN_WAIT,
@@ -459,5 +461,34 @@ describe('the voice and hints (ADR 0037)', () => {
     expect(FakeAudio.started).toEqual([]);
     expect(voice(false).tipsOn).toBe(false);
     expect(voice(true).tipsOn).toBe(true);
+  });
+
+  it("the how-to's lines are not tips: only the Sounds switches silence them, and they wait for the end", async () => {
+    vi.stubGlobal('Audio', FakeAudio);
+    const v = voice(false);
+    let said = false;
+    void v.howTo(['watch']).then(() => (said = true));
+    await tick();
+    expect(FakeAudio.started).toEqual(['watch']);
+    expect(said).toBe(false);
+    FakeAudio.playing.shift()?.dispatchEvent(new Event('ended'));
+    await tick();
+    expect(said).toBe(true);
+    // Dropped while a finger is down, like a tip.
+    v.hold(true);
+    await v.howTo(['down']);
+    v.hold(false);
+    await tick();
+    expect(FakeAudio.started).toEqual(['watch']);
+    await voice(true, false).howTo(['muted']);
+    expect(FakeAudio.started).toEqual(['watch']);
+  });
+
+  it('the how-to has its letter and both lines (D6)', () => {
+    expect(HOWTO_LETTER).toBe('L');
+    expect(glyph(HOWTO_LETTER).strokes.flatMap(strokeWords).map((w) => w.kind)).toEqual(['down', 'across']);
+    expect(demoClip('watch')).toBeTruthy();
+    expect(demoClip('your-turn')).toBeTruthy();
+    expect(HOWTO_AGAIN_DAYS).toBe(14);
   });
 });

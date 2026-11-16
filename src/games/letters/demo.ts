@@ -1,6 +1,6 @@
 // The show on the trace screen (ADR 0037): a fingertip draws strokes of the letter one after another, each with its
 // stroke word, then the drawing clears. The hints use it for one stroke (step 2) and for the whole letter (step 3);
-// the first-time how-to (letters plan phase D) can call it on its own. Timing comes from `demoPlan` in hints.ts.
+// the first-time how-to (letters plan phase D) plays the whole letter. Timing comes from `demoPlan` in hints.ts.
 import type { Glyph, StrokeKind } from './glyphs';
 import { demoPlan } from './hints';
 

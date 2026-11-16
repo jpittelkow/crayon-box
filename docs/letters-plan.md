@@ -286,7 +286,7 @@ whole thing in one place with its numbers, so a playtest can tune it.
     bigger dot and the arrow are held still and larger, and the show draws each stroke whole at its turn.
   - Not built: the parent area showing the help counts; per-kid spoken tips (the switch is per family, like Sounds).
 
-### D. The first-time how-to
+### D. The first-time how-to (built 2026-11-15)
 - **Builds:** before a kid's first letter ever (and after 14 days without Letters, D7), the tracing screen opens on
   the demo letter (D6, `L`: a line down and a line across, the first two strokes small kids can make, research
   1.3). The narrator says "Watch me.", a hand traces each stroke with its stroke word ("Down." … "Across."), the
@@ -302,6 +302,23 @@ whole thing in one place with its numbers, so a playtest can tune it.
 - **Tests:** unit: the demo is due on first play, after 14 days, after a parent's replay, and not otherwise. Browser:
   a new kid sees the demo then traces `L`; a touch cuts it short; the replay button brings it back.
 - **Done when:** a new kid's first visit starts with the demo, and a parent can bring it back.
+- **Built 2026-11-15** (not yet seen by the kids). As built, where it differs from or adds to the above:
+  - It plays when the kid picks a letter (from the grid or the path) while it is due: the trace screen opens on `L`
+    instead, and after the kid's `L` the next arrow goes to the letter they picked. Picking `L` itself goes on as
+    usual after it.
+  - The order: "Watch me." (the letter's name is not said on open), the show starts once that line ends (at least
+    0.6 s, at most 2 s), the fingertip draws `L` with "Down." and "Across.", the drawing clears, the start dot
+    pulses bigger and "Your turn!". About 4 to 5 seconds. The show is `playDemo` as step 3 uses it.
+  - Its lines follow only the Sounds switches, not "Spoken tips": the how-to is not a hint (`LetterVoice.howTo`).
+  - While it plays the hint ladder waits; its 5 s start from the end of the how-to. A touch anywhere ends it at once
+    (`data-how-to="stopped"`), without "Your turn!", and it counts as seen.
+  - `KidProgress.demoSeen` is set when the how-to opens; `lastPlayed` (`YYYY-MM-DD`, the device's clock) is set each
+    time a letter opens. It is due when not seen, or after 14 days with no letter opened (`HOWTO_AGAIN_DAYS`; the
+    letter and the timings are at the top of `hints.ts` with the other numbers). Progress files from before have no
+    `demoSeen`, so a kid who already played sees it once. A parent's "Reset stars and game" also brings it back.
+  - The `L` counts like any letter: a star, and a step on the game path when the path has `L` open.
+  - Parent area: "Show how to trace again" in each kid's row (`showDemoAgain`), and a "Helping a kid learn" card
+    with the note about sitting with the youngest and crayons on paper.
 
 ### E. Easier order and a lines-and-shapes set (if the owner wants them, D8, D9)
 - **Easy first on the game path** (D8): the game path walks capitals as straight lines first, then the ones with

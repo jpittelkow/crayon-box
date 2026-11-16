@@ -1,7 +1,8 @@
 // What the letters game keeps (ADR 0026), and the game path's rules.
 //   kids/<id>/prefs.json     set by a parent: which letter sets, and whether stroke order counts
 //   kids/<id>/progress.json  the kid's stars (shared by practice and the game), the letters done in the game, and
-//                            per letter how often it was finished and how much help it needed (ADR 0037)
+//                            per letter how often it was finished and how much help it needed, and whether the
+//                            first-time how-to was seen and the last day a letter was opened (ADR 0037)
 //   settings.json            the game's sounds switch, which voice says the letters, what it says, and whether
 //                            tips are spoken (ADR 0037)
 //   voice/<key>.<ext>        a parent's own recording of a letter's name
@@ -10,7 +11,7 @@
 // (Windows, the installer's file storage): `cap-A`, `small-a`, `num-3`.
 import type { GameStorage } from '../../storage/types';
 import { SET_CHARS, SET_ORDER, setOf, type SetId } from './glyphs';
-import { wasHelped, type LetterHelp } from './hints';
+import { HOWTO_AGAIN_DAYS, wasHelped, type LetterHelp } from './hints';
 
 export interface KidPrefs {
   /** Turned-on sets, in the fixed order capitals, small letters, numbers. Never empty. */
@@ -26,6 +27,10 @@ export interface KidProgress {
   game: string[];
   /** Per letter key: times finished, times with no hint past step 1, the highest hint step (ADR 0037). */
   help: Record<string, LetterHelp>;
+  /** The first-time how-to was shown (ADR 0037). A parent's "Show how to trace again" clears it. */
+  demoSeen: boolean;
+  /** The last day a letter was opened, `YYYY-MM-DD` on the device's clock: the how-to comes back after a while away. */
+  lastPlayed?: string;
 }
 
 /** Who says the letters: the app's narrator (stored as 'windows', its name before ADR 0032), or a parent. */
@@ -74,7 +79,63 @@ export async function savePrefs(storage: GameStorage, kidId: string, prefs: KidP
 export async function loadProgress(storage: GameStorage, kidId: string): Promise<KidProgress> {
   const raw = await storage.getJson<Partial<KidProgress>>(progressPath(kidId));
   const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
-  return { stars: list(raw?.stars), game: list(raw?.game), help: cleanHelp(raw?.help) };
+  const progress: KidProgress = {
+    stars: list(raw?.stars),
+    game: list(raw?.game),
+    help: cleanHelp(raw?.help),
+    demoSeen: raw?.demoSeen === true,
+  };
+  if (typeof raw?.lastPlayed === 'string' && DAY.test(raw.lastPlayed)) progress.lastPlayed = raw.lastPlayed;
+  return progress;
+}
+
+// ---- The first-time how-to (ADR 0037, letters plan phase D) ----
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A day on the device's own clock, as `YYYY-MM-DD`. */
+export function dayOf(date: Date): string {
+  const two = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
+}
+
+/** Whole days from one `YYYY-MM-DD` to another (negative when the second is earlier). */
+export function daysBetween(from: string, to: string): number {
+  const utc = (d: string) => {
+    const [y, m, day] = d.split('-').map(Number);
+    return Date.UTC(y, m - 1, day);
+  };
+  return Math.round((utc(to) - utc(from)) / 86_400_000);
+}
+
+/**
+ * The how-to plays before the next letter when it was never shown (a new kid, a file from before it existed, or a
+ * parent asked for it again), or when no letter was opened for HOWTO_AGAIN_DAYS days (D7).
+ */
+export function demoDue(progress: KidProgress, today: string): boolean {
+  if (!progress.demoSeen) return true;
+  return progress.lastPlayed !== undefined && daysBetween(progress.lastPlayed, today) >= HOWTO_AGAIN_DAYS;
+}
+
+/** A letter was opened today; `demo` when it was the how-to, which is then seen. */
+export async function notePlayed(
+  storage: GameStorage,
+  kidId: string,
+  today: string,
+  demo: boolean,
+): Promise<KidProgress> {
+  const progress = await loadProgress(storage, kidId);
+  progress.lastPlayed = today;
+  if (demo) progress.demoSeen = true;
+  await storage.putJson(progressPath(kidId), progress);
+  return progress;
+}
+
+/** A parent's "Show how to trace again": the how-to plays before the kid's next letter. */
+export async function showDemoAgain(storage: GameStorage, kidId: string): Promise<void> {
+  const progress = await loadProgress(storage, kidId);
+  progress.demoSeen = false;
+  await storage.putJson(progressPath(kidId), progress);
 }
 
 /** Help counts as saved, dropping anything that isn't one (older files have none). */

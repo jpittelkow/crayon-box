@@ -1,6 +1,7 @@
 // The letters game's screen in the parent area (ADR 0008, 0012, 0026, 0037): each kid's letter sets and stroke order,
-// resetting a kid's stars and game, what is said with a letter (its name, its sound or both), the voice that says
-// it (with recordings of names and sounds), sounds, and whether the hints' tips are spoken.
+// resetting a kid's stars and game, showing a kid the first-time how-to again, a note for parents, what is said with
+// a letter (its name, its sound or both), the voice that says it (with recordings of names and sounds), sounds, and
+// whether the hints' tips are spoken.
 import { drawAvatar } from '../../shell/profiles';
 import type { ParentSectionContext } from '../../shell/types';
 import { button, card, confirmInline, h, segmented, switchRow } from '../../ui/parent';
@@ -15,6 +16,7 @@ import {
   saveLettersSettings,
   savePrefs,
   saveRecording,
+  showDemoAgain,
   VOICE_DIR,
   type Said,
   type Saying,
@@ -64,7 +66,12 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
       },
     );
 
-    const row = h('div', { class: 'pw-row', 'data-kid': kid.id, style: 'flex-wrap: wrap' });
+    // One kid's settings wrap onto a second line on a narrow screen; a rule keeps each kid's together.
+    const row = h('div', {
+      class: 'pw-row',
+      'data-kid': kid.id,
+      style: 'flex-wrap: wrap; row-gap: 10px; padding: 10px 0; border-bottom: 1px solid #e3e7ec',
+    });
     const reset = button('Reset stars and game', () =>
       confirmInline(row, `Reset ${label}'s stars and game? This can't be undone.`, 'Reset', async () => {
         await resetProgress(storage, kid.id);
@@ -72,7 +79,22 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
         await renderLetters(el, ctx);
       }),
     );
-    row.append(dot, h('span', { style: 'min-width: 110px; font-weight: 700' }, label), sets, order, h('div', { class: 'pw-grow' }), reset);
+    // The first-time how-to again, before this kid's next letter (ADR 0037).
+    const again = button('Show how to trace again', () => {
+      void showDemoAgain(storage, kid.id);
+      again.disabled = true;
+      again.textContent = 'Shows before the next letter';
+    });
+    again.dataset.howTo = kid.id;
+    row.append(
+      dot,
+      h('span', { style: 'min-width: 110px; font-weight: 700' }, label),
+      sets,
+      order,
+      h('div', { class: 'pw-grow' }),
+      again,
+      reset,
+    );
     rows.append(row);
   }
 
@@ -90,6 +112,22 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
           'Practice has every turned-on letter open; the game opens them one at a time, in this order.',
       ),
       rows,
+    ),
+    card(
+      h('h2', {}, 'Helping a kid learn'),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        "Before a kid's first letter, and after 14 days without letters, the app shows how to trace: a fingertip " +
+          'draws an L ("Watch me." … "Your turn!"), then the kid traces it. A touch ends it early. "Show how to trace ' +
+          'again" above plays it before that kid\'s next letter.',
+      ),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        'Under about 3, kids learn most from a grown-up beside them: sit with the youngest, point to the green dot and ' +
+          'the arrow, and trace along with them. Crayons on paper help too.',
+      ),
     ),
     card(
       h('h2', {}, 'What is said with a letter'),

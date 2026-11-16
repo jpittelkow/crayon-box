@@ -4,6 +4,9 @@ import { memoryBackend } from '../../storage/idb';
 import { appStorage } from '../../storage/namespaced';
 import { allChars, arrowFor, arrowsFor, glyph, SET_CHARS, type Glyph, type Pt } from './glyphs';
 import {
+  dayOf,
+  daysBetween,
+  demoDue,
   finishLetter,
   forgetKid,
   gameIndex,
@@ -14,10 +17,12 @@ import {
   loadPrefs,
   loadProgress,
   nextInSet,
+  notePlayed,
   resetProgress,
   saveLettersSettings,
   savePrefs,
   saveRecording,
+  showDemoAgain,
   spoken,
   type LettersSettings,
 } from './progress';
@@ -254,7 +259,7 @@ describe('progress and the game path (ADR 0026)', () => {
     expect(isOpenInGame(path, p, 'C')).toBe(false);
 
     await resetProgress(s, 'k1');
-    expect(await loadProgress(s, 'k1')).toEqual({ stars: [], game: [], help: {} });
+    expect(await loadProgress(s, 'k1')).toEqual({ stars: [], game: [], help: {}, demoSeen: false });
   });
 
   it('forgetting a kid removes only their letters', async () => {
@@ -271,6 +276,54 @@ describe('progress and the game path (ADR 0026)', () => {
     expect(nextInSet('Z')).toBe('A');
     expect(nextInSet('9')).toBe('0');
     expect(SET_CHARS.small.includes(nextInSet('z'))).toBe(true);
+  });
+
+  it('the first-time how-to is due on first play, after 14 days away and after a parent asks, and not otherwise', async () => {
+    const s = storage();
+    // A new kid.
+    let p = await loadProgress(s, 'k1');
+    expect(demoDue(p, '2026-11-15')).toBe(true);
+    // Seen: not again the same day, nor a few days later, nor 13 days later.
+    p = await notePlayed(s, 'k1', '2026-11-15', true);
+    expect(p).toMatchObject({ demoSeen: true, lastPlayed: '2026-11-15' });
+    expect(demoDue(await loadProgress(s, 'k1'), '2026-11-15')).toBe(false);
+    expect(demoDue(p, '2026-11-20')).toBe(false);
+    expect(demoDue(p, '2026-11-28')).toBe(false);
+    // 14 days away, across a month's end.
+    expect(demoDue(p, '2026-11-29')).toBe(true);
+    expect(demoDue({ ...p, lastPlayed: '2026-12-25' }, '2027-01-08')).toBe(true);
+    // Playing on a later day moves the 14 days on; the how-to stays seen.
+    p = await notePlayed(s, 'k1', '2026-11-27', false);
+    expect(p).toMatchObject({ demoSeen: true, lastPlayed: '2026-11-27' });
+    expect(demoDue(p, '2026-12-10')).toBe(false);
+    // A clock set back is not "away".
+    expect(demoDue(p, '2026-11-01')).toBe(false);
+    // A finished letter keeps both.
+    p = await finishLetter(s, 'k1', 'L', false);
+    expect(p).toMatchObject({ demoSeen: true, lastPlayed: '2026-11-27' });
+    // A parent's "Show how to trace again".
+    await showDemoAgain(s, 'k1');
+    p = await loadProgress(s, 'k1');
+    expect(demoDue(p, '2026-11-27')).toBe(true);
+    expect(p.stars).toEqual(['cap-L']);
+    // A reset starts the kid over, how-to and all.
+    await notePlayed(s, 'k1', '2026-11-27', true);
+    await resetProgress(s, 'k1');
+    expect(demoDue(await loadProgress(s, 'k1'), '2026-11-27')).toBe(true);
+  });
+
+  it('days are counted on the calendar, and old or broken progress files load', async () => {
+    expect(daysBetween('2026-11-15', '2026-11-29')).toBe(14);
+    expect(daysBetween('2027-03-27', '2027-03-29')).toBe(2); // across a clock change
+    expect(dayOf(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
+    const s = storage();
+    // A file from before the how-to: the stars stay, the how-to is due once.
+    await s.putJson('kids/k1/progress.json', { stars: ['cap-A'], game: ['cap-A'] });
+    const old = await loadProgress(s, 'k1');
+    expect(old).toEqual({ stars: ['cap-A'], game: ['cap-A'], help: {}, demoSeen: false });
+    expect(demoDue(old, '2026-11-15')).toBe(true);
+    await s.putJson('kids/k2/progress.json', { stars: [], demoSeen: 'yes', lastPlayed: 'last tuesday' });
+    expect(await loadProgress(s, 'k2')).toEqual({ stars: [], game: [], help: {}, demoSeen: false });
   });
 
   it('every letter has a name to say', () => {

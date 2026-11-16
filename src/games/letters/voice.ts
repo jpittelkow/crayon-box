@@ -74,10 +74,23 @@ export class LetterVoice {
    * dropped when a finger is on the letter: the kid has moved on.
    */
   tip(clips: (string | undefined)[]): void {
+    void this.cue(clips, this.tipsOn);
+  }
+
+  /**
+   * A line of the first-time how-to ("Watch me.", its stroke words, "Your turn!"): like a tip, but it is not a hint,
+   * so only the Sounds switches silence it. Resolves when it has been said (at once when it waits or is dropped).
+   */
+  howTo(clips: (string | undefined)[]): Promise<void> {
+    return this.cue(clips, this.on);
+  }
+
+  private cue(clips: (string | undefined)[], allowed: boolean): Promise<void> {
     const parts = clips.filter((c): c is string => !!c).map((clip) => ({ clip }));
-    if (!this.tipsOn || this.held || parts.length === 0) return;
-    void this.line(parts);
+    if (!allowed || this.held || parts.length === 0) return Promise.resolve();
+    const said = this.line(parts);
     if (this.waiting === parts) this.waitingTip = true;
+    return said;
   }
 
   /** Says the letter as the setting asks, cutting in: when a letter opens, or a finished one is tapped. */
