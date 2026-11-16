@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PICTURE_WORDS, wordPicture } from './wordPictures';
+import { BUILT_IN_WORDS } from './words';
 
 /** A WebP file's size in pixels, from its header (lossy, lossless or extended). */
 function webpSize(bytes: Buffer): { width: number; height: number } {
@@ -24,8 +25,10 @@ describe('the built-in words’ pictures (ADR 0039, W9)', () => {
     expect([...PICTURE_WORDS]).toEqual(said);
   });
 
-  it('every word has a picture', () => {
+  it('every word has a picture, including every built-in word of the Words screen', () => {
     expect(PICTURE_WORDS.filter((w) => !wordPicture(w))).toEqual([]);
+    expect(BUILT_IN_WORDS.map((w) => w.id).filter((id) => !wordPicture(id))).toEqual([]);
+    expect(BUILT_IN_WORDS.map((w) => w.id).sort()).toEqual([...PICTURE_WORDS].sort());
     expect(wordPicture('CAT')).toBe(wordPicture('cat'));
     expect(wordPicture('zebra')).toBeUndefined();
   });
