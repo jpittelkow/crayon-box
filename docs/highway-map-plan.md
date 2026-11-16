@@ -180,7 +180,7 @@ They are a draft: each moves into `recipes/maps.md` once building this map has p
 - **Built 2026-11-16** (with phase 2, the to-do list's "map tiles"):
   - `maps/stress.ts`: 1,080 m by 660 m, a loop with four roads north to south and one east to west in five
     stretches (10 roads, about 6 km, street and dirt), 3,000 toys (3,136 with the targets), 600 trees, 1,500 bush
-    clumps, 27 zones (ramps, car washes, garages, mud, lights at four crossroads, a ford on a stream), a bridge, a
+    clumps, 25 zones (ramps, car washes, garages, mud, lights at four crossroads, a ford on a stream), a bridge, a
     tunnel, three hills, sand, two pools and 60 puddles, three herds, and 10 vehicles of traffic by a rule.
   - `sim/budget.test.ts`: times a step of the island, the building site and the stand-in ("follows the road",
     every vehicle switched on) and writes them to the file `BUDGET_OUT` names. It fails over 8 ms a step (20 ms on
