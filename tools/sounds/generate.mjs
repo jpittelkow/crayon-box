@@ -11,16 +11,17 @@
 // ear. DRY=1 lists the lines and makes nothing (no key needed). TAKES=1 makes one take each (for a redo run), and
 // IDS=a,b,c makes only those lines (a redo run: the batch's manifest keeps the other lines' takes).
 // ONLY=coloring does the same for the coloring screen's lines into /tmp/gen3/coloring/ and manifest-coloring.json.
+// ONLY=words does the same for writing words (ADR 0039, decision W1) into /tmp/gen3/words/ and manifest-words.json.
 //
 // ElevenLabs retires Matilda on 2026-12-31: clips made later need her replacement or a new voice for the whole set.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const KEY = process.env.OPENROUTER_API_KEY;
 const DRY = process.env.DRY === '1';
-const LATER_BATCHES = ['letters2', 'coloring'];
+const LATER_BATCHES = ['letters2', 'coloring', 'words'];
 if (!KEY && !DRY) { console.error('no key'); process.exit(1); }
-if (DRY && !LATER_BATCHES.includes(process.env.ONLY)) { console.error('DRY=1 works with ONLY=letters2 or ONLY=coloring'); process.exit(1); }
-// ONLY=narrator or ONLY=effects makes just that half; ONLY=letters2 or coloring a later batch (see above).
+if (DRY && !LATER_BATCHES.includes(process.env.ONLY)) { console.error('DRY=1 works with ONLY=letters2, ONLY=coloring or ONLY=words'); process.exit(1); }
+// ONLY=narrator or ONLY=effects makes just that half; ONLY=letters2, coloring or words a later batch (see above).
 const ONLY = process.env.ONLY ?? '';
 const OUT = '/tmp/gen2';
 if (!LATER_BATCHES.includes(ONLY) && !DRY) {
@@ -126,7 +127,41 @@ const coloring = [
   // The token names are the palette's (src/ui/palette.ts); the words are its labels.
   ...COLORS.map(([token, name]) => [`color-${token}`, `[warmly] ${name}.`]),
 ];
-const BATCHES = { letters2: { lines: letters2, samples: maisieLines, dir: 'narrator' }, coloring: { lines: coloring, samples: [], dir: 'coloring' } };
+// ---- Writing words (ADR 0039, decision W1, owner 2026-11-15): lines for the kid's name, words, the later
+// "build it" and "your way" steps, spare words, and every word said slowly. Made on a guess about what those
+// steps need, because Matilda ends on 2026-12-31. The 24 words themselves are in the letters batch above.
+const MORE_WORDS = ['mom', 'dad', 'car', 'van', 'jet', 'zoo', 'bee', 'yes', 'no', 'hi', 'go', 'up', 'baby', 'love',
+  'truck'];
+// A word said as one stretched sound ("sssuuunnn"), not in pieces: the spelling holds each sound that can be
+// held three times and leaves the ones that can't (b, c, d, g, j, p, t, x) alone. Whether the voice can do this
+// is not known, so each word is asked for two ways, to pick by ear: `slow-<word>` reads the stretched spelling,
+// `slow-<word>-alt` is the plain word with only the direction.
+const HELD = new Set('aeioufhlmnrsvyz');
+const stretched = (w) => w.split('').map((ch) => (HELD.has(ch) ? ch.repeat(3) : ch)).join('');
+const SLOW_WORDS = [...WORDS, 'mom', 'dad', 'van', 'jet', 'yes'];
+const words = [
+  ['word-your-name', "[warmly] Let's write your name."],
+  ['word-lets-write', "[warmly] Let's write a word."],
+  ['word-listen', '[warmly] Listen.'],
+  ['word-tap-letter', '[warmly] Tap a letter to hear it.'],
+  ['word-again', "[warmly] Let's write it again."],
+  ...MORE_WORDS.map((w) => [`word-${w}`, `[warmly] ${w}.`]),
+  ['praise-your-name', '[excited] You wrote your name!'],
+  ['build-word', '[warmly] Build the word.'],
+  ['build-boxes', '[warmly] Put the letters in the boxes.'],
+  ['way-your-way', '[warmly] Write it your way.'],
+  ['way-what-sound', '[warmly] What sound does it start with?'],
+  ['way-starts-with', '[warmly] It starts with...'],
+  ...SLOW_WORDS.flatMap((w) => [
+    [`slow-${w}`, `[slowly, stretching every sound into the next] ${stretched(w)}.`],
+    [`slow-${w}-alt`, `[very slowly, drawn out, every sound held and joined to the next] ${w}.`],
+  ]),
+];
+const BATCHES = {
+  letters2: { lines: letters2, samples: maisieLines, dir: 'narrator' },
+  coloring: { lines: coloring, samples: [], dir: 'coloring' },
+  words: { lines: words, samples: [], dir: 'words' },
+};
 if (BATCHES[ONLY]) {
   const OUT3 = '/tmp/gen3';
   const batch = BATCHES[ONLY];
