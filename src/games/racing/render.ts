@@ -7,11 +7,11 @@ import { ANIMAL_LOOKS } from './look/animals';
 import { buildGround } from './look/island';
 import { buildSetPieces } from './look/setpieces';
 import { sceneryPieces } from './look/scenery';
-import { toyPieces, type Pieces } from './look/toys';
+import { CONFETTI_COLORS, TOY_TINTS, toyPieces, type Pieces } from './look/toys';
 import { OWN_COLOR, buildKidVehicle, buildVehicle, type VehicleModel } from './look/vehicles';
 import type { SceneryId } from './sim/assets/scenery';
 import type { ToyId } from './sim/assets/toys';
-import { DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
+import { CONFETTI_LIFE, DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
 import { CAMERA_FOV, chaseView, stepTreeSizes, type View } from './sim/view';
 
 /** The most real pixels drawn per CSS pixel. Built-in laptop graphics (ADR 0021) get no more than this. */
@@ -105,6 +105,18 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     toyBatches.set(id, batch(toyPieces(id), world.props.filter((p) => p.toy === id).length));
   }
   [...toyBatches.values()].flat().forEach((m) => scene.add(m));
+  // Toys in several colours (a stack's boxes, ADR 0041): each copy's colour by its place, set once. Copies are
+  // placed in the order of `world.props`, so the n-th of a kind is always the same toy.
+  const tint = new THREE.Color();
+  for (const [id, meshes] of toyBatches) {
+    const colors = TOY_TINTS[id];
+    if (!colors) continue;
+    world.props.filter((p) => p.toy === id).forEach((p, n) => {
+      tint.set(colors[p.slot % colors.length]!);
+      for (const mesh of meshes) if ((mesh.material as THREE.Material).userData.tint) mesh.setColorAt(n, tint);
+    });
+    for (const mesh of meshes) if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }
   const placed = new Map<string, number>();
 
   // Vehicles: the kid's car in their colour, traffic in its own colours.
@@ -148,6 +160,14 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   bubbles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   bubbles.frustumCulled = false;
   scene.add(bubbles);
+  // Confetti (ADR 0041, `fx/confetti`): little paper pieces, two triangles each, coloured per piece once.
+  const confetti = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.26, 0.16),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, side: THREE.DoubleSide }), world.confetti.length);
+  confetti.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  confetti.frustumCulled = false;
+  world.confetti.forEach((c, i) => confetti.setColorAt(i, tint.set(CONFETTI_COLORS[c.hue % CONFETTI_COLORS.length]!)));
+  scene.add(confetti);
+  const turn = new THREE.Euler();
 
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.5, 900);
   const m = new THREE.Matrix4();
@@ -229,7 +249,15 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     });
     // Bubbles swell a little, then shrink away as they rise.
     w.bubbles.forEach((b, i) => bubbles.setMatrixAt(i, b.life > 0 ? m.compose(v.set(b.x, b.y, b.z), q.identity(), s.setScalar(0.12 + 0.16 * Math.min(1, b.life))) : zero));
-    for (const e of [puffs, drops, ripples, bubbles]) e.instanceMatrix.needsUpdate = true;
+    // Confetti turns over and over as it flutters down, lies flat once it lands, and shrinks away at the end.
+    w.confetti.forEach((c, i) => {
+      if (c.life <= 0) return confetti.setMatrixAt(i, zero);
+      const age = CONFETTI_LIFE - c.life;
+      if (c.y > 0.031) turn.set(c.phase + age * c.turn, c.phase * 2 + age * c.turn * 0.7, c.phase);
+      else turn.set(-Math.PI / 2, 0, c.phase);
+      confetti.setMatrixAt(i, m.compose(v.set(c.x, c.y, c.z), q.setFromEuler(turn), s.setScalar(Math.min(1, c.life / 0.3))));
+    });
+    for (const e of [puffs, drops, ripples, bubbles, confetti]) e.instanceMatrix.needsUpdate = true;
 
     // Moving set pieces (car wash brushes).
     setPieces.animate(w, Math.max(0, Math.min(0.1, w.time - lastTime)));
