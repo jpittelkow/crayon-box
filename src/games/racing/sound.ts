@@ -2,7 +2,8 @@
 // file) that plays faster, so higher, and brighter as the vehicle speeds up; traffic is heard only nearby. Effects
 // are shipped files too: each toy's bump, splashes, the horn, the police car's siren, the tyre squeal and the
 // brake squeak. The set pieces (milestone-3 B6) reuse them for now: plank knocks on a bridge, a whoosh and popping
-// bubbles at the car wash; the tunnel's echo and the sand's hiss are made by the app.
+// bubbles at the car wash, a squelch in mud, a splash into a ford, the traffic lights' click and ding (ADR 0042);
+// the tunnel's echo and the sand's hiss are made by the app.
 import { soundUrl } from '../../shell/soundFiles';
 import type { AnimalCall } from './sim/assets/animals';
 import type { BumpSound, TargetSound } from './sim/assets/toys';
@@ -68,6 +69,26 @@ export const TARGET_SOUNDS = {
   silly: { file: EFFECTS.boing, from: 0.7, to: 1.9, slide: 0.35, volume: 0.8, pops: [{ at: 0.1, rate: 1.2 }] },
   twinkle: { file: EFFECTS.bell, from: 1.5, to: 1.5, slide: 0, volume: 0.5, pops: [{ at: 0.08, rate: 1.6 }, { at: 0.16, rate: 2.1 }] },
 } as const satisfies Record<TargetSound, { file: string; from: number; to: number; slide: number; volume: number; pops: readonly { at: number; rate: number }[] }>;
+
+/**
+ * The new set pieces' sounds (ADR 0042), stand-ins from shipped files until takes of their own. Squelch (mud): the
+ * puddle splash at a low rate with a low pop, going in and then every `every` seconds while moving in it. Ford: the
+ * big splash, a little high. Lights: the wooden knock high and quiet as a click, and the bell as a ding.
+ */
+export const SET_PIECE_SOUNDS = {
+  squelch: { rate: 0.5, pop: 0.45, volume: 0.9, every: 0.55 },
+  ford: { rate: 1.1, volume: 0.85 },
+  lights: { click: 0.25, clickRate: 2.4, ding: 0.22, dingRate: 2 },
+} as const;
+
+/** Lights changing further away than this aren't heard. */
+export const LIGHTS_HEARD_M = 35;
+
+/** Whether the kid's car is close enough to hear a traffic light (an index into `World.lights`) change. */
+export function lightHeard(world: World, light: number): boolean {
+  const zone = world.zones[world.lights[light]!.zone]!, kid = world.cars[0]!;
+  return Math.hypot(zone.x - kid.x, zone.z - kid.z) < LIGHTS_HEARD_M;
+}
 
 /** How far apart the bridge's planks are, for their knocks under the wheels. */
 const PLANK_M = 1.6;
@@ -153,7 +174,7 @@ export class DrivingSound {
   /** The hiss of sand under the wheels, made by the app: its loudness. */
   private sand: GainNode | null = null;
   /** For effects that depend on time or distance between frames. */
-  private last = { time: 0, x: 0, z: 0, zone: -1, plank: 0 };
+  private last = { time: 0, x: 0, z: 0, zone: -1, plank: 0, squelch: 0 };
 
   constructor(private readonly enabled: boolean) {}
 
@@ -354,7 +375,15 @@ export class DrivingSound {
     }
 
     const zone = world.zone >= 0 ? world.zones[world.zone]! : null;
-    if (zone?.kind === 'car-wash' && this.last.zone !== world.zone) this.effect(EFFECTS.splash, 0.5, 1.3);
+    const entered = this.last.zone !== world.zone;
+    if (zone?.kind === 'car-wash' && entered) this.effect(EFFECTS.splash, 0.5, 1.3);
+    // ADR 0042: a squelch into mud and more while driving through it; a big splash into a ford.
+    if (zone?.kind === 'mud' && entered) this.squelch(SET_PIECE_SOUNDS.squelch.volume);
+    if (zone?.kind === 'mud' && Math.abs(kid.speed) > 2 && (this.last.squelch -= dt) <= 0) {
+      this.last.squelch = SET_PIECE_SOUNDS.squelch.every * (0.7 + Math.random() * 0.6);
+      this.squelch(SET_PIECE_SOUNDS.squelch.volume * (0.3 + 0.4 * Math.min(1, Math.abs(kid.speed) / 8)));
+    }
+    if (zone?.kind === 'ford' && entered) this.effect(EFFECTS.splash, SET_PIECE_SOUNDS.ford.volume, SET_PIECE_SOUNDS.ford.rate);
     this.last.zone = world.zone;
     if (kid.soap > 0.05 && Math.random() < kid.soap * dt * 7) this.effect(EFFECTS.pop, 0.3, 0.8 + Math.random() * 0.7);
   }
@@ -382,6 +411,23 @@ export class DrivingSound {
       src.playbackRate.linearRampToValueAtTime(t.to, ctx.currentTime + t.slide);
     }
     for (const pop of t.pops) this.effect(EFFECTS.pop, 0.45, pop.rate, pop.at);
+  }
+
+  /** A squelch (ADR 0042, a stand-in): the puddle splash slowed right down, with a low pop, a "schlop". */
+  private squelch(volume: number): void {
+    const s = SET_PIECE_SOUNDS.squelch;
+    this.effect(EFFECTS.puddle, volume, s.rate * (0.9 + Math.random() * 0.2));
+    this.effect(EFFECTS.pop, volume * 0.8, s.pop, 0.06);
+  }
+
+  /**
+   * Traffic lights changed (ADR 0042), heard only near them: a soft click, and a little ding when the kid's own way
+   * has just turned green.
+   */
+  lights(green: boolean): void {
+    const l = SET_PIECE_SOUNDS.lights;
+    this.effect(EFFECTS.bump, l.click, l.clickRate);
+    if (green) this.effect(EFFECTS.bell, l.ding, l.dingRate, 0.05);
   }
 
   /** An animal answering the horn; each a little different, so a herd doesn't sound like one. */

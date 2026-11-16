@@ -11,7 +11,7 @@ import { buildRoads } from './roads';
 import { DECOR_LOOKS } from './scenery';
 
 /** A flat shape on the ground at height `y`, from an outline in x, z. */
-function flatShape(outline: [number, number][], y: number): THREE.BufferGeometry {
+export function flatShape(outline: [number, number][], y: number): THREE.BufferGeometry {
   // The shape is drawn in x, y and laid down; laying it down maps its y to -z, so z goes in negated.
   const shape = new THREE.Shape(outline.map(([x, z]) => new THREE.Vector2(x, -z)));
   return new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2).translate(0, y, 0);
@@ -70,6 +70,8 @@ export function buildGround(world: World): THREE.Group {
   // Mud on a building site (milestone-3 E): the same puddle, brown and glossy.
   const mud = new THREE.MeshPhysicalMaterial({ color: 0x6b4a2e, roughness: 0.25, clearcoat: 0.6 });
   for (const p of world.waters) {
+    // A stream's water is drawn along its path, with the ford (look/setpieces.ts).
+    if (p.stream) continue;
     add(new THREE.CircleGeometry(p.r + 0.5, ROUND * 2).rotateX(-Math.PI / 2).translate(p.x, 0.075, p.z), rim);
     add(new THREE.CircleGeometry(p.r, ROUND * 2).rotateX(-Math.PI / 2).translate(p.x, 0.09, p.z), p.mud ? mud : water);
   }
@@ -84,6 +86,9 @@ export function buildGround(world: World): THREE.Group {
       const road = nearestRoad(world.roads, x, z);
       if (road && road.dist < world.roads[road.road]!.def.width / 2 + 1.5) continue;
       if (world.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + 1)) continue;
+      // Not in a set piece (a patch of mud reaches past the road), nor round a traffic light's pole.
+      if (world.zones.some((zone) => Math.hypot(x - zone.x, z - zone.z) < zone.r + 1.5)) continue;
+      if (world.posts.some((p) => Math.hypot(x - p.x, z - p.z) < 1.5)) continue;
       // Not on the beach, and not inside a hill.
       if (onSand(world.sand, x, z) || (world.map.hills ?? []).some((h) => hillReach(h, x, z, 1) < 1)) continue;
       if (world.props.some((p) => Math.hypot(x - p.homeX, z - p.homeZ) < 1.5)) continue;

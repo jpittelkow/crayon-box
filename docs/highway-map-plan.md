@@ -90,9 +90,9 @@ rest can follow in later releases. The owner trims or adds (D8).
 | The overpass: the highway over itself, on a deck that rises, with rails | Roads | new: roads on two levels (phase 7) | none yet: phase 7 writes it | first |
 | Long bridge in concrete (a second look for `road/bridge-deck`), tunnel | Roads | bridge look new; tunnel built | maps | first |
 | Road works: a stretch half dirt, cones and barrels **in rows** | Roads, toys | rows are new in the map format | maps | first |
-| `road/ford` on a site track | Roads | idea (to-do section 4) | maps | later |
+| `road/ford` on a site track | Roads | built (ADR 0042; needs a `water/stream` across the track) | maps | later |
 | Dirt ground for the site, an asphalt yard at the rest stop | Ground | new (only sand can be painted today) | maps | first |
-| A `mud` zone: the car comes out muddy, the car wash cleans it | Ground, vehicle state | idea (to-do section 4) | [scenery](recipes/scenery.md), set piece | first |
+| A `mud` zone: the car comes out muddy, the car wash cleans it | Set pieces, vehicle state | built (ADR 0042, `setpiece/mud`) | [scenery](recipes/scenery.md), set piece | first |
 | `setpiece/crane`: a tower crane; its hook lowers a load and lifts it as the car arrives, the horn swings it | Set pieces | new | scenery, set piece | first |
 | `setpiece/chute`: gravel pours over the car from a hopper, in puffs | Set pieces | new | scenery, set piece | first |
 | `setpiece/toll-gate`: the arm lifts before the car arrives, a ding; it never stops anyone | Set pieces | new | scenery, set piece | first |

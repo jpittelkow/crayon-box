@@ -10,8 +10,11 @@ import type { VehicleKind } from './sim';
 /** A place on a road: a fraction of the way along it (0 to 1) and metres right of its centre line. */
 export interface OnRoad { road: number; at: number; offset?: number }
 
-/** The kinds of zone a set piece can have (milestone-3 phase B3). */
-export type ZoneKind = 'ramp' | 'car-wash' | 'garage';
+/**
+ * The kinds of zone a set piece can have (milestone-3 phase B3). ADR 0042 adds a patch of mud, a ford where a
+ * stream crosses a road, and traffic lights at a junction (for show: they never stop the kid).
+ */
+export type ZoneKind = 'ramp' | 'car-wash' | 'garage' | 'mud' | 'ford' | 'lights';
 
 /** A stretch of road, from one fraction along it to another, that the car is held on. */
 export interface GuardDef { kind: 'bridge' | 'tunnel'; road: number; from: number; to: number }
@@ -65,6 +68,11 @@ export interface MapDef {
     pools: { on: OnRoad; r: number; deep: boolean; mud?: boolean }[];
     /** Puddles along a road, each with a smaller lobe so it is not a perfect circle. */
     puddles: { road: number; at: number[]; spread: number; size: [number, number]; mud?: boolean }[];
+    /**
+     * Streams (ADR 0042, `water/stream`): shallow water along a path, `width` metres across, never deep anywhere.
+     * Where one crosses a road, a `ford` zone makes the crossing. Only the stretches on the land are water.
+     */
+    streams?: { points: [number, number][]; width: number }[];
   };
   /** Trees scattered over the land, kept off the roads and out of the water; which kinds, by share. */
   trees: {

@@ -17,7 +17,7 @@ All assets are **built in code** with the toy kit (owner, 2026-11-15; ADR 0025),
 | 4 | **Decor** | Small things the car drives straight through | No, passes through | Merged into the map's static mesh | bushes |
 | 5 | **Roads** | The road network: curves the map defines, which traffic, the road-following assist and the rescue all use | Drives on it | Static meshes per map, built from the curves | the round road with its dashes and edge lines |
 | 6 | **Ground and water** | The map's surface away from the roads, made from map data, not placed one by one | Drives on it; water slows it | Static meshes per map | grass, sand, puddles, the flood, the sea |
-| 7 | **Set pieces** | A place that does something when the car arrives: a zone plus an animation and a sound | Drives into or through it | Piece by piece, a few per map | none yet (ramp, car wash, tunnel, bridge are planned) |
+| 7 | **Set pieces** | A place that does something when the car arrives: a zone plus an animation and a sound | Drives into or through it | Piece by piece, a few per map | ramp, car wash, garage, tunnel, mud, ford, traffic lights |
 | 8 | **Animals** | Live things that answer the horn and step aside | Never: they move away first | Few, animated | none yet |
 | 9 | **Effects** | Short-lived bits: splashes, spray, wake, dust, bubbles | No | Pooled and batched | puffs, drops, ripples |
 | 10 | **Sky and light** | Per map: sky colours, haze, sun, the sea's colour | No | Scene settings | one sunny sky |
@@ -139,7 +139,7 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 | State | Status | Switched on by | Switched off by |
 |---|---|---|---|
 | wet | built (drips, wading) | puddles, the flood | time |
-| muddy | idea | `ground/mud` | `setpiece/car-wash`, deep water |
+| muddy | built (2026-11-15, ADR 0042, `Car.mud`; brown splats, `look/states.ts`) | `setpiece/mud`; muddy puddles and the muddy pond, half way | `setpiece/car-wash`, a ford, clean water; never time alone |
 | bubbly | built (`Car.soap`) | `setpiece/car-wash` | its rinse |
 
 ### 2. Toys
@@ -163,7 +163,7 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 | `toy/road-barrier` | idea | town | tumble |
 | `toy/sign` | idea | town | wobble; picture signs only |
 | `toy/lamp-post` | idea | town | wobble; lit on an evening map |
-| `toy/traffic-light` | idea | town | wobble; for show, never stops anyone |
+| `toy/traffic-light` | idea | town | wobble; a pole of lights along a street, doing nothing. The lights at a junction are `setpiece/traffic-lights` (ADR 0042) |
 | `toy/fence-panel` | idea | country | tumble; a map lines them up along a field or road |
 
 ### 3. Solid scenery
@@ -218,10 +218,10 @@ Rules for roads:
 |---|---|---|
 | `road/curve` | built | any stretch between junctions; the ring is one closed curve |
 | `road/junction` | built (three-way, 2026-11-15) | an open road joins another at its ends (`from`, `to`); traffic and "follows the road" pick a way there, and traffic gives way to the kid's car. Four-way is still to do |
-| `road/roundabout` | idea | town; a toy or fountain in the middle |
+| `road/roundabout` | planned (ADR 0042) | a one-way ring with roads joining at its edge; a drive-over flower bed and a fountain in the middle (`setpiece/roundabout`) |
 | `road/bridge-deck` | built (2026-11-15, a `bridge` guard) | a wooden deck over the water with white rails the car slides along; the shore doesn't turn the car back on or near it |
 | `road/tunnel-floor` | built (2026-11-15, a `tunnel` guard) | walls keep the car on the road; stone portals at both ends; the hill around it is a map `hill`. Lamps were tried and dropped: with no tunnel walls drawn, they float when the hill fades |
-| `road/ford` | idea | a shallow stretch across a river: puddle splash, never deep |
+| `road/ford` | built (2026-11-15, ADR 0042) | where a road crosses a `water/stream`: the stream runs over the road, foam at its edges; the `ford` zone (`setpiece/ford`) |
 | `road/ramp` | planned (ADR 0021) | the slope; the jump is the set piece |
 
 **Markings and roadside**
@@ -242,11 +242,12 @@ Things that stand along roads (lamp posts, traffic lights, signs, fence panels) 
 |---|---|---|
 | `ground/grass` | built | patchy colour |
 | `ground/sand` | built | the beach ring, and sand areas a map draws (`sand`): top speed 11 and wheel puffs |
-| `ground/mud` | idea | splatters the car; washes off in the car wash |
+| `ground/mud` | built as `setpiece/mud` (2026-11-15, ADR 0042) | a zone, not a ground: something happens there (slow, muddy, a squelch), so it sorts as a set piece |
 | `water/puddle` | built | splash and spray |
 | `water/flood` | built | deep: wade, sink, bob, wake |
 | `water/sea` | built | edge of every map; the car turns back at it |
-| `water/river` | idea | crossed by a bridge deck and a ford (road pieces) |
+| `water/stream` | built (2026-11-15, ADR 0042) | a map's `water.streams`: shallow all along, never deep, on the land only; a road crosses it at a ford. The island has one |
+| `water/river` | idea | a wider stream; crossed by a bridge deck and a ford (road pieces) |
 | `water/pond` | idea | ducks |
 
 ### 7. Set pieces
@@ -256,13 +257,17 @@ sails); see Border cases.
 | Id | Status | Maps | What happens |
 |---|---|---|---|
 | `setpiece/ramp` | built (2026-11-15, `sim/ramps.ts`, `look/setpieces.ts`) | all | a yellow hump across the road, either way; cars follow its height and a fast one hops off the top and lands (a thump); traffic hops too |
-| `setpiece/car-wash` | built (2026-11-15, `look/setpieces.ts`) | all | an open arch over the road with spinning brushes; cars crawl through, come out soapy and shed bubbles while they rinse (3.5 s); the roof fades while the camera passes; traffic uses it too. Washing off mud comes with `ground/mud` |
+| `setpiece/car-wash` | built (2026-11-15, `look/setpieces.ts`) | all | an open arch over the road with spinning brushes; cars crawl through, come out soapy and shed bubbles while they rinse (3.5 s); the roof fades while the camera passes; traffic uses it too. It washes mud off (ADR 0042) |
 | `setpiece/tunnel` | built, without sound (2026-11-15) | island, country | the hill turns see-through while the kid is inside; the echo on the engine and horn comes with the sound files |
 | `setpiece/bridge` | planned (ADR 0021) | island, country | on a `road/bridge-deck`: a boat passes under sometimes |
 | `setpiece/garage` | planned (phase D) | all | drive in, come out in the next vehicle |
 | `setpiece/fire-station` | idea | town | the town's garage, doors roll up |
 | `setpiece/fountain` | idea | town | drive through the spray |
-| `setpiece/harbour` | idea | island | boats bob, a ship's horn answers |
+| `setpiece/mud` | built (2026-11-15, ADR 0042, `sim/mud.ts`) | building site | a patch of mud: every vehicle crawls (7 m/s, good waders faster) and comes out muddy; mud flicks off the wheels; bubbles pop; a squelch (stand-in) |
+| `setpiece/ford` | built (2026-11-15, ADR 0042, `sim/ford.ts`) | island | where a road crosses a stream: a wade (9 m/s), a bow wave and spray, wet, mud washed off; ripples drift downstream; a big splash (stand-in) |
+| `setpiece/traffic-lights` | built (2026-11-15, ADR 0042, `sim/lights.ts`) | island | at a junction, for show: they cycle; the kid's way turns green as it comes, so the kid never waits; traffic waits at red and queues; a click and a ding (stand-ins) |
+| `setpiece/roundabout` | planned (ADR 0042) | town, island | on a `road/roundabout`: traffic goes round one way, the fountain in the middle splashes |
+| `setpiece/harbour` | planned (ADR 0042) | island | a quay along the shore with bollards the car slides along; boats bob, one sails out and back; a ship's horn answers the kid's |
 | `setpiece/windmill` | idea | country | sails turn faster when the car is near |
 | `setpiece/level-crossing` | idea | country | a train crosses on a bridge overhead, never across the road |
 
@@ -283,9 +288,9 @@ sails); see Border cases.
 | `fx/drop` | built | splashes, spray |
 | `fx/ripple` | built | wake |
 | `fx/confetti` | built (2026-11-15, ADR 0041) | targets: 40 paper pieces a burst, a pool of 120, one batch |
-| `fx/bubble` | planned | car wash |
+| `fx/bubble` | built (`World.bubbles`) | car wash |
 | `fx/leaf` / `fx/straw` / `fx/sand` | idea | burst-and-rebuild toys |
-| `fx/mud` | idea | mud splatter |
+| `fx/mud` | built (2026-11-15, ADR 0042) | `setpiece/mud`: bits flicked off the wheels, a pool of 60 |
 
 ### 10. Sky and light
 | Id | Status | Maps |
@@ -323,8 +328,8 @@ The full steps, with sounds, patterns and anti-recipes, are in [docs/recipes](re
 2. Definition and look, with the category's budget.
 3. Shown in the **asset gallery**: `/tools/driving-gallery.html` on the dev server (built 2026-11-15). It lays
    out every registered asset in rows by category on a small gallery map, drawn by the game's own renderer,
-   labelled with its id and triangle count; `?row=vehicles` (or `toys`, `scenery`, `effects`) shows one row
-   close up. `node tools/shoot-gallery.mjs` saves screenshots to `test-results/gallery/`. This is where a new
+   labelled with its id and triangle count; `?row=vehicles` (or `toys`, `scenery`, `effects`, `setpieces`) shows
+   one row close up, and `?row=setpieces&at=mud` (a zone kind) one set piece. `node tools/shoot-gallery.mjs` saves screenshots to `test-results/gallery/`. This is where a new
    asset is checked by eye next to the others.
 4. Unit test from its category: a toy settles and returns; scenery never traps the car; an animal is never hit.
 5. Placed on a map.

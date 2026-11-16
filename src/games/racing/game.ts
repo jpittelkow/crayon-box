@@ -16,7 +16,7 @@ import { mapFile, vehicleFile } from './look/shippedPictures';
 import { DRIVE_KEYS, driveInput, stickAt } from './sim/input';
 import { TOYS } from './sim/assets/toys';
 import { honk, makeWorld, step, swapVehicle, type Assist, type VehicleKind, type World } from './sim/sim';
-import { DrivingSound } from './sound';
+import { DrivingSound, lightHeard } from './sound';
 import './racing.css';
 import { version as APP_VERSION } from '../../../package.json';
 
@@ -358,6 +358,8 @@ class DrivingGame {
         for (const kind of world.calls) sound.call(kind);
         // Landing from a ramp hop: a soft thump (its own sound comes with the sound files, milestone-3 B6).
         if (world.landings.includes(0)) sound.bump('thump');
+        // Traffic lights changing nearby (ADR 0042): a click, and a ding when the kid's way turns green.
+        for (const change of world.lightChanges) if (lightHeard(world, change.light)) sound.lights(change.green);
         owed -= STEP;
       }
       sound.update(world, input);

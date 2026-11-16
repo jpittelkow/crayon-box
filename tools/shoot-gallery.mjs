@@ -14,12 +14,15 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on('pageerror', (e) => console.error('page error:', e.message));
   page.on('console', (m) => m.type() === 'error' && console.error('console:', m.text()));
-  for (const row of ['', 'vehicles', 'toys', 'scenery', 'effects']) {
+  // The set pieces' row, then each new set piece close up (ADR 0042).
+  const pieces = ['mud', 'ford', 'lights'].map((at) => `setpieces&at=${at}`);
+  for (const row of ['', 'vehicles', 'toys', 'scenery', 'effects', 'setpieces', ...pieces]) {
     await page.goto(`http://localhost:${PORT}/tools/driving-gallery.html${row ? `?row=${row}` : ''}`);
     await page.waitForFunction(() => window.galleryReady === true, null, { timeout: 120_000 });
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `test-results/gallery/${row || 'all'}.png` });
-    console.log('shot', row || 'all');
+    const name = row.replace('&at=', '-') || 'all';
+    await page.screenshot({ path: `test-results/gallery/${name}.png` });
+    console.log('shot', name);
   }
 } finally {
   await browser.close();
