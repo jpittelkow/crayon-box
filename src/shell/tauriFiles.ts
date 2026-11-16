@@ -1,17 +1,18 @@
 // The Windows app's files (milestone 2, phase B; ADR 0007), through Tauri's fs plugin. Loaded only inside the Tauri
 // window (`inTauri`), so the browser version never pulls the plugin in.
 //
-// Two places, both allowed in `src-tauri/capabilities/default.json` and nowhere else:
+// Three places, all allowed in `src-tauri/capabilities/default.json` and nowhere else:
 // - the working copy: `store\` in the app's local data folder, behind `openFileBackend`;
 // - finished pictures for parents: `Pictures\Coloring Book\Art\<kid id>\`. Windows says where Pictures is, which
-//   follows a move to OneDrive.
-import { join, pictureDir } from '@tauri-apps/api/path';
+//   follows a move to OneDrive;
+// - the driving game's maps folder, `maps\` in the app's local data folder, read only (ADR 0043).
+import { appLocalDataDir, join, pictureDir } from '@tauri-apps/api/path';
 import * as tauriFs from '@tauri-apps/plugin-fs';
 import { BaseDirectory } from '@tauri-apps/plugin-fs';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { openFileBackend, type FileSystem } from '../storage/files';
 import type { Backend } from '../storage/types';
-import type { FinishedPictures, PagesFolder, PagesFolderFile } from './types';
+import type { FinishedPictures, MapsFolder, MapsFolderFile, PagesFolder, PagesFolderFile } from './types';
 
 type Fs = Pick<typeof tauriFs, 'readFile' | 'writeFile' | 'rename' | 'remove' | 'mkdir' | 'readDir' | 'exists'>;
 
@@ -132,6 +133,37 @@ export function tauriPagesFolder(fs: Fs = tauriFs, open: (path: string) => Promi
     async openFolder() {
       await fs.mkdir(PAGES, { ...opts, recursive: true });
       await open(await join(await pictureDir(), 'Coloring Book', 'Pages'));
+    },
+  };
+}
+
+const MAPS = 'maps';
+const MAP_FILE = /\.json$/i;
+
+/**
+ * The driving game's maps folder (ADR 0043): `maps\` in the app's local data folder, next to `store\`. The app may
+ * only make the folder and read it (`src-tauri/capabilities/default.json`); files get there by hand for now.
+ */
+export function tauriMapsFolder(fs: Fs = tauriFs, open: (path: string) => Promise<void> = openPath): MapsFolder {
+  const opts = { baseDir: BaseDirectory.AppLocalData };
+  const text = new TextDecoder('utf-8');
+  return {
+    async read() {
+      await fs.mkdir(MAPS, { ...opts, recursive: true });
+      const names = (await fs.readDir(MAPS, opts)).filter((e) => e.isFile && MAP_FILE.test(e.name)).map((e) => e.name).sort();
+      const out: MapsFolderFile[] = [];
+      for (const name of names) {
+        try {
+          out.push({ name, text: text.decode(await fs.readFile(`${MAPS}/${name}`, opts)).replace(/^﻿/, '') });
+        } catch (err) {
+          out.push({ name, text: '', error: String(err) });
+        }
+      }
+      return out;
+    },
+    async openFolder() {
+      await fs.mkdir(MAPS, { ...opts, recursive: true });
+      await open(await join(await appLocalDataDir(), MAPS));
     },
   };
 }
