@@ -384,17 +384,26 @@ async function familyWords(ctx: ParentSectionContext): Promise<HTMLElement> {
     addRow.hidden = words.length >= MAX_FAMILY_WORDS;
   };
 
-  const add = async () => {
+  // Adds run one after another, and the field is emptied at once: a word typed while the last one saves is kept.
+  let adding: Promise<void> = Promise.resolve();
+  const add = () => {
     const text = cleanWordText(input.value);
     if (!hasLetters(text)) {
       status.textContent = 'Type a word with at least one letter A to Z.';
-      return;
+      return adding;
     }
-    if ((await loadFamilyWords(storage)).length >= MAX_FAMILY_WORDS) return;
-    await saveFamilyWord(storage, { id: newFamilyId(), text, added: new Date().toISOString() });
     input.value = '';
-    status.textContent = `Added "${text}". Record how you say it below.`;
-    await redraw();
+    adding = adding.then(async () => {
+      const words = await loadFamilyWords(storage);
+      if (words.length >= MAX_FAMILY_WORDS) return;
+      // Always after the last word, even when two are added within the same millisecond.
+      const last = Date.parse(words.at(-1)?.added ?? '');
+      const added = new Date(Math.max(Date.now(), Number.isFinite(last) ? last + 1 : 0)).toISOString();
+      await saveFamilyWord(storage, { id: newFamilyId(), text, added });
+      status.textContent = `Added "${text}". Record how you say it below.`;
+      await redraw();
+    });
+    return adding;
   };
 
   const row = async (word: FamilyWordFiles): Promise<HTMLElement> => {
