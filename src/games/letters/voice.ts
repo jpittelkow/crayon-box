@@ -16,6 +16,12 @@ import { findRecording, spoken, type LettersSettings, type Said, type Saying } f
 /** One clip of a line: a shipped file, a parent's recording (a storage path), or the browser's voice. */
 export type Part = { clip: string } | { own: string } | { speech: string };
 
+/**
+ * Told as each part of a line starts (`sayNow`): its place in the line, and the audio element playing it (none for
+ * the browser's voice), whose length times the boxes lighting up in a slow word (ADR 0039).
+ */
+export type OnPart = (index: number, audio: HTMLAudioElement | null) => void;
+
 /** What is said for a letter, in order, by the setting. A digit has no sound, so it is always its name. */
 export function partsFor(saying: Saying, ch: string): Said[] {
   if (!soundClip(ch)) return ['name'];
@@ -115,13 +121,27 @@ export class LetterVoice {
     return said;
   }
 
-  /** Says the letter as the setting asks, cutting in: when a letter opens, or a finished one is tapped. */
-  async say(ch: string): Promise<void> {
+  /**
+   * Says the letter as the setting asks, cutting in: when a letter opens, or a finished one is tapped. `before` are
+   * clips said first ("Now the next letter.", ADR 0039).
+   */
+  async say(ch: string, before: (string | undefined)[] = []): Promise<void> {
     if (!this.on) return;
     this.stop();
     const turn = this.turn;
     const parts = await this.lookUp(ch);
-    if (turn === this.turn) await this.line(parts);
+    const first = before.filter((c): c is string => !!c).map((clip) => ({ clip }));
+    if (turn === this.turn) await this.line([...first, ...parts]);
+  }
+
+  /**
+   * Says a line now, cutting in, and resolves once it has been said (or was stopped): a word's opening, its slow
+   * word, its cheer (ADR 0039). `onPart` is told as each part starts.
+   */
+  async sayNow(parts: Part[], onPart?: OnPart): Promise<void> {
+    if (!this.on || parts.length === 0) return;
+    this.stop();
+    await this.run(parts, this.turn, onPart);
   }
 
   /** Says the letter, then a word of praise, cutting in: for a finished letter (ADR 0032). */
@@ -173,10 +193,10 @@ export class LetterVoice {
     }
   }
 
-  private async run(parts: Part[], turn: number): Promise<void> {
+  private async run(parts: Part[], turn: number, onPart?: OnPart): Promise<void> {
     this.playing = true;
-    for (const part of parts) {
-      await this.playPart(part, turn);
+    for (const [i, part] of parts.entries()) {
+      await this.playPart(part, turn, onPart && ((audio) => onPart(i, audio)));
       if (turn !== this.turn) return;
     }
     this.playing = false;
@@ -190,17 +210,18 @@ export class LetterVoice {
   }
 
   /** Plays one part; resolves when it ends, fails, or is stopped. Never throws: a kid screen shows no errors. */
-  private async playPart(part: Part, turn: number): Promise<void> {
+  private async playPart(part: Part, turn: number, started?: (audio: HTMLAudioElement | null) => void): Promise<void> {
     try {
       if ('clip' in part) {
-        if (part.clip) await this.play(part.clip, turn);
+        if (part.clip) await this.play(part.clip, turn, started);
       } else if ('own' in part) {
         const blob = await this.storage.getBlob(part.own);
         if (!blob || turn !== this.turn) return;
         const url = URL.createObjectURL(blob);
         this.urls.push(url);
-        await this.play(url, turn);
+        await this.play(url, turn, started);
       } else {
+        started?.(null);
         await this.speak(part.speech, turn);
       }
     } catch {
@@ -209,11 +230,12 @@ export class LetterVoice {
   }
 
   /** Plays one clip; resolves when it ends, fails, or is stopped. */
-  private play(url: string, turn: number): Promise<void> {
+  private play(url: string, turn: number, started?: (audio: HTMLAudioElement | null) => void): Promise<void> {
     if (turn !== this.turn) return Promise.resolve();
     this.audio?.pause();
     const audio = new Audio(url);
     this.audio = audio;
+    started?.(audio);
     return new Promise<void>((resolve) => {
       const done = () => resolve();
       audio.addEventListener('ended', done, { once: true });
