@@ -45,6 +45,17 @@ each one is proven by building it.
       on the dev machine).
     - `npx playwright test tests/e2e/driving.spec.ts --workers=4`.
 
+## A map from the folder (ADR 0043)
+A map that must not be in the repo (the home map) is a JSON file instead, dropped in the device's maps folder
+(`%LOCALAPPDATA%\org.crayonbox.coloring\maps`; Parent area › Driving › Open the maps folder).
+1. **Start from a map that works:** `mapToFile(map, name)` in `maps/file.ts` writes any `MapDef` as a file (the
+   format is in ADR 0043; `maps/examples/test-loop.json` is a small one). Make and keep the file **outside the
+   repo**.
+2. **Edit it** with the same steps as above; the map's `id` is lower case letters, digits and dashes.
+3. **Drop it in the folder** and open Parent area › Driving: it is listed with a switch, or left out with the
+   reason (the same rules as `maps.test.ts`, from `maps/check.ts`). Fix and look again; the folder is read each time.
+4. **Drive it** as in step 11; the random-driving and traffic checks don't run on the device, so drive the whole map.
+
 ## Patterns
 - **Roads first, everything else placed from them.** Things are placed on a road (`OnRoad`: a fraction along it
   and an offset) so moving a road moves what sits by it.

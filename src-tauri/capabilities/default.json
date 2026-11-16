@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the main window may ask of the shell: the core defaults, files in its own store and in the Coloring Book folder in Pictures only (phase B), opening that Pictures folder, and checking for and installing signed updates (phase E), and the kiosk lock: full screen, start at sign-in (phase D).",
+  "description": "What the main window may ask of the shell: the core defaults, files in its own store and in the Coloring Book folder in Pictures only (phase B), opening that Pictures folder, and checking for and installing signed updates (phase E), and the kiosk lock: full screen, start at sign-in (phase D). The driving game's maps folder in local app data may only be made, listed and read, and opened in File Explorer (ADR 0043).",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -27,8 +27,24 @@
       ]
     },
     {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "$APPLOCALDATA/maps" }]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "$APPLOCALDATA/maps" }]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "$APPLOCALDATA/maps/*" }]
+    },
+    {
       "identifier": "opener:allow-open-path",
-      "allow": [{ "path": "$PICTURE/Coloring Book/Art" }, { "path": "$PICTURE/Coloring Book/Pages" }]
+      "allow": [
+        { "path": "$PICTURE/Coloring Book/Art" },
+        { "path": "$PICTURE/Coloring Book/Pages" },
+        { "path": "$APPLOCALDATA/maps" }
+      ]
     }
   ]
 }
