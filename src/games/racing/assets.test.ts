@@ -14,6 +14,7 @@ import { DECOR_IDS, SCENERY, SCENERY_IDS } from './sim/assets/scenery';
 import { TARGET_IDS, TOYS, TOY_IDS } from './sim/assets/toys';
 import type { MapDef } from './sim/map';
 import { MUD_POOL } from './sim/mud';
+import { ringRoad } from './sim/roads';
 import { CONFETTI_BURST, CONFETTI_POOL, makeWorld } from './sim/sim';
 import type { VehicleKind } from './sim/sim';
 
@@ -93,6 +94,20 @@ describe('the asset registry', () => {
     for (const [kind, map] of Object.entries(maps)) {
       expect(triangles(buildSetPieces(makeWorld(1, 0, 'free', map)).group) - empty, kind).toBeLessThanOrEqual(15000);
     }
+    // The roundabout: a ring inside the ring road, its arrows, bed, flowers and fountain (the ring's surface is a
+    // road's). The harbour: the island's quay and its boats, against the island without it.
+    const round: MapDef = {
+      ...bare, roads: [...RING.roads, ringRoad(0, 0, 8, 9), { kind: 'street', width: 9, closed: false, from: 1, to: 0, points: acrossRing(0, 8, 38) }],
+      zones: [{ kind: 'roundabout', on: { x: 0, z: 0 }, r: 12.5 }],
+    };
+    const roundabout = triangles(buildSetPieces(makeWorld(1, 0, 'free', round)).group) - empty;
+    expect(roundabout, 'roundabout').toBeGreaterThan(1000);
+    expect(roundabout, 'roundabout').toBeLessThanOrEqual(15000);
+    const island = MAPS.find((m) => m.id === 'island')!;
+    const harbour = triangles(buildSetPieces(makeWorld(1, 0, 'free', island)).group)
+      - triangles(buildSetPieces(makeWorld(1, 0, 'free', { ...island, zones: island.zones!.filter((z) => z.kind !== 'harbour') })).group);
+    expect(harbour, 'harbour').toBeGreaterThan(1000);
+    expect(harbour, 'harbour').toBeLessThanOrEqual(15000);
     // Mud off the wheels: one small pool.
     expect(MUD_POOL).toBeLessThanOrEqual(60);
   });

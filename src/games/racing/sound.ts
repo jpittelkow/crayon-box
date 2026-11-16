@@ -2,8 +2,9 @@
 // file) that plays faster, so higher, and brighter as the vehicle speeds up; traffic is heard only nearby. Effects
 // are shipped files too: each toy's bump, splashes, the horn, the police car's siren, the tyre squeal and the
 // brake squeak. The set pieces (milestone-3 B6) reuse them for now: plank knocks on a bridge, a whoosh and popping
-// bubbles at the car wash, a squelch in mud, a splash into a ford, the traffic lights' click and ding (ADR 0042);
-// the tunnel's echo and the sand's hiss are made by the app.
+// bubbles at the car wash, a squelch in mud, a splash into a ford, the traffic lights' click and ding, a roundabout's
+// fountain splashing, waves lapping at a harbour and a ship's horn answering the kid's (ADR 0042); the tunnel's echo
+// and the sand's hiss are made by the app.
 import { soundUrl } from '../../shell/soundFiles';
 import type { AnimalCall } from './sim/assets/animals';
 import type { BumpSound, TargetSound } from './sim/assets/toys';
@@ -73,13 +74,37 @@ export const TARGET_SOUNDS = {
 /**
  * The new set pieces' sounds (ADR 0042), stand-ins from shipped files until takes of their own. Squelch (mud): the
  * puddle splash at a low rate with a low pop, going in and then every `every` seconds while moving in it. Ford: the
- * big splash, a little high. Lights: the wooden knock high and quiet as a click, and the bell as a ding.
+ * big splash, a little high. Lights: the wooden knock high and quiet as a click, and the bell as a ding. Fountain (a
+ * roundabout): the puddle splash looped softly, louder near it. Waves (a harbour): the puddle splash looped low and
+ * slow, swelling and falling, louder near the quay. Ship's horn: the horn, low and long.
  */
 export const SET_PIECE_SOUNDS = {
   squelch: { rate: 0.5, pop: 0.45, volume: 0.9, every: 0.55 },
   ford: { rate: 1.1, volume: 0.85 },
   lights: { click: 0.25, clickRate: 2.4, ding: 0.22, dingRate: 2 },
+  fountain: { rate: 1.3, volume: 0.3, near: 7, far: 45 },
+  waves: { rate: 0.55, volume: 0.35, near: 10, far: 60, swell: 0.8 },
+  shipHorn: { rate: 0.32, volume: 1 },
 } as const;
+
+/** How loud a looped set piece is at a distance `d` from it: full within `near`, fading, silent past `far`. */
+function nearby(d: number, sound: { volume: number; near: number; far: number }): number {
+  if (d >= sound.far) return 0;
+  const fade = 1 / (1 + (Math.max(0, d - sound.near) / sound.near) ** 2);
+  return sound.volume * fade * Math.min(1, (sound.far - d) / 10);
+}
+
+/** How loud the nearest roundabout's fountain is for the kid's car (ADR 0042). */
+export function fountainLoudness(world: World): number {
+  const kid = world.cars[0]!;
+  return Math.max(0, ...world.zones.filter((z) => z.kind === 'roundabout').map((z) => nearby(Math.hypot(z.x - kid.x, z.z - kid.z), SET_PIECE_SOUNDS.fountain)));
+}
+
+/** How loud the waves lapping at the nearest harbour are (ADR 0042), before they swell and fall. */
+export function wavesLoudness(world: World): number {
+  const kid = world.cars[0]!;
+  return Math.max(0, ...world.zones.filter((z) => z.kind === 'harbour').map((z) => nearby(Math.max(0, Math.hypot(z.x - kid.x, z.z - kid.z) - z.r), SET_PIECE_SOUNDS.waves)));
+}
 
 /** Lights changing further away than this aren't heard. */
 export const LIGHTS_HEARD_M = 35;
@@ -173,6 +198,8 @@ export class DrivingSound {
   private echo: GainNode | null = null;
   /** The hiss of sand under the wheels, made by the app: its loudness. */
   private sand: GainNode | null = null;
+  /** Looped set pieces (ADR 0042): a roundabout's fountain and a harbour's waves, each a loudness. */
+  private loops: { fountain: GainNode | null; waves: GainNode | null } = { fountain: null, waves: null };
   /** For effects that depend on time or distance between frames. */
   private last = { time: 0, x: 0, z: 0, zone: -1, plank: 0, squelch: 0 };
 
@@ -269,6 +296,23 @@ export class DrivingSound {
     return gain;
   }
 
+  /** An effect file looped from when it has loaded, at a rate, through a loudness starting silent. */
+  private loop(ctx: AudioContext, path: string, rate: number): GainNode {
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    gain.connect(this.out(ctx));
+    void this.loaded.get(path)?.then((buf) => {
+      if (!buf || this.ctx !== ctx) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      src.playbackRate.value = rate;
+      src.connect(gain);
+      src.start(0, Math.random() * buf.duration);
+    });
+    return gain;
+  }
+
   /** A vehicle's engine: its idle loop, through a filter that opens with speed. Null until the loop has loaded. */
   private startEngine(ctx: AudioContext, kind: VehicleKind): Running | null {
     const buf = this.files.get(ENGINES[kind].file);
@@ -361,6 +405,13 @@ export class DrivingSound {
 
     this.echo?.gain.setTargetAtTime(world.under.tunnel ? 0.55 : 0, t, 0.15);
 
+    // A roundabout's fountain and a harbour's waves (ADR 0042), louder nearer; the waves swell and fall.
+    const fountain = fountainLoudness(world), waves = wavesLoudness(world);
+    if (fountain > 0) this.loops.fountain ??= this.loop(ctx, EFFECTS.puddle, SET_PIECE_SOUNDS.fountain.rate);
+    if (waves > 0) this.loops.waves ??= this.loop(ctx, EFFECTS.puddle, SET_PIECE_SOUNDS.waves.rate);
+    this.loops.fountain?.gain.setTargetAtTime(fountain, t, 0.2);
+    this.loops.waves?.gain.setTargetAtTime(waves * (0.6 + 0.4 * Math.sin(world.time * SET_PIECE_SOUNDS.waves.swell)), t, 0.3);
+
     this.sand ??= this.startSand(ctx);
     const hiss = world.under.sand && kid.h === 0 ? 0.05 + 0.1 * Math.min(1, kid.speed / MAX_SPEED) : 0;
     this.sand.gain.setTargetAtTime(kid.speed > 1 ? hiss : 0, t, 0.08);
@@ -430,6 +481,12 @@ export class DrivingSound {
     if (green) this.effect(EFFECTS.bell, l.ding, l.dingRate, 0.05);
   }
 
+  /** A ship's horn answering the kid's in a harbour (ADR 0042): the horn, low and long. */
+  shipHorn(): void {
+    const h = SET_PIECE_SOUNDS.shipHorn;
+    this.effect(EFFECTS.horn, h.volume, h.rate);
+  }
+
   /** An animal answering the horn; each a little different, so a herd doesn't sound like one. */
   call(kind: AnimalCall): void {
     const c = CALL[kind];
@@ -466,6 +523,7 @@ export class DrivingSound {
     this.siren = null;
     this.echo = null;
     this.sand = null;
+    this.loops = { fountain: null, waves: null };
     this.files.clear();
     this.loaded.clear();
   }
