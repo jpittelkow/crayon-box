@@ -14,14 +14,12 @@ import { MUD_FLY } from './sim/mud';
 import type { SceneryId } from './sim/assets/scenery';
 import type { ToyId } from './sim/assets/toys';
 import { CONFETTI_LIFE, DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
-import { CAMERA_FOV, chaseView, stepTreeSizes, type View } from './sim/view';
+import { CAMERA_FOV, HIDE_M, chaseView, stepTreeSizes, type View } from './sim/view';
 
 /** The most real pixels drawn per CSS pixel. Built-in laptop graphics (ADR 0021) get no more than this. */
 export const MAX_PIXEL_RATIO = 1.5;
 
 const WATER_Y = 0.09;
-/** Things further than this from where the chase camera looks are not drawn (milestone-3 E). */
-const HIDE_M = 150;
 
 export interface Renderer {
   resize(cssWidth: number, cssHeight: number, pixelRatio: number): void;
