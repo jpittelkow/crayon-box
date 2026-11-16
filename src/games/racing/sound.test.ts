@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { soundUrl } from '../../shell/soundFiles';
+import { ISLAND } from './maps/island';
 import { MAX_SPEED, makeWorld, step, type VehicleKind } from './sim/sim';
 import { VEHICLES } from './settings';
-import { EFFECTS, ENGINES, engineLoudness } from './sound';
+import { EFFECTS, ENGINES, engineLoudness, fountainLoudness, wavesLoudness } from './sound';
 
 describe('engine sounds (ADR 0025, 0032)', () => {
   it('every kind of vehicle has an engine; the first four have loops of their own (the rest are stand-ins, ADR 0035)', () => {
@@ -41,5 +42,30 @@ describe('engine sounds (ADR 0025, 0032)', () => {
     expect(near).toBeGreaterThan(far);
     expect(far).toBeGreaterThan(0);
     expect(engineLoudness(w, 2)).toBe(0);
+  });
+});
+
+describe('set pieces heard nearby (ADR 0042)', () => {
+  it('a roundabout\'s fountain and a harbour\'s waves are louder nearer, and silent far off', () => {
+    const w = makeWorld(7, 0, 'free', ISLAND);
+    const kid = w.cars[0]!;
+    const at = (kind: string, away: number) => {
+      const zone = w.zones.find((z) => z.kind === kind)!;
+      Object.assign(kid, { x: zone.x + away, z: zone.z });
+    };
+    at('roundabout', 0);
+    const fountainNear = fountainLoudness(w);
+    at('roundabout', 25);
+    const fountainFar = fountainLoudness(w);
+    expect(fountainNear).toBeGreaterThan(fountainFar);
+    expect(fountainFar).toBeGreaterThan(0);
+    at('roundabout', 80);
+    expect(fountainLoudness(w)).toBe(0);
+    at('harbour', 0);
+    const wavesNear = wavesLoudness(w);
+    at('harbour', 40);
+    expect(wavesNear).toBeGreaterThan(wavesLoudness(w));
+    at('harbour', 120);
+    expect(wavesLoudness(w)).toBe(0);
   });
 });
