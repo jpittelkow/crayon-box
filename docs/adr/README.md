@@ -48,6 +48,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0040](0040-driving-very-large-map-highway-and-building-site.md) | Driving game: a very large map, a highway in a figure of eight round a building site and a quarry | Proposed |
 | [0041](0041-driving-targets-to-collect-and-hit.md) | Driving game: targets, stacks of boxes to knock over and stars to collect | Accepted |
 | [0042](0042-driving-more-set-pieces.md) | Driving game: more set pieces, mud, a ford, traffic lights, a roundabout and a harbour | Accepted |
+| [0043](0043-driving-maps-from-a-folder.md) | Driving game: maps loaded from a folder on the device, checked as they load | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H
