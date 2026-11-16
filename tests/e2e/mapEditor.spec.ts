@@ -29,8 +29,19 @@ test('the map editor opens a map, moves a road point, shows a road in the sea, a
 
   // Click road 2 (the spur from the west of the loop to the roundabout) to show its control points.
   const before = await page.evaluate(() => window.mapEditor!.doc.map.roads[2]!.points);
-  const mid = before[Math.floor(before.length / 2)]!;
-  await page.mouse.click(...(await page.evaluate(([x, z]) => window.mapEditor!.pageXY(x, z), mid)));
+  // A spot on it clear of the stars, stacks and puddles placed along it (a click there would select those).
+  const spot = await page.evaluate(() => {
+    const ed = window.mapEditor!;
+    const pts = ed.doc.map.roads[2]!.points;
+    for (let k = Math.floor(pts.length * 0.4); k < pts.length; k++) {
+      const xy = ed.pageXY(...pts[k]!);
+      const item = ed.itemAt(...xy);
+      if (item?.type === 'road' && item.i === 2) return xy;
+    }
+    return null;
+  });
+  expect(spot).not.toBeNull();
+  await page.mouse.click(...spot!);
   await expect(page.locator('#what')).toHaveText('road 2');
   const handles = await page.evaluate(() => window.mapEditor!.handlesXY());
   expect(handles.length).toBeGreaterThanOrEqual(3);

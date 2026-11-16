@@ -36,6 +36,8 @@ declare global {
       pageXY(x: number, z: number): [number, number];
       /** The selected line's control points (to drag), on the page. */
       handlesXY(): [number, number][];
+      /** What a click at a place on the page would select. */
+      itemAt(pageX: number, pageY: number): Item | null;
       /** What `maps/check.ts` and `maps/file.ts` say about a map file's text: empty when it would load. */
       checkFile(text: string): string[];
     };
@@ -728,6 +730,10 @@ window.mapEditor = {
   },
   handlesXY() {
     return handles(doc(), selected).map((h) => this.pageXY(h.x, h.z));
+  },
+  itemAt(pageX, pageY) {
+    const r = canvas.getBoundingClientRect();
+    return pick(pageX - r.left, pageY - r.top);
   },
   checkFile(text) {
     const parsed = parseMapFile(text);
