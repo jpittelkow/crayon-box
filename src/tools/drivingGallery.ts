@@ -11,10 +11,9 @@ import { createRenderer } from '../games/racing/render';
 import { CATEGORIES, SET_PIECES } from '../games/racing/sim/assets';
 import { SCENERY_IDS } from '../games/racing/sim/assets/scenery';
 import { STACK_ROWS, STAR_HEIGHT, TOYS, TOY_IDS } from '../games/racing/sim/assets/toys';
-import { roundOutline } from '../games/racing/sim/land';
 import type { MapDef, ZoneKind } from '../games/racing/sim/map';
 import { MUD_FLY } from '../games/racing/sim/mud';
-import { buildRoad, nearestOn, smoothPath, type RoadDef } from '../games/racing/sim/roads';
+import { buildRoad, nearestOn, ringRoad, smoothPath, type RoadDef } from '../games/racing/sim/roads';
 import { CONFETTI_LIFE, DROP_LIFE, makeWorld, type Prop, type VehicleKind } from '../games/racing/sim/sim';
 import type { View } from '../games/racing/sim/view';
 
@@ -33,28 +32,60 @@ const LOOP: RoadDef = { kind: 'street', width: 9, closed: true, points: smoothPa
 const loop = buildRoad(LOOP);
 const onLoop = (x: number, z: number) => ({ road: 0, at: nearestOn(loop, 0, x, z).s / loop.length });
 const JOIN = nearestOn(loop, 0, 30, 25);
-/** The set pieces along the far side, west to east (x grows westward), each a zone kind with a note. */
-const PIECES: { kind: ZoneKind; x: number; r: number; note: string }[] = [
+/**
+ * The set pieces along the far side, west to east (x grows westward), each a zone kind with a note. The roundabout
+ * stands beyond the far side, on a road from the loop (ADR 0042); the harbour's quay is the loop's east side, where
+ * the shore comes up to it.
+ */
+const PIECES: { kind: ZoneKind; x: number; z?: number; r: number; note: string }[] = [
   { kind: 'ramp', x: 43, r: 3.5, note: 'a hop' },
   { kind: 'lights', x: JOIN.x, r: 5, note: 'for show: traffic waits' },
   { kind: 'car-wash', x: 15, r: 4, note: 'soapy; washes mud off' },
   { kind: 'garage', x: 2, r: 4, note: 'the next vehicle' },
-  { kind: 'mud', x: -13, r: 6, note: 'slow, muddy, a squelch' },
-  { kind: 'ford', x: -30, r: 5.5, note: 'splash, slow, wet' },
+  { kind: 'roundabout', x: -9, z: 56, r: 12.5, note: 'round it one way; a fountain' },
+  { kind: 'mud', x: -22, r: 6, note: 'slow, muddy, a squelch' },
+  { kind: 'ford', x: -36, r: 5.5, note: 'splash, slow, wet' },
+  { kind: 'harbour', x: -47, z: -2, r: 13, note: 'boats; a ship answers the horn' },
 ];
+const RING_AT = PIECES.find((p) => p.kind === 'roundabout')!;
+/** Where the road to the roundabout leaves the loop. */
+const BRANCH = nearestOn(loop, 0, RING_AT.x, 30);
+
+/**
+ * The land: round, reaching further north for the roundabout beyond the loop, and cut straight on the east, 6.5 m
+ * past the loop's middle, where the harbour's quay runs along the sea.
+ */
+const OUTLINE = Array.from({ length: 160 }, (_, i): [number, number] => {
+  const a = (i / 160) * Math.PI * 2, north = Math.atan2(RING_AT.x, RING_AT.z!);
+  const r = 62 + 24 * Math.max(0, Math.cos(a - north)) ** 4;
+  const x = Math.sin(a) * r, z = Math.cos(a) * r;
+  return [Math.abs(z) < 16 ? Math.max(x, -52.5) : x, z];
+});
 
 /** A small map that shows the ground, a road, water, sand, sea, bushes, set pieces and sky as the game draws them. */
 const GALLERY: MapDef = {
   id: 'gallery',
-  land: { outline: roundOutline(0, 0, 62), beach: 8 },
-  roads: [LOOP, { kind: 'street', width: 9, closed: false, from: 0, points: Array.from({ length: 14 }, (_, i): [number, number] => [JOIN.x, JOIN.z + i * 1.6]) }],
+  land: { outline: OUTLINE, beach: 8 },
+  roads: [
+    LOOP, { kind: 'street', width: 9, closed: false, from: 0, points: Array.from({ length: 14 }, (_, i): [number, number] => [JOIN.x, JOIN.z + i * 1.6]) },
+    // The roundabout's ring, and the road out to it from the loop.
+    ringRoad(RING_AT.x, RING_AT.z!, 8, 9),
+    { kind: 'street', width: 9, closed: false, from: 0, to: 2, points: smoothPath([[BRANCH.x, BRANCH.z], [RING_AT.x, RING_AT.z! - 8]], false, 1.5) },
+  ],
   spawn: { road: 0, at: 0 },
   traffic: [],
-  zones: !only || only === 'setpieces' ? PIECES.map((p) => ({ kind: p.kind, on: onLoop(p.x, 28), r: p.r })) : [],
+  zones: !only || only === 'setpieces'
+    ? PIECES.map((p) => ({
+      kind: p.kind, r: p.r,
+      on: p.kind === 'roundabout' ? { x: p.x, z: p.z! } : onLoop(p.x, p.z ?? 28),
+      // The harbour's last boat sails out to sea and back.
+      ...(p.kind === 'harbour' ? { sail: [[-66, -12], [-80, -4], [-72, 8]] as [number, number][] } : {}),
+    }))
+    : [],
   water: {
     pools: [{ on: { road: 0, at: 0.12 }, r: 7, deep: true }], puddles: [{ road: 0, at: [0.3], spread: 0, size: [2.6, 0] }],
     // A stream from inside the loop out to the sea, crossing the road at the ford.
-    streams: [{ points: smoothPath([[-30, 17], [-31, 24], [-30, 36], [-32, 52]], false, 1.5), width: 6 }],
+    streams: [{ points: smoothPath([[-35, 10], [-36, 18], [-37, 32], [-40, 50]], false, 1.5), width: 6 }],
   },
   trees: { kinds: [{ id: 'scenery/pine', share: 1 }], count: 0, scale: [1, 0], roadGap: 2, waterGap: 2, edgeGap: 5 },
   props: { kinds: [{ id: 'toy/cone', share: 1 }], nearRoad: 0, spread: 0, edgeGap: 5, spawnGap: 0 },
@@ -167,7 +198,7 @@ document.body.append(canvas, overlay, panel);
 
 const shownBy: Record<string, string> = {
   vehicles: 'front row', toys: 'second row', scenery: 'third row', decor: 'bushes on the map', roads: 'the road loop',
-  ground: 'the map: grass, sand, a puddle, the flood, a stream, the sea', setpieces: 'far side of the loop (?row=setpieces)',
+  ground: 'the map: grass, sand, a puddle, the flood, a stream, the sea', setpieces: 'far side of the loop and beyond it (?row=setpieces)',
   animals: 'not in the gallery yet',
   effects: 'back row', sky: 'the sky',
 };
