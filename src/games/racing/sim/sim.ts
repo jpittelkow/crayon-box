@@ -10,6 +10,7 @@ import type { AnimalCall } from './assets/animals';
 import { buildGuards, buildSand, guardAt, hillReach, onSand, type Guard } from './ground';
 import { buildLand, keepInland, randomInland, shore, type Land } from './land';
 import { FORD_SPEED, buildStreams } from './ford';
+import { LOOKUP, thingsIn } from './grid';
 import { HARBOUR_HEARS, SHIP_HORN, harbourBoats, quayGuard, stepBoats, type Boat } from './harbour';
 import { LIGHTS_NEAR, lampFor, lightPosts, lightsJunction, stepLight, wayAt, wayOf, type Light, type Post } from './lights';
 import type { MapDef, OnRoad, ZoneKind } from './map';
@@ -295,6 +296,12 @@ export interface World {
   shipHorns: number[];
   /** A ship's horn on its way (seconds until it sounds, and from which harbour), and seconds before it may again. */
   shipHorn: { in: number; zone: number; rest: number };
+  /**
+   * The toys awake (docs/highway-map-plan.md, phase 2): their indices in `props`, in rising order, and the list of
+   * toys they belong to (a dev tool may replace it).
+   */
+  awake: number[];
+  awakeOf: Prop[] | null;
 }
 
 /**
@@ -362,7 +369,7 @@ export function makeWorld(
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
     muds: [], mudNext: 0, streams: [], lights: [], posts: [], lightChanges: [],
-    boats: [], shipHorns: [], shipHorn: { in: -1, zone: -1, rest: 0 },
+    boats: [], shipHorns: [], shipHorn: { in: -1, zone: -1, rest: 0 }, awake: [], awakeOf: null,
   };
   for (const z of map.zones ?? []) {
     const p = 'road' in z.on ? pointAt(roads[z.on.road]!, along(w, z.on), z.on.offset ?? 0) : z.on;
@@ -406,6 +413,19 @@ export function makeWorld(
     const kind = others.length ? others[(start + i) % others.length]! : t.kind === kidKind ? 'car' : t.kind;
     w.cars.push(car(kind, t.on, t.cruise));
   });
+  // Traffic by a rule (a big map): near the kid's start, never on top of it, never the kid's own kind of vehicle.
+  const near = map.trafficNear;
+  if (near) {
+    const kinds = others.length ? others : NEAR_KINDS.filter((k) => k !== kidKind);
+    for (let i = 0; i < near.count; i++) {
+      const on = trafficSpot(w, kid.x, kid.z, 30, TRAFFIC_NEAR.to);
+      if (!on) break;
+      const c = car(kinds[(start + map.traffic.length + i) % kinds.length]!, on, near.cruise[0] + rand(w) * (near.cruise[1] - near.cruise[0]));
+      c.dir = on.dir;
+      trafficPose(w, c);
+      w.cars.push(c);
+    }
+  }
 
   // Water: pools placed by hand (the flood), then puddles along the roads, each with a smaller lobe.
   for (const pool of map.water.pools) {
@@ -515,6 +535,35 @@ export function makeWorld(
   return w;
 }
 
+/**
+ * Traffic by a rule (`MapDef.trafficNear`, docs/highway-map-plan.md phase 2): a vehicle further than `behind`
+ * metres from the kid's car is put back on a road between `from` and `to` metres from it, ahead or behind. Both are
+ * past `HIDE_M` (render.ts, 150 m), so a vehicle is never seen to go or to come.
+ */
+export const TRAFFIC_NEAR = { behind: 250, from: 160, to: 220 } as const;
+/** Traffic by a rule when no vehicles are switched on: these, but never the kid's own. */
+const NEAR_KINDS: VehicleKind[] = ['bus', 'police', 'monster', 'car'];
+
+/**
+ * A spot on one of the rule's roads, `from` to `to` metres (as the crow flies) from a point, in a random lane and
+ * direction, or null if none was found in a few tries.
+ */
+function trafficSpot(w: World, x: number, z: number, from: number, to: number): (OnRoad & { dir: 1 | -1 }) | null {
+  const roads = w.map.trafficNear?.roads ?? w.roads.map((_, i) => i);
+  for (let tries = 0; tries < 40; tries++) {
+    const road = roads[Math.floor(rand(w) * roads.length)]!;
+    const r = w.roads[road]!, s = rand(w) * r.length;
+    const p = pointAt(r, s);
+    const d = Math.hypot(p.x - x, p.z - z);
+    if (d < from || d > to) continue;
+    const dir = rand(w) < 0.5 ? 1 : -1;
+    // On a one-way road only forward (ADR 0042); the lane is right of the way it drives.
+    const way = r.def.oneWay ? 1 : dir;
+    return { road, at: s / r.length, offset: Math.min(2.2, r.def.width / 2 - 1), dir: way };
+  }
+  return null;
+}
+
 /** Scattered toys keep this far from a target's spot (a stack's a little further, it is wider), in metres. */
 const TARGET_GAP = 2.5;
 
@@ -527,6 +576,9 @@ function toyAt(toy: ToyId, x: number, y: number, z: number, yaw: number): Prop {
   };
 }
 
+/** A water or a zone as a round thing, for its squares. */
+const round = (p: { x: number; z: number; r: number }) => p;
+
 /** 0 for dry land, 1 in a puddle (or a stream), 2 in the flood. */
 export function waterAt(w: World, x: number, z: number): number {
   const p = waterUnder(w, x, z);
@@ -536,7 +588,8 @@ export function waterAt(w: World, x: number, z: number): number {
 /** The water at a point, or null on dry land; deep water first where two meet. */
 export function waterUnder(w: World, x: number, z: number): Water | null {
   let found: Water | null = null;
-  for (const p of w.waters) {
+  // Only the waters in the point's square (sim/grid.ts), in the list's order, as before.
+  for (const p of LOOKUP.grid ? thingsIn(w.waters, round, x, z, x, z).map((i) => w.waters[i]!) : w.waters) {
     const dx = x - p.x, dz = z - p.z;
     if (dx * dx + dz * dz > p.r * p.r) continue;
     if (p.deep) return p;
@@ -723,7 +776,9 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     car.heading += (side > 0 ? -1 : 1) * 1.6 * dt;
     return [nx * over, nz * over];
   };
-  for (const t of w.trees) pushOut(t.x, t.z, SCENERY[t.kind].radius * t.scale + 1.3, 0.985);
+  // Only the trees round the car (sim/grid.ts), in the list's order, as before: one shove can't carry it further.
+  const trees = LOOKUP.grid ? thingsIn(w.trees, point, car.x - TREES_NEAR, car.z - TREES_NEAR, car.x + TREES_NEAR, car.z + TREES_NEAR).map((i) => w.trees[i]!) : w.trees;
+  for (const t of trees) pushOut(t.x, t.z, SCENERY[t.kind].radius * t.scale + 1.3, 0.985);
   // The traffic lights' poles (ADR 0042): thin, beside the road; the car slides past one it touches.
   for (const p of w.posts) pushOut(p.x, p.z, VEHICLE_SIZE[car.kind].side + POST_R, 0.99);
   // A roundabout's fountain (ADR 0042): its basin is round, and the car slides round it.
@@ -784,6 +839,14 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     w.mark = { x: car.x, z: car.z, t: 0 };
   }
 }
+
+/** A tree (or a toy at home) as a point, for its squares. */
+const point = (t: { x: number; z: number }) => ({ x: t.x, z: t.z, r: 0 });
+/**
+ * Trees further than this from the kid's car can't touch it this step: a tree reaches about 2 m, and the biggest a
+ * map file may scatter (scale 20) about 10 m, and a shove moves the car less than that.
+ */
+const TREES_NEAR = 24;
 
 /** How far before its stopping point traffic starts to slow for the kid's car in its lane, to give way. */
 const GIVE_WAY = 8;
@@ -908,6 +971,27 @@ function stepTraffic(w: World, dt: number): void {
   }
 }
 
+/**
+ * Traffic by a rule (`MapDef.trafficNear`): a vehicle of the rule's that has fallen more than `TRAFFIC_NEAR.behind`
+ * metres from the kid's car (behind it, or left far ahead) is put back on a road `from` to `to` metres away, out of
+ * sight both before and after. The map's listed traffic, and the kid's own car, are never moved.
+ */
+function stepTrafficNear(w: World): void {
+  if (!w.map.trafficNear) return;
+  const kid = w.cars[0]!;
+  for (let i = 1 + w.map.traffic.length; i < w.cars.length; i++) {
+    const c = w.cars[i]!;
+    if (Math.hypot(c.x - kid.x, c.z - kid.z) <= TRAFFIC_NEAR.behind) continue;
+    const on = trafficSpot(w, kid.x, kid.z, TRAFFIC_NEAR.from, TRAFFIC_NEAR.to);
+    if (!on) continue;
+    Object.assign(c, {
+      road: on.road, s: along(w, on), lane: on.offset, home: on.offset, dir: on.dir, mode: CRUISE, timer: 0, cool: 0,
+      speed: c.cruise, h: 0, vy: 0,
+    });
+    trafficPose(w, c);
+  }
+}
+
 function puff(w: World, x: number, y: number, z: number): void {
   for (let i = 0; i < 3; i++) {
     const p = w.puffs[w.puffNext]!;
@@ -1020,9 +1104,19 @@ function stepConfetti(w: World, dt: number): void {
   }
 }
 
+/**
+ * Whether a point is surely further than `reach` from every one of a car's body points (they lie along its middle,
+ * at most `half - side` from it), so the exact test can be skipped. A centimetre of slack keeps rounding out of it.
+ */
+function beyond(car: Car, x: number, z: number, reach: number): boolean {
+  const { half, side } = VEHICLE_SIZE[car.kind];
+  const far = Math.max(0, half - side) + reach + 0.01;
+  return (x - car.x) ** 2 + (z - car.z) ** 2 > far * far;
+}
+
 /** Whether a car's body (its middle, front to back: bodyPoints) is within `reach` of a point on the ground. */
 function touches(car: Car, x: number, z: number, reach: number): boolean {
-  return bodyPoints(car).some(([bx, bz]) => (x - bx) ** 2 + (z - bz) ** 2 <= reach * reach);
+  return !beyond(car, x, z, reach) && bodyPoints(car).some(([bx, bz]) => (x - bx) ** 2 + (z - bz) ** 2 <= reach * reach);
 }
 
 /**
@@ -1090,114 +1184,165 @@ function topple(w: World, stack: number, car: Car, kid: boolean): void {
   confetti(w, top.x, top.y + 0.5, top.z);
 }
 
+/** The biggest toy's half size, for finding the toys a vehicle could reach. */
+const TOY_HALF = Math.max(...Object.values(TOYS).map((t) => t.half));
+
+/**
+ * Toys asleep (docs/highway-map-plan.md, phase 2): only the awake ones are stepped. A toy is awake while it is away
+ * from home (flying, lying, shrinking, growing), always if it is a star (it turns and bobs), and for a step when a
+ * moving vehicle is near its home (with the rest of its stack). Every other toy is at home with nothing to do, so
+ * skipping it changes nothing: the awake ones are stepped in the list's order, as all of them were before.
+ */
 function stepProps(w: World, dt: number): void {
-  for (const p of w.props) {
-    const { half, behaviour } = TOYS[p.toy];
-    if (behaviour === 'collect') {
-      stepStar(w, p, dt);
-      continue;
-    }
-    const rolls = behaviour === 'roll';
-    if (p.cool > 0) p.cool -= dt;
+  if (!LOOKUP.grid) {
+    for (const p of w.props) stepProp(w, p, dt);
+    return;
+  }
+  const awake = wakeProps(w);
+  for (const i of awake) stepProp(w, w.props[i]!, dt);
+  w.awake = awake.filter((i) => w.props[i]!.state !== HOME || TOYS[w.props[i]!.toy].behaviour === 'collect');
+}
 
-    if (p.state === SHRINK) {
-      p.scale -= dt / 0.25;
-      if (p.scale <= 0) {
-        p.scale = 0;
-        p.x = p.homeX; p.z = p.homeZ; p.y = p.homeY;
-        p.qx = 0; p.qy = Math.sin(p.homeYaw / 2); p.qz = 0; p.qw = Math.cos(p.homeYaw / 2);
-        p.vx = p.vy = p.vz = p.wx = p.wy = p.wz = 0;
-        // A stack rebuilds bottom first, and not round the kid's car; until then the box waits at home, unseen.
-        if (p.stack < 0 || stackReady(w, p)) p.state = GROW;
+/** The toys to step now, in rising order: the awake ones and those a moving vehicle could reach. */
+function wakeProps(w: World): number[] {
+  const { props } = w;
+  // A new list of toys (a dev tool's): wake the ones that need it.
+  if (w.awakeOf !== props) {
+    w.awakeOf = props;
+    w.awake = props.flatMap((p, i) => (p.state !== HOME || TOYS[p.toy].behaviour === 'collect' ? [i] : []));
+  }
+  const list = [...w.awake];
+  const listed = new Set(list);
+  const add = (i: number) => {
+    if (listed.has(i)) return;
+    listed.add(i);
+    list.push(i);
+  };
+  for (const car of w.cars) {
+    if (Math.abs(car.speed) < 1) continue;
+    const reach = VEHICLE_SIZE[car.kind].half + VEHICLE_SIZE[car.kind].side + 0.15 + TOY_HALF + 0.5;
+    for (const i of thingsIn(props, home, car.x - reach, car.z - reach, car.x + reach, car.z + reach)) {
+      const p = props[i]!;
+      if (p.state !== HOME) continue;
+      add(i);
+      // A stack falls as one: its boxes later in the list fly this same step.
+      if (p.stack >= 0) for (const b of w.stacks[p.stack]!) add(b);
+    }
+  }
+  return list.sort((a, b) => a - b);
+}
+
+/** A toy by its home, for its squares. */
+const home = (p: Prop) => ({ x: p.homeX, z: p.homeZ, r: 0 });
+
+function stepProp(w: World, p: Prop, dt: number): void {
+  const { half, behaviour } = TOYS[p.toy];
+  if (behaviour === 'collect') {
+    stepStar(w, p, dt);
+    return;
+  }
+  const rolls = behaviour === 'roll';
+  if (p.cool > 0) p.cool -= dt;
+
+  if (p.state === SHRINK) {
+    p.scale -= dt / 0.25;
+    if (p.scale <= 0) {
+      p.scale = 0;
+      p.x = p.homeX; p.z = p.homeZ; p.y = p.homeY;
+      p.qx = 0; p.qy = Math.sin(p.homeYaw / 2); p.qz = 0; p.qw = Math.cos(p.homeYaw / 2);
+      p.vx = p.vy = p.vz = p.wx = p.wy = p.wz = 0;
+      // A stack rebuilds bottom first, and not round the kid's car; until then the box waits at home, unseen.
+      if (p.stack < 0 || stackReady(w, p)) p.state = GROW;
+    }
+    return;
+  }
+  if (p.state === GROW) {
+    p.scale += dt / 0.25;
+    if (p.scale >= 1) { p.scale = 1; p.state = HOME; }
+    return;
+  }
+
+  // A standing stack is knocked by its bottom row; the boxes above go with it.
+  const standing = p.stack >= 0 && p.state === HOME;
+  if (p.cool <= 0 && p.y < 1.8 && !(standing && p.level > 0)) {
+    for (let i = 0; i < w.cars.length; i++) {
+      const car = w.cars[i]!;
+      // Backing up knocks toys too (ADR 0036): `v` is the speed either way, `car.speed` keeps the direction.
+      const v = Math.abs(car.speed);
+      if (v < 1) continue;
+      const fx = Math.sin(car.heading), fz = Math.cos(car.heading);
+      // The car is longer than it is wide: one circle at the nose, one at the tail.
+      const reach = VEHICLE_SIZE[car.kind].side + 0.15 + half;
+      // Too far from the car's middle for any of its body points to reach (a quick test before the exact one).
+      if (beyond(car, p.x, p.z, reach)) continue;
+      let dx = 0, dz = 0, hit = false;
+      for (const [bx, bz] of bodyPoints(car)) {
+        dx = p.x - bx; dz = p.z - bz;
+        if (dx * dx + dz * dz <= reach * reach) { hit = true; break; }
       }
-      continue;
-    }
-    if (p.state === GROW) {
-      p.scale += dt / 0.25;
-      if (p.scale >= 1) { p.scale = 1; p.state = HOME; }
-      continue;
-    }
-
-    // A standing stack is knocked by its bottom row; the boxes above go with it.
-    const standing = p.stack >= 0 && p.state === HOME;
-    if (p.cool <= 0 && p.y < 1.8 && !(standing && p.level > 0)) {
-      for (let i = 0; i < w.cars.length; i++) {
-        const car = w.cars[i]!;
-        // Backing up knocks toys too (ADR 0036): `v` is the speed either way, `car.speed` keeps the direction.
-        const v = Math.abs(car.speed);
-        if (v < 1) continue;
-        const fx = Math.sin(car.heading), fz = Math.cos(car.heading);
-        // The car is longer than it is wide: one circle at the nose, one at the tail.
-        const reach = VEHICLE_SIZE[car.kind].side + 0.15 + half;
-        let dx = 0, dz = 0, hit = false;
-        for (const [bx, bz] of bodyPoints(car)) {
-          dx = p.x - bx; dz = p.z - bz;
-          if (dx * dx + dz * dz <= reach * reach) { hit = true; break; }
-        }
-        if (!hit) continue;
-        if (standing) {
-          topple(w, p.stack, car, i === 0);
-          break;
-        }
-        const len = Math.hypot(dx, dz) || 1;
-        // A heavier vehicle knocks it further (ADR 0035).
-        const push = VEHICLE_FEEL[car.kind].push;
-        p.vx = (fx * car.speed * 0.85 + (dx / len) * v * 0.45) * push + (rand(w) - 0.5) * 2;
-        p.vz = (fz * car.speed * 0.85 + (dz / len) * v * 0.45) * push + (rand(w) - 0.5) * 2;
-        // A tumbling toy flies up; a rolling one only hops and keeps its speed along the ground.
-        p.vy = rolls ? 1.5 + rand(w) : 3 + v * 0.32 + rand(w) * 1.5;
-        p.wx = (rand(w) - 0.5) * v * 1.2;
-        p.wy = (rand(w) - 0.5) * v * 1.2;
-        p.wz = (rand(w) - 0.5) * v * 1.2;
-        p.state = FLYING; p.cool = 0.3; p.timer = 0;
-        puff(w, p.x, p.y, p.z);
-        if (i === 0) w.knocks.push(p.toy);
+      if (!hit) continue;
+      if (standing) {
+        topple(w, p.stack, car, i === 0);
         break;
       }
+      const len = Math.hypot(dx, dz) || 1;
+      // A heavier vehicle knocks it further (ADR 0035).
+      const push = VEHICLE_FEEL[car.kind].push;
+      p.vx = (fx * car.speed * 0.85 + (dx / len) * v * 0.45) * push + (rand(w) - 0.5) * 2;
+      p.vz = (fz * car.speed * 0.85 + (dz / len) * v * 0.45) * push + (rand(w) - 0.5) * 2;
+      // A tumbling toy flies up; a rolling one only hops and keeps its speed along the ground.
+      p.vy = rolls ? 1.5 + rand(w) : 3 + v * 0.32 + rand(w) * 1.5;
+      p.wx = (rand(w) - 0.5) * v * 1.2;
+      p.wy = (rand(w) - 0.5) * v * 1.2;
+      p.wz = (rand(w) - 0.5) * v * 1.2;
+      p.state = FLYING; p.cool = 0.3; p.timer = 0;
+      puff(w, p.x, p.y, p.z);
+      if (i === 0) w.knocks.push(p.toy);
+      break;
     }
+  }
 
-    if (p.state === FLYING) {
-      p.vy -= 24 * dt;
-      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-      const hx = p.wx * dt * 0.5, hy = p.wy * dt * 0.5, hz = p.wz * dt * 0.5;
-      const nx = p.qx + hx * p.qw + hy * p.qz - hz * p.qy;
-      const ny = p.qy + hy * p.qw + hz * p.qx - hx * p.qz;
-      const nz = p.qz + hz * p.qw + hx * p.qy - hy * p.qx;
-      const nw = p.qw - hx * p.qx - hy * p.qy - hz * p.qz;
-      const nl = Math.hypot(nx, ny, nz, nw) || 1;
-      p.qx = nx / nl; p.qy = ny / nl; p.qz = nz / nl; p.qw = nw / nl;
-      if (p.y <= half) {
-        p.y = half;
-        if (p.vy < -2) {
-          if (waterAt(w, p.x, p.z)) splash(w, p.x, p.z, p.vx, p.vz, 6, 4);
-          p.vy = -p.vy * 0.42; p.vx *= 0.75; p.vz *= 0.75;
-          p.wx *= 0.7; p.wy *= 0.7; p.wz *= 0.7;
-        } else if (rolls) {
-          // Rolling: slows gently, and spins the way a ball rolls (about the axis across its path).
-          p.vy = 0;
-          const f = Math.max(0, 1 - 0.9 * dt);
-          p.vx *= f; p.vz *= f;
-          p.wx = p.vz / half; p.wy = 0; p.wz = -p.vx / half;
-          if (p.vx * p.vx + p.vz * p.vz < 0.15) { p.state = AWAY; p.timer = 0; }
-        } else {
-          p.vy = 0;
-          const f = Math.max(0, 1 - 5 * dt);
-          p.vx *= f; p.vz *= f; p.wx *= f; p.wy *= f; p.wz *= f;
-          if (p.vx * p.vx + p.vz * p.vz < 0.15) { p.state = AWAY; p.timer = 0; }
-        }
+  if (p.state === FLYING) {
+    p.vy -= 24 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+    const hx = p.wx * dt * 0.5, hy = p.wy * dt * 0.5, hz = p.wz * dt * 0.5;
+    const nx = p.qx + hx * p.qw + hy * p.qz - hz * p.qy;
+    const ny = p.qy + hy * p.qw + hz * p.qx - hx * p.qz;
+    const nz = p.qz + hz * p.qw + hx * p.qy - hy * p.qx;
+    const nw = p.qw - hx * p.qx - hy * p.qy - hz * p.qz;
+    const nl = Math.hypot(nx, ny, nz, nw) || 1;
+    p.qx = nx / nl; p.qy = ny / nl; p.qz = nz / nl; p.qw = nw / nl;
+    if (p.y <= half) {
+      p.y = half;
+      if (p.vy < -2) {
+        if (waterAt(w, p.x, p.z)) splash(w, p.x, p.z, p.vx, p.vz, 6, 4);
+        p.vy = -p.vy * 0.42; p.vx *= 0.75; p.vz *= 0.75;
+        p.wx *= 0.7; p.wy *= 0.7; p.wz *= 0.7;
+      } else if (rolls) {
+        // Rolling: slows gently, and spins the way a ball rolls (about the axis across its path).
+        p.vy = 0;
+        const f = Math.max(0, 1 - 0.9 * dt);
+        p.vx *= f; p.vz *= f;
+        p.wx = p.vz / half; p.wy = 0; p.wz = -p.vx / half;
+        if (p.vx * p.vx + p.vz * p.vz < 0.15) { p.state = AWAY; p.timer = 0; }
+      } else {
+        p.vy = 0;
+        const f = Math.max(0, 1 - 5 * dt);
+        p.vx *= f; p.vz *= f; p.wx *= f; p.wy *= f; p.wz *= f;
+        if (p.vx * p.vx + p.vz * p.vz < 0.15) { p.state = AWAY; p.timer = 0; }
       }
-      if (shore(w.land, p.x, p.z).depth < -1.5) p.state = SHRINK; // into the sea: straight back home
-    } else if (p.state === AWAY) {
-      // Stand back up where it landed, wait a little, then go home.
-      const ty = Math.sin(p.homeYaw / 2), tw = Math.cos(p.homeYaw / 2);
-      const sign = p.qy * ty + p.qw * tw < 0 ? -1 : 1;
-      const k = Math.min(1, 6 * dt);
-      p.qx += (0 - p.qx) * k; p.qy += (ty * sign - p.qy) * k; p.qz += (0 - p.qz) * k; p.qw += (tw * sign - p.qw) * k;
-      const nl = Math.hypot(p.qx, p.qy, p.qz, p.qw) || 1;
-      p.qx /= nl; p.qy /= nl; p.qz /= nl; p.qw /= nl;
-      p.timer += dt;
-      if (p.timer > 4) p.state = SHRINK;
     }
+    if (shore(w.land, p.x, p.z).depth < -1.5) p.state = SHRINK; // into the sea: straight back home
+  } else if (p.state === AWAY) {
+    // Stand back up where it landed, wait a little, then go home.
+    const ty = Math.sin(p.homeYaw / 2), tw = Math.cos(p.homeYaw / 2);
+    const sign = p.qy * ty + p.qw * tw < 0 ? -1 : 1;
+    const k = Math.min(1, 6 * dt);
+    p.qx += (0 - p.qx) * k; p.qy += (ty * sign - p.qy) * k; p.qz += (0 - p.qz) * k; p.qw += (tw * sign - p.qw) * k;
+    const nl = Math.hypot(p.qx, p.qy, p.qz, p.qw) || 1;
+    p.qx /= nl; p.qy /= nl; p.qz /= nl; p.qw /= nl;
+    p.timer += dt;
+    if (p.timer > 4) p.state = SHRINK;
   }
 }
 
@@ -1428,6 +1573,7 @@ export function step(w: World, input: Input, dt: number): void {
   stepZones(w);
   stepLights(w, dt);
   stepTraffic(w, dt);
+  stepTrafficNear(w);
   stepHops(w, dt);
   stepWash(w, dt);
   stepMud(w, dt);

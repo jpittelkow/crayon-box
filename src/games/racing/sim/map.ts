@@ -69,6 +69,12 @@ export interface MapDef {
   spawn: OnRoad;
   /** Traffic: each vehicle starts on a road, keeps to its lane and drives at its own pace. */
   traffic: { kind: VehicleKind; on: OnRoad; cruise: number }[];
+  /**
+   * Traffic by a rule, for a big map (docs/highway-map-plan.md, phase 2), on top of `traffic`: `count` vehicles
+   * that live near the kid, on `roads` (all of them when left out), each at a pace between `cruise`'s two numbers.
+   * One that falls far behind is put back on a road ahead or behind, out of sight (`TRAFFIC_NEAR`, sim.ts).
+   */
+  trafficNear?: { count: number; roads?: number[]; cruise: [number, number] };
   water: {
     /** Round pools placed by hand: the flood is a deep one. */
     pools: { on: OnRoad; r: number; deep: boolean; mud?: boolean }[];

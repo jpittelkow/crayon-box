@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Driving frame times</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+      canvas { display: block; width: 100vw; height: 100vh; }
+      #readout {
+        position: fixed; left: 8px; top: 8px; padding: 6px 10px; border-radius: 6px; white-space: pre;
+        background: rgb(0 0 0 / 0.6); color: #fff; font: 13px/1.4 ui-monospace, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Dev tool, not part of the app build (vite builds index.html only). See docs/highway-map-plan.md, phase 1. -->
+    <canvas></canvas>
+    <div id="readout"></div>
+    <script type="module" src="/src/tools/drivingFrames.ts"></script>
+  </body>
+</html>

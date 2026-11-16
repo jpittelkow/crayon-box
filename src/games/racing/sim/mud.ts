@@ -2,6 +2,7 @@
 // muddy; muddy is a vehicle state (driving-assets.md), `Car.mud`, 0 clean to 1 covered. Muddy puddles add a little;
 // a car wash or clean water (a ford, a puddle, the flood) washes it off. Time alone never does: the car stays
 // muddy until it is washed. Plain TypeScript.
+import { LOOKUP, thingsIn } from './grid';
 import type { Zone } from './sim';
 
 /** Top speed in mud, m/s (sand is 11, a car wash 5); a vehicle that wades well (ADR 0035) goes that much faster. */
@@ -20,5 +21,11 @@ export const MUD_FLY = 0.7;
 
 /** The zone of a kind a point is inside (within `pad` metres past its edge), or undefined. */
 export function zoneAt(zones: Zone[], kind: Zone['kind'], x: number, z: number, pad = 0): Zone | undefined {
-  return zones.find((zone) => zone.kind === kind && (x - zone.x) ** 2 + (z - zone.z) ** 2 < (zone.r + pad) ** 2);
+  const inside = (zone: Zone) => zone.kind === kind && (x - zone.x) ** 2 + (z - zone.z) ** 2 < (zone.r + pad) ** 2;
+  if (!LOOKUP.grid) return zones.find(inside);
+  // Only zones in the squares round the point (sim/grid.ts), first in the list first, as before.
+  for (const i of thingsIn(zones, placed, x - pad, z - pad, x + pad, z + pad)) if (inside(zones[i]!)) return zones[i];
+  return undefined;
 }
+
+const placed = (zone: Zone) => zone;
