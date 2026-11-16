@@ -181,7 +181,11 @@ test('Words is off for every kid until a parent turns it on for one', async ({ p
   expect(await tiles.evaluateAll((all) => all.slice(0, 7).map((t) => (t as HTMLElement).dataset.word))).toEqual([
     'sun', 'sat', 'map', 'mud', 'run', 'red', 'fox',
   ]);
-  await expect(page.getByRole('button', { name: 'Word sun', exact: true }).locator('svg')).toHaveCount(3);
+  // Each built-in word's tile shows its picture (W9), loaded.
+  const sunArt = page.getByRole('button', { name: 'Word sun', exact: true }).locator('img.words-art[data-picture="sun"]');
+  await expect(sunArt).toHaveCount(1);
+  await expect.poll(() => sunArt.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  expect(await page.locator('.words-tile img.words-art').count()).toBe(24);
   // Other kids still have no Words tile.
   await page.goto('/');
   await page.getByRole('button', { name: 'Heart kid' }).tap();
@@ -200,6 +204,8 @@ test('a kid writes a three-letter word: each letter into its box, the slow word,
   await expect(traceScreen(page)).toHaveAttribute('data-word', 'sun');
   await expect(traceScreen(page)).toHaveAttribute('data-letter', 'S');
   await expect(page.locator('.words-box')).toHaveCount(3);
+  // The word's own picture: big while it opens, never beside the letter (only in the corner) while tracing.
+  await expect(page.locator('.words-picture img.words-art[data-picture="sun"]')).toHaveCount(1);
   await expect.poll(() => clipsSaid(page)).toContain('word-sun');
   await expect(traceScreen(page)).toHaveAttribute('data-intro', 'done', slow);
   await expect(page.locator('.words-picture')).toHaveClass(/is-corner/);
@@ -224,6 +230,8 @@ test('a kid writes a three-letter word: each letter into its box, the slow word,
   await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
   await expect.poll(async () => (await clipsSaid(page)).at(-1)).toBe('praise-a-word');
   await expect(page.locator('.words-picture')).toHaveClass(/is-big/);
+  await expect(page.locator('.words-picture')).toHaveClass(/is-bounce/);
+  await expect(page.locator('.words-picture img.words-art[data-picture="sun"]')).toHaveCount(1);
   await expect(page.locator('.words-picture .letters-done-star')).toHaveCount(1);
   // The letters count too, like letters traced on their own.
   await page.getByRole('button', { name: 'Next word' }).tap();
@@ -271,7 +279,8 @@ test('wipe restarts only the letter being traced; a filled box is tapped to hear
   // Tapping the filled box says its letter.
   await page.evaluate(() => ((window as unknown as { __clips: string[] }).__clips = []));
   await page.getByRole('button', { name: 'Letter C, written' }).tap();
-  await expect.poll(() => clipsSaid(page)).toEqual(['letter-C']);
+  // (Under load the A's own "Now the next letter." can still be starting; the tap cuts in, so C is said last.)
+  await expect.poll(async () => (await clipsSaid(page)).at(-1)).toBe('letter-C');
   // The rest of the word still finishes it.
   await writeWord(page, ['C', 'A', 'T'], 1);
   await expect(traceScreen(page)).toHaveAttribute('data-done', 'ready', slow);
@@ -316,6 +325,142 @@ test("with a parent's recording, the name is said in it: at the start, slowly wi
   await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
   await expect.poll(async () => (await clipsSaid(page)).filter((c) => c === 'blob').length).toBe(3);
   expect(await clipsSaid(page)).not.toContain('praise-your-name');
+});
+
+/** A microphone that hears a steady tone: the parent area's Record buttons then record for real. */
+async function fakeMicrophone(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      const ac = new AudioContext();
+      const tone = ac.createOscillator();
+      const out = ac.createMediaStreamDestination();
+      tone.connect(out);
+      tone.start();
+      return out.stream;
+    };
+  });
+}
+
+/** A small generated picture, as a photo a parent might choose. */
+async function testPhoto(page: Page): Promise<Buffer> {
+  const data = await page.evaluate(() => {
+    const c = document.createElement('canvas');
+    c.width = 96;
+    c.height = 64;
+    const g = c.getContext('2d')!;
+    g.fillStyle = '#4cc9f0';
+    g.fillRect(0, 0, 96, 64);
+    g.fillStyle = '#ffd23f';
+    g.beginPath();
+    g.arc(48, 32, 22, 0, Math.PI * 2);
+    g.fill();
+    return c.toDataURL('image/png').split(',')[1];
+  });
+  return Buffer.from(data, 'base64');
+}
+
+test('a parent adds family words; a kid finds them after their name and writes one with its recording', async ({ page }) => {
+  test.setTimeout(180_000);
+  await fakeMicrophone(page);
+  await logClips(page);
+  await setUp(page, { words: true, name: 'Star' });
+
+  // The parent Letters screen: two family words, one recorded, one with a photo.
+  await openParentArea(page);
+  await page.getByRole('button', { name: 'Letters', exact: true }).click();
+  const family = page.locator('[data-family-words]');
+  await expect(family.getByText('No family words yet.')).toBeVisible();
+  const add = family.getByLabel('A new family word');
+  await add.fill('★ 7');
+  await family.getByRole('button', { name: 'Add word' }).click();
+  await expect(family.getByText('Type a word with at least one letter A to Z.')).toBeVisible();
+  await add.fill('pup');
+  await family.getByRole('button', { name: 'Add word' }).click();
+  await add.fill('moon');
+  await add.press('Enter');
+  const rows = family.locator('[data-family-word]');
+  await expect(rows).toHaveCount(2);
+  const pup = rows.nth(0);
+  const moon = rows.nth(1);
+  await expect(pup.getByLabel('Family word pup')).toHaveValue('pup');
+  await pup.getByRole('button', { name: 'Record the word' }).click();
+  await expect(pup.getByRole('button', { name: 'Play' })).toBeVisible(slow);
+  await expect(pup.getByRole('button', { name: 'Record again' })).toBeVisible();
+  // Its text can be changed: the parent fixes "moon" to "Moon", the photo goes on its tile.
+  await moon.getByLabel('Family word moon').fill('Moon');
+  await moon.getByLabel('Family word moon').press('Enter');
+  await expect(family.getByLabel('Family word Moon')).toHaveValue('Moon');
+  await rows.nth(1).locator('input[type="file"]').setInputFiles({ name: 'moon.png', mimeType: 'image/png', buffer: await testPhoto(page) });
+  await expect(rows.nth(1).getByRole('button', { name: 'Remove photo' })).toBeVisible();
+  await expect(rows.nth(1).locator('img')).toHaveCount(1);
+  // One file per word, the recording under voice/, never named after the word.
+  const keys = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open('crayon-box');
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    const all = await new Promise<IDBValidKey[]>((resolve, reject) => {
+      const req = db.transaction('files').objectStore('files').getAllKeys();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+    return all.map(String).filter((k) => /^games\/letters\/(words|voice)\//.test(k));
+  });
+  expect(keys.filter((k) => k.endsWith('.json'))).toHaveLength(2);
+  expect(keys.filter((k) => k.includes('/voice/family-fam-'))).toHaveLength(1);
+  expect(keys.filter((k) => k.endsWith('.jpg'))).toHaveLength(1);
+  expect(keys.some((k) => /pup|moon/i.test(k))).toBe(false);
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+
+  // The kid's tiles: My name, then the family words (letters, or the photo), then the 24 words.
+  await openWords(page);
+  const tiles = page.locator('.words-tile');
+  await expect(tiles).toHaveCount(27);
+  const names = await tiles.evaluateAll((all) => all.slice(0, 4).map((t) => t.getAttribute('aria-label')));
+  expect(names).toEqual(['My name', 'Family word pup', 'Family word Moon', 'Word sun']);
+  await expect(page.getByRole('button', { name: 'Family word pup' }).locator('svg')).toHaveCount(3);
+  await expect(page.getByRole('button', { name: 'Family word Moon' }).locator('img.words-photo')).toHaveCount(1);
+
+  // Writing "pup": "Let's write a word." and the recording, the letters, the recording slowly, the check.
+  await page.getByRole('button', { name: 'Family word pup' }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-word', /^fam-/);
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'P');
+  await expect(page.locator('.words-box')).toHaveCount(3);
+  await expect.poll(async () => (await clipsSaid(page)).slice(0, 2)).toEqual(['word-lets-write', 'blob']);
+  expect(await writeWord(page, ['P', 'U', 'P'])).toEqual(['P', 'U', 'P']);
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'ready', slow);
+  await page.getByRole('button', { name: 'Done', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
+  await expect.poll(async () => (await clipsSaid(page)).filter((c) => c === 'blob').length, slow).toBe(3);
+  expect(await clipsSaid(page)).not.toContain('praise-a-word');
+
+  // The next word is the other family word; with no recording it is said by its letters' sounds and gets the cheer
+  // and "You wrote a word!". Its photo is its picture.
+  await page.getByRole('button', { name: 'Next word' }).tap();
+  await expect(page.locator('.words-picture img.words-photo')).toHaveCount(1);
+  await page.evaluate(() => ((window as unknown as { __clips: string[] }).__clips = []));
+  expect(await writeWord(page, ['M', 'O', 'O', 'N'])).toEqual(['M', 'O', 'O', 'N']);
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'ready', slow);
+  expect(await clipsSaid(page)).toContain('sound-M');
+  await page.getByRole('button', { name: 'Done', exact: true }).tap();
+  await expect.poll(async () => (await clipsSaid(page)).at(-1)).toBe('praise-a-word');
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await expect(page.getByRole('button', { name: 'Family word pup, has a star' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Family word Moon, has a star' })).toBeVisible();
+
+  // Deleting a word takes it off every kid's tiles.
+  await page.goto('/');
+  await openParentArea(page);
+  await page.getByRole('button', { name: 'Letters', exact: true }).click();
+  await page.locator('[data-family-word]').first().getByRole('button', { name: 'Delete' }).click();
+  await page.locator('[data-family-word]').first().getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.locator('[data-family-word]')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await openWords(page);
+  await expect(page.locator('.words-tile')).toHaveCount(26);
+  await expect(page.getByRole('button', { name: 'Family word pup' })).toHaveCount(0);
 });
 
 test('with small letters on, words are small letters and the name a capital then small letters', async ({ page }) => {

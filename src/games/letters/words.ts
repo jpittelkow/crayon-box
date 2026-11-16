@@ -3,14 +3,12 @@
 import type { SetId } from './glyphs';
 
 /**
- * A built-in word (ADR 0037's 24, ADR 0039). `picture` is the id of its picture once one is made (part 2); until
- * then a tile and the opening show the word's letters drawn, like letter tiles. Family words (part 2) join this
- * table's shape with their own ids.
+ * A built-in word (ADR 0037's 24, ADR 0039). Its picture is found by its id (`wordPicture` in `wordPictures.ts`).
+ * Family words are kept apart, one file each (`familyWords.ts`), and sit between the name and these in the tiles.
  */
 export interface WordEntry {
-  /** The word itself, in small letters; also its clip names (`word-<id>`, `slow-<id>`) and its star's key. */
+  /** The word itself, in small letters; also its clip names (`word-<id>`, `slow-<id>`), picture and star's key. */
   id: string;
-  picture?: string;
 }
 
 /**
@@ -89,16 +87,36 @@ const PLAIN: Record<string, string> = { ß: 'ss', æ: 'ae', œ: 'oe', ø: 'o', �
  * With small letters on each part is a capital then small letters, else all capitals.
  */
 export function nameCells(name: string, small: boolean): Cell[] {
-  const plain = [...name.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()].map((c) => PLAIN[c] ?? c).join('');
+  return textCells(name, (c, startOfPart) => (!small || startOfPart ? c.toUpperCase() : c));
+}
+
+/**
+ * A family word's boxes (ADR 0039): handled like the name (gaps, accents, symbols left out), but with small letters
+ * on each letter keeps the case the parent typed ("pup" stays small, "Pup" starts with a capital); without small
+ * letters, all capitals.
+ */
+export function familyCells(text: string, small: boolean): Cell[] {
+  return textCells(text, (c, _start, typedCapital) => (!small || typedCapital ? c.toUpperCase() : c));
+}
+
+/**
+ * Typed text as boxes: letters A to Z (accents taken off), one gap for any run of spaces, hyphens or apostrophes
+ * (none at either end), anything else left out. `letter` picks each letter's case from its small letter.
+ */
+function textCells(text: string, letter: (c: string, startOfPart: boolean, typedCapital: boolean) => string): Cell[] {
   const cells: Cell[] = [];
   let startOfPart = true;
-  for (const c of plain) {
-    if (/[a-z]/.test(c)) {
-      cells.push({ ch: !small || startOfPart ? c.toUpperCase() : c });
-      startOfPart = false;
-    } else if (/[\s\-'’‐‑–]/.test(c)) {
-      if (cells.length > 0 && !('gap' in cells[cells.length - 1])) cells.push({ gap: true });
-      startOfPart = true;
+  for (const typed of text.normalize('NFD').replace(/\p{M}/gu, '')) {
+    const lower = typed.toLowerCase();
+    const capital = typed !== lower;
+    for (const c of PLAIN[lower] ?? lower) {
+      if (/[a-z]/.test(c)) {
+        cells.push({ ch: letter(c, startOfPart, capital) });
+        startOfPart = false;
+      } else if (/[\s\-'’‐‑–]/.test(c)) {
+        if (cells.length > 0 && !('gap' in cells[cells.length - 1])) cells.push({ gap: true });
+        startOfPart = true;
+      }
     }
   }
   if (cells.length > 0 && 'gap' in cells[cells.length - 1]) cells.pop();
@@ -139,9 +157,16 @@ export function boxSize(cells: readonly Cell[], width: number, max = BOX_MAX): n
 /** "Now the next letter." is said as a word's next letter opens, the first this many times for a kid (ADR 0039). */
 export const NEXT_LETTER_TIMES = 4;
 
-/** The word after `id` in the tiles' order, or null after the last. The name leads into the first built-in word. */
-export function nextWord(id: string): string | null {
-  if (id === NAME) return BUILT_IN_WORDS[0].id;
-  const i = BUILT_IN_WORDS.findIndex((w) => w.id === id);
-  return i >= 0 && i + 1 < BUILT_IN_WORDS.length ? BUILT_IN_WORDS[i + 1].id : null;
+/**
+ * The word tiles' order (ADR 0039): My name, then the family words (`familyIds`, oldest first), then the built-in
+ * words. `name` is false for a kid with no name (no name tile).
+ */
+export function wordOrder(familyIds: readonly string[] = [], name = true): string[] {
+  return [...(name ? [NAME] : []), ...familyIds, ...BUILT_IN_WORDS.map((w) => w.id)];
+}
+
+/** The word after `id` in the tiles' order, or null after the last. The name leads into the next tile. */
+export function nextWord(id: string, order: readonly string[] = wordOrder()): string | null {
+  const i = order.indexOf(id);
+  return i >= 0 && i + 1 < order.length ? order[i + 1] : null;
 }

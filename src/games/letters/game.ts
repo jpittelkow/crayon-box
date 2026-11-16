@@ -11,6 +11,8 @@ import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import { playDemo, type Demo } from './demo';
+import { loadFamilyWords, type FamilyWordFiles } from './familyWords';
+import { wordPicture } from './wordPictures';
 import { arrowsFor, glyph, pathData, SET_CHARS, SHAPES, setOf, type SetId, type StrokeKind } from './glyphs';
 import {
   Hints,
@@ -43,11 +45,12 @@ import {
 } from './progress';
 import { TOLERANCE, Tracer } from './trace';
 import { LetterVoice, type Part } from './voice';
-import { avatarEl, boxRow, dropInto, glyphMarkup, INK, light, VIEW, wordLettersMarkup } from './wordView';
+import { avatarEl, boxRow, cellLetters, dropInto, glyphMarkup, INK, light, VIEW, wordLettersMarkup } from './wordView';
 import {
   BOX_MAX_DONE,
   BUILT_IN_WORDS,
   boxSize,
+  familyCells,
   lettersIn,
   NAME,
   nameCells,
@@ -56,6 +59,7 @@ import {
   slowClipId,
   wordCells,
   wordKey,
+  wordOrder,
   type Cell,
 } from './words';
 import './letters.css';
@@ -165,7 +169,7 @@ interface HowTo {
 
 /** A word being written (ADR 0039): its boxes, the letter being traced, and the kid's lines in the boxes before it. */
 interface WordTurn {
-  /** A built-in word's id, or NAME for the kid's own name. */
+  /** A built-in word's id, a family word's (`fam-…`), or NAME for the kid's own name. */
   id: string;
   cells: Cell[];
   letters: string[];
@@ -175,7 +179,7 @@ interface WordTurn {
   inks: string[];
   /** The opening (the picture big, the word said) plays before the first letter. */
   intro: boolean;
-  /** A parent's recording of the kid's name (a storage path), for the name. */
+  /** A parent's recording (a storage path) of the kid's name, or of a family word. */
   recording?: string;
 }
 
@@ -203,6 +207,10 @@ class LettersGame {
   private readonly cleanups: (() => void)[] = [];
   /** The kid's photo for their name's tile (ADR 0018), as an object URL while the game is open. */
   private photoUrl: string | undefined;
+  /** The family's own words (ADR 0039), oldest first, read when the game opens with Words on. */
+  private family: FamilyWordFiles[] = [];
+  /** Family words' photos by word id, as object URLs while the game is open. */
+  private readonly familyPhotos = new Map<string, string>();
 
   constructor(
     private readonly root: HTMLElement,
@@ -225,6 +233,13 @@ class LettersGame {
       const photo = await this.ctx.photo?.().catch(() => undefined);
       if (photo) this.photoUrl = URL.createObjectURL(photo);
     }
+    if (prefs.words) {
+      this.family = await loadFamilyWords(storage).catch(() => []);
+      for (const word of this.family) {
+        const photo = word.photo ? await storage.getBlob(word.photo).catch(() => undefined) : undefined;
+        if (photo) this.familyPhotos.set(word.id, URL.createObjectURL(photo));
+      }
+    }
     this.showStart();
   }
 
@@ -232,6 +247,7 @@ class LettersGame {
     this.clear();
     this.voice?.stop();
     if (this.photoUrl) URL.revokeObjectURL(this.photoUrl);
+    for (const url of this.familyPhotos.values()) URL.revokeObjectURL(url);
   }
 
   /** The screen's width in CSS px (the laptop's 1280 when not laid out yet). */
@@ -1011,7 +1027,7 @@ class LettersGame {
       picture.classList.add('is-after', 'is-bounce');
       picture.append(this.badge('letters-done-star', STAR));
       if (!reducedMotion()) screen.append(confetti());
-      const after = nextWord(word.id);
+      const after = nextWord(word.id, this.wordOrder);
       screen.append(
         kidButton({
           kind: 'action-lg',
@@ -1031,10 +1047,18 @@ class LettersGame {
 
   // ---- Words (ADR 0039) ----
 
-  /** The word tiles: the kid's own name first (with their badge and photo), then the built-in words, all open. */
+  /**
+   * The word tiles: the kid's own name first (with their badge and photo), then the family's words (their photo, or
+   * their letters), then the built-in words, all open.
+   */
   private showWords(): void {
     const screen = this.screen('letters-words', () => this.showStart());
     const grid = el('div', 'words-grid', { role: 'group', 'aria-label': 'Words' });
+    // Five tiles a row; six once more than 25 tiles would need a sixth row of five.
+    const count = this.wordOrder.length;
+    const cols = count > 25 ? 6 : 5;
+    grid.style.setProperty('--cols', String(cols));
+    grid.style.setProperty('--rows', String(Math.max(5, Math.ceil(count / cols))));
     const stars = new Set(this.progress.words ?? []);
     const tile = (id: string, label: string, content: string | HTMLElement) => {
       const starred = stars.has(wordKey(id));
@@ -1051,13 +1075,49 @@ class LettersGame {
       grid.append(b);
     };
     if (this.nameCells.length > 0) tile(NAME, 'My name', avatarEl(this.ctx.kid, this.photoUrl, 64));
-    for (const w of BUILT_IN_WORDS) tile(w.id, `Word ${w.id}`, wordLettersMarkup(lettersIn(wordCells(w.id, this.prefs.sets))));
+    for (const w of this.family) tile(w.id, `Family word ${w.text}`, this.familyPicture(w, 14));
+    for (const w of BUILT_IN_WORDS) tile(w.id, `Word ${w.id}`, this.builtInPicture(w.id, 14));
     screen.append(grid);
   }
 
   /** The kid's name as boxes, from the profile (ADR 0039); empty when the kid has no name. */
   private get nameCells(): Cell[] {
     return nameCells(this.ctx.kid.name ?? '', this.prefs.sets.includes('small'));
+  }
+
+  /** Every word tile's id in order: the name (when the kid has one), the family words, the built-in words. */
+  private get wordOrder(): string[] {
+    return wordOrder(
+      this.family.map((w) => w.id),
+      this.nameCells.length > 0,
+    );
+  }
+
+  private familyWord(id: string): FamilyWordFiles | undefined {
+    return this.family.find((w) => w.id === id);
+  }
+
+  /** A family word's boxes: its letters, following the kid's sets (ADR 0039). */
+  private familyCells(word: FamilyWordFiles): Cell[] {
+    return familyCells(word.text, this.prefs.sets.includes('small'));
+  }
+
+  /** A family word's tile or picture: its photo, or without one its letters drawn in ink. */
+  private familyPicture(word: FamilyWordFiles, width: number): string | HTMLElement {
+    const url = this.familyPhotos.get(word.id);
+    if (!url) return wordLettersMarkup(cellLetters(this.familyCells(word)), width);
+    const img = el('img', 'words-photo', { alt: '', draggable: 'false' });
+    img.src = url;
+    return img;
+  }
+
+  /** A built-in word's picture (ADR 0039, W9), or its letters in ink should a word have none. */
+  private builtInPicture(id: string, width: number): string | HTMLElement {
+    const url = wordPicture(id);
+    if (!url) return wordLettersMarkup(lettersIn(wordCells(id, this.prefs.sets)), width);
+    const img = el('img', 'words-art', { alt: '', draggable: 'false', 'data-picture': id });
+    img.src = url;
+    return img;
   }
 
   /** A word tile tapped: the first-time how-to first when it is due, then the word. */
@@ -1071,51 +1131,90 @@ class LettersGame {
   }
 
   private async startWord(id: string): Promise<void> {
-    const cells = id === NAME ? this.nameCells : wordCells(id, this.prefs.sets);
+    const family = this.familyWord(id);
+    const cells = id === NAME ? this.nameCells : family ? this.familyCells(family) : wordCells(id, this.prefs.sets);
     const letters = lettersIn(cells);
     if (letters.length === 0) return this.showWords();
     const recording =
-      id === NAME ? await findNameRecording(this.ctx.storage, this.ctx.kid.id).catch(() => undefined) : undefined;
+      id === NAME
+        ? await findNameRecording(this.ctx.storage, this.ctx.kid.id).catch(() => undefined)
+        : family?.recording;
     this.showTrace(letters[0], 'words', undefined, { id, cells, letters, at: 0, inks: [], intro: true, recording });
   }
 
-  /** A word's picture: the kid's badge and photo for their name; for now a built-in word's letters (part 2: pictures). */
+  /**
+   * A word's picture: the kid's badge and photo for their name, a family word's photo (or its letters without one),
+   * a built-in word's own picture. Big as the word opens, in the corner while a letter is traced, big again after
+   * the check (ADR 0039).
+   */
   private wordPicture(word: WordTurn): HTMLElement {
     const picture = el('div', 'words-picture', { 'aria-hidden': 'true' });
+    const family = this.familyWord(word.id);
     if (word.id === NAME) picture.append(avatarEl(this.ctx.kid, this.photoUrl, 120));
-    else picture.innerHTML = wordLettersMarkup(word.letters, 16);
+    else if (family && this.familyPhotos.has(family.id)) picture.append(this.familyPicture(family, 16));
+    else if (!family && wordPicture(word.id)) picture.append(this.builtInPicture(word.id, 16));
+    // Drawn from the glyphs' own paths (letters A to Z only), never from typed text.
+    else picture.innerHTML = wordLettersMarkup(cellLetters(word.cells), 16);
     return picture;
   }
 
-  /** What is said as a word opens: the word; for the name, "Let's write your name." and the parent's recording. */
+  /**
+   * A family word the narrator has its own clip for (one of the spare words, ADR 0039: mom, dad, car…), by that
+   * clip's word; never otherwise. The word is only looked up among the shipped clips, never sent anywhere.
+   */
+  private spareWord(word: WordTurn): string | undefined {
+    if (word.cells.some((c) => 'gap' in c)) return undefined;
+    const plain = word.letters.join('').toLowerCase();
+    return narratorClip(`word-${plain}`) ? plain : undefined;
+  }
+
+  /**
+   * What is said as a word opens: the word; for the name, "Let's write your name." and the parent's recording; for a
+   * family word, "Let's write a word." and its recording, or the narrator's own clip of it, or "Let's write a word.".
+   */
   private wordOpening(word: WordTurn): Part[] {
-    if (word.id === NAME) return [...narrator('word-your-name'), ...(word.recording ? [{ own: word.recording }] : [])];
+    const own: Part[] = word.recording ? [{ own: word.recording }] : [];
+    if (word.id === NAME) return [...narrator('word-your-name'), ...own];
+    if (this.familyWord(word.id)) {
+      const spare = this.spareWord(word);
+      if (!word.recording && spare) return narrator(`word-${spare}`);
+      return [...narrator('word-lets-write'), ...own];
+    }
     return narrator(`word-${word.id}`);
   }
 
-  /** What is said after the check: "You wrote a word!"; for the name, the parent's recording or "You wrote your name!". */
+  /**
+   * What is said after the check: "You wrote a word!"; for the name, the parent's recording or "You wrote your
+   * name!"; for a family word, its recording or "You wrote a word!".
+   */
   private wordCheer(word: WordTurn): Part[] {
     if (word.id === NAME) return word.recording ? [{ own: word.recording }] : narrator('praise-your-name');
+    if (word.recording) return [{ own: word.recording }];
     return narrator('praise-a-word');
   }
 
   /**
    * The word said slowly with each box lighting as its sound passes, then said normally (ADR 0039). The slow take is
    * one clip, so the boxes light evenly through it; a word with none says its letters' sounds, a box for each. The
-   * name has the parent's recording, or the boxes light with nothing said.
+   * name has the parent's recording, or the boxes light with nothing said; a family word has its recording, or else
+   * is said like a built-in word (a spare word's slow take, or its letters' sounds).
    */
   private async sayWordSlowly(word: WordTurn, boxes: HTMLElement[]): Promise<void> {
     const n = boxes.length;
     let parts: Part[] = [];
     let even = true;
-    if (word.id === NAME) {
+    const family = !!this.familyWord(word.id);
+    if (word.id === NAME || (family && word.recording)) {
+      // The parent's recording, the boxes lighting evenly through it (or with nothing said, for a name without one).
       if (word.recording) parts = [{ own: word.recording }];
     } else {
-      const slow = slowClipId(word.id);
+      // A family word without a recording: a spare word's own slow take and clip when it has them, else its sounds.
+      const said = family ? this.spareWord(word) : word.id;
+      const slow = said ? slowClipId(said) : undefined;
       const slowClip = slow ? narratorClip(slow) : undefined;
       even = !!slowClip;
       const sounds = word.letters.map((ch) => soundClip(ch)).filter((c): c is string => !!c);
-      parts = [...(slowClip ? [{ clip: slowClip }] : sounds.map((clip) => ({ clip }))), ...narrator(`word-${word.id}`)];
+      parts = [...(slowClip ? [{ clip: slowClip }] : sounds.map((clip) => ({ clip }))), ...(said ? narrator(`word-${said}`) : [])];
     }
     const timers: ReturnType<typeof setTimeout>[] = [];
     const stopTimers = () => {
