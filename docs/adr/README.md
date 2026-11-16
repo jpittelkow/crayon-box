@@ -42,6 +42,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0034](0034-photo-prompt-and-two-to-choose-from.md) | AI pages: a photo prompt for everyone in the picture, and two pages to choose from | Accepted |
 | [0035](0035-driving-vehicles-maps-picker-garage.md) | Driving game: fourteen vehicles, two big maps, one picker screen and a garage | Accepted |
 | [0036](0036-driving-screen-is-a-joystick.md) | Driving game: the screen is a joystick; the picker picks a colour; a quick swap in the game | Accepted |
+| [0037](0037-letters-sound-tips-and-how-to.md) | Letters: more sound, a hint ladder, a first-time how-to, and every narrator line made before 2026-12-31 | Proposed |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H
