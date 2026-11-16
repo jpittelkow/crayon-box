@@ -24,7 +24,7 @@ async function recordSounds(page: Page): Promise<void> {
       return data;
     };
     const decode = BaseAudioContext.prototype.decodeAudioData;
-    BaseAudioContext.prototype.decodeAudioData = function (data: ArrayBuffer) {
+    BaseAudioContext.prototype.decodeAudioData = function (this: BaseAudioContext, data: ArrayBuffer) {
       const url = fromResponse.get(data);
       return decode.call(this, data).then((buf) => {
         if (url) fromBuffer.set(buf, url);
@@ -171,12 +171,12 @@ test('a badge of the tool and color follows a finger on the page', async ({ page
   const rub = await finger(page, a);
   await expect(badge).toHaveAttribute('data-tool', 'eraser');
   await expect(badge).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect.poll(async () => (await badge.boundingBox())!.width).toBeLessThan(64);
+  await expect.poll(async () => (await badge.boundingBox())!.width).toBeLessThan(72);
   await rub.up();
   await pick(page, 'Big brush');
   const big = await finger(page, a);
   await expect(badge).toHaveAttribute('data-tool', 'eraser');
-  await expect.poll(async () => (await badge.boundingBox())!.width).toBeGreaterThan(80);
+  await expect.poll(async () => (await badge.boundingBox())!.width).toBeGreaterThan(90);
   await big.up();
 
   // Near the top of the page the badge goes below the finger, so it stays on screen.

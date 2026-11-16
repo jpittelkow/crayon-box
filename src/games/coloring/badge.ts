@@ -7,16 +7,16 @@ import { RAINBOW } from '../../ui/palette';
 import { PALM_CSS_PX, type Tool } from './engine/engine';
 
 /** The badge's diameter for the small, medium and big brush (and eraser); the bucket's is the medium one. */
-export const BADGE_PX = [60, 72, 86] as const;
+export const BADGE_PX = [68, 80, 94] as const;
 
 /** Where the badge's centre sits from the finger, in screen pixels: up, and to the right unless that leaves the screen. */
 const OFFSET_X = 56;
 const OFFSET_Y = 70;
 
 const ICONS: Record<Tool, () => string> = {
-  bucket: () => icons.bucket(36),
-  brush: () => icons.brush(36),
-  eraser: () => icons.eraser(36),
+  bucket: () => icons.bucket(32),
+  brush: () => icons.brush(32),
+  eraser: () => icons.eraser(32),
 };
 
 export class ToolBadge {
