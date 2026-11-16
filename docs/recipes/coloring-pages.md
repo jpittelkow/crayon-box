@@ -26,7 +26,8 @@ is ADR 0022; licensing is ADR 0011. This file is the order to work in and what t
 2. `pages/<theme>/theme.json`: `name`, `icon` (a name the icon set has; a new theme needs a new icon in
    `src/ui/icons.ts`), `color`, `order`.
 3. Update the theme list in [pages/README.md](../../pages/README.md) and any browser test that counts themes
-   (`tests/e2e/coloring.spec.ts`).
+   (`tests/e2e/coloring.spec.ts`, and `tests/e2e/parent.spec.ts`'s hidden-page test, which
+   counts them minus one; missed on 2026-11-15 and caught by CI).
 
 ## Patterns
 - **White fills hide lines behind a shape.** Draw the back part first, then a white-filled front part over it

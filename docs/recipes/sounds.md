@@ -18,6 +18,8 @@ it to the stand-ins listed in [milestone-3.md](../milestone-3.md) B6, so it can 
 2. **Describe it in `tools/sounds/picks.json`:** its source (title, url, license), the original file name, where it
    ships (`drive/…`, `ui/…`, `voice/…`) and its kind (`ui` one-shot, `loop`, `voice`).
 3. **Prepare:** `node tools/sounds/prepare.mjs <sources folder>` (needs ffmpeg and ffprobe on PATH or `FFMPEG_DIR`).
+   For a later narrator batch without the first batch's downloads: `NARRATOR_ONLY=1` prepares only the clips in
+   `<sources folder>/narrator/` and keeps every other entry in `sounds.json`.
    It trims silence, levels every file to its kind's loudness, writes WAV for short one-shots and MP3 for voice,
    cuts loops, and rewrites `sounds.json`.
 4. **Use it:** add the path to `ENGINES`, `EFFECTS` or the shell's sound list, and play it where the thing happens.
