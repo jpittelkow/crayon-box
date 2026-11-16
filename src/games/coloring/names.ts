@@ -69,7 +69,7 @@ export class NameCounter {
   }
 }
 
-/** Deletes a kid's counts, when a parent deletes the kid. */
+/** Deletes a kid's counts, and the rest of the kid's folder (the show-how's files too), when a parent deletes the kid. */
 export async function forgetKidNames(storage: GameStorage, kidId: string): Promise<void> {
   for (const path of await storage.list(kidDir(kidId))) await storage.delete(path);
 }

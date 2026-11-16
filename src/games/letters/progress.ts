@@ -1,13 +1,16 @@
 // What the letters game keeps (ADR 0026), and the game path's rules.
 //   kids/<id>/prefs.json     set by a parent: which letter sets, and whether stroke order counts
-//   kids/<id>/progress.json  the kid's stars (shared by practice and the game) and the letters done in the game
-//   settings.json            the game's sounds switch, which voice says the letters, and what it says (ADR 0037)
+//   kids/<id>/progress.json  the kid's stars (shared by practice and the game), the letters done in the game, and
+//                            per letter how often it was finished and how much help it needed (ADR 0037)
+//   settings.json            the game's sounds switch, which voice says the letters, what it says, and whether
+//                            tips are spoken (ADR 0037)
 //   voice/<key>.<ext>        a parent's own recording of a letter's name
 //   voice/sound-<a-z>.<ext>  a parent's own recording of a letter's sound (one per letter: A and a share it)
 // Letters are stored by a key that keeps capitals and small letters apart on a file system that ignores case
 // (Windows, the installer's file storage): `cap-A`, `small-a`, `num-3`.
 import type { GameStorage } from '../../storage/types';
 import { SET_CHARS, SET_ORDER, setOf, type SetId } from './glyphs';
+import { wasHelped, type LetterHelp } from './hints';
 
 export interface KidPrefs {
   /** Turned-on sets, in the fixed order capitals, small letters, numbers. Never empty. */
@@ -21,6 +24,8 @@ export interface KidProgress {
   stars: string[];
   /** Keys of letters finished in the game (what unlocks the next one). */
   game: string[];
+  /** Per letter key: times finished, times with no hint past step 1, the highest hint step (ADR 0037). */
+  help: Record<string, LetterHelp>;
 }
 
 /** Who says the letters: the app's narrator (stored as 'windows', its name before ADR 0032), or a parent. */
@@ -34,6 +39,8 @@ export interface LettersSettings {
   sounds: boolean;
   voice: Voice;
   saying: Saying;
+  /** The hints' spoken tips and stroke words (ADR 0037). The shown hints can't be turned off. */
+  tips: boolean;
 }
 
 const kidDir = (kidId: string) => `kids/${kidId}/`;
@@ -67,15 +74,44 @@ export async function savePrefs(storage: GameStorage, kidId: string, prefs: KidP
 export async function loadProgress(storage: GameStorage, kidId: string): Promise<KidProgress> {
   const raw = await storage.getJson<Partial<KidProgress>>(progressPath(kidId));
   const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
-  return { stars: list(raw?.stars), game: list(raw?.game) };
+  return { stars: list(raw?.stars), game: list(raw?.game), help: cleanHelp(raw?.help) };
 }
 
-/** Records a finished letter: a star, and in the game, one more step along the path. */
-export async function finishLetter(storage: GameStorage, kidId: string, ch: string, inGame: boolean): Promise<KidProgress> {
+/** Help counts as saved, dropping anything that isn't one (older files have none). */
+function cleanHelp(raw: unknown): Record<string, LetterHelp> {
+  const out: Record<string, LetterHelp> = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  const count = (v: unknown, max = Infinity) =>
+    typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(max, Math.floor(v)) : 0;
+  for (const [key, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    const h = v as Partial<Record<keyof LetterHelp, unknown>>;
+    out[key] = { done: count(h.done), alone: count(h.alone), top: count(h.top, 3) };
+  }
+  return out;
+}
+
+/**
+ * Records a finished letter: a star, in the game one more step along the path, and how much help it needed
+ * (`step`, the highest hint step shown, 0 to 3).
+ */
+export async function finishLetter(
+  storage: GameStorage,
+  kidId: string,
+  ch: string,
+  inGame: boolean,
+  step = 0,
+): Promise<KidProgress> {
   const progress = await loadProgress(storage, kidId);
   const key = keyOf(ch);
   if (!progress.stars.includes(key)) progress.stars.push(key);
   if (inGame && !progress.game.includes(key)) progress.game.push(key);
+  const help = progress.help[key] ?? { done: 0, alone: 0, top: 0 };
+  progress.help[key] = {
+    done: help.done + 1,
+    alone: help.alone + (wasHelped(step) ? 0 : 1),
+    top: Math.max(help.top, Math.min(3, step)),
+  };
   await storage.putJson(progressPath(kidId), progress);
   return progress;
 }
@@ -90,12 +126,13 @@ export async function loadLettersSettings(storage: GameStorage): Promise<Letters
   return cleanSettings(raw);
 }
 
-/** Settings as saved, with anything unknown or missing back to its default (older files have no `saying`). */
+/** Settings as saved, with anything unknown or missing back to its default (older files have no `saying`, `tips`). */
 function cleanSettings(raw: Partial<LettersSettings> | undefined): LettersSettings {
   return {
     sounds: raw?.sounds !== false,
     voice: raw?.voice === 'own' ? 'own' : 'windows',
     saying: SAYINGS.includes(raw?.saying as Saying) ? (raw!.saying as Saying) : 'name',
+    tips: raw?.tips !== false,
   };
 }
 

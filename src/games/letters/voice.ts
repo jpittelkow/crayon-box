@@ -5,7 +5,8 @@
 //
 // A small line queue (ADR 0037): a line is one or more clips said back to back, and only one line plays at a time.
 // While a finger is on the letter no new line starts; a line asked for meanwhile waits, and a newer one replaces
-// it. Opening a letter, finishing it or tapping it cuts in at once instead (`say`, `sayFinished`).
+// it. Opening a letter, finishing it or tapping it cuts in at once instead (`say`, `sayFinished`). A hint's line
+// (`tip`) is never kept for later: it is dropped when a finger is down, and a finger going down drops it if it waits.
 import { PRAISE, letterClip, praiseClip, soundClip, type Praise } from '../../shell/soundFiles';
 import type { Sound } from '../../shell/types';
 import type { GameStorage } from '../../storage/types';
@@ -47,6 +48,8 @@ export class LetterVoice {
   private turn = 0;
   private playing = false;
   private waiting: Part[] | null = null;
+  /** The line waiting is a hint's, dropped when a finger goes down. */
+  private waitingTip = false;
   private held = false;
   private lastPraise: Praise | null = null;
 
@@ -59,6 +62,22 @@ export class LetterVoice {
 
   get on(): boolean {
     return this.settings.sounds && this.sound.enabled !== false;
+  }
+
+  /** Whether the hints may speak: sounds on, and the parent's spoken-tips switch on (ADR 0037). */
+  get tipsOn(): boolean {
+    return this.on && this.settings.tips;
+  }
+
+  /**
+   * A hint's line (a tip, a stroke word, "Your turn!"): now when nothing is said, after the line being said, and
+   * dropped when a finger is on the letter: the kid has moved on.
+   */
+  tip(clips: (string | undefined)[]): void {
+    const parts = clips.filter((c): c is string => !!c).map((clip) => ({ clip }));
+    if (!this.tipsOn || this.held || parts.length === 0) return;
+    void this.line(parts);
+    if (this.waiting === parts) this.waitingTip = true;
   }
 
   /** Says the letter as the setting asks, cutting in: when a letter opens, or a finished one is tapped. */
@@ -85,9 +104,14 @@ export class LetterVoice {
   /** A finger is on the letter (true) or every finger has lifted (false): no new line starts while one is. */
   hold(down: boolean): void {
     this.held = down;
+    if (down && this.waitingTip) {
+      this.waiting = null;
+      this.waitingTip = false;
+    }
     if (!down && !this.playing && this.waiting) {
       const next = this.waiting;
       this.waiting = null;
+      this.waitingTip = false;
       void this.run(next, this.turn);
     }
   }
@@ -97,6 +121,7 @@ export class LetterVoice {
     if (!this.on || parts.length === 0) return Promise.resolve();
     if (this.playing || this.held) {
       this.waiting = parts;
+      this.waitingTip = false;
       return Promise.resolve();
     }
     return this.run(parts, this.turn);
@@ -124,6 +149,7 @@ export class LetterVoice {
     if (!this.held && this.waiting) {
       const next = this.waiting;
       this.waiting = null;
+      this.waitingTip = false;
       await this.run(next, turn);
     }
   }
@@ -188,6 +214,7 @@ export class LetterVoice {
     this.turn++;
     this.playing = false;
     this.waiting = null;
+    this.waitingTip = false;
     try {
       if ('speechSynthesis' in window) speechSynthesis.cancel();
     } catch {

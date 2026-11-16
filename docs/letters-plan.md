@@ -218,7 +218,7 @@ That is one more reason to make everything now.
   - The line queue lets a line that has started finish (a finger going down doesn't cut a clip off); it holds back
     the next one.
 
-### C. A hint ladder for a kid who is stuck
+### C. A hint ladder for a kid who is stuck (built 2026-11-15)
 Replaces the single idle hint. Small steps, most help last, each one shown and spoken (research 3.1), and the
 whole thing in one place with its numbers, so a playtest can tune it.
 - **The ladder** (waits from the last touch; D5):
@@ -254,6 +254,37 @@ whole thing in one place with its numbers, so a playtest can tune it.
   1, 2, then 3 in order; touching the letter stops a tip from being said.
 - **Done when:** the ladder runs on every letter, its numbers are in one place, and the parent Letters screen has
   a switch for the spoken tips (shown tips can't be turned off).
+- **Built 2026-11-15** (not yet seen by the kids). As built, where it differs from or adds to the above:
+  - `hints.ts` is the state machine (`Hints`: `touch`, `down`, `progress`, `up`, `strokeDone`, `ready`, `wipe`,
+    `tick`; actions `step`, `wiggle`, `left`, `check`, `say`), with every number at its top; the trace screen asks
+    it every 200 ms (`TICK_MS`). Times are `performance.now()`, so unit tests pass plain numbers.
+  - **The show is its own module**, `demo.ts` (`playDemo`): a fingertip draws the given strokes one after another
+    in the kid's colour, saying each stroke's word, then the drawing clears. Step 2 plays it for one stroke, step 3
+    for the whole letter; phase D can call it as it is. Its timing (`demoPlan`, about 75 glyph units a second, 1.1
+    to 2.6 s a stroke, 0.6 s for a dot) is in `hints.ts` with the rest. A whole letter takes under 12 s.
+  - **Stroke words:** `strokeKind(stroke)` in `glyphs.ts`, from the shape, with the table for all 62 glyphs in
+    `hints.test.ts`. A stroke of straight lines gets a word where its way changes (`strokeWords`): L's one stroke
+    says "Down." then "Across." at the corner, Z "Across.", "Slant.", "Across."; a way back up says nothing; a curved
+    stroke gets one word. Calls worth a look by ear: J, U and 5 are "Down." (they start down), u is "Around.", f is
+    "Around." then "Across.".
+  - **"At most one tip every 6 s"** counts the `tip-…` lines only. Stroke words and "Your turn!" belong to their
+    step, otherwise step 2's word would always be dropped (it comes 5 s after step 1's tip).
+  - **The parent switch** ("Spoken tips", `LettersSettings.tips`, on by default) silences everything the hints say:
+    tips, stroke words and "Your turn!". The letter's name and the praise follow only the Sounds switches.
+  - **A tip is never kept for later:** `voice.tip()` drops it while a finger is down, and a finger going down drops
+    one waiting behind another line. A touch anywhere stops a show at once, so its later words are never said.
+  - **Lifting early** is a line that covered some of a stroke's own checkpoints and left that stroke untraced
+    (`Tracer.lift` returns `{ added, early }`). Today's dots at half the letter still show at once on a lift; with
+    less done, the dots come with "Keep going!" after 3 s.
+  - "Start at the top." is said when the last finger came down away from every start dot of a stroke still to
+    trace (`Tracer.atStart`, within 14 units, the dot's ring).
+  - The check pulses bigger as soon as it appears (it is always "not yet tapped" then).
+  - `KidProgress.help[key]` keeps `{ done, alone, top }`: times finished, times with no hint past step 1, the
+    highest step ever needed. A letter is known at `alone >= 2`. "All by yourself!" is left out when step 2 or 3
+    showed (the triggers beside the ladder don't count as hints for it).
+  - The pressing hand on the first dot steps aside while a show runs. With less motion (the browser's setting) the
+    bigger dot and the arrow are held still and larger, and the show draws each stroke whole at its turn.
+  - Not built: the parent area showing the help counts; per-kid spoken tips (the switch is per family, like Sounds).
 
 ### D. The first-time how-to
 - **Builds:** before a kid's first letter ever (and after 14 days without Letters, D7), the tracing screen opens on
