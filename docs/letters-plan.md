@@ -126,7 +126,7 @@ The letter's name when it opens (phase B) reuses today's clips; no new lines.
 **Coloring screen lines** (added 2026-11-15, asked by the owner): to-do section 2's "buttons a kid can work out"
 will want each coloring button's name said and a short demo; its design isn't settled, but the clips must be in
 Matilda's voice, so they go in the same schedule. `ONLY=coloring` in `generate.mjs`, 3 takes each, into
-`/tmp/gen3/coloring/`, picked on the same audition page. 40 lines:
+`/tmp/gen3/coloring/`, picked on the same audition page. **Made 2026-11-15:** 120 takes, no errors, about $0.13. 40 lines:
 - Tools (`tool-…`): "Paint bucket." · "Brush." · "Eraser." · "Undo." · "Start over." · "Back."
 - What they do (`do-…`): bucket "Tap a space to fill it." · brush "Draw with your finger." · eraser "Rub it out." ·
   undo "Take it back." · start over "A fresh page."
