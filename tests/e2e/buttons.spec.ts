@@ -1,54 +1,22 @@
 // Coloring buttons a kid can work out (ADR 0038): each button's own sound and name (phase B), and the tool at the
 // finger (phase C).
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
-import { RED, SHAPES, expectBlank, expectPaint, openParentArea, openShapesPage, pick, tapPage, toScreen, type Pt } from './helpers';
-
-const BACK_TO_KIDS = /^Back to (coloring|the kids)$/;
-
-/**
- * Records, before the app loads, every sound file the app starts through Web Audio (`__sounds`, by URL) and every
- * narrator clip it plays through an audio element (`__clips`). A buffer is traced back to its file through the
- * response it was read from.
- */
-async function recordSounds(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const w = window as unknown as { __sounds: string[]; __clips: string[] };
-    w.__sounds = [];
-    w.__clips = [];
-    const fromResponse = new WeakMap<ArrayBuffer, string>();
-    const fromBuffer = new WeakMap<AudioBuffer, string>();
-    const read = Response.prototype.arrayBuffer;
-    Response.prototype.arrayBuffer = async function () {
-      const data = await read.call(this);
-      fromResponse.set(data, this.url);
-      return data;
-    };
-    const decode = BaseAudioContext.prototype.decodeAudioData;
-    BaseAudioContext.prototype.decodeAudioData = function (this: BaseAudioContext, data: ArrayBuffer) {
-      const url = fromResponse.get(data);
-      return decode.call(this, data).then((buf) => {
-        if (url) fromBuffer.set(buf, url);
-        return buf;
-      });
-    } as typeof decode;
-    const start = AudioBufferSourceNode.prototype.start;
-    AudioBufferSourceNode.prototype.start = function (...args: Parameters<typeof start>) {
-      w.__sounds.push((this.buffer && fromBuffer.get(this.buffer)) ?? '?');
-      return start.apply(this, args);
-    };
-    const play = HTMLMediaElement.prototype.play;
-    HTMLMediaElement.prototype.play = function () {
-      w.__clips.push(this.currentSrc || this.src);
-      return play.call(this);
-    };
-  });
-}
-
-const count = (list: string[], part: string) => list.filter((u) => u.includes(part)).length;
-const sounds = async (page: Page, part: string) =>
-  count(await page.evaluate(() => (window as unknown as { __sounds: string[] }).__sounds), part);
-const clips = async (page: Page, part: string) =>
-  count(await page.evaluate(() => (window as unknown as { __clips: string[] }).__clips), part);
+import {
+  BACK_TO_KIDS,
+  RED,
+  SHAPES,
+  clips,
+  expectBlank,
+  expectPaint,
+  openParentArea,
+  openShapesPage,
+  pick,
+  recordSounds,
+  sounds,
+  tapPage,
+  toScreen,
+  type Pt,
+} from './helpers';
 
 test('a pick plays its own sound and says its name the first 3 times, then only the sound', async ({ page }) => {
   await recordSounds(page);
@@ -95,7 +63,8 @@ test('a parent can turn button names off; the sounds stay', async ({ page }) => 
   await pick(page, 'Eraser');
   await expect.poll(() => sounds(page, '/ui/crayon.wav'), { timeout: 10_000 }).toBeGreaterThan(0);
   await page.waitForTimeout(800);
-  expect(await clips(page, '/voice/')).toBe(0);
+  // No name; the show-how's "what it does" line isn't a name and may still play.
+  expect(await clips(page, '/voice/tool-')).toBe(0);
 });
 
 /** A finger that stays down until `up` is called, through Chrome's touch events. */
