@@ -127,6 +127,8 @@ export function shapeProblems(raw: unknown): string[] {
     c.bool(r.closed, `${p}.closed`);
     c.optional(r, 'from', p, (v, q) => c.road(v, q));
     c.optional(r, 'to', p, (v, q) => c.road(v, q));
+    // A roundabout's ring is one-way (ADR 0042).
+    c.optional(r, 'oneWay', p, (v, q) => c.bool(v, q));
   }, 1, 500);
   if (c.obj(m.land, 'map.land')) {
     c.points(m.land.outline, 'map.land.outline', 3);
@@ -153,6 +155,8 @@ export function shapeProblems(raw: unknown): string[] {
       }
     }
     c.num(z.r, `${q}.r`, 0.5, 100);
+    // A harbour's way out to sea and back for its sailing boat (ADR 0042).
+    c.optional(z, 'sail', q, (s, r) => c.points(s, r, 1));
   }, 0, 500));
   c.optional(m, 'guards', 'map', (v, p) => c.list(v, p, (g, q) => {
     c.oneOf(g.kind, `${q}.kind`, ['bridge', 'tunnel']);
