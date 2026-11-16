@@ -351,12 +351,26 @@
 }
 .words-grid {
   --gap: 18px;
-  /* Five rows of five tiles, each 3 : 2. */
-  --h: min(calc((100cqh - 4 * var(--gap)) / 5), calc((100cqw - 4 * var(--gap)) / 5 * 2 / 3));
+  /* Five rows of five tiles, each 3 : 2; with family words, as many rows (and six a row) as it takes to fit. */
+  --cols: 5;
+  --rows: 5;
+  --h: min(
+    calc((100cqh - (var(--rows) - 1) * var(--gap)) / var(--rows)),
+    calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols) * 2 / 3)
+  );
   display: grid;
-  grid-template-columns: repeat(5, calc(var(--h) * 1.5));
+  grid-template-columns: repeat(var(--cols), calc(var(--h) * 1.5));
   grid-auto-rows: var(--h);
   gap: var(--gap);
+}
+/* A family word's photo (ADR 0039): square, cropped like a kid's, as big as the tile or picture lets it be. */
+.words-photo {
+  display: block;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 14%;
+  pointer-events: none;
 }
 .words-tile.cb-paper {
   width: 100%;
