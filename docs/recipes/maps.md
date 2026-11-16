@@ -29,7 +29,9 @@ each one is proven by building it.
 6. **Filling:** `trees`, `props` (toys by share, some near the roads), `targets` (rows of stars on the roads,
    stacks of boxes just off them, ADR 0041), `decor` clumps, `animals` herds, `boats`.
 7. **Traffic and the start:** `spawn` on a road, `traffic` (kind, place, cruise speed), `trafficPrefer` for the
-   map's own vehicles.
+   map's own vehicles. A big map gives a rule instead, `trafficNear` (how many, which roads, a pace from and to):
+   its vehicles live near the kid and are put back out of sight when they fall far behind
+   ([highway plan](../highway-map-plan.md), phase 2).
 8. **Sounds of the map** ([sounds.md](sounds.md)): what is underfoot sounds already (sand hiss, bridge planks,
    tunnel echo, puddles, mud); each set piece brings its own; the place's own sound (waves, birds, wind, a
    building site's clanks) belongs to its sky and light. Every new surface or set piece on the map has a sound,
