@@ -20,13 +20,21 @@ export function glyphMarkup(ch: string, width = 13): string {
   );
 }
 
-/** A word's letters in a row, drawn in ink: a built-in word's tile and its picture until part 2 adds pictures. */
+/**
+ * A word's letters in a row, drawn in ink: a family word's tile without a photo, and a built-in word's until it has
+ * a picture. A space in `letters` is a gap between two parts (half a letter wide).
+ */
 export function wordLettersMarkup(letters: readonly string[], width = 14): string {
   return (
     `<span class="words-letters" aria-hidden="true" style="--n: ${letters.length}">` +
-    letters.map((ch) => `<span>${glyphMarkup(ch, width)}</span>`).join('') +
+    letters.map((ch) => (ch === ' ' ? '<span class="words-letters-gap"></span>' : `<span>${glyphMarkup(ch, width)}</span>`)).join('') +
     '</span>'
   );
+}
+
+/** A word's boxes as letters for `wordLettersMarkup`: each gap a space. */
+export function cellLetters(cells: readonly Cell[]): string[] {
+  return cells.map((c) => ('ch' in c ? c.ch : ' '));
 }
 
 /** The kid's badge: their photo ringed in their colour, or their symbol on it (ADR 0018). */

@@ -364,13 +364,22 @@
   gap: var(--gap);
 }
 /* A family word's photo (ADR 0039): square, cropped like a kid's, as big as the tile or picture lets it be. */
-.words-photo {
+.words-photo,
+.cb-paper img.words-photo {
+  position: static;
   display: block;
+  width: auto;
   height: 100%;
   aspect-ratio: 1;
   object-fit: cover;
+  border: 4px solid var(--ink);
+  box-sizing: border-box;
   border-radius: 14%;
   pointer-events: none;
+}
+/* A gap between two parts of a family word's letters (a space or hyphen), half a letter wide. */
+.words-letters > span.words-letters-gap {
+  flex: 0 1 calc(50% / max(var(--n), 3));
 }
 .words-tile.cb-paper {
   width: 100%;

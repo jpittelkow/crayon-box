@@ -44,7 +44,7 @@ import {
 } from './progress';
 import { TOLERANCE, Tracer } from './trace';
 import { LetterVoice, type Part } from './voice';
-import { avatarEl, boxRow, dropInto, glyphMarkup, INK, light, VIEW, wordLettersMarkup } from './wordView';
+import { avatarEl, boxRow, cellLetters, dropInto, glyphMarkup, INK, light, VIEW, wordLettersMarkup } from './wordView';
 import {
   BOX_MAX_DONE,
   BUILT_IN_WORDS,
@@ -1104,7 +1104,7 @@ class LettersGame {
   /** A family word's tile or picture: its photo, or without one its letters drawn in ink. */
   private familyPicture(word: FamilyWordFiles, width: number): string | HTMLElement {
     const url = this.familyPhotos.get(word.id);
-    if (!url) return wordLettersMarkup(lettersIn(this.familyCells(word)), width);
+    if (!url) return wordLettersMarkup(cellLetters(this.familyCells(word)), width);
     const img = el('img', 'words-photo', { alt: '', draggable: 'false' });
     img.src = url;
     return img;
@@ -1142,7 +1142,7 @@ class LettersGame {
     if (word.id === NAME) picture.append(avatarEl(this.ctx.kid, this.photoUrl, 120));
     else if (family && this.familyPhotos.has(family.id)) picture.append(this.familyPicture(family, 16));
     // Drawn from the glyphs' own paths (letters A to Z only), never from typed text.
-    else picture.innerHTML = wordLettersMarkup(word.letters, 16);
+    else picture.innerHTML = wordLettersMarkup(cellLetters(word.cells), 16);
     return picture;
   }
 

@@ -43,8 +43,8 @@ import {
   type Voice,
 } from './progress';
 import { recordClip } from './voice';
-import { wordLettersMarkup } from './wordView';
-import { familyCells, lettersIn, nameCells } from './words';
+import { cellLetters, wordLettersMarkup } from './wordView';
+import { familyCells, nameCells } from './words';
 
 /** How long a recording of a kid's name runs: a name can be longer than a letter. */
 const NAME_RECORD_MS = 2200;
@@ -417,7 +417,7 @@ async function familyWords(ctx: ParentSectionContext): Promise<HTMLElement> {
       thumb.append(h('img', { src: url, alt: '', style: 'width: 100%; height: 100%; object-fit: cover' }));
     } else {
       // Drawn from the glyphs' own paths (letters A to Z only), never from the typed text.
-      thumb.innerHTML = wordLettersMarkup(lettersIn(familyCells(word.text, true)), 16);
+      thumb.innerHTML = wordLettersMarkup(cellLetters(familyCells(word.text, true)), 16);
     }
 
     const text = h('input', {
