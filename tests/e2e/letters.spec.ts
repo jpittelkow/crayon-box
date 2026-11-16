@@ -4,11 +4,38 @@ import { openParentArea } from './helpers';
 
 // Letter practice (ADR 0026, 0028): practice, the game path, tracing with fingers and a pen, and the parent's settings.
 
-async function turnOnLetters(page: Page): Promise<void> {
+/**
+ * Turns Letters on. Unless `howTo`, the Star kid has already seen the first-time how-to (ADR 0037), so a test opens
+ * the letter it picks; with `howTo: 'away'` it was seen, but the last letter was opened long ago.
+ */
+async function turnOnLetters(page: Page, opts: { howTo?: boolean | 'away' } = {}): Promise<void> {
   await page.goto('/');
+  if (opts.howTo !== true) {
+    await seedProgress(page, opts.howTo === 'away' ? { demoSeen: true, lastPlayed: '2026-01-01' } : { demoSeen: true });
+  }
   await openParentArea(page);
   await page.getByText('Show Letters').click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
+}
+
+/** Writes the Star kid's letters progress straight into the app's storage (it is read when Letters opens). */
+async function seedProgress(page: Page, progress: Record<string, unknown>): Promise<void> {
+  // The kids show once the app has opened (and made) its database.
+  await expect(page.getByRole('button', { name: 'Star kid' })).toBeVisible();
+  await page.evaluate(async (progress) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open('crayon-box');
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('files', 'readwrite');
+      tx.objectStore('files').put({ kind: 'json', json: JSON.stringify(progress) }, 'games/letters/kids/star/progress.json');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  }, progress);
 }
 
 async function openLetters(page: Page): Promise<void> {
@@ -380,22 +407,163 @@ test('all traced, the check pulses bigger and "Tap the check!" comes after 4 s (
   await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
 });
 
-test('the game opens one letter at a time', async ({ page }) => {
+// ---- The first-time how-to (ADR 0037, plan phase D) ----
+
+const howTo = { timeout: 20_000 };
+
+test("a new kid's first letter starts with the how-to: L shown, then the kid traces it, then the letter picked", async ({ page }) => {
+  test.setTimeout(90_000);
+  await logClips(page);
+  await turnOnLetters(page, { howTo: true });
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter B', exact: true }).tap();
+  // The how-to's letter, on the real tracing screen: "Watch me.", a fingertip drawing it, "Down." "Across.".
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'L');
+  await expect(traceScreen(page)).toHaveAttribute('data-how-to', 'playing');
+  await expect(page.locator('.letters-demo .letters-hint')).toHaveCount(1, howTo);
+  await expect(traceScreen(page)).toHaveAttribute('data-how-to', 'done', howTo);
+  await expect
+    .poll(() => clipsSaid(page), howTo)
+    .toEqual(['demo-watch', 'stroke-down', 'stroke-across', 'demo-your-turn']);
+  // The kid's turn: the drawing cleared, the start dot pulsing bigger, no hint shown yet.
+  await expect(page.locator('.letters-demo')).toHaveCount(0);
+  await expect(traceScreen(page)).toHaveAttribute('data-nudge', 'dot');
+  expect(await traceScreen(page).getAttribute('data-hints')).toBeNull();
+  await traceAndConfirm(page, 'L');
+  await expect.poll(async () => (await clipsSaid(page)).some(isPraise), howTo).toBe(true);
+  // Then the letter the kid picked, and L has its star.
+  await page.getByRole('button', { name: 'Next letter' }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'B');
+  await expect(traceScreen(page)).not.toHaveAttribute('data-how-to');
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await expect(page.getByRole('button', { name: 'Letter L, has a star' })).toBeVisible();
+});
+
+test("a touch ends the how-to at once; it doesn't come back until a parent asks (ADR 0037)", async ({ page }) => {
+  test.setTimeout(90_000);
+  await logClips(page);
+  await turnOnLetters(page, { howTo: true });
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'L');
+  await expect(page.locator('.letters-demo')).toHaveCount(1, howTo);
+  // A touch beside the letter while the fingertip draws: the show is gone in the same moment.
+  const after = await page.evaluate(() => {
+    const host = document.querySelector<HTMLElement>('[data-screen="letters-trace"]')!;
+    const at = { bubbles: true, pointerType: 'touch', pointerId: 21, clientX: 5, clientY: 400 };
+    host.dispatchEvent(new PointerEvent('pointerdown', at));
+    host.dispatchEvent(new PointerEvent('pointerup', at));
+    return { shows: document.querySelectorAll('.letters-demo').length, howTo: host.dataset.howTo, showing: host.dataset.showing };
+  });
+  expect(after).toEqual({ shows: 0, howTo: 'stopped', showing: undefined });
+  await page.waitForTimeout(3500);
+  expect(await clipsSaid(page)).not.toContain('demo-your-turn');
+  // It is the kid's turn: the same L traces and counts.
+  await traceAndConfirm(page, 'L');
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'E');
+
+  // Seen once, it stays seen when Letters opens again.
+  await page.goto('/');
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'E');
+
+  // A parent's "Show how to trace again" brings it back, before that kid's next letter only.
+  await page.goto('/');
+  await openParentArea(page);
+  await page.getByRole('button', { name: 'Letters', exact: true }).click();
+  await expect(page.getByText('sit with the youngest')).toBeVisible();
+  const again = page.locator('[data-kid="star"] [data-how-to]');
+  await again.click();
+  await expect(again).toBeDisabled();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'L');
+  await expect(traceScreen(page)).toHaveAttribute('data-how-to', 'playing');
+});
+
+test('after 14 days away the how-to comes back (D7)', async ({ page }) => {
+  await turnOnLetters(page, { howTo: 'away' });
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'L');
+  await expect(traceScreen(page)).toHaveAttribute('data-how-to', 'playing');
+});
+
+test('the game opens one letter at a time, easy ones first (D8)', async ({ page }) => {
   await turnOnLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Game' }).tap();
-  await expect(page.getByRole('button', { name: 'Letter A, next to trace' })).toBeVisible();
-  await page.getByRole('button', { name: 'Letter B, locked' }).tap();
+  // Straight lines first: L F E H T I, then D P B R …
+  const stops = page.locator('.letters-stop');
+  await expect(stops).toHaveCount(10);
+  expect(await stops.evaluateAll((all) => all.map((s) => (s as HTMLElement).dataset.letter).join(''))).toBe('LFEHTIDPBR');
+  await expect(page.getByRole('button', { name: 'Letter L, next to trace' })).toBeVisible();
+  await page.getByRole('button', { name: 'Letter F, locked' }).tap();
   await expect(page.locator('[data-screen="letters-path"]')).toBeVisible(); // a locked letter does nothing
 
-  await page.getByRole('button', { name: 'Letter A, next to trace' }).tap();
-  await traceAndConfirm(page, 'A');
+  await page.getByRole('button', { name: 'Letter L, next to trace' }).tap();
+  await traceAndConfirm(page, 'L');
   await page.getByRole('button', { name: 'Next letter' }).tap();
-  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'B');
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'F');
   await page.getByRole('button', { name: 'Back' }).tap();
-  await expect(page.getByRole('button', { name: 'Letter A, done' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Letter B, next to trace' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Letter C, locked' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Letter L, done' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Letter F, next to trace' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Letter E, locked' })).toBeVisible();
+  // Practice stays A to Z.
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  expect(await page.locator('.letters-tile').evaluateAll((all) => all.map((t) => (t as HTMLElement).dataset.letter).join(''))).toBe(
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  );
+});
+
+test('a parent turns on lines and shapes for one kid: they come first, traced and named like letters (D9)', async ({ page }) => {
+  await logClips(page);
+  await turnOnLetters(page);
+  await openParentArea(page);
+  await page.getByRole('button', { name: 'Letters', exact: true }).click();
+  const sets = page.getByRole('group', { name: 'Letter sets for Star' });
+  const shapes = sets.getByRole('button', { name: '○ □ △', exact: true });
+  await expect(shapes).toHaveAttribute('aria-pressed', 'false');
+  await shapes.click();
+  await expect(shapes).toHaveAttribute('aria-pressed', 'true');
+  // Only for that kid.
+  await expect(page.getByRole('group', { name: 'Letter sets for Heart' }).getByRole('button', { name: '○ □ △' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  // The shapes' tab comes first and is open; eight tiles, each drawing its shape.
+  await expect(page.getByRole('button', { name: 'Lines and shapes' })).toHaveClass(/is-picked/);
+  await expect(page.locator('.letters-tile')).toHaveCount(8);
+  await expect(page.getByRole('button', { name: 'Circle', exact: true }).locator('svg path')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Triangle', exact: true }).locator('svg path')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Circle', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', '○');
+  await expect.poll(() => clipsSaid(page)).toEqual(['shape-circle']);
+  await traceAndConfirm(page, '○');
+  await page.getByRole('button', { name: 'Next letter' }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', '+');
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await expect(page.getByRole('button', { name: 'Circle, has a star' })).toBeVisible();
+
+  // In the game, the shapes come before L.
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await page.getByRole('button', { name: 'Game' }).tap();
+  await expect(page.getByRole('button', { name: 'Line down, next to trace' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Triangle, locked' })).toBeVisible();
 });
 
 test('a scribble does not finish a letter; wipe and a real trace do', async ({ page }) => {
