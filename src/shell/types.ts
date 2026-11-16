@@ -25,8 +25,24 @@ export interface KidProfile {
 
 export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer' | 'page' | 'chime';
 
+/**
+ * A game's own short sound from a shipped file (ADR 0032), e.g. a coloring button's (ADR 0038): which file under
+ * assets/sounds/, how loud (default 1), how fast (default 1; lower is also lower in pitch), and, to use only the
+ * start of a longer file, how many seconds of it to play (it fades out at the end).
+ */
+export interface Effect {
+  file: string;
+  gain?: number;
+  rate?: number;
+  seconds?: number;
+}
+
 export interface Sound {
   play(kind: SoundKind): void;
+  /** Plays a game's own effect. Optional for test doubles. */
+  effect?(effect: Effect): void;
+  /** Starts loading effects' files ahead of the first touch. Optional for test doubles. */
+  preload?(files: readonly string[]): void;
   /**
    * The crayon sound while a finger draws (ADR 0032): 0 is silent, 1 a fast scribble. `rate` raises its pitch (1 is
    * the coloring crayon). Optional for test doubles.
