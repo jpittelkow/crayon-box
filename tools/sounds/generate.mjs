@@ -64,6 +64,7 @@ const SOUNDS = {
   L: 'lll', M: 'mmm', N: 'nnn', O: 'aw', P: 'puh', Q: 'kwuh', R: 'rrr', S: 'sss', T: 'tuh', U: 'uh', V: 'vvv',
   W: 'wuh', X: 'ks', Y: 'yuh', Z: 'zzz',
 };
+// Shipped (owner, 2026-11-15): the take with the word, as sound-A … sound-U; the plain vowel takes were not used.
 const VOWEL_WORDS = { A: 'apple', E: 'egg', I: 'igloo', O: 'octopus', U: 'umbrella' };
 const WORDS = ['cat', 'dog', 'sun', 'bus', 'pig', 'hat', 'cup', 'bed', 'box', 'fox', 'hen', 'bug', 'map', 'pan',
   'pin', 'sat', 'tap', 'top', 'red', 'run', 'hop', 'big', 'mud', 'jam'];

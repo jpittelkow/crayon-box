@@ -171,6 +171,9 @@ That is one more reason to make everything now.
 - **Tests:** `src/shell/sound.test.ts` already checks every shipped file has a source and license; add a test that
   every id the letters game asks for has a file.
 - **Done when:** every line has a picked take committed before 2026-12-13, or a note of who will record it.
+  **Done 2026-11-15:** the owner listened to every take, found no difference between them and chose take 1 of
+  every line; for the short vowels the take with the word ("ah… apple") ships as `sound-A` (likewise E, I, O,
+  U). 117 clips added to `assets/sounds/voice/` (letters and coloring), with `NARRATOR_ONLY=1 prepare.mjs`.
 
 ### B. More sound while tracing
 - **Builds:**

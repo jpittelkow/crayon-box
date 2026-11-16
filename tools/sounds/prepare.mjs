@@ -5,6 +5,7 @@
 //
 // <sources folder> holds the downloads (as unpacked from OpenGameArt) and the generated narrator clips in
 // narrator/. Needs ffmpeg and ffprobe on PATH, or FFMPEG_DIR pointing at their folder.
+// NARRATOR_ONLY=1 does only the narrator clips and keeps the rest of sounds.json (see below).
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -104,13 +105,24 @@ const add = (outRel, fromId, kind, extra, info) => {
   manifest.sounds.push({ file: outRel, kind, source: s.title, url: s.url, license: s.license, ...(s.model ? { model: s.model, voice: s.voice } : {}), ...extra, ...info });
 };
 
-for (const p of picks.sounds) {
-  const input = join(srcDir, p.file), output = join(out, p.out);
-  const info = p.kind === 'loop' ? prepareLoop(input, output, p.loopSeconds ?? 1.2) : prepare(input, output, p.kind);
-  add(p.out, p.from, p.kind, { original: p.file.split('/').pop(), ...(p.prompt ? { prompt: p.prompt } : {}), ...(p.note ? { note: p.note } : {}) }, info);
-}
+// NARRATOR_ONLY=1 prepares just the narrator clips in <sources folder>/narrator/ and adds them to the shipped
+// sounds.json, keeping every other entry as it is (for a later narrator batch when the first batch's downloads are
+// not at hand). A clip with the same file name replaces the old one.
+const NARRATOR_ONLY = process.env.NARRATOR_ONLY === '1';
 const nar = picks.narrator, narDir = join(srcDir, nar.dir);
-for (const f of readdirSync(narDir).filter((f) => f.endsWith('.mp3')).sort()) {
+const narFiles = readdirSync(narDir).filter((f) => f.endsWith('.mp3')).sort();
+if (NARRATOR_ONLY) {
+  const shipped = JSON.parse(readFileSync(join(out, 'sounds.json'), 'utf8'));
+  const replaced = new Set(narFiles.map((f) => `voice/${f}`));
+  manifest.sounds.push(...shipped.sounds.filter((s) => !replaced.has(s.file)));
+} else {
+  for (const p of picks.sounds) {
+    const input = join(srcDir, p.file), output = join(out, p.out);
+    const info = p.kind === 'loop' ? prepareLoop(input, output, p.loopSeconds ?? 1.2) : prepare(input, output, p.kind);
+    add(p.out, p.from, p.kind, { original: p.file.split('/').pop(), ...(p.prompt ? { prompt: p.prompt } : {}), ...(p.note ? { note: p.note } : {}) }, info);
+  }
+}
+for (const f of narFiles) {
   const rel = `voice/${f}`;
   const info = prepare(join(narDir, f), join(out, rel), nar.kind);
   add(rel, nar.from, nar.kind, {}, info);
