@@ -443,6 +443,7 @@ class LettersGame {
     const stopShow = () => {
       demo?.stop();
       demo = null;
+      delete screen.dataset.showing;
     };
     /** A fingertip draws `strokes` one after another, with their words when `words`; `then` once it ran to the end. */
     const show = (strokes: number[], words: boolean, then?: () => void) => {
@@ -456,8 +457,12 @@ class LettersGame {
         say: words ? (kind) => this.voice.tip([strokeClip(kind)]) : undefined,
       });
       demo = d;
+      // The pressing finger on the first dot steps aside while the fingertip draws.
+      screen.dataset.showing = 'true';
       void d.done.then((ran) => {
-        if (demo === d) demo = null;
+        if (demo !== d) return;
+        demo = null;
+        delete screen.dataset.showing;
         if (ran && screen.dataset.done === 'false') then?.();
       });
     };

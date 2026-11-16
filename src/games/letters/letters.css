@@ -285,6 +285,9 @@
 .letters-shows {
   pointer-events: none;
 }
+.letters-screen[data-showing] .letters-finger {
+  visibility: hidden;
+}
 /* All traced: the check pulses bigger until it is tapped. */
 .letters-confirm.cb-action.is-nudged {
   animation: lt-beat-big 0.8s ease-in-out infinite;
