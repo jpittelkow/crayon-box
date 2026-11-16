@@ -8,7 +8,7 @@
 - Supersedes, in ADR 0035, once accepted: "two maps" (now three); "every place a kid can reach is within 25 m of a
   road" (45 m, and tested); "cutting a map into tiles waits for the laptop's numbers" (built, see below); "a map
   editor waits until a third map is wanted" (a map viewer first; the editor stays on the to-do list).
-- Numbered 0040 because 0038 is taken on `main` and a second 0038 on a branch will need 0039.
+- Numbered 0040 because 0038 and 0039 were both taken on the day it was written.
 
 ## Context
 The owner asked on 2026-11-15 for a very large driving map, "like a highway and construction site", made with the
