@@ -12,6 +12,7 @@ import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import { playDemo, type Demo } from './demo';
 import { loadFamilyWords, type FamilyWordFiles } from './familyWords';
+import { wordPicture } from './wordPictures';
 import { arrowsFor, glyph, pathData, SET_CHARS, SHAPES, setOf, type SetId, type StrokeKind } from './glyphs';
 import {
   Hints,
@@ -1075,7 +1076,7 @@ class LettersGame {
     };
     if (this.nameCells.length > 0) tile(NAME, 'My name', avatarEl(this.ctx.kid, this.photoUrl, 64));
     for (const w of this.family) tile(w.id, `Family word ${w.text}`, this.familyPicture(w, 14));
-    for (const w of BUILT_IN_WORDS) tile(w.id, `Word ${w.id}`, wordLettersMarkup(lettersIn(wordCells(w.id, this.prefs.sets))));
+    for (const w of BUILT_IN_WORDS) tile(w.id, `Word ${w.id}`, this.builtInPicture(w.id, 14));
     screen.append(grid);
   }
 
@@ -1110,6 +1111,15 @@ class LettersGame {
     return img;
   }
 
+  /** A built-in word's picture (ADR 0039, W9), or its letters in ink should a word have none. */
+  private builtInPicture(id: string, width: number): string | HTMLElement {
+    const url = wordPicture(id);
+    if (!url) return wordLettersMarkup(lettersIn(wordCells(id, this.prefs.sets)), width);
+    const img = el('img', 'words-art', { alt: '', draggable: 'false', 'data-picture': id });
+    img.src = url;
+    return img;
+  }
+
   /** A word tile tapped: the first-time how-to first when it is due, then the word. */
   private async openWord(id: string): Promise<void> {
     if (this.howToDue) {
@@ -1133,14 +1143,16 @@ class LettersGame {
   }
 
   /**
-   * A word's picture: the kid's badge and photo for their name, a family word's photo (or its letters without one);
-   * for now a built-in word's letters (part 2: pictures).
+   * A word's picture: the kid's badge and photo for their name, a family word's photo (or its letters without one),
+   * a built-in word's own picture. Big as the word opens, in the corner while a letter is traced, big again after
+   * the check (ADR 0039).
    */
   private wordPicture(word: WordTurn): HTMLElement {
     const picture = el('div', 'words-picture', { 'aria-hidden': 'true' });
     const family = this.familyWord(word.id);
     if (word.id === NAME) picture.append(avatarEl(this.ctx.kid, this.photoUrl, 120));
     else if (family && this.familyPhotos.has(family.id)) picture.append(this.familyPicture(family, 16));
+    else if (!family && wordPicture(word.id)) picture.append(this.builtInPicture(word.id, 16));
     // Drawn from the glyphs' own paths (letters A to Z only), never from typed text.
     else picture.innerHTML = wordLettersMarkup(cellLetters(word.cells), 16);
     return picture;

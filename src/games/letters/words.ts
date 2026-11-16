@@ -3,14 +3,12 @@
 import type { SetId } from './glyphs';
 
 /**
- * A built-in word (ADR 0037's 24, ADR 0039). `picture` is the id of its picture once one is made (part 2); until
- * then a tile and the opening show the word's letters drawn, like letter tiles. Family words are kept apart, one
- * file each (`familyWords.ts`), and sit between the name and these in the tiles.
+ * A built-in word (ADR 0037's 24, ADR 0039). Its picture is found by its id (`wordPicture` in `wordPictures.ts`).
+ * Family words are kept apart, one file each (`familyWords.ts`), and sit between the name and these in the tiles.
  */
 export interface WordEntry {
-  /** The word itself, in small letters; also its clip names (`word-<id>`, `slow-<id>`) and its star's key. */
+  /** The word itself, in small letters; also its clip names (`word-<id>`, `slow-<id>`), picture and star's key. */
   id: string;
-  picture?: string;
 }
 
 /**

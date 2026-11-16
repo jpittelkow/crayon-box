@@ -370,7 +370,8 @@ a row of boxes, the slow word and the check, word stars, a parent's recording of
 (take 1, not yet listened to). Part 2: family words and the 24 pictures. What differs from the ADR is in its
 [Built](adr/0039-writing-words.md#built-part-1-2026-11-16) section.
 **Part 2 built 2026-11-16:** family words on the parent Letters screen (up to 10, each with an optional recording
-and photo, shared by every kid), shown after the name; see
+and photo, shared by every kid), shown after the name, and the 24 pictures on the built-in words' tiles and as each
+word's picture (big, then in the corner while tracing, big again after the check); see
 [Built, part 2](adr/0039-writing-words.md#built-part-2-2026-11-16).
 
 Drafted 2026-11-15 as [ADR 0039](adr/0039-writing-words.md) (Proposed), from

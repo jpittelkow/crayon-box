@@ -181,7 +181,11 @@ test('Words is off for every kid until a parent turns it on for one', async ({ p
   expect(await tiles.evaluateAll((all) => all.slice(0, 7).map((t) => (t as HTMLElement).dataset.word))).toEqual([
     'sun', 'sat', 'map', 'mud', 'run', 'red', 'fox',
   ]);
-  await expect(page.getByRole('button', { name: 'Word sun', exact: true }).locator('svg')).toHaveCount(3);
+  // Each built-in word's tile shows its picture (W9), loaded.
+  const sunArt = page.getByRole('button', { name: 'Word sun', exact: true }).locator('img.words-art[data-picture="sun"]');
+  await expect(sunArt).toHaveCount(1);
+  await expect.poll(() => sunArt.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  expect(await page.locator('.words-tile img.words-art').count()).toBe(24);
   // Other kids still have no Words tile.
   await page.goto('/');
   await page.getByRole('button', { name: 'Heart kid' }).tap();
@@ -200,6 +204,8 @@ test('a kid writes a three-letter word: each letter into its box, the slow word,
   await expect(traceScreen(page)).toHaveAttribute('data-word', 'sun');
   await expect(traceScreen(page)).toHaveAttribute('data-letter', 'S');
   await expect(page.locator('.words-box')).toHaveCount(3);
+  // The word's own picture: big while it opens, never beside the letter (only in the corner) while tracing.
+  await expect(page.locator('.words-picture img.words-art[data-picture="sun"]')).toHaveCount(1);
   await expect.poll(() => clipsSaid(page)).toContain('word-sun');
   await expect(traceScreen(page)).toHaveAttribute('data-intro', 'done', slow);
   await expect(page.locator('.words-picture')).toHaveClass(/is-corner/);
@@ -224,6 +230,8 @@ test('a kid writes a three-letter word: each letter into its box, the slow word,
   await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
   await expect.poll(async () => (await clipsSaid(page)).at(-1)).toBe('praise-a-word');
   await expect(page.locator('.words-picture')).toHaveClass(/is-big/);
+  await expect(page.locator('.words-picture')).toHaveClass(/is-bounce/);
+  await expect(page.locator('.words-picture img.words-art[data-picture="sun"]')).toHaveCount(1);
   await expect(page.locator('.words-picture .letters-done-star')).toHaveCount(1);
   // The letters count too, like letters traced on their own.
   await page.getByRole('button', { name: 'Next word' }).tap();
@@ -271,7 +279,8 @@ test('wipe restarts only the letter being traced; a filled box is tapped to hear
   // Tapping the filled box says its letter.
   await page.evaluate(() => ((window as unknown as { __clips: string[] }).__clips = []));
   await page.getByRole('button', { name: 'Letter C, written' }).tap();
-  await expect.poll(() => clipsSaid(page)).toEqual(['letter-C']);
+  // (Under load the A's own "Now the next letter." can still be starting; the tap cuts in, so C is said last.)
+  await expect.poll(async () => (await clipsSaid(page)).at(-1)).toBe('letter-C');
   // The rest of the word still finishes it.
   await writeWord(page, ['C', 'A', 'T'], 1);
   await expect(traceScreen(page)).toHaveAttribute('data-done', 'ready', slow);

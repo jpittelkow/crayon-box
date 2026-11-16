@@ -6,7 +6,7 @@
   (as for letters); for each slow word the stretched take is used and the other kept beside it, so a word can be
   swapped after listening. **Part 1 built 2026-11-16** (everything but family words and the pictures, which are part
   2); where the build differs from the text below is listed under [Built](#built-part-1-2026-11-16). **Part 2
-  built 2026-11-16:** family words, see [Built, part 2](#built-part-2-2026-11-16)
+  built 2026-11-16:** family words and the 24 pictures, see [Built, part 2](#built-part-2-2026-11-16)
 - Date: 2026-11-15
 - Builds on: [ADR 0026](0026-letter-practice.md), [0028](0028-letter-tracing-whole-letter-and-confirm.md),
   [0032](0032-sounds-as-files.md) and [0037](0037-letters-sound-tips-and-how-to.md). Supersedes nothing
@@ -120,8 +120,7 @@ word table, a name as boxes, box sizes, the slow take), `wordView.ts` (boxes, pi
 `tests/e2e/words.spec.ts`. The clips: take 1 of all 84 words-batch lines, not yet listened to. Where the build
 differs from, or adds to, the text above:
 - **The pictures for now:** until part 2, a built-in word's tile and its picture show the word's letters drawn in
-  ink, like letter tiles. `BUILT_IN_WORDS` in `words.ts` is the table part 2 extends (a `picture` id per word, family
-  words beside them).
+  ink, like letter tiles. (Part 2 replaced this: the pictures are found by word id, family words kept apart.)
 - **The easy order** puts **fox** with the held-sound words (f can be held): sun, sat, map, mud, run, red, fox, then
   the other 17. The tiles are five rows of five, the name first.
 - **The opening** says the word ("Let's write your name." and the parent's recording for the name). The letter is
@@ -165,6 +164,12 @@ and `tests/e2e/words.spec.ts`. Where the build differs from, or adds to, the tex
   against the shipped clips' names; it is never spoken by a browser voice or sent anywhere.
 - **Tiles and picture:** the photo, square, in the tile and as the word's picture; without one, the word's letters
   in ink with a gap between its parts.
+
+**The pictures** (W9), made in PR #71 (`wordPictures.ts`), are wired in: each built-in word's tile shows its picture
+(drawn on white, which takes the tile's tint), and replaces the letters-in-ink stand-in of part 1. The word opens
+with its picture big, the picture shrinks to the top-right corner while letters are traced (never beside the
+letter), and comes back big with a small bounce after the check, below the kid's boxes. A word with no picture
+would still fall back to its letters.
 
 ## Narrator lines to add before 2026-12-13
 **Settled by the owner on 2026-11-15 (W1): add them.** They are the `words` batch of `tools/sounds/generate.mjs`

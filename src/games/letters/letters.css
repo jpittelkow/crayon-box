@@ -377,6 +377,21 @@
   border-radius: 14%;
   pointer-events: none;
 }
+/* A built-in word's picture (ADR 0039, W9): square, whole, as big as the tile or picture lets it be. */
+.words-art,
+.cb-paper img.words-art {
+  position: static;
+  display: block;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* The pictures are drawn on white: on a tinted tile the white takes the tile's tint. */
+.words-tile img.words-art {
+  mix-blend-mode: multiply;
+}
 /* A gap between two parts of a family word's letters (a space or hyphen), half a letter wide. */
 .words-letters > span.words-letters-gap {
   flex: 0 1 calc(50% / max(var(--n), 3));
