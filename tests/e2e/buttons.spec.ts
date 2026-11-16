@@ -192,7 +192,8 @@ test('the picked tool is bigger, and the sizes grey out under the bucket', async
   await openShapesPage(page);
   await pick(page, 'Eraser');
   const width = async (name: string) => (await page.getByRole('button', { name, exact: true }).boundingBox())!.width;
-  await expect.poll(() => width('Eraser')).toBeGreaterThan((await width('Brush')) * 1.08);
+  // Both read together each time: the tool just let go shrinks back over a short transition.
+  await expect.poll(async () => (await width('Eraser')) / (await width('Brush')), { timeout: 15_000 }).toBeGreaterThan(1.08);
   await expect(page.locator('.sizes')).not.toHaveClass(/is-faded/);
   await expect(page.locator('.sizes [aria-pressed="true"]')).toHaveCount(1);
 
