@@ -4,7 +4,8 @@
   [table below](#decisions-for-the-owner) (W1 to W10), with the pictures (W9) capped at $8 of AI calls, and
   accepted it without mockups: the built screens are judged instead. The words batch ships take 1 of every line
   (as for letters); for each slow word the stretched take is used and the other kept beside it, so a word can be
-  swapped after listening
+  swapped after listening. **Part 1 built 2026-11-16** (everything but family words and the pictures, which are part
+  2); where the build differs from the text below is listed under [Built](#built-part-1-2026-11-16)
 - Date: 2026-11-15
 - Builds on: [ADR 0026](0026-letter-practice.md), [0028](0028-letter-tracing-whole-letter-and-confirm.md),
   [0032](0032-sounds-as-files.md) and [0037](0037-letters-sound-tips-and-how-to.md). Supersedes nothing
@@ -107,6 +108,36 @@ A finished word's tile gets a star, like a letter's.
 
 ### Not built
 - No on-screen keyboard, timer, score, spelling test, sentences or sight-word drills (ADR 0003, 0012).
+
+## Built (part 1, 2026-11-16)
+Everything above except **family words** and **the 24 pictures** (part 2). Code: `src/games/letters/words.ts` (the
+word table, a name as boxes, box sizes, the slow take), `wordView.ts` (boxes, picture, the drop), the word screens in
+`game.ts`, the Words switch and name recordings in `parentSection.ts`; tests in `words.test.ts` and
+`tests/e2e/words.spec.ts`. The clips: take 1 of all 84 words-batch lines, not yet listened to. Where the build
+differs from, or adds to, the text above:
+- **The pictures for now:** until part 2, a built-in word's tile and its picture show the word's letters drawn in
+  ink, like letter tiles. `BUILT_IN_WORDS` in `words.ts` is the table part 2 extends (a `picture` id per word, family
+  words beside them).
+- **The easy order** puts **fox** with the held-sound words (f can be held): sun, sat, map, mud, run, red, fox, then
+  the other 17. The tiles are five rows of five, the name first.
+- **The opening** says the word ("Let's write your name." and the parent's recording for the name). The letter is
+  said once the picture is in its corner. A touch ends the opening at once. The first-time how-to (ADR 0037) plays
+  before a word too when it is due.
+- **"Now the next letter."** is said before the next letter's name the first 4 times for each kid
+  (`NEXT_LETTER_TIMES`), counted in the kid's progress.
+- **The slow word** is one clip, so the boxes light **evenly through it**, not exactly as each sound passes. Which
+  take a word uses is one line in `SLOW_TAKES` (`stretched` or `alt`). A word with no slow take (a family word, part
+  2) says its letters' sounds one after another, a box lighting with each.
+- **The name with a recording:** the recording is said in the opening, again as the boxes light (in place of the
+  slow word), and after the check (in place of "You wrote your name!"). Without one the boxes light with nothing
+  said, and the check brings the cheer and "You wrote your name!".
+- **The name's letters:** each part after a space or hyphen starts with a capital; digits and symbols are left out;
+  a kid with no name (or none with a letter) has no name tile. Boxes shrink for a long name down to 22 px, the
+  letter being traced never. The recording is kept as `voice/name-<kid id>.<ext>` and deleted with the kid.
+- **Letters in a word count** like letters traced on their own: each gets its star and its help count (hints).
+- **After the check** the picture comes back big below the boxes, so the kid's own letters stay in view.
+- Saved: `prefs.json` has `words: true` when Words is on; `progress.json` has `words` (the word stars) and
+  `nextSaid`; both go with a parent's "Reset stars and game".
 
 ## Narrator lines to add before 2026-12-13
 **Settled by the owner on 2026-11-15 (W1): add them.** They are the `words` batch of `tools/sounds/generate.mjs`

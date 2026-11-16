@@ -4,7 +4,9 @@
 // each finished stroke, and the finished letter gets its name and a word of praise. A kid who is stuck gets the
 // hint ladder (hints.ts): a bigger dot, then a fingertip along the next stroke, then the whole letter shown. Before a
 // kid's first letter, and after a while away, the first-time how-to shows an L being traced on this same screen.
-import { demoClip, strokeClip, tipClip } from '../../shell/soundFiles';
+// Words (ADR 0039), a third tile a parent turns on per kid: the kid's own name and short words, one big letter at a
+// time on this same screen, each traced letter dropping into a row of boxes, then the slow word and one check.
+import { demoClip, narratorClip, soundClip, strokeClip, tipClip } from '../../shell/soundFiles';
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
@@ -22,7 +24,9 @@ import {
 import {
   dayOf,
   demoDue,
+  findNameRecording,
   finishLetter,
+  finishWord,
   forgetKid,
   gameIndex,
   isOpenInGame,
@@ -32,12 +36,28 @@ import {
   loadPrefs,
   loadProgress,
   nextInSet,
+  noteNextSaid,
   notePlayed,
   type KidPrefs,
   type KidProgress,
 } from './progress';
 import { TOLERANCE, Tracer } from './trace';
-import { LetterVoice } from './voice';
+import { LetterVoice, type Part } from './voice';
+import { avatarEl, boxRow, dropInto, glyphMarkup, INK, light, VIEW, wordLettersMarkup } from './wordView';
+import {
+  BOX_MAX_DONE,
+  BUILT_IN_WORDS,
+  boxSize,
+  lettersIn,
+  NAME,
+  nameCells,
+  NEXT_LETTER_TIMES,
+  nextWord,
+  slowClipId,
+  wordCells,
+  wordKey,
+  type Cell,
+} from './words';
 import './letters.css';
 
 export const lettersGame: GameModule = {
@@ -57,10 +77,7 @@ export const lettersGame: GameModule = {
 };
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const INK = '#23201c';
 const GREEN = '#2fa35f';
-/** The tracing view: the 100 x 140 glyph box with room round it for the arrows. */
-const VIEW = '-16 -8 132 156';
 /**
  * Once this much of the letter is traced, lifting the finger shows dots on what is left at once (ADR 0028); with
  * less, the hints show them after a pause ("Keep going!", hints.ts).
@@ -99,14 +116,20 @@ const SPEAKER =
   'stroke-linejoin="round" aria-hidden="true"><path d="M8 18h8l10-8v28l-10-8H8z" fill="#ffd23f"/>' +
   '<path d="M32 17a9 9 0 0 1 0 14"/><path d="M37 12a16 16 0 0 1 0 24"/></svg>';
 
-/** A glyph drawn in ink, for tiles and path stops. */
-function glyphMarkup(ch: string, width = 13): string {
-  const paths = glyph(ch).strokes.map((s) => `<path d="${pathData(s)}"/>`).join('');
-  return (
-    `<svg viewBox="-10 -5 120 150" width="100%" height="100%" fill="none" stroke="${INK}" stroke-width="${width}" ` +
-    `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
-  );
-}
+// ---- Words (ADR 0039) ----
+/** The opening: the picture stays big at least this long, and at most this long while its word is said. */
+const INTRO_MIN_MS = 1200;
+const INTRO_MAX_MS = 3500;
+/** A traced letter has landed in its box: the next letter opens this long after. */
+const LETTER_GAP_MS = 350;
+/** The boxes grow to the middle in this long, before the slow word. */
+const GROW_MS = 550;
+/** With sounds off (or no recording of a name), each box lights for this long in turn. */
+const SILENT_LIGHT_MS = 450;
+/** The slow word and the word are never waited on longer than this before the check shows. */
+const SLOW_MAX_MS = 9000;
+/** Room kept beside the row of boxes for the back button and the picture in the corner (CSS px, each side). */
+const WORD_SIDE = 190;
 
 function svgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}): SVGElementTagNameMap[K] {
   const node = document.createElementNS(SVG_NS, tag);
@@ -133,11 +156,27 @@ const TABS: Record<SetId, { label: string; show: string }> = {
   numbers: { label: 'Numbers', show: '123' },
 };
 
-type Mode = 'practice' | 'game';
+type Mode = 'practice' | 'game' | 'words';
 
-/** The trace screen as the first-time how-to (ADR 0037): `then` is the letter the kid picked, opened after it. */
+/** The trace screen as the first-time how-to (ADR 0037): `then` opens what the kid picked, after it. */
 interface HowTo {
-  then?: string;
+  then?: () => void;
+}
+
+/** A word being written (ADR 0039): its boxes, the letter being traced, and the kid's lines in the boxes before it. */
+interface WordTurn {
+  /** A built-in word's id, or NAME for the kid's own name. */
+  id: string;
+  cells: Cell[];
+  letters: string[];
+  /** Which letter is being traced (an index into `letters`). */
+  at: number;
+  /** The kid's own line for each letter traced so far, as markup in the tracing view's units. */
+  inks: string[];
+  /** The opening (the picture big, the word said) plays before the first letter. */
+  intro: boolean;
+  /** A parent's recording of the kid's name (a storage path), for the name. */
+  recording?: string;
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -162,6 +201,8 @@ class LettersGame {
   /** Progress saved when a letter opens; a finish waits for it, so the two never overwrite each other. */
   private saved: Promise<unknown> = Promise.resolve();
   private readonly cleanups: (() => void)[] = [];
+  /** The kid's photo for their name's tile (ADR 0018), as an object URL while the game is open. */
+  private photoUrl: string | undefined;
 
   constructor(
     private readonly root: HTMLElement,
@@ -180,12 +221,22 @@ class LettersGame {
     this.voice = new LetterVoice(storage, settings, this.ctx.sound);
     this.practiceSet = prefs.sets[0];
     this.howToDue = demoDue(progress, dayOf(new Date()));
+    if (prefs.words && this.ctx.kid.name) {
+      const photo = await this.ctx.photo?.().catch(() => undefined);
+      if (photo) this.photoUrl = URL.createObjectURL(photo);
+    }
     this.showStart();
   }
 
   async unmount(): Promise<void> {
     this.clear();
     this.voice?.stop();
+    if (this.photoUrl) URL.revokeObjectURL(this.photoUrl);
+  }
+
+  /** The screen's width in CSS px (the laptop's 1280 when not laid out yet). */
+  private get width(): number {
+    return this.root.clientWidth || 1280;
   }
 
   private clear(): void {
@@ -253,6 +304,24 @@ class LettersGame {
       `<g transform="translate(190 90) scale(0.55) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('F').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
       `</svg>`;
     row.append(practice, gameTile);
+    // Words (ADR 0039), once a parent turned it on for this kid: a row of boxes, two with letters in.
+    if (this.prefs.words) {
+      const words = kidButton({
+        kind: 'paper',
+        label: 'Words',
+        className: 'letters-big',
+        onTap: () => {
+          this.tap();
+          this.showWords();
+        },
+      });
+      words.innerHTML =
+        '<span class="letters-mini-boxes" aria-hidden="true">' +
+        ['S', 'U', ''].map((ch) => `<span>${ch ? glyphMarkup(ch, 15) : ''}</span>`).join('') +
+        '</span>';
+      row.append(words);
+    }
+    row.dataset.count = String(row.children.length);
     screen.append(row);
   }
 
@@ -365,14 +434,18 @@ class LettersGame {
       return;
     }
     this.howToDue = false;
-    this.showTrace(HOWTO_LETTER, mode, { then: ch === HOWTO_LETTER ? undefined : ch });
+    this.showTrace(HOWTO_LETTER, mode, { then: ch === HOWTO_LETTER ? undefined : () => this.showTrace(ch, mode) });
   }
 
-  private showTrace(ch: string, mode: Mode, howTo?: HowTo): void {
-    const back = () => (mode === 'game' ? this.showPath() : this.showPractice());
+  private showTrace(ch: string, mode: Mode, howTo?: HowTo, word?: WordTurn): void {
+    const back = () => (mode === 'game' ? this.showPath() : mode === 'words' ? this.showWords() : this.showPractice());
     const screen = this.screen('letters-trace', back);
     screen.dataset.letter = ch;
     screen.dataset.done = 'false';
+    if (word) {
+      screen.dataset.word = word.id === NAME ? 'name' : word.id;
+      screen.dataset.wordAt = String(word.at);
+    }
     const g = glyph(ch);
     const tracer = new Tracer(g, { ordered: this.prefs.ordered });
     const { storage, kid } = this.ctx;
@@ -380,7 +453,8 @@ class LettersGame {
     this.saved = this.saved.then(() => notePlayed(storage, kid.id, today, !!howTo)).catch(() => undefined);
     // The letter is said as it opens, by the parent's setting: its name, its name then its sound, or its sound. The
     // how-to says "Watch me." instead.
-    if (!howTo) void this.voice.say(ch);
+    // In a word, the opening or "Now the next letter." comes first (below).
+    if (!howTo && !word) void this.voice.say(ch);
 
     const card = el('div', 'letters-card');
     const svg = svgEl('svg', { viewBox: VIEW, class: 'letters-svg', role: 'img', 'aria-label': `Trace ${nameOf(ch)}` });
@@ -555,6 +629,9 @@ class LettersGame {
     // ---- The first-time how-to (ADR 0037, plan phase D): "Watch me.", the letter drawn with its words, "Your turn!" ----
     // While it plays the hints wait; they start counting when it ends. A touch ends it at once: the kid's turn.
     let howToOn = !!howTo;
+    // A word's opening (below): the hints wait for it too, and a touch ends it.
+    let introOn = false;
+    let endIntro: (() => void) | null = null;
     const endHowTo = (how: 'done' | 'stopped') => {
       if (!howToOn) return;
       howToOn = false;
@@ -583,11 +660,13 @@ class LettersGame {
     }
 
     const ticker = setInterval(() => {
-      if (!howToOn) run(hints.tick(performance.now()));
+      const tracing = screen.dataset.done === 'false' || screen.dataset.done === 'ready';
+      if (!howToOn && !introOn && tracing) run(hints.tick(performance.now()));
     }, TICK_MS);
     this.cleanups.push(() => {
       clearInterval(ticker);
       howToOn = false;
+      introOn = false;
       stopShow();
     });
     // A touch anywhere: the wait starts again, and whatever the hints or the how-to show stops (the kid has moved on).
@@ -595,6 +674,7 @@ class LettersGame {
       'pointerdown',
       () => {
         endHowTo('stopped');
+        endIntro?.();
         hints.touch(performance.now());
         stopShow();
         delete screen.dataset.nudge;
@@ -642,7 +722,7 @@ class LettersGame {
     };
     const onDown = (e: PointerEvent) => {
       notePen(e);
-      if (screen.dataset.done === 'true' || screen.dataset.done === 'saving' || e.button > 0) return;
+      if (!['false', 'ready'].includes(screen.dataset.done ?? '') || e.button > 0) return;
       const pen = e.pointerType === 'pen';
       if (!pen && e.pointerType === 'touch') {
         if (penDown || performance.now() < penSeenUntil) return;
@@ -759,6 +839,10 @@ class LettersGame {
     });
     const ready = () => {
       if (screen.dataset.done !== 'false') return;
+      if (word) {
+        void intoBox();
+        return;
+      }
       screen.dataset.done = 'ready';
       drawSound(0);
       stopShow();
@@ -775,6 +859,10 @@ class LettersGame {
     // ---- Done ----
     const finish = async () => {
       if (screen.dataset.done !== 'ready') return;
+      if (word) {
+        await finishTheWord();
+        return;
+      }
       screen.dataset.done = 'saving';
       for (const id of [...lines.keys()]) endLine(id);
       this.voice.hold(false);
@@ -794,8 +882,9 @@ class LettersGame {
       card.append(this.badge('letters-done-star', STAR), this.badge('letters-speaker', SPEAKER));
       card.classList.add('is-done');
       if (!reducedMotion()) screen.append(confetti());
-      // After the how-to, the letter the kid picked.
-      const next = howTo?.then ?? this.nextAfter(ch, mode);
+      // After the how-to, what the kid picked.
+      const then = howTo?.then;
+      const next = then ? null : this.nextAfter(ch, mode);
       screen.append(
         kidButton({
           kind: 'action-lg',
@@ -804,7 +893,8 @@ class LettersGame {
           className: 'letters-next',
           onTap: () => {
             this.tap();
-            if (next) this.showTrace(next, mode);
+            if (then) then();
+            else if (next) this.showTrace(next, mode);
             else back();
           },
         }),
@@ -817,6 +907,246 @@ class LettersGame {
     });
 
     screen.append(card, wipe);
+
+    // ---- A word (ADR 0039): the row of boxes along the top, the picture, and the opening before the first letter ----
+    if (!word) return;
+    const row = boxRow(word.cells, word.inks, word.at, this.kidColor, nameOf, (c) => void this.voice.say(c));
+    const smallBoxes = `${boxSize(word.cells, this.width - 2 * WORD_SIDE)}px`;
+    row.row.style.setProperty('--box', smallBoxes);
+    const picture = this.wordPicture(word);
+    screen.append(row.row, picture);
+    // Leaving a word (back, or on to the next letter) stops whatever it was saying.
+    this.cleanups.push(() => this.voice.stop());
+    if (word.at === 0 && word.intro) {
+      // The picture fills the middle and the word is said; then it shrinks into the corner and the boxes appear.
+      introOn = true;
+      screen.dataset.intro = 'playing';
+      picture.classList.add('is-big');
+      row.row.classList.add('is-waiting');
+      endIntro = () => {
+        if (!introOn) return;
+        introOn = false;
+        endIntro = null;
+        screen.dataset.intro = 'done';
+        picture.classList.replace('is-big', 'is-corner');
+        row.row.classList.remove('is-waiting');
+        hints.touch(performance.now());
+        void this.voice.say(ch);
+      };
+      void (async () => {
+        const said = this.voice.sayNow(this.wordOpening(word));
+        await Promise.all([wait(INTRO_MIN_MS), Promise.race([said, wait(INTRO_MAX_MS)])]);
+        if (screen.isConnected) endIntro?.();
+      })();
+    } else {
+      picture.classList.add('is-corner');
+      // "Now the next letter." the first few times, then the letter as the setting asks.
+      const due = word.at > 0 && (this.progress.nextSaid ?? 0) < NEXT_LETTER_TIMES;
+      if (due) {
+        this.progress.nextSaid = (this.progress.nextSaid ?? 0) + 1;
+        this.saved = this.saved.then(() => noteNextSaid(storage, kid.id)).catch(() => undefined);
+        screen.dataset.nextSaid = 'true';
+      }
+      void this.voice.say(ch, due ? [narratorClip('word-next-letter')] : []);
+    }
+
+    /** The letter is traced: the chime, and the kid's own line drops into its box; then the next letter or the end. */
+    const intoBox = async () => {
+      screen.dataset.done = 'dropping';
+      for (const id of [...lines.keys()]) endLine(id);
+      drawSound(0);
+      this.voice.hold(false);
+      stopShow();
+      delete screen.dataset.nudge;
+      left.replaceChildren();
+      arrows.replaceChildren();
+      starts.replaceChildren();
+      guide(filled);
+      if (this.voice.on) this.ctx.sound.play('chime');
+      const markup = ink.innerHTML;
+      // The letter counts like one traced on its own: its star and how much help it needed.
+      const step = hints.reached;
+      this.saved = this.saved
+        .then(async () => {
+          this.progress = await finishLetter(storage, kid.id, ch, false, step);
+        })
+        .catch(() => undefined);
+      await dropInto(screen, svg, markup, this.kidColor, row.boxes[word.at], reducedMotion());
+      if (!screen.isConnected) return;
+      row.fill(word.at, markup);
+      const next: WordTurn = { ...word, at: word.at + 1, inks: [...word.inks, markup], intro: false };
+      if (next.at < word.letters.length) {
+        await wait(LETTER_GAP_MS);
+        if (screen.isConnected) this.showTrace(next.letters[next.at], 'words', undefined, next);
+        return;
+      }
+      // The whole word: the boxes grow to the middle, the word is said slowly as each box lights, then the check.
+      screen.dataset.wordAt = String(next.at);
+      screen.dataset.done = 'saying';
+      card.remove();
+      wipe.remove();
+      row.row.style.setProperty('--box', `${boxSize(word.cells, this.width - 160, BOX_MAX_DONE)}px`);
+      row.row.classList.add('is-big');
+      await wait(reducedMotion() ? 0 : GROW_MS);
+      await this.sayWordSlowly(word, row.boxes);
+      if (!screen.isConnected) return;
+      light(row.boxes, -1);
+      screen.dataset.done = 'ready';
+      screen.append(confirm);
+      run(hints.ready(performance.now()));
+    };
+
+    /** The check: the cheer and "You wrote a word!", the picture back big with a bounce, and the word's star. */
+    const finishTheWord = async () => {
+      screen.dataset.done = 'saving';
+      confirm.remove();
+      clearInterval(ticker);
+      await this.saved;
+      this.progress = await finishWord(storage, kid.id, wordKey(word.id));
+      this.ctx.sound.play('cheer');
+      void this.voice.sayNow(this.wordCheer(word));
+      row.row.classList.remove('is-big');
+      row.row.style.setProperty('--box', smallBoxes);
+      picture.classList.replace('is-corner', 'is-big');
+      picture.classList.add('is-after', 'is-bounce');
+      picture.append(this.badge('letters-done-star', STAR));
+      if (!reducedMotion()) screen.append(confetti());
+      const after = nextWord(word.id);
+      screen.append(
+        kidButton({
+          kind: 'action-lg',
+          label: 'Next word',
+          html: icons.more(84),
+          className: 'letters-next',
+          onTap: () => {
+            this.tap();
+            if (after) void this.openWord(after);
+            else this.showWords();
+          },
+        }),
+      );
+      screen.dataset.done = 'true';
+    };
+  }
+
+  // ---- Words (ADR 0039) ----
+
+  /** The word tiles: the kid's own name first (with their badge and photo), then the built-in words, all open. */
+  private showWords(): void {
+    const screen = this.screen('letters-words', () => this.showStart());
+    const grid = el('div', 'words-grid', { role: 'group', 'aria-label': 'Words' });
+    const stars = new Set(this.progress.words ?? []);
+    const tile = (id: string, label: string, content: string | HTMLElement) => {
+      const starred = stars.has(wordKey(id));
+      const b = kidButton({
+        kind: 'paper',
+        label: label + (starred ? ', has a star' : ''),
+        className: 'words-tile',
+        onTap: () => void this.openWord(id),
+      });
+      b.dataset.word = id === NAME ? 'name' : id;
+      if (typeof content === 'string') b.innerHTML = content;
+      else b.append(content);
+      if (starred) b.append(this.badge('letters-star', STAR));
+      grid.append(b);
+    };
+    if (this.nameCells.length > 0) tile(NAME, 'My name', avatarEl(this.ctx.kid, this.photoUrl, 64));
+    for (const w of BUILT_IN_WORDS) tile(w.id, `Word ${w.id}`, wordLettersMarkup(lettersIn(wordCells(w.id, this.prefs.sets))));
+    screen.append(grid);
+  }
+
+  /** The kid's name as boxes, from the profile (ADR 0039); empty when the kid has no name. */
+  private get nameCells(): Cell[] {
+    return nameCells(this.ctx.kid.name ?? '', this.prefs.sets.includes('small'));
+  }
+
+  /** A word tile tapped: the first-time how-to first when it is due, then the word. */
+  private async openWord(id: string): Promise<void> {
+    if (this.howToDue) {
+      this.howToDue = false;
+      this.showTrace(HOWTO_LETTER, 'words', { then: () => void this.startWord(id) });
+      return;
+    }
+    await this.startWord(id);
+  }
+
+  private async startWord(id: string): Promise<void> {
+    const cells = id === NAME ? this.nameCells : wordCells(id, this.prefs.sets);
+    const letters = lettersIn(cells);
+    if (letters.length === 0) return this.showWords();
+    const recording =
+      id === NAME ? await findNameRecording(this.ctx.storage, this.ctx.kid.id).catch(() => undefined) : undefined;
+    this.showTrace(letters[0], 'words', undefined, { id, cells, letters, at: 0, inks: [], intro: true, recording });
+  }
+
+  /** A word's picture: the kid's badge and photo for their name; for now a built-in word's letters (part 2: pictures). */
+  private wordPicture(word: WordTurn): HTMLElement {
+    const picture = el('div', 'words-picture', { 'aria-hidden': 'true' });
+    if (word.id === NAME) picture.append(avatarEl(this.ctx.kid, this.photoUrl, 120));
+    else picture.innerHTML = wordLettersMarkup(word.letters, 16);
+    return picture;
+  }
+
+  /** What is said as a word opens: the word; for the name, "Let's write your name." and the parent's recording. */
+  private wordOpening(word: WordTurn): Part[] {
+    if (word.id === NAME) return [...narrator('word-your-name'), ...(word.recording ? [{ own: word.recording }] : [])];
+    return narrator(`word-${word.id}`);
+  }
+
+  /** What is said after the check: "You wrote a word!"; for the name, the parent's recording or "You wrote your name!". */
+  private wordCheer(word: WordTurn): Part[] {
+    if (word.id === NAME) return word.recording ? [{ own: word.recording }] : narrator('praise-your-name');
+    return narrator('praise-a-word');
+  }
+
+  /**
+   * The word said slowly with each box lighting as its sound passes, then said normally (ADR 0039). The slow take is
+   * one clip, so the boxes light evenly through it; a word with none says its letters' sounds, a box for each. The
+   * name has the parent's recording, or the boxes light with nothing said.
+   */
+  private async sayWordSlowly(word: WordTurn, boxes: HTMLElement[]): Promise<void> {
+    const n = boxes.length;
+    let parts: Part[] = [];
+    let even = true;
+    if (word.id === NAME) {
+      if (word.recording) parts = [{ own: word.recording }];
+    } else {
+      const slow = slowClipId(word.id);
+      const slowClip = slow ? narratorClip(slow) : undefined;
+      even = !!slowClip;
+      const sounds = word.letters.map((ch) => soundClip(ch)).filter((c): c is string => !!c);
+      parts = [...(slowClip ? [{ clip: slowClip }] : sounds.map((clip) => ({ clip }))), ...narrator(`word-${word.id}`)];
+    }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const stopTimers = () => {
+      for (const t of timers.splice(0)) clearTimeout(t);
+    };
+    if (!this.voice.on || parts.length === 0) {
+      for (let i = 0; i < n; i++) {
+        light(boxes, i);
+        await wait(SILENT_LIGHT_MS);
+      }
+    } else {
+      const said = this.voice.sayNow(parts, (i, audio) => {
+        stopTimers();
+        if (even && i === 0) {
+          // One clip for the whole slow word: the boxes light evenly through it.
+          light(boxes, 0);
+          const spread = () => {
+            const secs = audio?.duration;
+            const ms = secs && Number.isFinite(secs) && secs > 0 ? secs * 1000 : n * SILENT_LIGHT_MS;
+            for (let j = 1; j < n; j++) timers.push(setTimeout(() => light(boxes, j), (j * ms) / n));
+          };
+          if (audio && !(audio.duration > 0)) audio.addEventListener('loadedmetadata', spread, { once: true });
+          else spread();
+        } else if (!even && i < n) light(boxes, i);
+        else light(boxes, 'all');
+      });
+      await Promise.race([said, wait(SLOW_MAX_MS)]);
+      stopTimers();
+    }
+    light(boxes, 'all');
+    await wait(SILENT_LIGHT_MS);
   }
 
   /** What the next arrow leads to: the next letter of the set in practice; the newly opened one in the game. */
@@ -826,6 +1156,12 @@ class LettersGame {
     const at = gameIndex(path, this.progress);
     return at < path.length ? path[at] : null;
   }
+}
+
+/** A narrator clip by name (`word-sun`) as a line's one part, or none when it isn't shipped. */
+function narrator(name: string): Part[] {
+  const clip = narratorClip(name);
+  return clip ? [{ clip }] : [];
 }
 
 /** A little confetti over the finished letter. Left out when the computer asks for less motion. */

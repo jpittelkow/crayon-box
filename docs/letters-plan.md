@@ -364,7 +364,12 @@ teaches most.
 - Clips: `level-draw-it`, `level-draw-here` (made in phase A so this phase is still possible after 2026-12-31).
 - Needs its own short ADR when it is picked up.
 
-### G. Then words (own ADR)
+### G. Then words (own ADR; part 1 built 2026-11-16)
+**Part 1 built 2026-11-16:** the Words tile (on per kid), the kid's name and the 24 words, one letter at a time into
+a row of boxes, the slow word and the check, word stars, a parent's recording of a name, and the 84 words-batch clips
+(take 1, not yet listened to). Part 2: family words and the 24 pictures. What differs from the ADR is in its
+[Built](adr/0039-writing-words.md#built-part-1-2026-11-16) section.
+
 Drafted 2026-11-15 as [ADR 0039](adr/0039-writing-words.md) (Proposed), from
 [research/words-learning.md](research/words-learning.md). It asks for more narrator lines in this plan's second
 run (its decision W1) and proposes every word open rather than only words made of starred letters (W6). The
