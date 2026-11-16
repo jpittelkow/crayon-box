@@ -12,8 +12,6 @@ editor, loading a map from a folder), then the maps themselves.
   on `main`; releasing them finishes milestone 3 ([release checklist](release-checklist.md)).
 
 ## 2. Coloring: finish milestone 1
-- **The Outside theme** (trees, flowers, sun, a house and garden), six pages, made like the animal pages
-  (ADR 0022, `tools/clean-pages.mjs`). The last page theme.
 - **Buttons a kid can work out:** a kid in a playtest didn't know what any coloring button does. Design first,
   with no text (ADR 0003), for example a short demo when a button is pressed and held; mockup, then an ADR.
 - **A colour wheel** next to the swatches (asked in the same playtest). Design with the item above.
