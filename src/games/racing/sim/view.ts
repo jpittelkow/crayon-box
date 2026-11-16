@@ -4,6 +4,12 @@ import { VEHICLE_SIZE, type World } from './sim';
 
 export interface View { eye: [number, number, number]; target: [number, number, number] }
 
+/**
+ * Things further than this from where the chase camera looks are not drawn (milestone-3 E; render.ts); the haze
+ * already hides them. Traffic by a rule is only moved further away than this (sim.ts, `TRAFFIC_NEAR`).
+ */
+export const HIDE_M = 150;
+
 /** The camera's vertical field of view, in degrees. The renderer uses it too, so a touch maps to what is drawn. */
 export const CAMERA_FOV = 55;
 /** A touch on the sky or near the horizon picks a spot this far from the car, in the direction touched. */

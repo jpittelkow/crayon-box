@@ -180,6 +180,15 @@ export function shapeProblems(raw: unknown): string[] {
     c.onRoad(t.on, `${q}.on`);
     c.num(t.cruise, `${q}.cruise`, 1, 30);
   }, 0, 60);
+  // Traffic by a rule, near the kid (docs/highway-map-plan.md, phase 2).
+  c.optional(m, 'trafficNear', 'map', (t, p) => {
+    if (!c.obj(t, p)) return;
+    c.int(t.count, `${p}.count`, 0, 60);
+    c.optional(t, 'roads', p, (v, q) => {
+      if (c.arr(v, q, 1, 500)) v.forEach((r, i) => c.road(r, `${q}[${i}]`));
+    });
+    c.pair(t.cruise, `${p}.cruise`, 1, 30);
+  });
   if (c.obj(m.water, 'map.water')) {
     const w = m.water;
     c.list(w.pools, 'map.water.pools', (o, q) => {

@@ -3,6 +3,7 @@
 //
 // Directions follow the simulation: a heading h points along (sin h, cos h), and a positive lane offset is to the
 // right of the direction of travel (on the island's ring road, toward the sea).
+import { GRID_FROM, LOOKUP, boxDistance, nearest, segmentGrid, type Grid } from './grid';
 
 /** A road as a map file gives it. */
 export interface RoadDef {
@@ -42,6 +43,10 @@ export interface Road {
   /** Distance along the road at each point; for a loop, one extra entry for the way back to the start. */
   at: Float64Array;
   length: number;
+  /** The box round its points: min x, min z, max x, max z. */
+  box: [number, number, number, number];
+  /** Its segments in squares (sim/grid.ts), for a road long enough to need them. */
+  grid?: Grid;
 }
 
 /** Where a point is relative to a road. */
@@ -70,7 +75,13 @@ export function buildRoad(def: RoadDef): Road {
     zs[i] = z;
     at[i] = i === 0 ? 0 : at[i - 1]! + Math.hypot(x - xs[i - 1]!, z - zs[i - 1]!);
   }
-  return { def, xs, zs, at, length: at[count - 1]! };
+  const box: Road['box'] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < count; i++) {
+    box[0] = Math.min(box[0], xs[i]!); box[1] = Math.min(box[1], zs[i]!);
+    box[2] = Math.max(box[2], xs[i]!); box[3] = Math.max(box[3], zs[i]!);
+  }
+  const grid = count - 1 >= GRID_FROM ? segmentGrid(xs, zs, count - 1, (i) => i + 1) : undefined;
+  return { def, xs, zs, at, length: at[count - 1]!, box, grid };
 }
 
 /** Wraps a distance into a loop's length; clamps it on an open road. */
@@ -98,38 +109,71 @@ export function pointAt(road: Road, s: number, offset = 0): { x: number; z: numb
   return { x: xs[lo]! + dx * t - fz * offset, z: zs[lo]! + dz * t + fx * offset, heading: Math.atan2(fx, fz) };
 }
 
-/** The nearest point on one road. */
-export function nearestOn(road: Road, index: number, x: number, z: number): RoadSpot {
-  const { xs, zs, at } = road;
-  let best = Infinity, bs = 0, bx = 0, bz = 0, bfx = 0, bfz = 1;
-  for (let i = 0; i < at.length - 1; i++) {
-    const ax = xs[i]!, az = zs[i]!, dx = xs[i + 1]! - ax, dz = zs[i + 1]! - az;
-    const len2 = dx * dx + dz * dz || 1;
-    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len2));
-    const px = ax + dx * t, pz = az + dz * t;
-    const d2 = (x - px) ** 2 + (z - pz) ** 2;
+/** Segment `i`'s squared distance from a point (from its start point toward the next). */
+function segD2(road: Road, i: number, x: number, z: number): number {
+  const { xs, zs } = road;
+  const ax = xs[i]!, az = zs[i]!, dx = xs[i + 1]! - ax, dz = zs[i + 1]! - az;
+  const len2 = dx * dx + dz * dz || 1;
+  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len2));
+  const px = ax + dx * t, pz = az + dz * t;
+  return (x - px) ** 2 + (z - pz) ** 2;
+}
+
+/**
+ * The segment of a road nearest a point (the first of equals), or -1 for a road of one point. With `within`, one
+ * further than that may be missed (and -1 comes back).
+ */
+function nearestSegment(road: Road, x: number, z: number, within = Infinity): number {
+  if (road.grid && LOOKUP.grid) return nearest(road.grid, x, z, (i) => segD2(road, i, x, z), within).i;
+  let best = Infinity, bi = -1;
+  for (let i = 0; i < road.at.length - 1; i++) {
+    const d2 = segD2(road, i, x, z);
     if (d2 < best) {
       best = d2;
-      bs = at[i]! + (at[i + 1]! - at[i]!) * t;
-      bx = px;
-      bz = pz;
-      const len = Math.sqrt(len2);
-      bfx = dx / len;
-      bfz = dz / len;
+      bi = i;
     }
   }
-  const dist = Math.sqrt(best);
+  return bi;
+}
+
+/** Where a point is from segment `i` of a road (or from nowhere, for -1). */
+function spotOn(road: Road, index: number, i: number, x: number, z: number): RoadSpot {
+  if (i < 0) return { road: index, s: 0, x: 0, z: 0, heading: Math.atan2(0, 1), offset: (x - 0) * -1 + (z - 0) * 0, dist: Infinity };
+  const { xs, zs, at } = road;
+  const ax = xs[i]!, az = zs[i]!, dx = xs[i + 1]! - ax, dz = zs[i + 1]! - az;
+  const len2 = dx * dx + dz * dz || 1;
+  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len2));
+  const bx = ax + dx * t, bz = az + dz * t;
+  const dist = Math.sqrt((x - bx) ** 2 + (z - bz) ** 2);
+  const len = Math.sqrt(len2), bfx = dx / len, bfz = dz / len;
   // Right of travel is (−fz, fx); the offset is the point's distance along it.
   const offset = (x - bx) * -bfz + (z - bz) * bfx;
-  return { road: index, s: bs, x: bx, z: bz, heading: Math.atan2(bfx, bfz), offset, dist };
+  return { road: index, s: at[i]! + (at[i + 1]! - at[i]!) * t, x: bx, z: bz, heading: Math.atan2(bfx, bfz), offset, dist };
+}
+
+/** The nearest point on one road. */
+export function nearestOn(road: Road, index: number, x: number, z: number): RoadSpot {
+  return spotOn(road, index, nearestSegment(road, x, z), x, z);
+}
+
+/**
+ * The nearest point on one road if it is within `within` metres (at most a metre more may come back, so check the
+ * distance), or null. Quicker than `nearestOn` for a point far from a long road.
+ */
+export function nearestWithin(road: Road, index: number, x: number, z: number, within: number): RoadSpot | null {
+  if (boxDistance(road.box, x, z) > within + 1) return null;
+  const i = nearestSegment(road, x, z, within + 1);
+  return i < 0 ? null : spotOn(road, index, i, x, z);
 }
 
 /** The nearest point on any road of the network, or undefined if there are none. */
 export function nearestRoad(roads: Road[], x: number, z: number): RoadSpot | undefined {
   let best: RoadSpot | undefined;
   roads.forEach((road, i) => {
-    const spot = nearestOn(road, i, x, z);
-    if (!best || spot.dist < best.dist) best = spot;
+    // A road whose box is further than the nearest so far can't be nearer (the slow way looks anyway).
+    if (best && LOOKUP.grid && boxDistance(road.box, x, z) > best.dist + 1e-6) return;
+    const spot = best && LOOKUP.grid ? nearestWithin(road, i, x, z, best.dist) : nearestOn(road, i, x, z);
+    if (spot && (!best || spot.dist < best.dist)) best = spot;
   });
   return best;
 }
