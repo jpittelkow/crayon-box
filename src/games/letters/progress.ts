@@ -1,8 +1,9 @@
 // What the letters game keeps (ADR 0026), and the game path's rules.
 //   kids/<id>/prefs.json     set by a parent: which letter sets, and whether stroke order counts
 //   kids/<id>/progress.json  the kid's stars (shared by practice and the game) and the letters done in the game
-//   settings.json            the game's sounds switch and which voice says the letters
-//   voice/<key>.<ext>        a parent's own recording of a letter
+//   settings.json            the game's sounds switch, which voice says the letters, and what it says (ADR 0037)
+//   voice/<key>.<ext>        a parent's own recording of a letter's name
+//   voice/sound-<a-z>.<ext>  a parent's own recording of a letter's sound (one per letter: A and a share it)
 // Letters are stored by a key that keeps capitals and small letters apart on a file system that ignores case
 // (Windows, the installer's file storage): `cap-A`, `small-a`, `num-3`.
 import type { GameStorage } from '../../storage/types';
@@ -25,9 +26,14 @@ export interface KidProgress {
 /** Who says the letters: the app's narrator (stored as 'windows', its name before ADR 0032), or a parent. */
 export type Voice = 'windows' | 'own';
 
+/** What is said with a letter (ADR 0037, D3): its name (the default), its name then its sound, or only its sound. */
+export type Saying = 'name' | 'name-sound' | 'sound';
+export const SAYINGS: readonly Saying[] = ['name', 'name-sound', 'sound'];
+
 export interface LettersSettings {
   sounds: boolean;
   voice: Voice;
+  saying: Saying;
 }
 
 const kidDir = (kidId: string) => `kids/${kidId}/`;
@@ -81,11 +87,20 @@ export async function resetProgress(storage: GameStorage, kidId: string): Promis
 
 export async function loadLettersSettings(storage: GameStorage): Promise<LettersSettings> {
   const raw = await storage.getJson<Partial<LettersSettings>>(SETTINGS);
-  return { sounds: raw?.sounds !== false, voice: raw?.voice === 'own' ? 'own' : 'windows' };
+  return cleanSettings(raw);
+}
+
+/** Settings as saved, with anything unknown or missing back to its default (older files have no `saying`). */
+function cleanSettings(raw: Partial<LettersSettings> | undefined): LettersSettings {
+  return {
+    sounds: raw?.sounds !== false,
+    voice: raw?.voice === 'own' ? 'own' : 'windows',
+    saying: SAYINGS.includes(raw?.saying as Saying) ? (raw!.saying as Saying) : 'name',
+  };
 }
 
 export async function saveLettersSettings(storage: GameStorage, value: LettersSettings): Promise<void> {
-  await storage.putJson(SETTINGS, value);
+  await storage.putJson(SETTINGS, cleanSettings(value));
 }
 
 /** Deletes what the game keeps for a kid, when a parent deletes the kid (ADR 0012). */
@@ -95,21 +110,29 @@ export async function forgetKid(storage: GameStorage, kidId: string): Promise<vo
 
 // ---- Recordings ----
 
-export async function findRecording(storage: GameStorage, ch: string): Promise<string | undefined> {
-  const prefix = `${VOICE_DIR}${keyOf(ch)}.`;
+/** A parent's recording is of a letter's name or of its sound. */
+export type Said = 'name' | 'sound';
+
+/** The file name a recording is kept under, without its extension: `cap-A` for a name, `sound-a` for a sound. */
+export function recordingKey(ch: string, what: Said = 'name'): string {
+  return what === 'sound' ? `sound-${ch.toLowerCase()}` : keyOf(ch);
+}
+
+export async function findRecording(storage: GameStorage, ch: string, what: Said = 'name'): Promise<string | undefined> {
+  const prefix = `${VOICE_DIR}${recordingKey(ch, what)}.`;
   return (await storage.list(prefix))[0];
 }
 
-export async function saveRecording(storage: GameStorage, ch: string, blob: Blob): Promise<void> {
-  const old = await findRecording(storage, ch);
+export async function saveRecording(storage: GameStorage, ch: string, blob: Blob, what: Said = 'name'): Promise<void> {
+  const old = await findRecording(storage, ch, what);
   const ext = /ogg/.test(blob.type) ? 'ogg' : /mp4|aac/.test(blob.type) ? 'm4a' : 'webm';
-  const path = `${VOICE_DIR}${keyOf(ch)}.${ext}`;
+  const path = `${VOICE_DIR}${recordingKey(ch, what)}.${ext}`;
   if (old && old !== path) await storage.delete(old);
   await storage.putBlob(path, blob);
 }
 
-export async function deleteRecording(storage: GameStorage, ch: string): Promise<void> {
-  const old = await findRecording(storage, ch);
+export async function deleteRecording(storage: GameStorage, ch: string, what: Said = 'name'): Promise<void> {
+  const old = await findRecording(storage, ch, what);
   if (old) await storage.delete(old);
 }
 

@@ -98,8 +98,8 @@ test('practice: every letter is open; tracing one gives it a star and the arrow 
   await expect(page.getByRole('button', { name: 'Letter L, has a star' })).toBeVisible();
 });
 
-test("a finished letter: the narrator says its name, then a word of praise (ADR 0032)", async ({ page }) => {
-  // Records every clip the app plays through an audio element (the narrator and parent recordings).
+/** Records every clip the app plays through an audio element (the narrator and parent recordings). */
+async function logClips(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const w = window as unknown as { __clips: string[] };
     w.__clips = [];
@@ -109,18 +109,157 @@ test("a finished letter: the narrator says its name, then a word of praise (ADR 
       return play.call(this);
     };
   });
+}
+
+/** The narrator's clips played so far, by name (`letter-L`, `sound-L`, `praise-wow`). */
+async function clipsSaid(page: Page): Promise<string[]> {
+  const all = await page.evaluate(() => (window as unknown as { __clips: string[] }).__clips);
+  return all.map((c) => /\/voice\/([A-Za-z0-9-]+)\.mp3/.exec(c)?.[1] ?? c);
+}
+
+const isPraise = (c: string) => c.startsWith('praise-');
+
+test("a finished letter: the narrator says its name, then a word of praise (ADR 0032)", async ({ page }) => {
+  await logClips(page);
   await turnOnLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
   await traceAndConfirm(page, 'L');
-  const clips = () => page.evaluate(() => (window as unknown as { __clips: string[] }).__clips);
-  await expect.poll(async () => (await clips()).some((c) => /praise-[a-z-]+\.mp3/.test(c))).toBe(true);
-  const said = await clips();
-  const name = said.findIndex((c) => c.includes('/assets/sounds/voice/letter-L.mp3'));
-  const praise = said.findIndex((c) => /praise-[a-z-]+\.mp3/.test(c));
+  await expect.poll(async () => (await clipsSaid(page)).some(isPraise)).toBe(true);
+  const said = await clipsSaid(page);
+  const name = said.lastIndexOf('letter-L');
+  const praise = said.findIndex(isPraise);
   expect(name).toBeGreaterThanOrEqual(0);
   expect(praise).toBeGreaterThan(name);
+});
+
+test("a letter's name is said as it opens, from the grid and from the next arrow (ADR 0037)", async ({ page }) => {
+  await logClips(page);
+  await turnOnLetters(page);
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
+  await expect.poll(() => clipsSaid(page)).toEqual(['letter-L']);
+  await traceAndConfirm(page, 'L');
+  await page.getByRole('button', { name: 'Next letter' }).tap();
+  await expect.poll(async () => (await clipsSaid(page)).at(-1)).toBe('letter-M');
+  // Name by default: no letter sounds.
+  expect((await clipsSaid(page)).filter((c) => c.startsWith('sound-'))).toEqual([]);
+});
+
+test('the parent setting says the name then the sound, or the sound alone (ADR 0037)', async ({ page }) => {
+  await logClips(page);
+  await turnOnLetters(page);
+  await openParentArea(page);
+  await page.getByRole('button', { name: 'Letters', exact: true }).click();
+  const saying = page.getByRole('group', { name: 'What is said with a letter' });
+  await expect(saying.getByRole('button', { name: 'Its name' })).toHaveAttribute('aria-pressed', 'true');
+  await saying.getByRole('button', { name: 'Name, then sound' }).click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
+  await expect.poll(() => clipsSaid(page)).toEqual(['letter-L', 'sound-L']);
+  await traceAndConfirm(page, 'L');
+  await expect.poll(async () => (await clipsSaid(page)).some(isPraise), { timeout: 15_000 }).toBe(true);
+  expect((await clipsSaid(page)).slice(2)).toEqual(['letter-L', 'sound-L', expect.stringMatching(/^praise-/)]);
+
+  // Sound only.
+  await page.goto('/');
+  await openParentArea(page);
+  await page.getByRole('button', { name: 'Letters', exact: true }).click();
+  await page.getByRole('group', { name: 'What is said with a letter' }).getByRole('button', { name: 'Its sound' }).click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await openLetters(page);
+  await page.evaluate(() => ((window as unknown as { __clips: string[] }).__clips = []));
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter B', exact: true }).tap();
+  await expect.poll(() => clipsSaid(page)).toEqual(['sound-B']);
+});
+
+/**
+ * Moves one finger with synthetic pointer events, all in one go so no timer runs in between, and reads after each
+ * step whether the drawing sound is on (the trace screen's `data-drawing`).
+ */
+async function drawingWhile(page: Page, steps: { type: 'down' | 'move' | 'up'; at: Pt }[]): Promise<string[]> {
+  const screen = await toScreen(page, steps.map((s) => s.at));
+  return page.evaluate(
+    ({ steps, screen }) => {
+      const svg = document.querySelector('.letters-svg')!;
+      const host = document.querySelector<HTMLElement>('[data-screen="letters-trace"]')!;
+      return steps.map((s, i) => {
+        const type = s.type === 'down' ? 'pointerdown' : s.type === 'move' ? 'pointermove' : 'pointerup';
+        const at = { clientX: screen[i].x, clientY: screen[i].y };
+        svg.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerType: 'touch', pointerId: 5, width: 10, height: 10, ...at }));
+        return host.dataset.drawing ?? '';
+      });
+    },
+    { steps, screen },
+  );
+}
+
+test('the drawing sound plays only while a finger moves on the road, and just stops off it (ADR 0037)', async ({ page }) => {
+  await turnOnLetters(page);
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
+  const down = glyph('L').strokes[0];
+  const on = (i: number) => down[i];
+  const off = (p: Pt) => ({ x: p.x + 40, y: p.y });
+  const states = await drawingWhile(page, [
+    { type: 'down', at: on(10) },
+    { type: 'move', at: on(20) },
+    { type: 'move', at: on(30) },
+    { type: 'move', at: off(on(40)) },
+    { type: 'move', at: off(on(50)) },
+    { type: 'move', at: on(60) },
+    { type: 'up', at: on(60) },
+  ]);
+  expect(states).toEqual(['false', 'true', 'true', 'false', 'false', 'true', 'false']);
+  // Held still on the road, it stops too.
+  await drawingWhile(page, [
+    { type: 'down', at: on(10) },
+    { type: 'move', at: on(20) },
+  ]);
+  await expect(traceScreen(page)).toHaveAttribute('data-drawing', 'false');
+});
+
+test('a chime for each finished stroke, but not the last: the letter itself is ready then (ADR 0037)', async ({ page }) => {
+  await turnOnLetters(page);
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
+  await expect(traceScreen(page)).not.toHaveAttribute('data-chimes');
+  await drag(page, [glyph('E').strokes[0].filter((_, i, a) => i % 4 === 0 || i === a.length - 1)]);
+  await expect(traceScreen(page)).toHaveAttribute('data-chimes', '1');
+  await traceAndConfirm(page, 'E');
+  await expect(traceScreen(page)).toHaveAttribute('data-chimes', String(glyph('E').strokes.length - 1));
+});
+
+test("the app's Sounds switch silences the narrator, the drawing sound and the chimes (ADR 0037)", async ({ page }) => {
+  await logClips(page);
+  await turnOnLetters(page);
+  await openParentArea(page);
+  await page.getByRole('switch', { name: /^Sounds/ }).click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
+  const down = glyph('E').strokes[0];
+  const states = await drawingWhile(page, [
+    { type: 'down', at: down[5] },
+    { type: 'move', at: down[15] },
+    { type: 'up', at: down[15] },
+  ]);
+  expect(states).toEqual(['false', 'false', 'false']);
+  await page.getByRole('button', { name: 'Wipe' }).tap();
+  await traceAndConfirm(page, 'E');
+  await expect(traceScreen(page)).not.toHaveAttribute('data-chimes');
+  // Give a praise clip time to have started, then check nothing was said.
+  await page.waitForTimeout(1500);
+  expect(await clipsSaid(page)).toEqual([]);
 });
 
 test('the game opens one letter at a time', async ({ page }) => {

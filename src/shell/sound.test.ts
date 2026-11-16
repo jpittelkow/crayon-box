@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { memoryBackend } from '../storage/idb';
 import { appStorage } from '../storage/namespaced';
 import { SOUNDS, TOUCH_SOUNDS, WebAudioSound, loadSoundSettings, saveSoundSettings } from './sound';
-import { PRAISE, letterClip, praiseClip, soundUrl } from './soundFiles';
+import { PRAISE, letterClip, praiseClip, soundClip, soundUrl } from './soundFiles';
 
 const ASSETS = join(__dirname, '../../assets/sounds');
 
@@ -34,6 +34,14 @@ describe('sound files (ADR 0032)', () => {
     for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') expect(letterClip(ch), ch).toBeTruthy();
     expect(letterClip('a')).toBe(letterClip('A'));
     for (const word of PRAISE) expect(praiseClip(word), word).toBeTruthy();
+    expect(PRAISE).toHaveLength(8);
+  });
+
+  it("have the narrator say every letter's sound, small letters sharing their capital's (ADR 0037)", () => {
+    for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz') expect(soundClip(ch), ch).toBeTruthy();
+    expect(soundClip('b')).toBe(soundClip('B'));
+    expect(soundClip('b')).not.toBe(letterClip('b'));
+    for (const ch of '0123456789') expect(soundClip(ch), ch).toBeUndefined();
   });
 
   it('are each listed with a source and license (ADR 0011)', () => {
