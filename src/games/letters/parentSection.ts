@@ -24,8 +24,13 @@ import {
 } from './progress';
 import { recordClip } from './voice';
 
-const SET_LABELS: Record<SetId, string> = { capitals: 'A B C', small: 'a b c', numbers: '1 2 3' };
-const SET_NAMES: Record<SetId, string> = { capitals: 'Capital letters', small: 'Small letters', numbers: 'Numbers' };
+const SET_LABELS: Record<SetId, string> = { shapes: '○ □ △', capitals: 'A B C', small: 'a b c', numbers: '1 2 3' };
+const SET_NAMES: Record<SetId, string> = {
+  shapes: 'Lines and shapes',
+  capitals: 'Capital letters',
+  small: 'Small letters',
+  numbers: 'Numbers',
+};
 
 export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext): Promise<void> {
   const { storage } = ctx;
@@ -110,6 +115,13 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
         { class: 'pw-muted' },
         'Any way: any order and direction counts. Stroke order: each stroke from its start dot, in turn. ' +
           'Practice has every turned-on letter open; the game opens them one at a time, in this order.',
+      ),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        '○ □ △ is lines and shapes, for the youngest: a line down, a line across, a circle, a cross, a slant, a ' +
+          'square, an X and a triangle, traced like letters and before them. Off until you turn it on. In the game, ' +
+          'capitals come easiest first: straight lines (L F E H T I), then curves, then slants. Practice stays A to Z.',
       ),
       rows,
     ),

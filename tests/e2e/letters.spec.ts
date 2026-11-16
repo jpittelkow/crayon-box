@@ -498,22 +498,72 @@ test('after 14 days away the how-to comes back (D7)', async ({ page }) => {
   await expect(traceScreen(page)).toHaveAttribute('data-how-to', 'playing');
 });
 
-test('the game opens one letter at a time', async ({ page }) => {
+test('the game opens one letter at a time, easy ones first (D8)', async ({ page }) => {
   await turnOnLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Game' }).tap();
-  await expect(page.getByRole('button', { name: 'Letter A, next to trace' })).toBeVisible();
-  await page.getByRole('button', { name: 'Letter B, locked' }).tap();
+  // Straight lines first: L F E H T I, then D P B R …
+  const stops = page.locator('.letters-stop');
+  await expect(stops).toHaveCount(10);
+  expect(await stops.evaluateAll((all) => all.map((s) => (s as HTMLElement).dataset.letter).join(''))).toBe('LFEHTIDPBR');
+  await expect(page.getByRole('button', { name: 'Letter L, next to trace' })).toBeVisible();
+  await page.getByRole('button', { name: 'Letter F, locked' }).tap();
   await expect(page.locator('[data-screen="letters-path"]')).toBeVisible(); // a locked letter does nothing
 
-  await page.getByRole('button', { name: 'Letter A, next to trace' }).tap();
-  await traceAndConfirm(page, 'A');
+  await page.getByRole('button', { name: 'Letter L, next to trace' }).tap();
+  await traceAndConfirm(page, 'L');
   await page.getByRole('button', { name: 'Next letter' }).tap();
-  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'B');
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', 'F');
   await page.getByRole('button', { name: 'Back' }).tap();
-  await expect(page.getByRole('button', { name: 'Letter A, done' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Letter B, next to trace' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Letter C, locked' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Letter L, done' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Letter F, next to trace' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Letter E, locked' })).toBeVisible();
+  // Practice stays A to Z.
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  expect(await page.locator('.letters-tile').evaluateAll((all) => all.map((t) => (t as HTMLElement).dataset.letter).join(''))).toBe(
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  );
+});
+
+test('a parent turns on lines and shapes for one kid: they come first, traced and named like letters (D9)', async ({ page }) => {
+  await logClips(page);
+  await turnOnLetters(page);
+  await openParentArea(page);
+  await page.getByRole('button', { name: 'Letters', exact: true }).click();
+  const sets = page.getByRole('group', { name: 'Letter sets for Star' });
+  const shapes = sets.getByRole('button', { name: '○ □ △', exact: true });
+  await expect(shapes).toHaveAttribute('aria-pressed', 'false');
+  await shapes.click();
+  await expect(shapes).toHaveAttribute('aria-pressed', 'true');
+  // Only for that kid.
+  await expect(page.getByRole('group', { name: 'Letter sets for Heart' }).getByRole('button', { name: '○ □ △' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  // The shapes' tab comes first and is open; eight tiles, each drawing its shape.
+  await expect(page.getByRole('button', { name: 'Lines and shapes' })).toHaveClass(/is-picked/);
+  await expect(page.locator('.letters-tile')).toHaveCount(8);
+  await expect(page.getByRole('button', { name: 'Circle', exact: true }).locator('svg path')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Triangle', exact: true }).locator('svg path')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Circle', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', '○');
+  await expect.poll(() => clipsSaid(page)).toEqual(['shape-circle']);
+  await traceAndConfirm(page, '○');
+  await page.getByRole('button', { name: 'Next letter' }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', '+');
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await expect(page.getByRole('button', { name: 'Circle, has a star' })).toBeVisible();
+
+  // In the game, the shapes come before L.
+  await page.getByRole('button', { name: 'Back' }).tap();
+  await page.getByRole('button', { name: 'Game' }).tap();
+  await expect(page.getByRole('button', { name: 'Line down, next to trace' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Triangle, locked' })).toBeVisible();
 });
 
 test('a scribble does not finish a letter; wipe and a real trace do', async ({ page }) => {

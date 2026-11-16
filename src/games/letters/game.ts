@@ -9,7 +9,7 @@ import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import { playDemo, type Demo } from './demo';
-import { arrowsFor, glyph, pathData, SET_CHARS, setOf, type SetId, type StrokeKind } from './glyphs';
+import { arrowsFor, glyph, pathData, SET_CHARS, SHAPES, setOf, type SetId, type StrokeKind } from './glyphs';
 import {
   Hints,
   HOWTO_LEAD_MS,
@@ -118,10 +118,20 @@ function reducedMotion(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
+/** A letter's or shape's name for screen readers and tests (kids see no text, ADR 0003). */
 function nameOf(ch: string): string {
   const set = setOf(ch);
+  if (set === 'shapes') return SHAPES[ch].label;
   return `${set === 'numbers' ? 'Number' : set === 'small' ? 'Small letter' : 'Letter'} ${ch}`;
 }
+
+/** Each set's tab in practice: its name, and the three it shows. */
+const TABS: Record<SetId, { label: string; show: string }> = {
+  shapes: { label: 'Lines and shapes', show: '○□△' },
+  capitals: { label: 'Capital letters', show: 'ABC' },
+  small: { label: 'Small letters', show: 'abc' },
+  numbers: { label: 'Numbers', show: '123' },
+};
 
 type Mode = 'practice' | 'game';
 
@@ -239,8 +249,8 @@ class LettersGame {
       `<circle cx="190" cy="90" r="44" fill="#ffffff" stroke="${GREEN}" stroke-width="8"/>` +
       `<circle cx="330" cy="166" r="38" fill="#e4e1dc" stroke="${INK}" stroke-width="6"/>` +
       `<g transform="translate(312 146)" stroke="${INK}" stroke-width="5"><rect x="4" y="16" width="28" height="22" rx="5" fill="#ffffff"/><path d="M10 16v-6a8 8 0 0 1 16 0v6"/></g>` +
-      `<g transform="translate(60 226) scale(0.5) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('A').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
-      `<g transform="translate(190 90) scale(0.55) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('B').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
+      `<g transform="translate(60 226) scale(0.5) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('L').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
+      `<g transform="translate(190 90) scale(0.55) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('F').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
       `</svg>`;
     row.append(practice, gameTile);
     screen.append(row);
@@ -256,7 +266,7 @@ class LettersGame {
       const buttons = this.prefs.sets.map((set) => {
         const b = kidButton({
           kind: 'choice',
-          label: set === 'capitals' ? 'Capital letters' : set === 'small' ? 'Small letters' : 'Numbers',
+          label: TABS[set].label,
           className: 'letters-tab',
           onTap: () => {
             this.tap();
@@ -265,7 +275,7 @@ class LettersGame {
           },
         });
         b.dataset.set = set;
-        b.innerHTML = [...SET_CHARS[set].slice(set === 'numbers' ? 1 : 0, set === 'numbers' ? 4 : 3)]
+        b.innerHTML = [...TABS[set].show]
           .map((ch) => `<span>${glyphMarkup(ch, 16)}</span>`)
           .join('');
         return b;
@@ -771,7 +781,8 @@ class LettersGame {
       confirm.remove();
       clearInterval(ticker);
       await this.saved;
-      // The how-to's letter counts in the game only where the path has it open.
+      // The how-to's letter counts in the game only where the path has it open (always when capitals are the first
+      // set: L leads the path, GAME_GROUPS).
       const inGame = mode === 'game' && isOpenInGame(this.path, this.progress, ch);
       this.progress = await finishLetter(this.ctx.storage, this.ctx.kid.id, ch, inGame, hints.reached);
       this.ctx.sound.play('cheer');

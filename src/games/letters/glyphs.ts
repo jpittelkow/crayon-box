@@ -1,5 +1,5 @@
-// The letters and numbers as stroke data (ADR 0026): a simple print style of straight sticks and round balls.
-// Original work, CC0 (ADR 0011). Not a font: the strokes carry their order and direction, which give the guide,
+// The letters and numbers, and the lines and shapes before them, as stroke data (ADR 0026, 0037): a simple print
+// style of straight sticks and round balls. Original work, CC0 (ADR 0011). Not a font: the strokes carry their order and direction, which give the guide,
 // the start dots, the arrows and the hint.
 //
 // Strokes follow how print letters are taught in US schools (Zaner-Bloser and Handwriting Without Tears agree on
@@ -19,12 +19,30 @@ export interface Glyph {
   strokes: Stroke[];
 }
 
-export type SetId = 'capitals' | 'small' | 'numbers';
-export const SET_ORDER: readonly SetId[] = ['capitals', 'small', 'numbers'];
+export type SetId = 'shapes' | 'capitals' | 'small' | 'numbers';
+/** The sets in their fixed order: lines and shapes come before letters (ADR 0037, D9; research 1.3). */
+export const SET_ORDER: readonly SetId[] = ['shapes', 'capitals', 'small', 'numbers'];
+/** The sets of letters and numbers: the 62 characters a parent can record and the narrator names by letter. */
+export const LETTER_SETS: readonly SetId[] = ['capitals', 'small', 'numbers'];
 export const SET_CHARS: Record<SetId, string> = {
+  // Each shape has a symbol of its own that is no letter or digit, in the order they are learned: line down, line
+  // across, circle, cross, slant, square, X, triangle. Kids never see the symbols; a tile draws the shape.
+  shapes: '|-○+\\□×△',
   capitals: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
   small: 'abcdefghijklmnopqrstuvwxyz',
   numbers: '0123456789',
+};
+
+/** Each shape's key (in progress, `shape-circle`) and its name for screen readers and parents. */
+export const SHAPES: Record<string, { key: string; label: string }> = {
+  '|': { key: 'line-down', label: 'Line down' },
+  '-': { key: 'line-across', label: 'Line across' },
+  '○': { key: 'circle', label: 'Circle' },
+  '+': { key: 'cross', label: 'Cross' },
+  '\\': { key: 'slant', label: 'Slant' },
+  '□': { key: 'square', label: 'Square' },
+  '×': { key: 'x', label: 'X shape' },
+  '△': { key: 'triangle', label: 'Triangle' },
 };
 
 export const BOX = { w: 100, h: 140 };
@@ -153,6 +171,17 @@ const DATA: Record<string, Stroke[]> = {
   '7': [s(line(20, 10, 80, 10), line(80, 10, 40, 110))],
   '8': [s(arc(50, 35, 22, 25, -90, -270), arc(50, 85, 27, 25, -90, 270), arc(50, 35, 22, 25, 90, -90))],
   '9': [s(arc(50, 37, 25, 27, 0, -360), line(75, 37, 75, 110))],
+
+  // ---- Lines and shapes (ADR 0037, D9): the strokes letters are made of, taught the same way (top first, down then
+  // across, round ones counterclockwise from the top). The square and the triangle are built like D and A. ----
+  '|': [s(line(50, 10, 50, 110))],
+  '-': [s(line(10, 60, 90, 60))],
+  '○': [s(arc(50, 60, 40, 40, -90, -450))],
+  '+': [s(line(50, 15, 50, 105)), s(line(10, 60, 90, 60))],
+  '\\': [s(line(20, 10, 80, 110))],
+  '□': [s(line(15, 25, 15, 95)), s(line(15, 25, 85, 25), line(85, 25, 85, 95), line(85, 95, 15, 95))],
+  '×': [s(line(15, 20, 85, 100)), s(line(85, 20, 15, 100))],
+  '△': [s(line(50, 15, 10, 100)), s(line(50, 15, 90, 100)), s(line(10, 100, 90, 100))],
 };
 
 const GLYPHS = new Map<string, Glyph>(Object.entries(DATA).map(([ch, strokes]) => [ch, { ch, strokes }]));
@@ -163,8 +192,9 @@ export function glyph(ch: string): Glyph {
   return g;
 }
 
+/** Every letter and number (62), without the shapes. */
 export function allChars(): string[] {
-  return SET_ORDER.flatMap((set) => [...SET_CHARS[set]]);
+  return LETTER_SETS.flatMap((set) => [...SET_CHARS[set]]);
 }
 
 export function setOf(ch: string): SetId {

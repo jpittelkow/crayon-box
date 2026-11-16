@@ -10,11 +10,11 @@
 // Letters are stored by a key that keeps capitals and small letters apart on a file system that ignores case
 // (Windows, the installer's file storage): `cap-A`, `small-a`, `num-3`.
 import type { GameStorage } from '../../storage/types';
-import { SET_CHARS, SET_ORDER, setOf, type SetId } from './glyphs';
+import { SET_CHARS, SET_ORDER, SHAPES, setOf, type SetId } from './glyphs';
 import { HOWTO_AGAIN_DAYS, wasHelped, type LetterHelp } from './hints';
 
 export interface KidPrefs {
-  /** Turned-on sets, in the fixed order capitals, small letters, numbers. Never empty. */
+  /** Turned-on sets, in the fixed order lines and shapes, capitals, small letters, numbers. Never empty. */
   sets: SetId[];
   /** Stroke order counts (ADR 0026). Off by default. */
   ordered: boolean;
@@ -56,6 +56,7 @@ export const VOICE_DIR = 'voice/';
 
 export function keyOf(ch: string): string {
   const set = setOf(ch);
+  if (set === 'shapes') return `shape-${SHAPES[ch].key}`;
   return `${set === 'capitals' ? 'cap' : set === 'small' ? 'small' : 'num'}-${ch}`;
 }
 
@@ -236,9 +237,21 @@ export async function deleteRecording(storage: GameStorage, ch: string, what: Sa
 
 // ---- The game path ----
 
-/** Every letter of the turned-on sets, in order: the practice grid and the game path both use it. */
+/**
+ * The game path's order, set by set (ADR 0037, D8). Capitals go easy first: straight lines, then curves, then slants,
+ * in groups that share a start (research 1.2). No study shows one order is better, so this one table is the place to
+ * change it. The other sets go as in practice; the practice grid is always in `SET_CHARS` order.
+ */
+export const GAME_GROUPS: Record<SetId, readonly string[]> = {
+  shapes: [SET_CHARS.shapes],
+  capitals: ['LFEHTI', 'DPBR', 'COQGS', 'UJ', 'NMK', 'AVWXYZ'],
+  small: [SET_CHARS.small],
+  numbers: [SET_CHARS.numbers],
+};
+
+/** The game path: every letter of the turned-on sets, set by set, each set in its `GAME_GROUPS` order. */
 export function lettersOf(sets: readonly SetId[]): string[] {
-  return cleanSets(sets).flatMap((s) => [...SET_CHARS[s]]);
+  return cleanSets(sets).flatMap((s) => [...GAME_GROUPS[s].join('')]);
 }
 
 /** Where the kid is on the game path: the index of the first letter not yet done, or the length when all are. */
@@ -267,6 +280,7 @@ export const SAY: Record<string, string> = {
   w: 'double you', x: 'ex', y: 'why', z: 'zee',
   '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven',
   '8': 'eight', '9': 'nine',
+  '|': 'line', '-': 'line', '○': 'circle', '+': 'cross', '\\': 'line', '□': 'square', '×': 'ex', '△': 'triangle',
 };
 
 export function spoken(ch: string): string {

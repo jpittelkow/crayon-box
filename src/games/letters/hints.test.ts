@@ -1,10 +1,10 @@
 // The hint ladder (ADR 0037, letters plan phase C): the state machine on a fake clock (plain numbers, in ms), the
 // stroke words, and what the tracer and the voice give it.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { STROKE_WORDS, TIPS, demoClip, strokeClip, tipClip } from '../../shell/soundFiles';
+import { STROKE_WORDS, TIPS, demoClip, letterClip, strokeClip, tipClip } from '../../shell/soundFiles';
 import { memoryBackend } from '../../storage/idb';
 import { appStorage } from '../../storage/namespaced';
-import { allChars, glyph, strokeKind, strokeWords } from './glyphs';
+import { allChars, glyph, SET_CHARS, SHAPES, strokeKind, strokeWords } from './glyphs';
 import {
   CHECK_SAY_MS,
   DEMO_DOT_MS,
@@ -24,7 +24,7 @@ import {
 } from './hints';
 import { finishLetter, keyOf, loadProgress, type LettersSettings } from './progress';
 import { START_REACH, TOLERANCE, Tracer } from './trace';
-import { LetterVoice } from './voice';
+import { LetterVoice, nameClip } from './voice';
 
 const OPTS: HintOptions = { ordered: false, known: false, speak: true };
 const idle = { added: false, early: false };
@@ -342,8 +342,41 @@ describe('stroke words (ADR 0037)', () => {
     expect(demoClip('your-turn')).toBeTruthy();
     expect(demoClip('watch')).toBeTruthy();
     // Every word strokeKind can give has a clip.
-    const kinds = new Set(allChars().flatMap((ch) => glyph(ch).strokes.flatMap((s) => strokeWords(s).map((w) => w.kind))));
+    const every = [...allChars(), ...SET_CHARS.shapes];
+    const kinds = new Set(every.flatMap((ch) => glyph(ch).strokes.flatMap((s) => strokeWords(s).map((w) => w.kind))));
     for (const kind of kinds) expect(STROKE_WORDS as readonly string[]).toContain(kind);
+  });
+
+  it('gives the lines and shapes their words, and the narrator names each shape (D9)', () => {
+    const table = Object.fromEntries(
+      [...SET_CHARS.shapes].map((ch) => [
+        SHAPES[ch].key,
+        glyph(ch).strokes.map((s) => strokeWords(s).map((w) => w.kind).join(' then ')).join(', '),
+      ]),
+    );
+    expect(table).toEqual({
+      'line-down': 'down',
+      'line-across': 'across',
+      circle: 'around',
+      cross: 'down, across',
+      slant: 'slant',
+      square: 'down, across then down then across',
+      x: 'slant, slant',
+      triangle: 'slant, slant, across',
+    });
+    const clip = (ch: string) => /voice\/([a-zA-Z-]+)\.mp3/.exec(nameClip(ch) ?? '')?.[1];
+    expect([...SET_CHARS.shapes].map(clip)).toEqual([
+      'shape-line',
+      'shape-line',
+      'shape-circle',
+      'shape-cross',
+      'shape-line',
+      'shape-square',
+      'letter-X',
+      'shape-triangle',
+    ]);
+    for (const ch of allChars()) expect(nameClip(ch), ch).toBe(letterClip(ch));
+    for (const ch of SET_CHARS.shapes) expect(demoPlan(glyph(ch), glyph(ch).strokes.map((_, i) => i)).total, ch).toBeLessThan(12_000);
   });
 });
 
