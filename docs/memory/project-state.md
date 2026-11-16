@@ -5,7 +5,9 @@ _Last updated: 2026-11-15_
 **What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15).
 
 ## Phase
-**Latest release: 0.7.0** (2026-11-15): milestone 3 (fourteen vehicles, two maps, one picker, Driving on by default).
+**Latest release: 0.8.1** (2026-11-15): the Outside coloring theme on top of 0.8.0 (animal pages, unlocking the
+window, paste in the parent area, driving playtest fixes). 0.7.0 was milestone 3 (fourteen vehicles, two maps, one
+picker, Driving on by default).
 Milestone 1 (web app) in progress. `npm run dev` opens the kid picker. A kid starts a new picture from the page
 library or continues one from My pictures (ADR 0017), and can fill, paint, erase, undo, start over and switch the
 coloring mode. The page fills the window (ADR 0019). Holding the lock on the kid picker for a second opens the
