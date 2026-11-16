@@ -1,5 +1,6 @@
-// The letters game's screen in the parent area (ADR 0008, 0012, 0026): each kid's letter sets and stroke order,
-// resetting a kid's stars and game, the voice that says the letters (with recording), and sounds.
+// The letters game's screen in the parent area (ADR 0008, 0012, 0026, 0037): each kid's letter sets and stroke order,
+// resetting a kid's stars and game, what is said with a letter (its name, its sound or both), the voice that says
+// it (with recordings of names and sounds), and sounds.
 import { drawAvatar } from '../../shell/profiles';
 import type { ParentSectionContext } from '../../shell/types';
 import { button, card, confirmInline, h, segmented, switchRow } from '../../ui/parent';
@@ -7,14 +8,16 @@ import { allChars, SET_ORDER, type SetId } from './glyphs';
 import {
   deleteRecording,
   findRecording,
-  keyOf,
   loadLettersSettings,
   loadPrefs,
+  recordingKey,
   resetProgress,
   saveLettersSettings,
   savePrefs,
   saveRecording,
   VOICE_DIR,
+  type Said,
+  type Saying,
   type Voice,
 } from './progress';
 import { recordClip } from './voice';
@@ -74,7 +77,7 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
   }
 
   const settings = await loadLettersSettings(storage);
-  const recorder = await recordingGrid(ctx);
+  const recorder = await recordingGrids(ctx);
   recorder.hidden = settings.voice !== 'own';
   el.append(
     h('p', { class: 'pw-muted' }, 'Tracing letters with a finger or a pen. Turn it on or off for the kids under Settings, Games.'),
@@ -87,6 +90,28 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
           'Practice has every turned-on letter open; the game opens them one at a time, in this order.',
       ),
       rows,
+    ),
+    card(
+      h('h2', {}, 'What is said with a letter'),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        "When a letter opens and when it is done. Hearing a letter's name and its sound together helps a little more " +
+          'than either alone; numbers always get their name.',
+      ),
+      segmented<Saying>(
+        'What is said with a letter',
+        [
+          ['name', 'Its name'],
+          ['name-sound', 'Name, then sound'],
+          ['sound', 'Its sound'],
+        ],
+        settings.saying,
+        (saying) => {
+          settings.saying = saying;
+          void saveLettersSettings(storage, settings);
+        },
+      ),
     ),
     card(
       h('h2', {}, 'The voice that says the letters'),
@@ -106,32 +131,59 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
       recorder,
     ),
     card(
-      switchRow('Sounds', "The letter's name, and the cheer and a word of praise when a letter is done.", settings.sounds, (on) => {
-        settings.sounds = on;
-        void saveLettersSettings(storage, settings);
-      }),
+      switchRow(
+        'Sounds',
+        "The letter's name or sound, the crayon sound while tracing, a chime for each line, and a word of praise when " +
+          'a letter is done.',
+        settings.sounds,
+        (on) => {
+          settings.sounds = on;
+          void saveLettersSettings(storage, settings);
+        },
+      ),
     ),
   );
 }
 
+/** Recordings of each letter's name, and below them each letter's sound (ADR 0037). */
+async function recordingGrids(ctx: ParentSectionContext): Promise<HTMLElement> {
+  const names = await recordingGrid(ctx, 'name', allChars());
+  const sounds = await recordingGrid(ctx, 'sound', [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']);
+  return h(
+    'div',
+    { style: 'display: flex; flex-direction: column; gap: 10px' },
+    h('h3', {}, 'Names'),
+    names,
+    h('h3', {}, 'Sounds'),
+    h('p', { class: 'pw-muted' }, 'Used with "Name, then sound" and "Its sound". One for each letter, capital and small.'),
+    sounds,
+  );
+}
+
 /** One cell per letter: record (about a second and a half), play it back, or remove it. */
-async function recordingGrid(ctx: ParentSectionContext): Promise<HTMLElement> {
+async function recordingGrid(ctx: ParentSectionContext, what: Said, chars: string[]): Promise<HTMLElement> {
   const { storage } = ctx;
-  const recorded = new Set((await storage.list(VOICE_DIR)).map((p) => p.slice(VOICE_DIR.length).replace(/\.[a-z0-9]+$/, '')));
+  const keys = new Set(chars.map((ch) => recordingKey(ch, what)));
+  const recorded = new Set(
+    (await storage.list(VOICE_DIR))
+      .map((p) => p.slice(VOICE_DIR.length).replace(/\.[a-z0-9]+$/, ''))
+      .filter((k) => keys.has(k)),
+  );
   const status = h('p', { class: 'pw-muted', 'aria-live': 'polite' });
-  const count = () => `${recorded.size} of ${allChars().length} recorded. Letters without a recording use the app's voice.`;
+  const count = () => `${recorded.size} of ${chars.length} recorded. Those without a recording use the app's voice.`;
   status.textContent = count();
   const grid = h('div', {
+    'data-recordings': what,
     style: 'display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; max-height: 320px; overflow: auto',
   });
   let busy = false;
-  for (const ch of allChars()) {
-    const key = keyOf(ch);
+  for (const ch of chars) {
+    const key = recordingKey(ch, what);
     const cell = h('div', { class: 'pw-row', style: 'gap: 6px; padding: 4px 8px; border: 1px solid #d3d9e0; border-radius: 10px' });
     const draw = () => {
       const has = recorded.has(key);
       cell.replaceChildren(
-        h('span', { style: 'min-width: 28px; font-weight: 700; font-size: 20px' }, ch),
+        h('span', { style: 'min-width: 28px; font-weight: 700; font-size: 20px' }, what === 'sound' ? `${ch}${ch.toLowerCase()}` : ch),
         button(has ? 'Again' : 'Record', () => void record()),
         ...(has ? [button('Play', () => void play()), button('Remove', () => void remove())] : []),
       );
@@ -139,9 +191,9 @@ async function recordingGrid(ctx: ParentSectionContext): Promise<HTMLElement> {
     const record = async () => {
       if (busy) return;
       busy = true;
-      status.textContent = `Recording ${ch}… say it now.`;
+      status.textContent = what === 'sound' ? `Recording the sound of ${ch}… say it now.` : `Recording ${ch}… say it now.`;
       try {
-        await saveRecording(storage, ch, await recordClip());
+        await saveRecording(storage, ch, await recordClip(), what);
         recorded.add(key);
         status.textContent = count();
       } catch {
@@ -152,7 +204,7 @@ async function recordingGrid(ctx: ParentSectionContext): Promise<HTMLElement> {
       }
     };
     const play = async () => {
-      const path = await findRecording(storage, ch);
+      const path = await findRecording(storage, ch, what);
       const blob = path ? await storage.getBlob(path) : undefined;
       if (!blob) return;
       const url = URL.createObjectURL(blob);
@@ -161,7 +213,7 @@ async function recordingGrid(ctx: ParentSectionContext): Promise<HTMLElement> {
       void audio.play().catch(() => URL.revokeObjectURL(url));
     };
     const remove = async () => {
-      await deleteRecording(storage, ch);
+      await deleteRecording(storage, ch, what);
       recorded.delete(key);
       status.textContent = count();
       draw();

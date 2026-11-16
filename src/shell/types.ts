@@ -23,12 +23,15 @@ export interface KidProfile {
   created: string;
 }
 
-export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer' | 'page';
+export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer' | 'page' | 'chime';
 
 export interface Sound {
   play(kind: SoundKind): void;
-  /** The crayon sound while a finger draws (ADR 0032): 0 is silent, 1 a fast scribble. Optional for test doubles. */
-  scratch?(level: number): void;
+  /**
+   * The crayon sound while a finger draws (ADR 0032): 0 is silent, 1 a fast scribble. `rate` raises its pitch (1 is
+   * the coloring crayon). Optional for test doubles.
+   */
+  scratch?(level: number, rate?: number): void;
   /** False when a parent turned sounds off. Games that make other sounds (a voice) follow it too. */
   readonly enabled?: boolean;
 }

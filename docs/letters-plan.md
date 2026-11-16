@@ -175,7 +175,7 @@ That is one more reason to make everything now.
   every line; for the short vowels the take with the word ("ah… apple") ships as `sound-A` (likewise E, I, O,
   U). 117 clips added to `assets/sounds/voice/` (letters and coloring), with `NARRATOR_ONLY=1 prepare.mjs`.
 
-### B. More sound while tracing
+### B. More sound while tracing (built 2026-11-15)
 - **Builds:**
   - The letter's **name said when it opens** (today only when tapped in the grid or finished).
   - **A drawing sound** while a finger is on the road: a soft crayon loop that plays only while the finger moves
@@ -201,6 +201,22 @@ That is one more reason to make everything now.
   open (a played-clip log, as the existing tests use); the sound setting changes what is said after the check.
 - **Done when:** the three sound settings work with the narrator and with a parent's recordings, the drawing
   sound stops off the road, and the app's Sounds switch silences all of it.
+- **Built 2026-11-15** (not yet heard by the kids). As built, where it differs from or adds to the above:
+  - The name is said in `showTrace` itself, so every way into a letter (grid, path, next arrow) uses the setting.
+  - "On the road" is within 12.5 glyph units of a stroke's line (`ROAD_HALF`, the road's dark edge). The drawing
+    sound also stops after 150 ms held still, since it should play only while the finger moves. It is the crayon at
+    1.3 times the speed (`DRAW_RATE` in `game.ts`), and louder with speed, like coloring's.
+  - The chime is the `chime` sound kind: `ui/cheer.wav` (the finish bell) at 1.6 times the speed and 0.4 gain, a
+    stand-in until a CC0 chime. A stroke that finishes the whole letter gets no chime: the letter's own "ready"
+    sound plays then. In lenient mode a stroke counts as traced as `done` judges it (both ends reached and 92 % of its
+    own checkpoints), so the chimes and the finish agree.
+  - "All by yourself!" is left out when the fingertip hint (today's 8 s idle hint) showed; the dots on what is left
+    after a lift are not counted as a hint.
+  - The game's own Sounds switch in the parent Letters screen also covers the drawing sound and the chimes.
+  - A parent's sound recordings are one per letter (`voice/sound-a.webm` for A and a); numbers have no sound and
+    always say their name.
+  - The line queue lets a line that has started finish (a finger going down doesn't cut a clip off); it holds back
+    the next one.
 
 ### C. A hint ladder for a kid who is stuck
 Replaces the single idle hint. Small steps, most help last, each one shown and spoken (research 3.1), and the

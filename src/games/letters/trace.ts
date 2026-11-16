@@ -8,6 +8,8 @@
 // once the current one is traced to its end. A finished trace is only "ready": the kid confirms it (game.ts).
 // Ink far from the letter is counted too: a trace with more than three times the letter's length of it (a scribble
 // over the whole screen) does not finish until it is wiped.
+// Two things for the sounds (ADR 0037): `near` says whether a point is on the letter's road (the drawing sound plays
+// only there), and `add` reports each stroke the moment it is traced, once (the chime).
 import { strokeLength, type Glyph, type Pt } from './glyphs';
 
 /** Checkpoint spacing, in glyph units. */
@@ -28,6 +30,8 @@ const OFF_FACTOR = 1.5;
 const OFF_LIMIT = 3;
 /** Fast moves are filled in at this step, so a quick swipe still passes its checkpoints. */
 const FILL_STEP = 2;
+/** How far from a stroke's line a point is still on the road, in glyph units: half the road's dark edge (25 wide). */
+export const ROAD_HALF = 12.5;
 
 export interface TraceOptions {
   ordered: boolean;
@@ -45,6 +49,8 @@ export class Tracer {
   private readonly last = new Map<number, Pt>();
   private offInk = 0;
   private current = 0;
+  /** Strokes already reported as traced, so each is reported once. */
+  private readonly told: boolean[];
 
   constructor(
     readonly glyph: Glyph,
@@ -78,6 +84,7 @@ export class Tracer {
     );
     this.run = this.checkpoints.map(() => 0);
     this.letterLength = glyph.strokes.reduce((a, s) => a + strokeLength(s), 0);
+    this.told = this.checkpoints.map(() => false);
   }
 
   /** The stroke a kid is on, in stroke order (the start dot and arrow to show). In lenient mode, always 0. */
@@ -85,20 +92,36 @@ export class Tracer {
     return this.opts.ordered ? this.current : 0;
   }
 
-  /** A pointer went down or moved to `p` (glyph units). `pointer` tells fingers apart. */
-  add(pointer: number, p: Pt, tolerance: number): void {
+  /**
+   * A pointer went down or moved to `p` (glyph units). `pointer` tells fingers apart. Returns the strokes this move
+   * finished tracing, each reported once until a wipe (usually none).
+   */
+  add(pointer: number, p: Pt, tolerance: number): number[] {
     const prev = this.last.get(pointer);
     this.last.set(pointer, p);
     if (!prev) {
       this.visit(p, tolerance, 0);
-      return;
+    } else {
+      const dist = Math.hypot(p.x - prev.x, p.y - prev.y);
+      const steps = Math.max(1, Math.ceil(dist / FILL_STEP));
+      for (let i = 1; i <= steps; i++) {
+        const q = { x: prev.x + ((p.x - prev.x) * i) / steps, y: prev.y + ((p.y - prev.y) * i) / steps };
+        this.visit(q, tolerance, dist / steps);
+      }
     }
-    const dist = Math.hypot(p.x - prev.x, p.y - prev.y);
-    const steps = Math.max(1, Math.ceil(dist / FILL_STEP));
-    for (let i = 1; i <= steps; i++) {
-      const q = { x: prev.x + ((p.x - prev.x) * i) / steps, y: prev.y + ((p.y - prev.y) * i) / steps };
-      this.visit(q, tolerance, dist / steps);
-    }
+    const finished: number[] = [];
+    this.told.forEach((told, s) => {
+      if (told || !this.strokeTraced(s)) return;
+      this.told[s] = true;
+      finished.push(s);
+    });
+    return finished;
+  }
+
+  /** Whether `p` is on the letter's road: within ROAD_HALF of a stroke's line. */
+  near(p: Pt): boolean {
+    // The strokes' points are about a unit apart, so the nearest point is as good as the nearest spot on the line.
+    return this.glyph.strokes.some((stroke) => stroke.some((q) => Math.hypot(q.x - p.x, q.y - p.y) <= ROAD_HALF));
   }
 
   lift(pointer: number): void {
@@ -113,6 +136,7 @@ export class Tracer {
     this.last.clear();
     this.offInk = 0;
     this.current = 0;
+    this.told.fill(false);
   }
 
   get done(): boolean {
@@ -123,13 +147,25 @@ export class Tracer {
     if (hit < total * DONE_SHARE) return false;
     // Both ends of every stroke: a stroke traced most of the way isn't traced.
     if (!this.ends.every(([a, b]) => a && b)) return false;
-    return this.covered.every((c, s) => {
-      // Judge each stroke by its own checkpoints; a stroke with none (wholly near others) by all of them.
-      const mine = c.filter((_, i) => this.own[s][i]);
-      const judged = mine.length > 0 ? mine : c;
-      const ownHit = mine.length > 0 ? c.filter((v, i) => v && this.own[s][i]).length : c.filter(Boolean).length;
-      return ownHit >= Math.max(1, Math.floor(judged.length * STROKE_SHARE));
-    });
+    return this.covered.every((_, s) => this.ownCovered(s));
+  }
+
+  /**
+   * Whether stroke `s` is traced: in stroke order, once the kid has moved past it; in lenient mode, once both its
+   * ends are reached and its own checkpoints are covered, as `done` judges each stroke.
+   */
+  strokeTraced(s: number): boolean {
+    if (this.opts.ordered) return s < this.current;
+    return this.ends[s][0] && this.ends[s][1] && this.ownCovered(s);
+  }
+
+  /** Judges a stroke by its own checkpoints; a stroke with none (wholly near others) by all of them. */
+  private ownCovered(s: number): boolean {
+    const c = this.covered[s];
+    const mine = c.filter((_, i) => this.own[s][i]);
+    const judged = mine.length > 0 ? mine : c;
+    const ownHit = mine.length > 0 ? c.filter((v, i) => v && this.own[s][i]).length : c.filter(Boolean).length;
+    return ownHit >= Math.max(1, Math.floor(judged.length * STROKE_SHARE));
   }
 
   /** The first stroke not yet traced well enough: the one the hint shows. */

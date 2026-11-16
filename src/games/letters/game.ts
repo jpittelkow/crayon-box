@@ -1,5 +1,7 @@
 // Letter practice (ADR 0026): trace big letters with a finger or a pen. Two ways in: practice, with every turned-on
-// letter open, and the game, where finishing a letter opens the next one along a path.
+// letter open, and the game, where finishing a letter opens the next one along a path. Sound while tracing (ADR
+// 0037): the letter is said when it opens, a crayon sound plays while a finger moves on the road, a chime marks
+// each finished stroke, and the finished letter gets its name and a word of praise.
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
@@ -47,6 +49,16 @@ const VIEW = '-16 -8 132 156';
 const LEFT_FROM = 0.5;
 /** Seconds without a touch before the hint shows the first stroke. */
 const IDLE_MS = 8000;
+/**
+ * The drawing sound's pitch (ADR 0037). Stand-in: the coloring game's crayon (`ui/crayon.wav`), raised, until a take
+ * of its own (sounds recipe, way A).
+ */
+const DRAW_RATE = 1.3;
+/** A finger still for this long on the road stops the drawing sound: it plays only while the finger moves. */
+const STILL_MS = 150;
+/** The drawing sound's loudness: this much for a slow line, louder with speed up to 1 (glyph units a second). */
+const DRAW_QUIET = 0.3;
+const DRAW_LOUD_SPEED = 300;
 /** A pen near the screen mutes touches for this long after it was last seen (ADR 0026). */
 const PEN_GRACE_MS = 500;
 /** A touch reported wider than this (CSS px) is a palm, and is ignored (ADR 0003 rule 3). */
@@ -95,6 +107,15 @@ function nameOf(ch: string): string {
 }
 
 type Mode = 'practice' | 'game';
+
+/** A finger's or pen's line on the letter; `last` and `at` are where and when it last moved, for the drawing sound. */
+interface Line {
+  node: SVGPolylineElement;
+  points: string[];
+  pen: boolean;
+  last?: { x: number; y: number };
+  at?: number;
+}
 
 class LettersGame {
   private prefs!: KidPrefs;
@@ -235,10 +256,7 @@ class LettersGame {
         label: nameOf(ch) + (starred ? ', has a star' : ''),
         className: 'letters-tile',
         html: glyphMarkup(ch),
-        onTap: () => {
-          void this.voice.say(ch);
-          this.showTrace(ch, 'practice');
-        },
+        onTap: () => this.showTrace(ch, 'practice'),
       });
       tile.dataset.letter = ch;
       if (starred) tile.append(this.badge('letters-star', STAR));
@@ -286,7 +304,6 @@ class LettersGame {
             this.ctx.sound.play('nothing');
             return;
           }
-          void this.voice.say(ch);
           this.showTrace(ch, 'game');
         },
       });
@@ -309,6 +326,8 @@ class LettersGame {
     screen.dataset.done = 'false';
     const g = glyph(ch);
     const tracer = new Tracer(g, { ordered: this.prefs.ordered });
+    // The letter is said as it opens, by the parent's setting: its name, its name then its sound, or its sound.
+    void this.voice.say(ch);
 
     const card = el('div', 'letters-card');
     const svg = svgEl('svg', { viewBox: VIEW, class: 'letters-svg', role: 'img', 'aria-label': `Trace ${nameOf(ch)}` });
@@ -445,8 +464,28 @@ class LettersGame {
       cancelAnimationFrame(hintFrame);
     });
 
+    // ---- The drawing sound: only while a finger moves on the road; leaving the road just stops it (ADR 0037) ----
+    let drawing = false;
+    let still: ReturnType<typeof setTimeout> | undefined;
+    let chimes = 0;
+    screen.dataset.drawing = 'false';
+    const drawSound = (level: number) => {
+      const on = level > 0 && this.voice.on;
+      clearTimeout(still);
+      if (on) still = setTimeout(() => drawSound(0), STILL_MS);
+      if (!on && !drawing) return;
+      drawing = on;
+      screen.dataset.drawing = String(on);
+      this.ctx.sound.scratch?.(on ? level : 0, DRAW_RATE);
+    };
+    this.cleanups.push(() => {
+      clearTimeout(still);
+      if (drawing) this.ctx.sound.scratch?.(0);
+      this.voice.hold(false);
+    });
+
     // ---- Fingers and pens ----
-    const lines = new Map<number, { node: SVGPolylineElement; points: string[]; pen: boolean }>();
+    const lines = new Map<number, Line>();
     let penSeenUntil = 0;
     let penDown = false;
     let started = false;
@@ -492,6 +531,8 @@ class LettersGame {
       const node = svgEl('polyline', { 'stroke-width': pen ? 6 : 9, opacity: 0.92 });
       ink.append(node);
       lines.set(e.pointerId, { node, points: [], pen });
+      // Nothing new is said while a finger is on the letter (ADR 0037).
+      this.voice.hold(true);
       left.replaceChildren();
       move(e, p);
     };
@@ -500,10 +541,22 @@ class LettersGame {
       if (!line || !p) return;
       line.points.push(`${Math.round(p.x * 10) / 10},${Math.round(p.y * 10) / 10}`);
       line.node.setAttribute('points', line.points.join(' '));
+      const now = performance.now();
+      if (line.last && line.at !== undefined) {
+        const speed = Math.hypot(p.x - line.last.x, p.y - line.last.y) / Math.max(0.008, (now - line.at) / 1000);
+        drawSound(tracer.near(p) && speed > 0 ? Math.min(1, DRAW_QUIET + speed / DRAW_LOUD_SPEED) : 0);
+      }
+      line.last = p;
+      line.at = now;
       const before = tracer.currentStroke;
-      tracer.add(e.pointerId, p, line.pen ? TOLERANCE.pen : TOLERANCE.finger);
+      const finished = tracer.add(e.pointerId, p, line.pen ? TOLERANCE.pen : TOLERANCE.finger);
       if (this.prefs.ordered && tracer.currentStroke !== before) drawGuides(true);
       if (tracer.done) ready();
+      else if (finished.length > 0 && this.voice.on) {
+        // A stroke traced: a quiet chime (the letter's own sound comes when the whole letter is ready).
+        this.ctx.sound.play('chime');
+        screen.dataset.chimes = String(++chimes);
+      }
     };
     const onMove = (e: PointerEvent) => {
       notePen(e);
@@ -513,7 +566,11 @@ class LettersGame {
       notePen(e);
       if (e.pointerType === 'pen') penDown = false;
       endLine(e.pointerId);
-      if (lines.size === 0) showLeft();
+      if (lines.size === 0) {
+        drawSound(0);
+        this.voice.hold(false);
+        showLeft();
+      }
       armIdle();
     };
     svg.addEventListener('pointerdown', onDown);
@@ -538,6 +595,8 @@ class LettersGame {
         filled.replaceChildren();
         confirm.remove();
         lines.clear();
+        drawSound(0);
+        this.voice.hold(false);
         tracer.reset();
         screen.dataset.done = 'false';
         drawGuides(started);
@@ -556,6 +615,7 @@ class LettersGame {
     const ready = () => {
       if (screen.dataset.done !== 'false') return;
       screen.dataset.done = 'ready';
+      drawSound(0);
       clearTimeout(idle);
       hint.setAttribute('visibility', 'hidden');
       left.replaceChildren();
@@ -571,11 +631,13 @@ class LettersGame {
       if (screen.dataset.done !== 'ready') return;
       screen.dataset.done = 'saving';
       for (const id of [...lines.keys()]) endLine(id);
+      this.voice.hold(false);
       confirm.remove();
       this.progress = await finishLetter(this.ctx.storage, this.ctx.kid.id, ch, mode === 'game');
       this.ctx.sound.play('cheer');
-      // The bell first, then the letter's name and a word of praise (ADR 0032).
-      void this.voice.sayAndPraise(ch);
+      // The bell first, then the letter's name and a word of praise (ADR 0032); "All by yourself!" only when the
+      // fingertip hint never had to show (ADR 0037).
+      void this.voice.sayFinished(ch, screen.dataset.hinted === 'true');
       screen.dataset.said = ch;
       wipe.remove();
       card.append(this.badge('letters-done-star', STAR), this.badge('letters-speaker', SPEAKER));
@@ -590,10 +652,8 @@ class LettersGame {
           className: 'letters-next',
           onTap: () => {
             this.tap();
-            if (next) {
-              void this.voice.say(next);
-              this.showTrace(next, mode);
-            } else back();
+            if (next) this.showTrace(next, mode);
+            else back();
           },
         }),
       );
