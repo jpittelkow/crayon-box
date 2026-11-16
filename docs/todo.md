@@ -48,8 +48,9 @@ is left (ADR 0026, 0028). Everything below is spoken or shown, never written (AD
 items first, with mockups.
 - **Planned 2026-11-15:** [letters-plan.md](letters-plan.md), from the research in
   [research/letters-learning.md](research/letters-learning.md), with [ADR 0037](adr/0037-letters-sound-tips-and-how-to.md)
-  (Proposed). **Next:** the owner's decisions D1 to D12 by 2026-11-21, then the narrator batch on the plan's
-  schedule (last planned run 2026-12-13), then mockups and the build phases B to D.
+  (Proposed). The owner took every recommendation (D1 to D12) on 2026-11-15. **Next:** the narrator batch on
+  the plan's schedule (first run by 2026-11-25, last planned run 2026-12-13), then mockups and the build phases B
+  to E.
 - **More sound:**
   - the letter's name said when it opens, not only when it is done;
   - its sound as well as its name ("B, buh"), a parent setting;

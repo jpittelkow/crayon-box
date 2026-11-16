@@ -5,8 +5,8 @@ research. What helps kids?"). The research is in [research/letters-learning.md](
 the decision this plan asks for is [ADR 0037](adr/0037-letters-sound-tips-and-how-to.md) (Proposed). Writing
 words gets its own ADR later (phase G).
 
-This is a plan, not a decision: phases can be reordered or split. What the owner must choose is in the
-[decisions table](#decisions-for-the-owner) at the end.
+This is a plan, not a decision: phases can be reordered or split. **The owner took every recommendation in the
+[decisions table](#decisions-for-the-owner) on 2026-11-15.**
 
 **Ground rules** for everything below: kid screens show no text, only the letter itself, icons and the narrator
 (ADR 0003); every sound is a file (ADR 0032); nothing in the repo identifies the kids (CLAUDE.md). A kid's name
@@ -49,7 +49,7 @@ that plays some of them comes months later.
 | By | What | Who |
 |---|---|---|
 | 2026-11-15 (Sun) | This plan, the research and ADR 0037 (Proposed) in a PR | Claude |
-| 2026-11-21 (Sat) | Owner decides D1 to D12; above all the voice (D1), the line list (D2) and the spend (D12) | Owner |
+| ~~2026-11-21 (Sat)~~ | Owner decides D1 to D12: **done 2026-11-15**, every recommendation taken | Owner |
 | 2026-11-25 (Wed) | `generate.mjs` gets the new lines; one run in the container: 3 takes of every line, plus 10 sample lines in Maisie for comparison; an audition page like the one of 2026-11-15 | Claude, owner starts the run |
 | 2026-11-29 (Sun) | Owner picks a take of every line by ear; flags lines to redo | Owner |
 | 2026-12-06 (Sun) | Second run: redos and any lines the owner added; `prepare.mjs`; clips committed | Claude |
@@ -116,7 +116,7 @@ C and K may share one file.
 **Words** (`word-…`, 24 short words, plus 2 lines), phase G. Three-letter words a 4 year old knows, that can be
 pictured, made of letters with clear sounds: cat, dog, sun, bus, pig, hat, cup, bed, box, fox, hen, bug, map,
 pan, pin, sat, tap, top, red, run, hop, big, mud, jam. Plus `word-next-letter`: "Now the next letter." and
-`praise-a-word`: "You wrote a word!" The owner may swap words; the list is final on 2026-11-21.
+`praise-a-word`: "You wrote a word!" The list is final (owner, 2026-11-15).
 
 **Total:** 26 + 6 + 6 + 2 + 4 + 5 + 2 + 26 = **77 lines**, 3 takes each (231 requests), plus 10 Maisie samples.
 The letter's name when it opens (phase B) reuses today's clips; no new lines.
@@ -257,7 +257,9 @@ ADR 0026 covers single letters, so words need their own ADR; it builds on B–D.
 ---
 
 ## Decisions for the owner
-| # | Decision | Options | Recommended | Needed by |
+All settled on 2026-11-15: the owner took every recommendation below.
+
+| # | Decision | Options | Decided (owner, 2026-11-15) | Was needed by |
 |---|---|---|---|---|
 | D1 | The voice for the new lines | Matilda now with spares · Maisie for everything · an owned voice · another model | **Matilda now with spares**, plus 10 Maisie samples | 2026-11-21 |
 | D2 | The line list (wording, the 24 words) | as listed, or edited | as listed | 2026-11-21 |

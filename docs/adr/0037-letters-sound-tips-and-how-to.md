@@ -1,11 +1,12 @@
 # 0037. Letters: more sound, a hint ladder, a first-time how-to, and every narrator line made before 2026-12-31
 
-- Status: Proposed (drafted 2026-11-15 from [letters-plan.md](../letters-plan.md); waits on the owner's
-  decisions D1 to D12 there, and on mockups)
+- Status: Proposed (drafted 2026-11-15 from [letters-plan.md](../letters-plan.md)). The owner settled decisions
+  D1 to D12 on 2026-11-15, taking every recommendation; acceptance waits on the mockups
 - Date: 2026-11-15
 - Builds on: [ADR 0026](0026-letter-practice.md), [0028](0028-letter-tracing-whole-letter-and-confirm.md),
   [0032](0032-sounds-as-files.md). Would supersede 0026's single idle hint ("a small hand shows the first stroke
-  once") and its "letter sounds may come later"; everything else in those ADRs stands.
+  once"), its "letter sounds may come later", and its alphabetical game path; everything else in those ADRs
+  stands.
 
 ## Context
 The owner asked (2026-11-15) for more sound in letter practice, spoken tips when a kid is stuck, and a first-time
@@ -41,9 +42,21 @@ new features need new lines in the same voice.
    once. A parent can replay it, and the parent area tells parents that sitting with the youngest helps most.
 6. Kid screens still show no text (ADR 0003), and nothing about the kids goes in the repo (CLAUDE.md).
 
-Left to the owner and not decided here: an easy-first order on the game path, a lines-and-shapes set, and a
-fading guide with a "draw it" turn (plan phases E and F). Writing words gets its own ADR (plan phase G); its
-narrator lines are made now under point 1.
+7. **Easy letters first on the game path** (straight lines, then curves and slants, in groups that share a
+   start, plan phase E); the practice grid stays alphabetical.
+8. **A lines-and-shapes set** before capitals (line down, line across, circle, cross, slant, square, X,
+   triangle), traced like letters, off by default and turned on per kid by a parent.
+
+Not decided here: a fading guide with a "draw it" turn (plan phase F) waits for a playtest and gets its own
+short ADR. Writing words gets its own ADR (plan phase G). Both have their narrator lines made now under point 1.
+
+## Settled by the owner (2026-11-15)
+Every recommendation in the plan's decisions table: Matilda now with spares and 10 Maisie samples (D1); the line
+list as written (D2); name as the default saying, with name-then-sound and sound-only as settings (D3); going off
+the line just stops the drawing sound, no boop (D4); 5 s before the first hint (D5); `L` as the demo letter
+(D6); the demo comes back after 14 days away (D7); easy first on the game path (D8); the shapes set, off by
+default (D9); the fading guide after a playtest (D10); keep today's praise and add four (D11); the spend for the
+batch (D12).
 
 ## Consequences
 - About 80 more short clips (well under 1 MB as MP3) and one spend on AI takes, made in the family server's
