@@ -91,6 +91,9 @@ A finished word's tile gets a star, like a letter's.
 - One small colour picture per built-in word, all in one style, original or made with the AI page tools and
   checked by a person (ADR 0011, 0022). The words that aren't things get a simple scene (a bunny for "hop").
 - The picture shows before the first letter and after the check, not while a letter is being traced.
+- Made 2026-11-16 with GPT-5 Image Mini through OpenRouter, one style prompt for every word, two takes each and the
+  better kept by eye: `assets/pictures/words/<word>.webp` (512 px), each listed with what it shows in
+  `pictures.json` beside them, loaded by `src/games/letters/wordPictures.ts`.
 
 ### Saved
 - Per kid, in the Letters game's storage: which words have a star. Nothing of the traces. A parent's reset of a
