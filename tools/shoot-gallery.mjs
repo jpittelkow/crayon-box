@@ -4,7 +4,8 @@ import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { createServer } from 'vite';
 
-const PORT = 5186;
+// Another port with GALLERY_PORT=…, when several sessions take screenshots at once.
+const PORT = Number(process.env.GALLERY_PORT ?? 5186);
 mkdirSync('test-results/gallery', { recursive: true });
 const server = await createServer({ logLevel: 'error', server: { port: PORT, strictPort: true, host: 'localhost' } });
 await server.listen();

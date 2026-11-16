@@ -93,10 +93,20 @@ by a number as today's props do.
 
 ### Knock behaviours (toys)
 Giving each toy one of a few behaviours makes the toys feel different without new rules per toy. Built so far
-(2026-11-15): tumble and roll, set per toy in `sim/assets/toys.ts`.
+(2026-11-15): tumble, roll, topple and collect, set per toy in `sim/assets/toys.ts`.
+
+**Targets** ([ADR 0041](adr/0041-driving-targets-to-collect-and-hit.md), 2026-11-15) are toys with a celebration:
+when the kid's car gets one there is a confetti burst (`fx/confetti`) and a silly noise instead of the bump. They
+use the topple and collect behaviours, sit at fixed spots on the roads (a map's `targets`, not scattered with the
+other toys), and come back like every toy. Traffic never takes a star and knocks stacks over without the
+celebration. No score, nothing counted.
 - **Tumble** (today's default): pushed, spins, bounces, settles, returns. Cone, crate, bale.
 - **Roll**: keeps rolling along the ground, slows, then returns. Beach ball, barrel, pumpkin.
 - **Topple**: a stack or row falls apart piece by piece, then rebuilds. Tyre stack, block tower, skittles.
+  Built for `toy/box-stack`: the car touching the bottom row knocks every box; each box rebuilds once the boxes
+  under it are home and the kid's car is 5 m away.
+- **Collect**: the kid's car drives through it and takes it; it spins off and comes back 10 s later, once the car
+  is 6 m away. Traffic passes through. A star.
 - **Chain**: one knocked piece knocks the next. A row of dominoes.
 - **Burst and rebuild**: breaks into bits (a puff of leaves, straw, sand) and grows back in place. Sandcastle,
   leaf pile, hay pile.
@@ -139,6 +149,8 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 | `toy/crate` | built | all | tumble |
 | `toy/beach-ball` | built | island | roll |
 | `toy/hay-bale` | built | country | tumble (roll later: it should roll about its own axis, unlike a ball) |
+| `toy/box-stack` | built (2026-11-15, ADR 0041) | island, building site | topple; a target: six toy boxes in a pyramid, each its own colour, 996 triangles a box; confetti and a silly boing (stand-in) |
+| `toy/star` | built (2026-11-15, ADR 0041) | island, building site | collect; a target: a gold star floating over the road in rows, 116 triangles; confetti and a twinkle (stand-in) |
 | `toy/barrel` | idea | all | roll |
 | `toy/tyre-stack` | idea | town | topple |
 | `toy/block-tower` | idea | all | topple (plain colours, no letters) |
@@ -270,6 +282,7 @@ sails); see Border cases.
 | `fx/puff` | built | dust, toys landing |
 | `fx/drop` | built | splashes, spray |
 | `fx/ripple` | built | wake |
+| `fx/confetti` | built (2026-11-15, ADR 0041) | targets: 40 paper pieces a burst, a pool of 120, one batch |
 | `fx/bubble` | planned | car wash |
 | `fx/leaf` / `fx/straw` / `fx/sand` | idea | burst-and-rebuild toys |
 | `fx/mud` | idea | mud splatter |

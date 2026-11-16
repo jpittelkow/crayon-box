@@ -351,6 +351,8 @@ class DrivingGame {
       while (owed >= STEP) {
         step(world, input, STEP);
         for (const toy of world.knocks) sound.bump(TOYS[toy].bump);
+        // Targets (ADR 0041): a stack knocked over or a star taken, with its own celebration.
+        for (const got of world.cheers) sound.target(TOYS[got.toy].target);
         for (const depth of world.splashes) sound.splash(depth === 2);
         // Animals answering the horn (milestone-3 B3).
         for (const kind of world.calls) sound.call(kind);

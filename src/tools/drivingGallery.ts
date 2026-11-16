@@ -9,11 +9,11 @@ import { buildVehicle } from '../games/racing/look/vehicles';
 import { createRenderer } from '../games/racing/render';
 import { CATEGORIES } from '../games/racing/sim/assets';
 import { SCENERY_IDS } from '../games/racing/sim/assets/scenery';
-import { TOYS, TOY_IDS } from '../games/racing/sim/assets/toys';
+import { STACK_ROWS, STAR_HEIGHT, TOYS, TOY_IDS } from '../games/racing/sim/assets/toys';
 import { roundOutline } from '../games/racing/sim/land';
 import type { MapDef } from '../games/racing/sim/map';
 import { smoothPath } from '../games/racing/sim/roads';
-import { DROP_LIFE, makeWorld, type VehicleKind } from '../games/racing/sim/sim';
+import { CONFETTI_LIFE, DROP_LIFE, makeWorld, type Prop, type VehicleKind } from '../games/racing/sim/sim';
 import type { View } from '../games/racing/sim/view';
 
 /** Rows, front to back; the camera looks at them from +z. */
@@ -61,14 +61,26 @@ world.cars = kinds.map((kind, i) => ({ ...proto, kind, x: vx(i), z: ROW.vehicles
 if (!showRow('vehicles')) world.cars = [{ ...world.cars[0]!, z: 200 }];
 kinds.forEach((kind, i) => labels.push({ id: `vehicle/${kind}`, note: `${triangles(buildVehicle(kind, 0xff0000).group).toLocaleString()} tris`, x: vx(i), y: 4.2, z: ROW.vehicles, row: 'vehicles' }));
 
-// Toys, standing at home.
-const tx = spaced(TOY_IDS.length, 3.4);
-world.props = TOY_IDS.map((toy, i) => ({
-  toy, homeX: tx(i), homeZ: ROW.toys, homeYaw: 0.5, x: tx(i), y: TOYS[toy].half, z: ROW.toys, vx: 0, vy: 0, vz: 0,
-  qx: 0, qy: Math.sin(0.25), qz: 0, qw: Math.cos(0.25), wx: 0, wy: 0, wz: 0, scale: 1, state: 0, timer: 0, cool: 0,
-}));
+// Toys, standing at home: a stack as its whole pyramid of boxes (ADR 0041), a star floating at its height.
+const tx = spaced(TOY_IDS.length, 3.8);
+const standing = (toy: (typeof TOY_IDS)[number], x: number, y: number, extra: Partial<Prop> = {}): Prop => ({
+  toy, homeX: x, homeZ: ROW.toys, homeY: y, homeYaw: 0.5, stack: -1, level: 0, slot: 0, x, y, z: ROW.toys, vx: 0, vy: 0, vz: 0,
+  qx: 0, qy: Math.sin(0.25), qz: 0, qw: Math.cos(0.25), wx: 0, wy: 0, wz: 0, scale: 1, state: 0, timer: 0, cool: 0, ...extra,
+});
+world.props = TOY_IDS.flatMap((toy, i) => {
+  if (toy === 'toy/star') return [standing(toy, tx(i), STAR_HEIGHT)];
+  if (toy !== 'toy/box-stack') return [standing(toy, tx(i), TOYS[toy].half)];
+  // Across the camera's view, so every box shows.
+  const half = TOYS[toy].half;
+  let slot = 0;
+  return STACK_ROWS.flatMap((n, level) => Array.from({ length: n }, (_, j) => standing(toy, tx(i) + (j - (n - 1) / 2) * (half * 2 + 0.04),
+    half + level * half * 2, { homeYaw: 0, qy: 0, qw: 1, stack: 0, level, slot: slot++ })));
+});
 if (!showRow('toys')) world.props = [];
-TOY_IDS.forEach((toy, i) => labels.push({ id: toy, note: `${triangles(TOY_LOOKS[toy]())} tris · ${TOYS[toy].behaviour}`, x: tx(i), y: 1.9, z: ROW.toys, row: 'toys' }));
+TOY_IDS.forEach((toy, i) => labels.push({
+  id: toy, note: `${triangles(TOY_LOOKS[toy]())} tris${toy === 'toy/box-stack' ? ' a box' : ''} · ${TOYS[toy].behaviour}`,
+  x: tx(i), y: toy === 'toy/box-stack' ? 2.8 : toy === 'toy/star' ? 2.4 : 1.9, z: ROW.toys, row: 'toys',
+}));
 
 // Solid scenery, then decor (drawn by the map as bushes beside the road; labelled where the first one is).
 const sx = spaced(SCENERY_IDS.length, 7);
@@ -81,13 +93,19 @@ labels.push({ id: 'decor/bush', note: `${bushTris} tris a piece · scattered on 
 // Effects, frozen mid-splash: a ring of drops, a puff and a ripple.
 if (showRow('effects')) world.drops.slice(0, 14).forEach((d, i) => {
   const a = (i / 14) * Math.PI * 2;
-  Object.assign(d, { x: -6 + Math.sin(a) * 1.4, y: 0.8 + (i % 3) * 0.35, z: ROW.effects + Math.cos(a) * 1.4, life: DROP_LIFE * 0.8 });
+  Object.assign(d, { x: -9 + Math.sin(a) * 1.4, y: 0.8 + (i % 3) * 0.35, z: ROW.effects + Math.cos(a) * 1.4, life: DROP_LIFE * 0.8 });
 });
-if (showRow('effects')) world.puffs.slice(0, 3).forEach((p, i) => Object.assign(p, { x: 0 + i * 0.5, y: 0.6 + i * 0.3, z: ROW.effects, life: 0.4 }));
-if (showRow('effects')) Object.assign(world.ripples[0]!, { x: 6, z: ROW.effects, life: 0.6, size: 1.6 });
-labels.push({ id: 'fx/drop', note: 'splash and spray', x: -6, y: 2.4, z: ROW.effects, row: 'effects' });
-labels.push({ id: 'fx/puff', note: 'dust', x: 0.5, y: 2.2, z: ROW.effects, row: 'effects' });
-labels.push({ id: 'fx/ripple', note: 'wake', x: 6, y: 1.2, z: ROW.effects, row: 'effects' });
+if (showRow('effects')) world.puffs.slice(0, 3).forEach((p, i) => Object.assign(p, { x: -3 + i * 0.5, y: 0.6 + i * 0.3, z: ROW.effects, life: 0.4 }));
+if (showRow('effects')) Object.assign(world.ripples[0]!, { x: 3, z: ROW.effects, life: 0.6, size: 1.6 });
+labels.push({ id: 'fx/drop', note: 'splash and spray', x: -9, y: 2.4, z: ROW.effects, row: 'effects' });
+labels.push({ id: 'fx/puff', note: 'dust', x: -2.5, y: 2.2, z: ROW.effects, row: 'effects' });
+labels.push({ id: 'fx/ripple', note: 'wake', x: 3, y: 1.2, z: ROW.effects, row: 'effects' });
+// Confetti (ADR 0041), frozen mid-burst: pieces spread in a loose ball, each turned its own way.
+if (showRow('effects')) world.confetti.slice(0, 40).forEach((c, i) => {
+  const a = i * 2.4, r = 0.4 + (i % 5) * 0.25;
+  Object.assign(c, { x: 9 + Math.sin(a) * r, y: 1.2 + ((i * 7) % 10) * 0.12, z: ROW.effects + Math.cos(a) * r, life: CONFETTI_LIFE * 0.6, turn: 6, phase: i * 0.9 });
+});
+labels.push({ id: 'fx/confetti', note: 'targets', x: 9, y: 2.8, z: ROW.effects, row: 'effects' });
 
 // The overview labels each row once; a close-up labels every asset in its row.
 const ROW_NAMES: Record<RowName, string> = { vehicles: 'Vehicles', toys: 'Toys', scenery: 'Solid scenery and decor', effects: 'Effects' };
@@ -142,7 +160,7 @@ const tags = shown.map((l) => {
 
 const renderer = createRenderer(canvas, world, '#3a86ff');
 const view: View = only && only in ROW
-  ? { eye: [0, 6, ROW[only] + ({ vehicles: 30, toys: 10, scenery: 18, effects: 12 } as const)[only]], target: [0, 1.2, ROW[only]] }
+  ? { eye: [0, 6, ROW[only] + ({ vehicles: 30, toys: 14, scenery: 18, effects: 14 } as const)[only]], target: [0, 1.2, ROW[only]] }
   : { eye: [4, 24, 40], target: [4, 0, -2] };
 const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 900);
 

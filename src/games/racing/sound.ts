@@ -5,7 +5,7 @@
 // bubbles at the car wash; the tunnel's echo and the sand's hiss are made by the app.
 import { soundUrl } from '../../shell/soundFiles';
 import type { AnimalCall } from './sim/assets/animals';
-import type { BumpSound } from './sim/assets/toys';
+import type { BumpSound, TargetSound } from './sim/assets/toys';
 import { MAX_SPEED, type Input, type VehicleKind, type World } from './sim/sim';
 
 /** How a kind of vehicle's engine sounds. A new vehicle gets a new entry (and a loop in assets/sounds/drive/). */
@@ -55,7 +55,19 @@ export const EFFECTS = {
   brake: 'drive/brake.wav',
   // Stand-in for the car wash's bubbles until a take of its own (milestone-3 B6): the app's soft pop.
   pop: 'ui/fill.wav',
+  // Stand-in for a star's twinkle (ADR 0041) until a take of its own: the app's bell.
+  bell: 'ui/cheer.wav',
 } as const;
+
+/**
+ * The targets' celebrations (ADR 0041), stand-ins from shipped files until takes of their own. Silly (a stack
+ * knocked over): the boing with its pitch sliding up, `from` to `to`, then a pop. Twinkle (a star): the bell, high,
+ * then quick pops climbing in pitch.
+ */
+export const TARGET_SOUNDS = {
+  silly: { file: EFFECTS.boing, from: 0.7, to: 1.9, slide: 0.35, volume: 0.8, pops: [{ at: 0.1, rate: 1.2 }] },
+  twinkle: { file: EFFECTS.bell, from: 1.5, to: 1.5, slide: 0, volume: 0.5, pops: [{ at: 0.08, rate: 1.6 }, { at: 0.16, rate: 2.1 }] },
+} as const satisfies Record<TargetSound, { file: string; from: number; to: number; slide: number; volume: number; pops: readonly { at: number; rate: number }[] }>;
 
 /** How far apart the bridge's planks are, for their knocks under the wheels. */
 const PLANK_M = 1.6;
@@ -357,6 +369,19 @@ export class DrivingSound {
     this.lastBump = ctx.currentTime;
     if (kind === 'boing') this.effect(EFFECTS.boing, 0.8);
     else this.effect(EFFECTS.bump, BUMP[kind].volume, BUMP[kind].rate);
+  }
+
+  /** A target the kid's car got (ADR 0041): a stack's silly boing, or a star's twinkle. */
+  target(kind: TargetSound): void {
+    const ctx = this.running();
+    if (!ctx) return;
+    const t = TARGET_SOUNDS[kind];
+    const src = this.effect(t.file, t.volume, t.from);
+    if (src && t.slide > 0) {
+      src.playbackRate.setValueAtTime(t.from, ctx.currentTime);
+      src.playbackRate.linearRampToValueAtTime(t.to, ctx.currentTime + t.slide);
+    }
+    for (const pop of t.pops) this.effect(EFFECTS.pop, 0.45, pop.rate, pop.at);
   }
 
   /** An animal answering the horn; each a little different, so a herd doesn't sound like one. */

@@ -4,7 +4,7 @@
 // (sim/map.ts, maps/), so another map is another file.
 import { ISLAND } from '../maps/island';
 import { SCENERY, type SceneryId } from './assets/scenery';
-import { TOYS, type ToyId } from './assets/toys';
+import { STACK_CLEAR, STACK_ROWS, STAR_BACK, STAR_CLEAR, STAR_HEIGHT, TOYS, type TargetId, type ToyId } from './assets/toys';
 import { makeAnimals, stepAnimals, type Animal } from './animals';
 import type { AnimalCall } from './assets/animals';
 import { buildGuards, buildSand, guardAt, hillReach, onSand, type Guard } from './ground';
@@ -45,6 +45,8 @@ export const SAND_SPEED = 11;
 
 
 const HOME = 0, FLYING = 1, AWAY = 2, SHRINK = 3, GROW = 4;
+/** A toy's states (`Prop.state`), for tests: at home, flying, lying where it landed, shrinking away, growing back. */
+export const TOY_STATE = { HOME, FLYING, AWAY, SHRINK, GROW } as const;
 
 /** How much the car helps: the kid steers freely, or the car follows the road and a touch only makes it go. */
 export type Assist = 'free' | 'road';
@@ -141,7 +143,13 @@ export interface Tree { kind: SceneryId; x: number; z: number; scale: number }
 /** A toy on the map (driving-assets.md, category 2), knocked about and always coming back. */
 export interface Prop {
   toy: ToyId;
-  homeX: number; homeZ: number; homeYaw: number;
+  /** Home: where it stands (its middle's height too: a star floats, a box can sit on others) and the way it faces. */
+  homeX: number; homeZ: number; homeY: number; homeYaw: number;
+  /**
+   * A box of a stack (ADR 0041): which stack (an index into `World.stacks`, -1 for any other toy), its row from the
+   * bottom, and its place in the stack (the renderer gives each place its own colour).
+   */
+  stack: number; level: number; slot: number;
   x: number; y: number; z: number;
   vx: number; vy: number; vz: number;
   qx: number; qy: number; qz: number; qw: number;
@@ -150,6 +158,16 @@ export interface Prop {
 }
 
 export interface Puff { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number }
+
+/** A piece of confetti (ADR 0041, `fx/confetti`): its colour (an index), and how fast and from where it turns. */
+export interface Confetti extends Puff { hue: number; turn: number; phase: number }
+
+/** Seconds a piece of confetti lasts; pieces in a burst; pieces in the pool (three bursts at once). */
+export const CONFETTI_LIFE = 1.8;
+export const CONFETTI_BURST = 40;
+export const CONFETTI_POOL = 120;
+/** How many colours confetti comes in (the renderer's crayon colours). */
+export const CONFETTI_HUES = 8;
 
 /** A round patch of water: a shallow puddle, or the deep flood across the road. */
 /** A round patch of water: a shallow puddle, or the deep flood across the road; muddy on a building site. */
@@ -166,6 +184,11 @@ export interface World {
   map: MapDef;
   roads: Road[];
   rng: number;
+  /**
+   * A second stream for what no car feels (confetti, and how a stack's boxes fly: toys never move a car), so the
+   * targets (ADR 0041) never change what traffic does next.
+   */
+  fxRng: number;
   time: number;
   /** cars[0] is the kid's car; the rest are traffic. */
   cars: Car[];
@@ -187,6 +210,13 @@ export interface World {
   camHeading: number;
   /** Kinds of the props the kid's car knocked in the last step, for the sounds. */
   knocks: ToyId[];
+  /** Targets the kid's car toppled or collected in the last step (ADR 0041), for the sounds. */
+  cheers: { toy: TargetId; x: number; z: number }[];
+  /** Each stack of boxes: the indices of its boxes in `props`. */
+  stacks: number[][];
+  /** Confetti from targets (ADR 0041), pooled like the puffs. */
+  confetti: Confetti[];
+  confettiNext: number;
   assist: Assist;
   /** Seconds left of being steered back to the road after getting nowhere. */
   rescue: number;
@@ -220,8 +250,12 @@ export interface World {
    * car is far from that road.
    */
   follow: { road: number; dir: 1 | -1 } | null;
-  /** At the next junction, does "follows the road" take the other road? It takes turns, so both get driven. */
-  turnNext: boolean;
+  /**
+   * The junctions where "follows the road" took the other road last time (by junction). Each junction takes turns
+   * on its own, so every road gets driven: one turn shared by all of them locked into the same choice at every
+   * junction when a lap met two of them (found 2026-11-15, the island never drove its tunnel without a bump).
+   */
+  turned: Record<string, boolean>;
   /** The junction "follows the road" has already decided about, until it is behind the car ('' for none). */
   followAt: string;
   /** How sharply "follows the road" wants to turn (radians off the way ahead), to slow for a bend. */
@@ -247,6 +281,16 @@ function rand(w: World): number {
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+/** A number from the looks-only stream (`fxRng`). */
+function fxRand(w: World): number {
+  const keep = w.rng;
+  w.rng = w.fxRng;
+  const r = rand(w);
+  w.fxRng = w.rng;
+  w.rng = keep;
+  return r;
 }
 
 const wrap = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
@@ -280,8 +324,9 @@ export function makeWorld(
   const w: World = {
     map, roads, land: buildLand(map.land), zones: [], zone: -1, zoneEvents: [], landings: [], bubbles: [], bubbleNext: 0,
     junctions: buildJunctions(roads), guards: buildGuards(map.guards, roads), sand: buildSand(map.sand),
-    follow: null, turnNext: true, followAt: '', followTurn: 0, under: { sand: false, bridge: false, tunnel: false }, animals: [], honked: false, calls: [], pool: [...(pool ?? [kidKind])],
-    rng: seed | 0, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
+    follow: null, turned: {}, followAt: '', followTurn: 0, under: { sand: false, bridge: false, tunnel: false }, animals: [], honked: false, calls: [], pool: [...(pool ?? [kidKind])],
+    rng: seed | 0, fxRng: (seed | 0) ^ 0x5bd1e995, time: 0, cars: [], trees: [], props: [], puffs: [], puffNext: 0, camHeading: 0, knocks: [],
+    cheers: [], stacks: [], confetti: [], confettiNext: 0,
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
   };
@@ -350,6 +395,17 @@ export function makeWorld(
     w.trees.push({ kind: pick(trees.kinds), x, z, scale: trees.scale[0] + rand(w) * trees.scale[1] });
   }
 
+  // Targets (ADR 0041) at their fixed spots on the roads; a row is several, `gap` metres apart along the road.
+  const targets: { id: TargetId; x: number; z: number; heading: number }[] = [];
+  for (const t of map.targets ?? []) {
+    for (let k = 0; k < (t.count ?? 1); k++) {
+      const p = pointAt(roads[t.on.road]!, along(w, t.on) + k * (t.gap ?? 4), t.on.offset ?? 0);
+      targets.push({ id: t.id, x: p.x, z: p.z, heading: p.heading });
+    }
+  }
+  const nearTarget = (x: number, z: number) =>
+    targets.some((t) => Math.hypot(x - t.x, z - t.z) < (t.id === 'toy/box-stack' ? TARGET_GAP + 1.2 : TARGET_GAP));
+
   const props = map.props;
   let tries = 0;
   while (w.props.length < propCount && tries++ < propCount * 20) {
@@ -367,21 +423,51 @@ export function makeWorld(
     if (w.trees.some((t) => Math.hypot(x - t.x, z - t.z) < 1.6 * t.scale)) continue;
     if (waterAt(w, x, z) === 2) continue;
     if (w.zones.some((zone) => Math.hypot(x - zone.x, z - zone.z) < zone.r + 1)) continue;
+    if (nearTarget(x, z)) continue;
     // Not inside a hill (unless on its tunnel's road), and not out over the water on a bridge.
     if (onHill(x, z, 1) && !guardAt(w.guards, roads, x, z)) continue;
     if (guardAt(w.guards, roads, x, z)?.guard.kind === 'bridge') continue;
-    w.props.push({
-      toy, homeX: x, homeZ: z, homeYaw: yaw, x, y: TOYS[toy].half, z, vx: 0, vy: 0, vz: 0,
-      qx: 0, qy: Math.sin(yaw / 2), qz: 0, qw: Math.cos(yaw / 2), wx: 0, wy: 0, wz: 0,
-      scale: 1, state: HOME, timer: 0, cool: 0,
+    w.props.push(toyAt(toy, x, TOYS[toy].half, z, yaw));
+  }
+  // The targets go after the scattered toys, so `propCount` counts only those.
+  for (const t of targets) {
+    if (t.id === 'toy/star') {
+      w.props.push(toyAt(t.id, t.x, STAR_HEIGHT, t.z, t.heading));
+      continue;
+    }
+    // A stack: a pyramid of boxes along the road, each row sitting on the one below.
+    const half = TOYS[t.id].half, size = half * 2, fx = Math.sin(t.heading), fz = Math.cos(t.heading);
+    const boxes: number[] = [];
+    STACK_ROWS.forEach((n, level) => {
+      for (let j = 0; j < n; j++) {
+        const a = (j - (n - 1) / 2) * (size + 0.04);
+        boxes.push(w.props.length);
+        w.props.push({ ...toyAt(t.id, t.x + fx * a, half + level * size, t.z + fz * a, t.heading), stack: w.stacks.length, level, slot: boxes.length - 1 });
+      }
     });
+    w.stacks.push(boxes);
   }
   w.animals = makeAnimals(map.animals, () => rand(w));
   for (let i = 0; i < 60; i++) w.bubbles.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 48; i++) w.puffs.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 160; i++) w.drops.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 40; i++) w.ripples.push({ x: 0, z: 0, life: 0, size: 1 });
+  for (let i = 0; i < CONFETTI_POOL; i++) {
+    w.confetti.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0, hue: i % CONFETTI_HUES, turn: 0, phase: 0 });
+  }
   return w;
+}
+
+/** Scattered toys keep this far from a target's spot (a stack's a little further, it is wider), in metres. */
+const TARGET_GAP = 2.5;
+
+/** A toy standing at home, its middle at height `y`, facing `yaw`. */
+function toyAt(toy: ToyId, x: number, y: number, z: number, yaw: number): Prop {
+  return {
+    toy, homeX: x, homeZ: z, homeY: y, homeYaw: yaw, stack: -1, level: 0, slot: 0, x, y, z, vx: 0, vy: 0, vz: 0,
+    qx: 0, qy: Math.sin(yaw / 2), qz: 0, qw: Math.cos(yaw / 2), wx: 0, wy: 0, wz: 0,
+    scale: 1, state: HOME, timer: 0, cool: 0,
+  };
 }
 
 /** 0 for dry land, 1 in a puddle, 2 in the flood. */
@@ -414,13 +500,13 @@ export function roadSteer(w: World): number {
   let spot = nearestOn(road, f.road, car.x, car.z);
   const key = (on: number, s: number) => `${on}:${s.toFixed(1)}`;
   // A junction just ahead (milestone-3 B4): decide once, before reaching it, so the car can start the turn in
-  // time. Every other time it takes the other road, so both get driven.
+  // time. At each junction, every other time it takes the other road (the first time it does), so both get driven.
   const coming = w.junctions[f.road]!.find((j) => passes(road, spot.s, JUNCTION_AHEAD, f!.dir, j.s));
   if (!coming) w.followAt = '';
   else if (w.followAt !== key(f.road, coming.s)) {
-    w.followAt = key(f.road, coming.s);
-    w.turnNext = !w.turnNext;
-    if (!w.turnNext) {
+    const at = w.followAt = key(f.road, coming.s);
+    const turn = w.turned[at] = !w.turned[at];
+    if (turn) {
       f = w.follow = { road: coming.road, dir: coming.dir };
       road = w.roads[f.road]!;
       spot = nearestOn(road, f.road, car.x, car.z);
@@ -798,19 +884,123 @@ function stepWater(w: World, dt: number): void {
   for (const r of w.ripples) if (r.life > 0) r.life -= dt;
 }
 
+/** A burst of confetti (ADR 0041) thrown up from a spot, every piece its own way, turning as it flutters down. */
+function confetti(w: World, x: number, y: number, z: number): void {
+  for (let i = 0; i < CONFETTI_BURST; i++) {
+    const c = w.confetti[w.confettiNext]!;
+    w.confettiNext = (w.confettiNext + 1) % w.confetti.length;
+    const a = fxRand(w) * Math.PI * 2, out = 1.5 + fxRand(w) * 3.5;
+    c.x = x; c.y = y; c.z = z;
+    c.vx = Math.sin(a) * out; c.vy = 5 + fxRand(w) * 4; c.vz = Math.cos(a) * out;
+    c.life = CONFETTI_LIFE * (0.75 + fxRand(w) * 0.25);
+    c.turn = 4 + fxRand(w) * 8; c.phase = fxRand(w) * Math.PI * 2;
+  }
+}
+
+/** Confetti falls slowly, held back by the air, drifting from side to side, and lies on the ground at the end. */
+function stepConfetti(w: World, dt: number): void {
+  const drag = Math.max(0, 1 - 2.6 * dt);
+  for (const c of w.confetti) {
+    if (c.life <= 0) continue;
+    c.life -= dt;
+    c.vy -= 9 * dt;
+    c.vx *= drag; c.vy *= drag; c.vz *= drag;
+    c.x += c.vx * dt + Math.sin(w.time * 7 + c.phase) * 0.8 * dt;
+    c.y += c.vy * dt;
+    c.z += c.vz * dt + Math.cos(w.time * 6 + c.phase) * 0.8 * dt;
+    if (c.y < 0.03) { c.y = 0.03; c.vx = c.vy = c.vz = 0; }
+  }
+}
+
+/** Whether a car's body (its middle, front to back: bodyPoints) is within `reach` of a point on the ground. */
+function touches(car: Car, x: number, z: number, reach: number): boolean {
+  return bodyPoints(car).some(([bx, bz]) => (x - bx) ** 2 + (z - bz) ** 2 <= reach * reach);
+}
+
+/**
+ * A star (ADR 0041): it floats at home, turning and bobbing. The kid's car drives through it and takes it (traffic
+ * never does): confetti and a twinkle, and it spins off up and away. It comes back once the kid's car has gone.
+ */
+function stepStar(w: World, p: Prop, dt: number): void {
+  const kid = w.cars[0]!;
+  const { half } = TOYS[p.toy];
+  const turnTo = (yaw: number) => { p.qx = 0; p.qy = Math.sin(yaw / 2); p.qz = 0; p.qw = Math.cos(yaw / 2); };
+  if (p.state === HOME || p.state === GROW) {
+    if (p.state === GROW && (p.scale += dt / 0.35) >= 1) { p.scale = 1; p.state = HOME; }
+    p.y = p.homeY + Math.sin(w.time * 2.2 + p.homeYaw) * 0.12;
+    turnTo(p.homeYaw + w.time * 1.6);
+    if (p.state === HOME && touches(kid, p.x, p.z, VEHICLE_SIZE[kid.kind].side + half + 0.5)) {
+      p.state = FLYING; p.timer = 0; p.vy = 3; p.wy = p.homeYaw + w.time * 1.6;
+      w.cheers.push({ toy: p.toy as TargetId, x: p.x, z: p.z });
+      confetti(w, p.x, p.y, p.z);
+    }
+  } else if (p.state === FLYING) {
+    // Spinning off: up, faster and faster round, shrinking away.
+    p.timer += dt;
+    p.y += p.vy * dt;
+    p.wy += (8 + p.timer * 30) * dt;
+    turnTo(p.wy);
+    p.scale = Math.max(0, 1 - p.timer / 0.8);
+    if (p.scale === 0) { p.state = AWAY; p.timer = 0; p.x = p.homeX; p.z = p.homeZ; p.y = p.homeY; }
+  } else if (p.state === AWAY && (p.timer += dt) > STAR_BACK && Math.hypot(kid.x - p.homeX, kid.z - p.homeZ) > STAR_CLEAR) {
+    p.state = GROW; p.scale = 0;
+  }
+}
+
+/** Whether a stack's box may grow back (ADR 0041): the boxes under it are home and the kid's car isn't near. */
+function stackReady(w: World, p: Prop): boolean {
+  const kid = w.cars[0]!;
+  if (Math.hypot(kid.x - p.homeX, kid.z - p.homeZ) < STACK_CLEAR) return false;
+  return w.stacks[p.stack]!.every((i) => {
+    const b = w.props[i]!;
+    return b.level >= p.level || (b.state === HOME && b.scale === 1);
+  });
+}
+
+/**
+ * A car knocked a stack (ADR 0041): every box that is standing flies off the way the car was going, the higher
+ * ones further, tumbling. The kid's car gets confetti and the silly noise; traffic only knocks it over.
+ */
+function topple(w: World, stack: number, car: Car, kid: boolean): void {
+  const fx = Math.sin(car.heading), fz = Math.cos(car.heading), v = Math.abs(car.speed), push = VEHICLE_FEEL[car.kind].push;
+  let top: Prop | null = null;
+  for (const i of w.stacks[stack]!) {
+    const b = w.props[i]!;
+    if (b.state !== HOME && b.state !== GROW) continue;
+    b.scale = 1;
+    const k = 0.5 + 0.2 * b.level;
+    b.vx = fx * car.speed * k * push + (fxRand(w) - 0.5) * 3;
+    b.vz = fz * car.speed * k * push + (fxRand(w) - 0.5) * 3;
+    b.vy = 2.5 + b.level * 1.6 + fxRand(w) * 1.5;
+    b.wx = (fxRand(w) - 0.5) * (4 + v); b.wy = (fxRand(w) - 0.5) * (4 + v); b.wz = (fxRand(w) - 0.5) * (4 + v);
+    b.state = FLYING; b.cool = 0.3; b.timer = 0;
+    if (!top || b.level > top.level) top = b;
+  }
+  if (!top) return;
+  if (!kid) return;
+  w.cheers.push({ toy: top.toy as TargetId, x: top.x, z: top.z });
+  confetti(w, top.x, top.y + 0.5, top.z);
+}
+
 function stepProps(w: World, dt: number): void {
   for (const p of w.props) {
     const { half, behaviour } = TOYS[p.toy];
+    if (behaviour === 'collect') {
+      stepStar(w, p, dt);
+      continue;
+    }
     const rolls = behaviour === 'roll';
     if (p.cool > 0) p.cool -= dt;
 
     if (p.state === SHRINK) {
       p.scale -= dt / 0.25;
       if (p.scale <= 0) {
-        p.scale = 0; p.state = GROW;
-        p.x = p.homeX; p.z = p.homeZ; p.y = half;
+        p.scale = 0;
+        p.x = p.homeX; p.z = p.homeZ; p.y = p.homeY;
         p.qx = 0; p.qy = Math.sin(p.homeYaw / 2); p.qz = 0; p.qw = Math.cos(p.homeYaw / 2);
         p.vx = p.vy = p.vz = p.wx = p.wy = p.wz = 0;
+        // A stack rebuilds bottom first, and not round the kid's car; until then the box waits at home, unseen.
+        if (p.stack < 0 || stackReady(w, p)) p.state = GROW;
       }
       continue;
     }
@@ -820,7 +1010,9 @@ function stepProps(w: World, dt: number): void {
       continue;
     }
 
-    if (p.cool <= 0 && p.y < 1.8) {
+    // A standing stack is knocked by its bottom row; the boxes above go with it.
+    const standing = p.stack >= 0 && p.state === HOME;
+    if (p.cool <= 0 && p.y < 1.8 && !(standing && p.level > 0)) {
       for (let i = 0; i < w.cars.length; i++) {
         const car = w.cars[i]!;
         // Backing up knocks toys too (ADR 0036): `v` is the speed either way, `car.speed` keeps the direction.
@@ -835,6 +1027,10 @@ function stepProps(w: World, dt: number): void {
           if (dx * dx + dz * dz <= reach * reach) { hit = true; break; }
         }
         if (!hit) continue;
+        if (standing) {
+          topple(w, p.stack, car, i === 0);
+          break;
+        }
         const len = Math.hypot(dx, dz) || 1;
         // A heavier vehicle knocks it further (ADR 0035).
         const push = VEHICLE_FEEL[car.kind].push;
@@ -997,6 +1193,7 @@ export function honk(w: World): void {
 export function step(w: World, input: Input, dt: number): void {
   w.time += dt;
   w.knocks.length = 0;
+  w.cheers.length = 0;
   w.splashes.length = 0;
   w.zoneEvents.length = 0;
   w.landings.length = 0;
@@ -1010,6 +1207,7 @@ export function step(w: World, input: Input, dt: number): void {
   w.honked = false;
   stepWater(w, dt);
   stepProps(w, dt);
+  stepConfetti(w, dt);
   for (const p of w.puffs) {
     if (p.life <= 0) continue;
     p.life -= dt;

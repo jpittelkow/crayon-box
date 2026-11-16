@@ -22,7 +22,8 @@ each one is proven by building it.
 4. **Road pieces:** `guards` for bridges and tunnels (fractions along a road), `hills` (a tunnel goes through one),
    `sand`, `water` (pools, the flood, puddles along roads, `mud`).
 5. **Set pieces:** `zones` (ramps, car wash, the **garage**, which every map needs). Keep zones apart.
-6. **Filling:** `trees`, `props` (toys by share, some near the roads), `decor` clumps, `animals` herds, `boats`.
+6. **Filling:** `trees`, `props` (toys by share, some near the roads), `targets` (rows of stars on the roads,
+   stacks of boxes just off them, ADR 0041), `decor` clumps, `animals` herds, `boats`.
 7. **Traffic and the start:** `spawn` on a road, `traffic` (kind, place, cruise speed), `trafficPrefer` for the
    map's own vehicles.
 8. **Sounds of the map** ([sounds.md](sounds.md)): what is underfoot sounds already (sand hiss, bridge planks,
