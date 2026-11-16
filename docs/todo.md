@@ -8,8 +8,9 @@ New maps come last on purpose: first every piece a map is made from (vehicles, t
 editor, loading a map from a folder), then the maps themselves.
 
 ## 1. Finish what is in flight
-- **Release 0.9.0** when there is enough to ship: the Outside theme (PR #48) is on `main` and in no release yet.
-  (0.8.0, released 2026-11-15, finished milestone 3.)
+- **Release 0.9.0** when there is enough to ship. Nothing a kid can see is waiting: 0.8.1 (released 2026-11-15)
+  carried the Outside theme. It also ships the new narrator clips for letters and coloring, which nothing plays
+  until parts 2 and 5 below are built. (0.8.0, released 2026-11-15, finished milestone 3.)
 
 ## 2. Coloring: finish milestone 1
 - **Planned 2026-11-15:** [coloring-buttons-plan.md](coloring-buttons-plan.md), with research, and
