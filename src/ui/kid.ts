@@ -45,9 +45,10 @@ export function kidButton(opts: KidButtonOptions): HTMLButtonElement {
 /**
  * Fires `handler` as soon as a finger touches `el` (ADR 0038, superseding ADR 0003 rule 2 for pick buttons: kids
  * hold the finger down until something happens). Only the first finger on a button counts; the button looks
- * pressed until it lifts.
+ * pressed until it lifts. `el` may be an SVG shape too (the colour wheel's segments), which takes the same events.
  */
-export function onPress(el: HTMLElement, handler: () => void): void {
+export function onPress(target: HTMLElement | SVGElement, handler: () => void): void {
+  const el = target as HTMLElement;
   let active: number | null = null;
   const release = (e: PointerEvent) => {
     if (e.pointerId !== active) return;
@@ -113,7 +114,7 @@ export function onTap(el: HTMLElement, handler: () => void): void {
 }
 
 /** Marks one element of a set as picked and the rest as not picked. */
-export function setPicked(elements: Iterable<HTMLElement>, picked: HTMLElement | undefined): void {
+export function setPicked(elements: Iterable<Element>, picked: Element | undefined): void {
   for (const el of elements) {
     const on = el === picked;
     el.classList.toggle('is-picked', on);

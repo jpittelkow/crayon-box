@@ -4,8 +4,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Effect, Sound } from '../../shell/types';
 import { memoryBackend } from '../../storage/idb';
 import { appStorage } from '../../storage/namespaced';
-import { PALETTE } from '../../ui/palette';
-import { ACTION_BUTTONS, MODE_BUTTONS, NAME_DELAY_MS, Narrator, SIZE_BUTTONS, TOOL_BUTTONS, buttonFiles, colorButton } from './buttons';
+import { PALETTE, WHEEL } from '../../ui/palette';
+import {
+  ACTION_BUTTONS,
+  MODE_BUTTONS,
+  NAME_DELAY_MS,
+  Narrator,
+  SIZE_BUTTONS,
+  TOOL_BUTTONS,
+  buttonFiles,
+  colorButton,
+  wheelButton,
+} from './buttons';
 import { NAMED_PICKS, NameCounter, forgetKidNames, loadNamesSetting, saveNamesSetting, saysName } from './names';
 
 const game = () => appStorage(memoryBackend()).game('coloring');
@@ -196,12 +206,19 @@ describe('the buttons', () => {
     ...SIZE_BUTTONS,
     ...Object.values(MODE_BUTTONS),
     ...PALETTE.map((c) => colorButton(c.token)),
+    ...WHEEL.map((c) => wheelButton(c)),
   ];
 
-  it('each have a narrator clip: tools, actions, sizes, modes and all 24 colors', () => {
+  it('each have a narrator clip: tools, actions, sizes, modes, all 24 colors and the 12 on the wheel', () => {
     expect(PALETTE.length).toBe(24);
     for (const b of all) expect(b.clip, b.key).toBeTruthy();
     expect(new Set(all.map((b) => b.key)).size).toBe(all.length);
+  });
+
+  it('a wheel colour says the plain colour word it falls under, on its own count', () => {
+    const magenta = WHEEL.find((c) => c.token === 'magenta')!;
+    expect(wheelButton(magenta).clip).toBe(colorButton('pink').clip);
+    expect(wheelButton(magenta).key).not.toBe(colorButton('pink').key);
   });
 
   it('each have a sound from a shipped file, under 300 ms as played (ADR 0016)', () => {

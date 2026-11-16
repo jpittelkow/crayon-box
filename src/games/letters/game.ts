@@ -2,15 +2,26 @@
 // letter open, and the game, where finishing a letter opens the next one along a path. Sound while tracing (ADR
 // 0037): the letter is said when it opens, a crayon sound plays while a finger moves on the road, a chime marks
 // each finished stroke, and the finished letter gets its name and a word of praise. A kid who is stuck gets the
-// hint ladder (hints.ts): a bigger dot, then a fingertip along the next stroke, then the whole letter shown.
+// hint ladder (hints.ts): a bigger dot, then a fingertip along the next stroke, then the whole letter shown. Before a
+// kid's first letter, and after a while away, the first-time how-to shows an L being traced on this same screen.
 import { demoClip, strokeClip, tipClip } from '../../shell/soundFiles';
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import { playDemo, type Demo } from './demo';
-import { arrowsFor, glyph, pathData, SET_CHARS, setOf, type SetId } from './glyphs';
-import { Hints, isKnown, TICK_MS, type HintAction } from './hints';
+import { arrowsFor, glyph, pathData, SET_CHARS, SHAPES, setOf, type SetId, type StrokeKind } from './glyphs';
 import {
+  Hints,
+  HOWTO_LEAD_MS,
+  HOWTO_LETTER,
+  HOWTO_WATCH_MAX_MS,
+  isKnown,
+  TICK_MS,
+  type HintAction,
+} from './hints';
+import {
+  dayOf,
+  demoDue,
   finishLetter,
   forgetKid,
   gameIndex,
@@ -21,6 +32,7 @@ import {
   loadPrefs,
   loadProgress,
   nextInSet,
+  notePlayed,
   type KidPrefs,
   type KidProgress,
 } from './progress';
@@ -106,12 +118,29 @@ function reducedMotion(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
+/** A letter's or shape's name for screen readers and tests (kids see no text, ADR 0003). */
 function nameOf(ch: string): string {
   const set = setOf(ch);
+  if (set === 'shapes') return SHAPES[ch].label;
   return `${set === 'numbers' ? 'Number' : set === 'small' ? 'Small letter' : 'Letter'} ${ch}`;
 }
 
+/** Each set's tab in practice: its name, and the three it shows. */
+const TABS: Record<SetId, { label: string; show: string }> = {
+  shapes: { label: 'Lines and shapes', show: '○□△' },
+  capitals: { label: 'Capital letters', show: 'ABC' },
+  small: { label: 'Small letters', show: 'abc' },
+  numbers: { label: 'Numbers', show: '123' },
+};
+
 type Mode = 'practice' | 'game';
+
+/** The trace screen as the first-time how-to (ADR 0037): `then` is the letter the kid picked, opened after it. */
+interface HowTo {
+  then?: string;
+}
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** A finger's or pen's line on the letter; `last` and `at` are where and when it last moved, for the drawing sound. */
 interface Line {
@@ -128,6 +157,10 @@ class LettersGame {
   private voice!: LetterVoice;
   /** The set shown in practice; kept while the game is open. */
   private practiceSet: SetId = 'capitals';
+  /** The first-time how-to plays before the next letter opened (ADR 0037). */
+  private howToDue = false;
+  /** Progress saved when a letter opens; a finish waits for it, so the two never overwrite each other. */
+  private saved: Promise<unknown> = Promise.resolve();
   private readonly cleanups: (() => void)[] = [];
 
   constructor(
@@ -146,6 +179,7 @@ class LettersGame {
     this.progress = progress;
     this.voice = new LetterVoice(storage, settings, this.ctx.sound);
     this.practiceSet = prefs.sets[0];
+    this.howToDue = demoDue(progress, dayOf(new Date()));
     this.showStart();
   }
 
@@ -215,8 +249,8 @@ class LettersGame {
       `<circle cx="190" cy="90" r="44" fill="#ffffff" stroke="${GREEN}" stroke-width="8"/>` +
       `<circle cx="330" cy="166" r="38" fill="#e4e1dc" stroke="${INK}" stroke-width="6"/>` +
       `<g transform="translate(312 146)" stroke="${INK}" stroke-width="5"><rect x="4" y="16" width="28" height="22" rx="5" fill="#ffffff"/><path d="M10 16v-6a8 8 0 0 1 16 0v6"/></g>` +
-      `<g transform="translate(60 226) scale(0.5) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('A').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
-      `<g transform="translate(190 90) scale(0.55) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('B').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
+      `<g transform="translate(60 226) scale(0.5) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('L').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
+      `<g transform="translate(190 90) scale(0.55) translate(-50 -60)" stroke="${INK}" stroke-width="14">${glyph('F').strokes.map((s) => `<path d="${pathData(s)}"/>`).join('')}</g>` +
       `</svg>`;
     row.append(practice, gameTile);
     screen.append(row);
@@ -232,7 +266,7 @@ class LettersGame {
       const buttons = this.prefs.sets.map((set) => {
         const b = kidButton({
           kind: 'choice',
-          label: set === 'capitals' ? 'Capital letters' : set === 'small' ? 'Small letters' : 'Numbers',
+          label: TABS[set].label,
           className: 'letters-tab',
           onTap: () => {
             this.tap();
@@ -241,7 +275,7 @@ class LettersGame {
           },
         });
         b.dataset.set = set;
-        b.innerHTML = [...SET_CHARS[set].slice(set === 'numbers' ? 1 : 0, set === 'numbers' ? 4 : 3)]
+        b.innerHTML = [...TABS[set].show]
           .map((ch) => `<span>${glyphMarkup(ch, 16)}</span>`)
           .join('');
         return b;
@@ -261,7 +295,7 @@ class LettersGame {
         label: nameOf(ch) + (starred ? ', has a star' : ''),
         className: 'letters-tile',
         html: glyphMarkup(ch),
-        onTap: () => this.showTrace(ch, 'practice'),
+        onTap: () => this.open(ch, 'practice'),
       });
       tile.dataset.letter = ch;
       if (starred) tile.append(this.badge('letters-star', STAR));
@@ -309,7 +343,7 @@ class LettersGame {
             this.ctx.sound.play('nothing');
             return;
           }
-          this.showTrace(ch, 'game');
+          this.open(ch, 'game');
         },
       });
       stop.dataset.letter = ch;
@@ -324,15 +358,29 @@ class LettersGame {
 
   // ---- Tracing ----
 
-  private showTrace(ch: string, mode: Mode): void {
+  /** A letter picked from the grid or the path: the first-time how-to comes first when it is due. */
+  private open(ch: string, mode: Mode): void {
+    if (!this.howToDue) {
+      this.showTrace(ch, mode);
+      return;
+    }
+    this.howToDue = false;
+    this.showTrace(HOWTO_LETTER, mode, { then: ch === HOWTO_LETTER ? undefined : ch });
+  }
+
+  private showTrace(ch: string, mode: Mode, howTo?: HowTo): void {
     const back = () => (mode === 'game' ? this.showPath() : this.showPractice());
     const screen = this.screen('letters-trace', back);
     screen.dataset.letter = ch;
     screen.dataset.done = 'false';
     const g = glyph(ch);
     const tracer = new Tracer(g, { ordered: this.prefs.ordered });
-    // The letter is said as it opens, by the parent's setting: its name, its name then its sound, or its sound.
-    void this.voice.say(ch);
+    const { storage, kid } = this.ctx;
+    const today = dayOf(new Date());
+    this.saved = this.saved.then(() => notePlayed(storage, kid.id, today, !!howTo)).catch(() => undefined);
+    // The letter is said as it opens, by the parent's setting: its name, its name then its sound, or its sound. The
+    // how-to says "Watch me." instead.
+    if (!howTo) void this.voice.say(ch);
 
     const card = el('div', 'letters-card');
     const svg = svgEl('svg', { viewBox: VIEW, class: 'letters-svg', role: 'img', 'aria-label': `Trace ${nameOf(ch)}` });
@@ -445,17 +493,10 @@ class LettersGame {
       demo = null;
       delete screen.dataset.showing;
     };
-    /** A fingertip draws `strokes` one after another, with their words when `words`; `then` once it ran to the end. */
-    const show = (strokes: number[], words: boolean, then?: () => void) => {
+    /** A fingertip draws `strokes` one after another, saying their words with `say`; `then` once it ran to the end. */
+    const show = (strokes: number[], say: ((kind: StrokeKind) => void) | undefined, then?: () => void) => {
       stopShow();
-      const d = playDemo({
-        glyph: g,
-        strokes,
-        layer: shows,
-        color: this.kidColor,
-        still: reducedMotion(),
-        say: words ? (kind) => this.voice.tip([strokeClip(kind)]) : undefined,
-      });
+      const d = playDemo({ glyph: g, strokes, layer: shows, color: this.kidColor, still: reducedMotion(), say });
       demo = d;
       // The pressing finger on the first dot steps aside while the fingertip draws.
       screen.dataset.showing = 'true';
@@ -467,6 +508,8 @@ class LettersGame {
       });
     };
     /** What the hints have shown on this letter, in order, for tests: `1 2 3 wiggle left check`. */
+    /** A hint's stroke words, said as tips (the spoken-tips switch silences them). */
+    const hintWords = (words: boolean) => (words ? (kind: StrokeKind) => this.voice.tip([strokeClip(kind)]) : undefined);
     const shown = (what: string) => {
       screen.dataset.hints = `${screen.dataset.hints ?? ''} ${what}`.trim();
     };
@@ -481,13 +524,13 @@ class LettersGame {
           } else if (a.step === 2) {
             // Step 2: the fingertip runs along the next stroke, saying its word.
             delete screen.dataset.nudge;
-            show([tracer.firstUnfinished], a.words);
+            show([tracer.firstUnfinished], hintWords(a.words));
           } else {
             // Step 3: the whole letter, stroke by stroke with its words; then the start dot and "Your turn!".
             delete screen.dataset.nudge;
             show(
               g.strokes.map((_, i) => i),
-              a.words,
+              hintWords(a.words),
               () => {
                 screen.dataset.nudge = 'dot';
                 if (a.words) this.voice.tip([demoClip('your-turn')]);
@@ -509,15 +552,49 @@ class LettersGame {
         }
       }
     };
-    const ticker = setInterval(() => run(hints.tick(performance.now())), TICK_MS);
+    // ---- The first-time how-to (ADR 0037, plan phase D): "Watch me.", the letter drawn with its words, "Your turn!" ----
+    // While it plays the hints wait; they start counting when it ends. A touch ends it at once: the kid's turn.
+    let howToOn = !!howTo;
+    const endHowTo = (how: 'done' | 'stopped') => {
+      if (!howToOn) return;
+      howToOn = false;
+      screen.dataset.howTo = how;
+      hints.touch(performance.now());
+    };
+    if (howTo) {
+      screen.dataset.howTo = 'playing';
+      // The pressing hand on the first dot waits for the kid's turn.
+      screen.dataset.showing = 'true';
+      this.voice.stop();
+      void (async () => {
+        const watch = this.voice.howTo([demoClip('watch')]);
+        await Promise.all([wait(HOWTO_LEAD_MS), Promise.race([watch, wait(HOWTO_WATCH_MAX_MS)])]);
+        if (!howToOn) return;
+        show(
+          g.strokes.map((_, i) => i),
+          (kind) => void this.voice.howTo([strokeClip(kind)]),
+          () => {
+            endHowTo('done');
+            screen.dataset.nudge = 'dot';
+            void this.voice.howTo([demoClip('your-turn')]);
+          },
+        );
+      })();
+    }
+
+    const ticker = setInterval(() => {
+      if (!howToOn) run(hints.tick(performance.now()));
+    }, TICK_MS);
     this.cleanups.push(() => {
       clearInterval(ticker);
+      howToOn = false;
       stopShow();
     });
-    // A touch anywhere: the wait starts again, and whatever the hints show stops (the kid has moved on).
+    // A touch anywhere: the wait starts again, and whatever the hints or the how-to show stops (the kid has moved on).
     screen.addEventListener(
       'pointerdown',
       () => {
+        endHowTo('stopped');
         hints.touch(performance.now());
         stopShow();
         delete screen.dataset.nudge;
@@ -703,7 +780,11 @@ class LettersGame {
       this.voice.hold(false);
       confirm.remove();
       clearInterval(ticker);
-      this.progress = await finishLetter(this.ctx.storage, this.ctx.kid.id, ch, mode === 'game', hints.reached);
+      await this.saved;
+      // The how-to's letter counts in the game only where the path has it open (always when capitals are the first
+      // set: L leads the path, GAME_GROUPS).
+      const inGame = mode === 'game' && isOpenInGame(this.path, this.progress, ch);
+      this.progress = await finishLetter(this.ctx.storage, this.ctx.kid.id, ch, inGame, hints.reached);
       this.ctx.sound.play('cheer');
       // The bell first, then the letter's name and a word of praise (ADR 0032); "All by yourself!" only when no hint
       // past step 1 (the bigger dot) was needed (ADR 0037).
@@ -713,7 +794,8 @@ class LettersGame {
       card.append(this.badge('letters-done-star', STAR), this.badge('letters-speaker', SPEAKER));
       card.classList.add('is-done');
       if (!reducedMotion()) screen.append(confetti());
-      const next = this.nextAfter(ch, mode);
+      // After the how-to, the letter the kid picked.
+      const next = howTo?.then ?? this.nextAfter(ch, mode);
       screen.append(
         kidButton({
           kind: 'action-lg',

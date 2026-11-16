@@ -2,9 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PRAISE, letterClip, soundClip, type Praise } from '../../shell/soundFiles';
 import { memoryBackend } from '../../storage/idb';
 import { appStorage } from '../../storage/namespaced';
-import { allChars, arrowFor, arrowsFor, glyph, SET_CHARS, type Glyph, type Pt } from './glyphs';
+import { allChars, arrowFor, arrowsFor, glyph, SET_CHARS, SET_ORDER, setOf, SHAPES, type Glyph, type Pt } from './glyphs';
 import {
+  dayOf,
+  daysBetween,
+  demoDue,
   finishLetter,
+  GAME_GROUPS,
   forgetKid,
   gameIndex,
   isOpenInGame,
@@ -14,15 +18,20 @@ import {
   loadPrefs,
   loadProgress,
   nextInSet,
+  notePlayed,
   resetProgress,
   saveLettersSettings,
   savePrefs,
   saveRecording,
+  showDemoAgain,
   spoken,
   type LettersSettings,
 } from './progress';
 import { ROAD_HALF, TOLERANCE, Tracer } from './trace';
 import { LetterVoice, letterParts, partsFor, pickPraise, type Part } from './voice';
+
+/** Every glyph: the 62 letters and numbers and the 8 lines and shapes (ADR 0037, D9). */
+const everyGlyph = [...allChars(), ...SET_CHARS.shapes];
 
 /** Traces every stroke of a glyph as drawn, each as its own touch, with a small wobble. */
 function traceGlyph(t: Tracer, g: Glyph, opts: { reverse?: boolean; skip?: number; wobble?: number } = {}): void {
@@ -37,7 +46,7 @@ function traceGlyph(t: Tracer, g: Glyph, opts: { reverse?: boolean; skip?: numbe
 describe('the letters (ADR 0026)', () => {
   it('has all 62 letters and numbers, each inside its box with real strokes', () => {
     expect(allChars()).toHaveLength(62);
-    for (const ch of allChars()) {
+    for (const ch of everyGlyph) {
       const g = glyph(ch);
       expect(g.strokes.length, ch).toBeGreaterThan(0);
       for (const p of g.strokes.flat()) {
@@ -56,7 +65,7 @@ describe('the letters (ADR 0026)', () => {
   });
 
   it('gives every long stroke an arrow that ends near where the stroke is heading', () => {
-    for (const ch of allChars()) {
+    for (const ch of everyGlyph) {
       const g = glyph(ch);
       g.strokes.forEach((stroke, i) => {
         const a = arrowFor(g, i);
@@ -94,7 +103,7 @@ describe('the letters (ADR 0026)', () => {
 
 describe('tracing (ADR 0026, 0028)', () => {
   it('a good trace finishes every letter, lenient and in stroke order', () => {
-    for (const ch of allChars()) {
+    for (const ch of everyGlyph) {
       const lenient = new Tracer(glyph(ch), { ordered: false });
       traceGlyph(lenient, glyph(ch));
       expect(lenient.done, `${ch} lenient`).toBe(true);
@@ -221,6 +230,65 @@ describe('progress and the game path (ADR 0026)', () => {
     expect(keyOf('A')).toBe('cap-A');
     expect(keyOf('a')).toBe('small-a');
     expect(keyOf('7')).toBe('num-7');
+    expect(keyOf('○')).toBe('shape-circle');
+    expect(keyOf('×')).toBe('shape-x');
+    expect(new Set(everyGlyph.map(keyOf)).size).toBe(70);
+  });
+
+  it('the game path goes easy first: straight lines, then curves, then slants (D8); practice stays A to Z', () => {
+    expect(lettersOf(['capitals']).join('')).toBe('LFEHTIDPBRCOQGSUJNMKAVWXYZ');
+    expect(Object.values(GAME_GROUPS.capitals)).toEqual(['LFEHTI', 'DPBR', 'COQGS', 'UJ', 'NMK', 'AVWXYZ']);
+    // Every capital once, nothing else.
+    expect([...lettersOf(['capitals'])].sort().join('')).toBe(SET_CHARS.capitals);
+    for (const set of SET_ORDER) expect([...GAME_GROUPS[set].join('')].sort(), set).toEqual([...SET_CHARS[set]].sort());
+    // The other sets as in practice, and sets in their fixed order with shapes first.
+    expect(lettersOf(['numbers', 'small', 'capitals', 'shapes'])).toEqual([
+      ...SET_CHARS.shapes,
+      ...'LFEHTIDPBRCOQGSUJNMKAVWXYZ',
+      ...SET_CHARS.small,
+      ...SET_CHARS.numbers,
+    ]);
+    expect(nextInSet('L')).toBe('M');
+  });
+
+  it("old game progress keeps its stars; the path shows them in the new order (D8)", async () => {
+    const s = storage();
+    // Done before D8, in the old A B C order.
+    await s.putJson('kids/k1/progress.json', { stars: ['cap-A', 'cap-B', 'cap-C'], game: ['cap-A', 'cap-B', 'cap-C'] });
+    const p = await loadProgress(s, 'k1');
+    const path = lettersOf(['capitals']);
+    expect(p.stars).toEqual(['cap-A', 'cap-B', 'cap-C']);
+    expect(gameIndex(path, p)).toBe(0); // L is next
+    for (const ch of 'ABCL') expect(isOpenInGame(path, p, ch), ch).toBe(true);
+    expect(isOpenInGame(path, p, 'F')).toBe(false);
+  });
+
+  it('lines and shapes are a set of their own, off by default, before capitals (D9)', async () => {
+    expect([...SET_CHARS.shapes].map((ch) => SHAPES[ch].key)).toEqual([
+      'line-down',
+      'line-across',
+      'circle',
+      'cross',
+      'slant',
+      'square',
+      'x',
+      'triangle',
+    ]);
+    // Not letters: the 62 stay the 62 (a parent's recordings, the stroke table).
+    for (const ch of SET_CHARS.shapes) {
+      expect(allChars()).not.toContain(ch);
+      expect(setOf(ch)).toBe('shapes');
+    }
+    const s = storage();
+    expect((await loadPrefs(s, 'k1')).sets).toEqual(['capitals']);
+    await savePrefs(s, 'k1', { sets: ['capitals', 'shapes'], ordered: false });
+    expect((await loadPrefs(s, 'k1')).sets).toEqual(['shapes', 'capitals']);
+    await savePrefs(s, 'k1', { sets: ['shapes'], ordered: false });
+    expect((await loadPrefs(s, 'k1')).sets).toEqual(['shapes']);
+    // A shape traced gets a star and its game step like a letter.
+    const p = await finishLetter(s, 'k1', '○', true);
+    expect(p.stars).toEqual(['shape-circle']);
+    expect(p.help['shape-circle']).toEqual({ done: 1, alone: 1, top: 0 });
   });
 
   it('a new kid traces capitals, any way', async () => {
@@ -241,20 +309,20 @@ describe('progress and the game path (ADR 0026)', () => {
     expect(path).toHaveLength(36);
     let p = await loadProgress(s, 'k1');
     expect(gameIndex(path, p)).toBe(0);
-    expect(isOpenInGame(path, p, 'A')).toBe(true);
-    expect(isOpenInGame(path, p, 'B')).toBe(false);
+    expect(isOpenInGame(path, p, 'L')).toBe(true);
+    expect(isOpenInGame(path, p, 'F')).toBe(false);
 
-    p = await finishLetter(s, 'k1', 'B', false); // practice
-    expect(p.stars).toEqual(['cap-B']);
-    expect(isOpenInGame(path, p, 'B')).toBe(false);
+    p = await finishLetter(s, 'k1', 'F', false); // practice
+    expect(p.stars).toEqual(['cap-F']);
+    expect(isOpenInGame(path, p, 'F')).toBe(false);
 
-    p = await finishLetter(s, 'k1', 'A', true);
+    p = await finishLetter(s, 'k1', 'L', true);
     expect(gameIndex(path, p)).toBe(1);
-    expect(isOpenInGame(path, p, 'B')).toBe(true);
-    expect(isOpenInGame(path, p, 'C')).toBe(false);
+    expect(isOpenInGame(path, p, 'F')).toBe(true);
+    expect(isOpenInGame(path, p, 'E')).toBe(false);
 
     await resetProgress(s, 'k1');
-    expect(await loadProgress(s, 'k1')).toEqual({ stars: [], game: [], help: {} });
+    expect(await loadProgress(s, 'k1')).toEqual({ stars: [], game: [], help: {}, demoSeen: false });
   });
 
   it('forgetting a kid removes only their letters', async () => {
@@ -273,8 +341,56 @@ describe('progress and the game path (ADR 0026)', () => {
     expect(SET_CHARS.small.includes(nextInSet('z'))).toBe(true);
   });
 
+  it('the first-time how-to is due on first play, after 14 days away and after a parent asks, and not otherwise', async () => {
+    const s = storage();
+    // A new kid.
+    let p = await loadProgress(s, 'k1');
+    expect(demoDue(p, '2026-11-15')).toBe(true);
+    // Seen: not again the same day, nor a few days later, nor 13 days later.
+    p = await notePlayed(s, 'k1', '2026-11-15', true);
+    expect(p).toMatchObject({ demoSeen: true, lastPlayed: '2026-11-15' });
+    expect(demoDue(await loadProgress(s, 'k1'), '2026-11-15')).toBe(false);
+    expect(demoDue(p, '2026-11-20')).toBe(false);
+    expect(demoDue(p, '2026-11-28')).toBe(false);
+    // 14 days away, across a month's end.
+    expect(demoDue(p, '2026-11-29')).toBe(true);
+    expect(demoDue({ ...p, lastPlayed: '2026-12-25' }, '2027-01-08')).toBe(true);
+    // Playing on a later day moves the 14 days on; the how-to stays seen.
+    p = await notePlayed(s, 'k1', '2026-11-27', false);
+    expect(p).toMatchObject({ demoSeen: true, lastPlayed: '2026-11-27' });
+    expect(demoDue(p, '2026-12-10')).toBe(false);
+    // A clock set back is not "away".
+    expect(demoDue(p, '2026-11-01')).toBe(false);
+    // A finished letter keeps both.
+    p = await finishLetter(s, 'k1', 'L', false);
+    expect(p).toMatchObject({ demoSeen: true, lastPlayed: '2026-11-27' });
+    // A parent's "Show how to trace again".
+    await showDemoAgain(s, 'k1');
+    p = await loadProgress(s, 'k1');
+    expect(demoDue(p, '2026-11-27')).toBe(true);
+    expect(p.stars).toEqual(['cap-L']);
+    // A reset starts the kid over, how-to and all.
+    await notePlayed(s, 'k1', '2026-11-27', true);
+    await resetProgress(s, 'k1');
+    expect(demoDue(await loadProgress(s, 'k1'), '2026-11-27')).toBe(true);
+  });
+
+  it('days are counted on the calendar, and old or broken progress files load', async () => {
+    expect(daysBetween('2026-11-15', '2026-11-29')).toBe(14);
+    expect(daysBetween('2027-03-27', '2027-03-29')).toBe(2); // across a clock change
+    expect(dayOf(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
+    const s = storage();
+    // A file from before the how-to: the stars stay, the how-to is due once.
+    await s.putJson('kids/k1/progress.json', { stars: ['cap-A'], game: ['cap-A'] });
+    const old = await loadProgress(s, 'k1');
+    expect(old).toEqual({ stars: ['cap-A'], game: ['cap-A'], help: {}, demoSeen: false });
+    expect(demoDue(old, '2026-11-15')).toBe(true);
+    await s.putJson('kids/k2/progress.json', { stars: [], demoSeen: 'yes', lastPlayed: 'last tuesday' });
+    expect(await loadProgress(s, 'k2')).toEqual({ stars: [], game: [], help: {}, demoSeen: false });
+  });
+
   it('every letter has a name to say', () => {
-    for (const ch of allChars()) expect(spoken(ch), ch).toMatch(/^[a-z ]+$/);
+    for (const ch of everyGlyph) expect(spoken(ch), ch).toMatch(/^[a-z ]+$/);
   });
 });
 

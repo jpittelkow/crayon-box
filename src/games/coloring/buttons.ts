@@ -50,9 +50,19 @@ export const MODE_BUTTONS: Record<ColoringMode, ButtonVoice> = {
   lines: button('mode-lines', { file: 'drive/bump.wav', gain: 0.8, rate: 1.2, seconds: 0.25 }),
 };
 
+const COLOR_DAB: Effect = { file: 'ui/crayon.wav', gain: 0.8, rate: 1.6, seconds: 0.12 };
+
 /** A paint color, by its palette token (`red`, `light-pink`, `rainbow`). Stand-in sound: a dab of the crayon. */
 export function colorButton(token: string): ButtonVoice {
-  return button(`color-${token}`, { file: 'ui/crayon.wav', gain: 0.8, rate: 1.6, seconds: 0.12 });
+  return button(`color-${token}`, COLOR_DAB);
+}
+
+/**
+ * A colour wheel segment (ADR 0038 part 5): the swatches' dab, and the name of the plain colour word it falls under
+ * (`says`, a rail token), counted on its own key so the rail's picks don't use up the wheel's names.
+ */
+export function wheelButton(color: { token: string; says: string }): ButtonVoice {
+  return { key: `wheel-${color.token}`, clip: narratorClip(`color-${color.says}`), effect: COLOR_DAB };
 }
 
 /** Every effect file the buttons use, to load ahead of the first touch. */

@@ -56,6 +56,19 @@
     var(--crayon-purple),
     var(--crayon-red)
   );
+  /* The colour wheel's in-between hues, clockwise from the top (ADR 0038 part 5; palette.ts WHEEL). */
+  --crayon-wheel-coral: #ff6a3d;
+  --crayon-wheel-gold: #e3a21a;
+  --crayon-wheel-chartreuse: #c4e538;
+  --crayon-wheel-mint: #8ee6b8;
+  --crayon-wheel-sea-green: #1f9e89;
+  --crayon-wheel-aqua: #63e2e6;
+  --crayon-wheel-cornflower: #7c9cf2;
+  --crayon-wheel-indigo: #4338a8;
+  --crayon-wheel-violet: #b06ce8;
+  --crayon-wheel-plum: #8e2f6f;
+  --crayon-wheel-magenta: #d81b84;
+  --crayon-wheel-rose: #f28cb1;
 
   /* Parent world */
   --desk: #f1f3f6;

@@ -50,6 +50,15 @@ export const DEMO_DOT_MS = 600;
 export const DEMO_GAP_MS = 450;
 export const DEMO_HOLD_MS = 700;
 
+// ---- The first-time how-to (letters plan phase D) ----
+/** The letter the how-to traces (D6): a line down and a line across, the first strokes small kids can make. */
+export const HOWTO_LETTER = 'L';
+/** The how-to comes back after this many days with no letter traced (D7). */
+export const HOWTO_AGAIN_DAYS = 14;
+/** After "Watch me." starts, the show waits for it to end, at least this long and at most HOWTO_WATCH_MAX_MS. */
+export const HOWTO_LEAD_MS = 600;
+export const HOWTO_WATCH_MAX_MS = 2000;
+
 /** The spoken tips, by clip id (`tip-start-dot` …, assets/sounds/voice/). */
 export type Tip = TipId;
 
