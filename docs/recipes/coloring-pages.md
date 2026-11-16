@@ -17,7 +17,8 @@ is ADR 0022; licensing is ADR 0011. This file is the order to work in and what t
    `source`, `license`, `detail`; AI pages also `model`).
 5. **Check it:** `npx playwright test tests/e2e/pages.spec.ts` (fails on a leak, warns on tiny areas) and
    `npx vitest run src/games/coloring/pages.test.ts` (license present).
-6. **Color it in the app** (`npm run dev`): fill every area with the bucket; look for leaks and white rims.
+6. **Color it in the app** (`npm run dev`): fill every area with the bucket; look for leaks and white rims, and
+   for two things that should be separate filling as one (sky and grass).
 7. **For AI pages,** a person looks for anything recognisable (a franchise character, a logo); if in doubt, drop it.
 
 ## Recipe: a new theme
@@ -37,6 +38,10 @@ is ADR 0022; licensing is ADR 0011. This file is the order to work in and what t
 - **Three AI runs side by side** was the quickest; more than about six calls at once slowed GPT-5 Image Mini down.
 
 ## Anti-recipes
+- **Ground that is only a line running toward the page edges** (a horizon, a hill's top edge). The clean-up adds
+  a margin, so the line stops short of the page edge and sky and grass become one area: filling the sky turns the
+  grass blue too. The page check can't see it (nothing leaks; it is just one big area). Ask for the ground as
+  "a small rounded grassy hill drawn as one closed shape", or close it by hand (found 2026-11-15, Outside theme).
 - **A line that stops just short** of another (a smile 4 px from the face): paint leaks through, the check fails.
 - **A line running beside another within ~6 px** (a wheel top near the body, a flagpole by a seat): the gap closer
   joins them into one line and an area vanishes.
