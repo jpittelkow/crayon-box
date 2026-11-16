@@ -20,6 +20,6 @@ export const CATEGORIES: Category[] = [
   { id: 'ground', name: 'Ground and water', assets: ['ground/grass', 'ground/sand', 'water/puddle', 'water/flood', 'water/sea'] },
   { id: 'setpieces', name: 'Set pieces', assets: [] },
   { id: 'animals', name: 'Animals', assets: ANIMAL_IDS },
-  { id: 'effects', name: 'Effects', assets: ['fx/puff', 'fx/drop', 'fx/ripple'] },
+  { id: 'effects', name: 'Effects', assets: ['fx/puff', 'fx/drop', 'fx/ripple', 'fx/confetti'] },
   { id: 'sky', name: 'Sky and light', assets: ['sky/sunny'] },
 ];

@@ -11,12 +11,14 @@ import { chromium } from '@playwright/test';
 import { createServer } from 'vite';
 
 const OUT = 'assets/pictures/driving';
-const server = await createServer({ server: { port: 5199, strictPort: true }, logLevel: 'warn' });
+// Another port with PICTURES_PORT=…, when several sessions run dev servers at once.
+const PORT = Number(process.env.PICTURES_PORT ?? 5199);
+const server = await createServer({ server: { port: PORT, strictPort: true }, logLevel: 'warn' });
 await server.listen();
 const browser = await chromium.launch({ headless: true, args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
 try {
   const page = await browser.newPage();
-  await page.goto('http://localhost:5199/');
+  await page.goto(`http://localhost:${PORT}/`);
   const pictures = await page.evaluate(async () => {
     const thumbs = await import('/src/games/racing/look/thumbs.ts');
     const { VEHICLES, PICTURE_COLORS, KID_HEX } = await import('/src/games/racing/settings.ts');

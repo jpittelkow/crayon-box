@@ -84,5 +84,22 @@ export const SITE: MapDef = {
     nearRoad: 0.65, spread: 5, edgeGap: 6, spawnGap: 8,
   },
   decor: [{ id: 'decor/bush', clumps: 50, perClump: 3 }],
+  // Targets (ADR 0041): rows of stars on the tracks, stacks of boxes just inside the loop and beside the middle
+  // track, and one out in the yard west of the middle track.
+  targets: [
+    { id: 'toy/star', on: onLoop(-80, -16), count: 4 },
+    { id: 'toy/star', on: onLoop(-44, 68), count: 4 },
+    { id: 'toy/star', on: onLoop(81, -18), count: 4 },
+    { id: 'toy/star', on: onLoop(42, -67), count: 4 },
+    { id: 'toy/star', on: { road: 1, at: atMiddle(16) }, count: 3 },
+    { id: 'toy/star', on: { road: 2, at: atCross(-36) }, count: 3 },
+    { id: 'toy/box-stack', on: onLoop(-79, 30, 6) },
+    { id: 'toy/box-stack', on: onLoop(40, 69, 6) },
+    { id: 'toy/box-stack', on: onLoop(81, 30, 6) },
+    { id: 'toy/box-stack', on: onLoop(-40, -67, 6) },
+    { id: 'toy/box-stack', on: { road: 1, at: atMiddle(-37), offset: 6 } },
+    { id: 'toy/box-stack', on: { road: 2, at: atCross(-64), offset: 6 } },
+    { id: 'toy/box-stack', on: { road: 1, at: atMiddle(50), offset: -14 } },
+  ],
   animals: [{ id: 'animal/cow', x: -42, z: 36, count: 3, roam: 8 }],
 };
