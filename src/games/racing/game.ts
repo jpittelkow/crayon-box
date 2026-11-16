@@ -13,6 +13,7 @@ import type { MapDef } from './sim/map';
 import { carColors, forgetKid, loadDrivingSettings, loadKidDriving, saveKidDriving, shownVehicles, type KidDriving } from './settings';
 import type { VehiclePainter } from './look/thumbs';
 import { mapFile, vehicleFile } from './look/shippedPictures';
+import { pickerFolderMaps } from './maps/folder';
 import { DRIVE_KEYS, driveInput, stickAt } from './sim/input';
 import { TOYS } from './sim/assets/toys';
 import { honk, makeWorld, step, swapVehicle, type Assist, type VehicleKind, type World } from './sim/sim';
@@ -57,6 +58,8 @@ class DrivingGame {
     settings: Awaited<ReturnType<typeof loadDrivingSettings>>;
     createRenderer: CreateRenderer;
     thumbs: typeof import('./look/thumbs');
+    /** The picker's maps: the built-in ones, then those from the maps folder (ADR 0043). */
+    maps: { map: MapDef; name: string; picture: string }[];
   };
 
   constructor(
@@ -66,14 +69,19 @@ class DrivingGame {
 
   async start(): Promise<void> {
     const { kid, storage } = this.ctx;
-    const [prefs, settings, { createRenderer }, thumbs] = await Promise.all([
+    const [prefs, settings, { createRenderer }, thumbs, folderMaps] = await Promise.all([
       loadKidDriving(storage, kid.id),
       loadDrivingSettings(storage),
       import('./render'),
       import('./look/thumbs'),
+      pickerFolderMaps(this.ctx.mapsFolder, storage),
     ]);
     if (this.stopped) return;
-    this.loaded = { prefs, settings, createRenderer, thumbs };
+    const maps = [
+      ...MAPS.map((map) => ({ map, name: MAP_NAMES[map.id] ?? map.id, picture: mapFile(map.id) })),
+      ...folderMaps.map((f) => ({ map: f.map, name: f.name, picture: f.picture })),
+    ];
+    this.loaded = { prefs, settings, createRenderer, thumbs, maps };
     this.showPicker();
   }
 
@@ -84,7 +92,7 @@ class DrivingGame {
    */
   private showPicker(): void {
     const { kid, storage } = this.ctx;
-    const { prefs, settings, createRenderer, thumbs } = this.loaded!;
+    const { prefs, settings, createRenderer, thumbs, maps } = this.loaded!;
     const ownColor = this.kidColor();
     // The vehicle's colour (playtest, 2026-11-15): the kid's own unless they picked another.
     let color = prefs.color ?? ownColor;
@@ -110,22 +118,25 @@ class DrivingGame {
       tile.append(img);
       return img;
     };
-    // The maps: wide tiles, each a picture of it from above.
-    let map = MAPS.find((m) => m.id === prefs.map) ?? MAPS[0]!;
-    const mapTilesEls = MAPS.map((m) => {
+    // The maps: wide tiles, each a picture of it from above. A map that has gone from the folder falls back to the
+    // first.
+    let map = maps.find((m) => m.map.id === prefs.map)?.map ?? maps[0]!.map;
+    const mapTilesEls = maps.map(({ map: m, name, picture: key }) => {
       const tile = kidButton({
-        kind: 'paper', label: MAP_NAMES[m.id] ?? m.id, className: 'map-tile',
+        kind: 'paper', label: name, className: 'map-tile',
         onTap: () => {
           map = m;
           setPicked(mapTilesEls, tile);
         },
       });
       tile.dataset.map = m.id;
-      jobs.push({ key: () => mapFile(m.id), img: picture(tile), draw: () => thumbs.mapPicture(m, ownColor), first: false });
+      jobs.push({ key: () => key, img: picture(tile), draw: () => thumbs.mapPicture(m, ownColor), first: false });
       return tile;
     });
-    setPicked(mapTilesEls, mapTilesEls[MAPS.indexOf(map)]);
+    setPicked(mapTilesEls, mapTilesEls[maps.findIndex((m) => m.map === map)]);
     const mapRow = el('div', 'map-row');
+    // The tiles share the row: more maps, smaller tiles (racing.css).
+    mapRow.style.setProperty('--maps', String(maps.length));
     mapRow.append(...mapTilesEls);
     // The vehicles a parent has on (ADR 0035).
     const shown = shownVehicles(settings);
@@ -166,7 +177,7 @@ class DrivingGame {
           if (c === ownColor) delete this.loaded!.prefs.color;
           else this.loaded!.prefs.color = c;
           void save();
-          drawPictures(jobs.slice(MAPS.length));
+          drawPictures(jobs.slice(maps.length));
         },
       });
       swatch.style.background = c;
@@ -192,7 +203,12 @@ class DrivingGame {
         try {
           for (const job of order) {
             if (this.stopped || chosen || mine !== round) return;
-            job.img.src = await cachedPicture(job.key(), () => job.draw(() => (painter ??= thumbs.vehiclePainter())), import.meta.env.DEV ? undefined : storage, APP_VERSION);
+            try {
+              job.img.src = await cachedPicture(job.key(), () => job.draw(() => (painter ??= thumbs.vehiclePainter())), import.meta.env.DEV ? undefined : storage, APP_VERSION);
+            } catch (err) {
+              // A picture that can't be drawn leaves its tile blank; the others still come.
+              console.error('Picture not drawn', job.key(), err);
+            }
             // Let the screen show it, and take a tap, before drawing the next.
             await new Promise((r) => setTimeout(r, 16));
           }
@@ -202,7 +218,7 @@ class DrivingGame {
         }
       })();
     };
-    for (const i of pages[page]!) jobs[MAPS.length + i]!.first = true;
+    for (const i of pages[page]!) jobs[maps.length + i]!.first = true;
     drawPictures(jobs);
   }
 

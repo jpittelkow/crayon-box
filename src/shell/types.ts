@@ -81,6 +81,25 @@ export interface PagesFolder {
   openFolder(): Promise<void>;
 }
 
+/** A file in the Windows app's maps folder (ADR 0043): its name and its text. */
+export interface MapsFolderFile {
+  name: string;
+  text: string;
+  /** Set when the file couldn't be read. */
+  error?: string;
+}
+
+/**
+ * The driving game's maps folder (ADR 0043): `maps\` in the app's local data, which the app may only read. Map
+ * files dropped there show on the picker after the built-in maps.
+ */
+export interface MapsFolder {
+  /** Every `.json` file in the folder (not in folders inside it), by name. */
+  read(): Promise<MapsFolderFile[]>;
+  /** Opens the folder in File Explorer, making it first if it isn't there. */
+  openFolder(): Promise<void>;
+}
+
 export interface GameContext {
   kid: KidProfile;
   storage: GameStorage;
@@ -90,6 +109,8 @@ export interface GameContext {
   photo?(): Promise<Blob | undefined>;
   /** Present in the Windows app only. */
   finished?: FinishedPictures;
+  /** Present in the Windows app only (and on the dev server with `?fake-maps`). */
+  mapsFolder?: MapsFolder;
 }
 
 /** What a game's parent-area section gets to work with. */
@@ -102,6 +123,8 @@ export interface ParentSectionContext {
   finished?: FinishedPictures;
   /** Present in the Windows app only. */
   pagesFolder?: PagesFolder;
+  /** Present in the Windows app only (and on the dev server with `?fake-maps`). */
+  mapsFolder?: MapsFolder;
   /** Family sync's AI page maker (ADR 0029): resolves to null unless a connected server has AI set up. */
   ai?: () => Promise<AiPageMaker | null>;
 }

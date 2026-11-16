@@ -3,13 +3,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@tauri-apps/api/path', () => ({
   pictureDir: async () => 'C:/Users/someone/OneDrive/Pictures',
+  appLocalDataDir: async () => 'C:/Users/someone/AppData/Local/app',
   join: async (...parts: string[]) => parts.join('/'),
 }));
 vi.mock('@tauri-apps/plugin-opener', () => ({ openPath: vi.fn(async () => {}) }));
 vi.mock('@tauri-apps/plugin-fs', () => ({ BaseDirectory: { AppLocalData: 1, Picture: 2 } }));
 
 import { openFileBackend } from '../storage/files';
-import { kidFolder, tauriFileSystem, tauriFinishedPictures } from './tauriFiles';
+import { kidFolder, tauriFileSystem, tauriFinishedPictures, tauriMapsFolder } from './tauriFiles';
 
 /** A fake of the fs plugin's functions: files and folders in maps, keyed by `<base>:<path>`. */
 function fakePlugin() {
@@ -116,5 +117,39 @@ describe('finished pictures in Pictures', () => {
     expect(kidFolder('star')).toBe('star');
     expect(kidFolder('k3f9x2ab')).toBe('k3f9x2ab');
     expect(kidFolder('../Odd Id')).toBe('-odd-id');
+  });
+});
+
+describe('the maps folder (ADR 0043)', () => {
+  it('reads the .json files in maps\\ in local app data, by name, and nothing else', async () => {
+    const plugin = fakePlugin();
+    const put = (path: string, text: string) => plugin.files.set(`1:${path}`, new TextEncoder().encode(text));
+    put('maps/b.json', '\uFEFF{"b":1}');
+    put('maps/a.JSON', '{"a":1}');
+    put('maps/notes.txt', 'not a map');
+    put('maps/inner/c.json', '{}');
+    put('store/index.json', '{}');
+    const files = await tauriMapsFolder(plugin as never).read();
+    // The byte-order mark some editors write is dropped.
+    expect(files).toEqual([{ name: 'a.JSON', text: '{"a":1}' }, { name: 'b.json', text: '{"b":1}' }]);
+    // Only reads and the folder itself: nothing is written there.
+    expect(plugin.writeFile).not.toHaveBeenCalled();
+    expect(plugin.mkdir).toHaveBeenCalledWith('maps', { baseDir: 1, recursive: true });
+  });
+
+  it("makes the folder when it isn't there; a file that can't be read is reported, the rest still come", async () => {
+    const plugin = fakePlugin();
+    expect(await tauriMapsFolder(plugin as never).read()).toEqual([]);
+    plugin.files.set('1:maps/a.json', new TextEncoder().encode('{}'));
+    plugin.files.set('1:maps/b.json', new TextEncoder().encode('{}'));
+    plugin.readFile.mockRejectedValueOnce(new Error('in use'));
+    const files = await tauriMapsFolder(plugin as never).read();
+    expect(files).toEqual([{ name: 'a.json', text: '', error: 'Error: in use' }, { name: 'b.json', text: '{}' }]);
+  });
+
+  it('opens the folder in local app data', async () => {
+    const open = vi.fn(async () => {});
+    await tauriMapsFolder(fakePlugin() as never, open).openFolder();
+    expect(open).toHaveBeenCalledWith('C:/Users/someone/AppData/Local/app/maps');
   });
 });

@@ -8,7 +8,7 @@ import { kidPickerScreen, lockButton } from './kidPicker';
 import { enabledGames, getPhoto, kidTintVar, loadProfiles, loadShellSettings } from './profiles';
 import { GAMES } from './registry';
 import { WebAudioSound } from './sound';
-import type { FinishedPictures, GameEntry, KidProfile, PagesFolder } from './types';
+import type { FinishedPictures, GameEntry, KidProfile, MapsFolder, PagesFolder } from './types';
 import type { UpdateController } from './updates';
 import { screenKind, type KioskControl } from './kiosk';
 import type { SyncService } from '../sync/service';
@@ -28,6 +28,7 @@ export class Shell {
     private readonly platform: {
       finished?: FinishedPictures;
       pagesFolder?: PagesFolder;
+      mapsFolder?: MapsFolder;
       updates?: UpdateController;
       kiosk?: KioskControl;
       sync?: SyncService;
@@ -150,6 +151,7 @@ export class Shell {
         exitToHome: () => void this.afterGame(kid),
         photo: () => getPhoto(this.storage.shell, kid),
         finished: this.platform.finished,
+        mapsFolder: this.platform.mapsFolder,
       });
     } finally {
       this.busy = false;
@@ -186,6 +188,7 @@ export class Shell {
       games: this.games,
       finished: this.platform.finished,
       pagesFolder: this.platform.pagesFolder,
+      mapsFolder: this.platform.mapsFolder,
       updates: this.platform.updates,
       kiosk: this.platform.kiosk,
       sync: this.platform.sync,

@@ -41,9 +41,11 @@
   gap: 28px;
   margin-top: 40px;
 }
+/* Two built-in maps share the row; maps from the device's folder (ADR 0043) join it, and the tiles get narrower. */
 .map-tile.cb-paper {
-  width: min(calc((100cqw - 2 * 152px - 28px) / 2), 420px);
-  height: calc(min(calc((100cqw - 2 * 152px - 28px) / 2), 420px) * 0.47);
+  --map-w: min(calc((100cqw - 2 * 152px - (var(--maps, 2) - 1) * 28px) / var(--maps, 2)), 420px);
+  width: var(--map-w);
+  height: calc(var(--map-w) * 0.47);
 }
 .map-tile img {
   width: 100%;
