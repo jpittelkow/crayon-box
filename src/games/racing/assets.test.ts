@@ -3,14 +3,18 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { ANIMAL_LOOKS } from './look/animals';
 import { DECOR_LOOKS, SCENERY_LOOKS } from './look/scenery';
+import { buildSetPieces } from './look/setpieces';
 import { TOY_LOOKS } from './look/toys';
 import { buildVehicle } from './look/vehicles';
 import { MAPS } from './maps';
-import { CATEGORIES, VEHICLE_IDS } from './sim/assets';
+import { RING, acrossRing } from './maps/ring';
+import { CATEGORIES, SET_PIECES, VEHICLE_IDS } from './sim/assets';
 import { ANIMAL_IDS } from './sim/assets/animals';
 import { DECOR_IDS, SCENERY, SCENERY_IDS } from './sim/assets/scenery';
 import { TARGET_IDS, TOYS, TOY_IDS } from './sim/assets/toys';
-import { CONFETTI_BURST, CONFETTI_POOL } from './sim/sim';
+import type { MapDef } from './sim/map';
+import { MUD_POOL } from './sim/mud';
+import { CONFETTI_BURST, CONFETTI_POOL, makeWorld } from './sim/sim';
 import type { VehicleKind } from './sim/sim';
 
 const triangles = (root: THREE.Object3D) => {
@@ -71,5 +75,25 @@ describe('the asset registry', () => {
   it('confetti stays within the effects budget (ADR 0041): one small pool, three bursts at once', () => {
     expect(CONFETTI_POOL).toBeLessThanOrEqual(120);
     expect(CONFETTI_POOL / CONFETTI_BURST).toBeGreaterThanOrEqual(3);
+  });
+
+  it('every zone kind is a registered set piece, and the new ones (ADR 0042) look within budget', () => {
+    const setPieces = CATEGORIES.find((c) => c.id === 'setpieces')!.assets;
+    expect([...setPieces].sort()).toEqual(Object.values(SET_PIECES).sort());
+    const at = (angle: number) => ({ road: 0, at: angle / (Math.PI * 2) });
+    const bare: MapDef = { ...RING, zones: [], water: { pools: [], puddles: [] } };
+    // Each on the ring by itself; the ford with its stream (on the island, about 70 m on the land), and the lights at
+    // a junction with a road across the ring.
+    const maps: Record<'mud' | 'ford' | 'lights', MapDef> = {
+      mud: { ...bare, zones: [{ kind: 'mud', on: at(1.1), r: 6.5 }] },
+      ford: { ...bare, zones: [{ kind: 'ford', on: at(1.1), r: 6 }], water: { pools: [], puddles: [], streams: [{ points: acrossRing(1.1, -10, 70), width: 6 }] } },
+      lights: { ...bare, roads: [...RING.roads, { kind: 'street', width: 9, closed: false, from: 0, to: 0, points: acrossRing(1.1, 38, -38) }], zones: [{ kind: 'lights', on: at(1.1), r: 5 }] },
+    };
+    const empty = triangles(buildSetPieces(makeWorld(1, 0, 'free', bare)).group);
+    for (const [kind, map] of Object.entries(maps)) {
+      expect(triangles(buildSetPieces(makeWorld(1, 0, 'free', map)).group) - empty, kind).toBeLessThanOrEqual(15000);
+    }
+    // Mud off the wheels: one small pool.
+    expect(MUD_POOL).toBeLessThanOrEqual(60);
   });
 });
