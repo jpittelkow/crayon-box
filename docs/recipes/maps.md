@@ -6,7 +6,8 @@ two so far are `island.ts` and `site.ts`; `ring.ts` is the tests' small map. The
 `src/games/racing/`.
 
 Per the [to-do list](../todo.md), new maps wait until the map pieces are built (targets, more set pieces, map
-tiles, the map editor, maps from a folder). Until the editor exists, maps are written by hand as below.
+tiles, the map editor, maps from a folder). A map can be written by hand as below, or drawn in the map editor
+(below, "Making a map with the editor") and kept as a map file.
 
 A **very large map** (many times the island) needs more than this recipe: see the draft recipe, patterns and
 anti-recipes in [highway-map-plan.md](../highway-map-plan.md) (planned 2026-11-15). They move into this file as
@@ -55,6 +56,45 @@ A map that must not be in the repo (the home map) is a JSON file instead, droppe
 3. **Drop it in the folder** and open Parent area › Driving: it is listed with a switch, or left out with the
    reason (the same rules as `maps.test.ts`, from `maps/check.ts`). Fix and look again; the folder is read each time.
 4. **Drive it** as in step 11; the random-driving and traffic checks don't run on the device, so drive the whole map.
+
+## Making a map with the editor
+Two dev pages, served by `npm run dev` only (Vite builds `index.html` alone, so neither is in the app):
+- **The map editor**, `http://localhost:5173/tools/map-editor.html?map=island` (or `site`, `test-loop`, a `.json`
+  file's address on the dev server, or **Choose File** for a file on the computer). A flat picture from above, north
+  up, east right. The coordinates shown and saved are the map file's own x and z, and **x grows westward**.
+- **The map viewer**, `tools/driving-map.html?map=…` (the same names, or `editor`): the map drawn by the game from
+  straight above, with layers to switch on: road numbers, lengths and ends (yellow joined, red a dead end), set
+  pieces, targets, the start and traffic, a grid, problems, and places a kid can reach that are further than the
+  reach (45 m, the highway plan's D6; `farFromRoad` in `maps/check.ts`) from every road, in red. Scroll to zoom, drag
+  to move. `node tools/shoot-map.mjs [maps…]` saves pictures of it in `test-results/map/` for a pull request.
+
+Steps:
+1. **Open the closest map** and give it a new name and, in **Map settings**, a new `id`. Saving writes the whole
+   map, so a built-in map is a fine start.
+2. **Land and roads:** **Land outline** and **Loop road**/**Road** are drawn by clicking points and double-clicking
+   (or Enter) to finish. A road's end dropped on another road joins it (a junction); the editor says where an end
+   joins nothing. A **Set piece** of kind roundabout makes its one-way ring where you click; drag a road's end onto
+   the ring to meet it. To reshape, **Select** a road, the shore, a stream or sand: its control points show; drag
+   one, double-click the line to add one, Delete to take one off. Roads joined to a moved road keep their ends on
+   it, and whatever sits on a road (set pieces, targets, water, traffic) moves with it.
+3. **Water and ground:** **Stream** and **Sand** are drawn like roads; **Pool** (deep is the flood, shallow, mud)
+   and **Puddle** go by the nearest road; **Hill** anywhere (its size in the details box).
+4. **Set pieces, targets, the rest:** **Set piece** (pick the kind) on the nearest road, **Star row** on it, **Box
+   stack** beside it, **Traffic**, **Herd**, **Boat**, **Start**. Drag any of them to move it. The details box shows
+   the selected thing as it is in the file; edit and **Apply** for sizes and counts. Trees, toys and bushes are
+   scattered by the game from **Map settings** (tick "Trees and toys" to see where they land).
+5. **Problems** update as you edit: the same checks a map file gets when the game loads it (`maps/check.ts`), plus
+   the editor's own (a road in the sea, a dead end, a junction end off its road). Click one to go to it. **Undo**
+   (Ctrl+Z) and **Redo** (Ctrl+Y) step back and forth.
+6. **Look** shows the map in the viewer, drawn by the game. **Save map file** downloads `<id>.json`.
+7. **Into the game:** drop the file in the maps folder (ADR 0043, "A map from the folder" above) and drive it. A map
+   meant for the repo still becomes a `.ts` file in `maps/` by hand, with its places worked out from roads. A map of
+   a real place never goes in the repo folder at all (privacy rule): keep its file outside it.
+
+Not in the editor yet: drawing bridges and tunnels (shown, and changed in the details box), a harbour's sailing route
+(the details box), single trees or toys (the format scatters them), districts and roads on two levels (not in the
+format yet). The editor's code is `src/tools/mapEditor.ts` (the page) and `src/tools/mapEdit.ts` (editing, undo and
+its checks, unit-tested).
 
 ## Patterns
 - **Roads first, everything else placed from them.** Things are placed on a road (`OnRoad`: a fraction along it
