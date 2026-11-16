@@ -1,0 +1,311 @@
+<title>Coloring Buttons Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: a parent-facing strip on top, then the kid screen drawn at 1280-wide design size and scaled to fit.
+   One light look on purpose: the app itself is Crayon Box, light only (ADR 0016). */
+:root {
+  --ink: #23201c; --paper: #ffffff; --manila: #fff1d6; --manila-deep: #f5dfb3; --pick: #ffd23f;
+  --note: #5c4f38; --card: #fffaf0;
+  --font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
+  --font-text: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light;
+}
+html, body { background: var(--manila); color: var(--ink); }
+body { font-family: var(--font-text); font-size: 15px; padding-block: 16px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 16px; }
+header h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; margin: 0; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--note); max-width: 70ch; line-height: 1.45; }
+.panel { background: var(--card); border: 3px solid var(--ink); border-radius: 16px; padding: 12px 14px;
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.panel label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.panel button { font: 600 14px var(--font-display); border: 3px solid var(--ink); border-radius: 12px; background: var(--paper);
+  padding: 6px 12px; cursor: pointer; color: var(--ink); }
+.panel button:focus-visible, .panel input:focus-visible { outline: 3px solid #2f6fed; outline-offset: 2px; }
+.hears { flex: 1 1 260px; min-width: 0; font-family: var(--font-display); font-size: 18px; }
+.hears b { font-weight: 600; }
+.hears .say { background: var(--pick); border: 3px solid var(--ink); border-radius: 14px; padding: 2px 10px; }
+.stage { position: relative; width: 100%; overflow: hidden; border-radius: 20px; border: 3px solid var(--ink); }
+.kid { position: absolute; top: 0; left: 0; transform-origin: 0 0; background: var(--manila);
+  display: flex; gap: 16px; padding: 16px; box-sizing: border-box; font-family: var(--font-display); user-select: none; touch-action: none; }
+.rail { display: flex; flex-direction: column; gap: 12px; background: var(--paper); border: 3px solid var(--ink);
+  border-radius: 28px; padding: 12px; justify-content: center; }
+.btn { width: 88px; height: 88px; border-radius: 22px; border: 3px solid var(--ink); background: var(--paper);
+  display: grid; place-items: center; box-shadow: 0 5px 0 var(--ink); cursor: pointer; padding: 0; transition: transform .12s; }
+.btn.is-picked { background: var(--pick); transform: scale(1.12); box-shadow: 0 0 0 4px var(--paper), 0 0 0 9px var(--ink); }
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.btn.bounce { animation: bounce .28s; }
+@keyframes bounce { 50% { transform: scale(1.18); } }
+.center { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.page { position: relative; background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; overflow: hidden;
+  aspect-ratio: 4 / 3; height: 560px; align-self: center; box-shadow: 0 6px 0 var(--ink); }
+.page svg, .page canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tray { display: flex; justify-content: space-between; gap: 12px; }
+.tray .group { display: flex; gap: 12px; background: var(--paper); border: 3px solid var(--ink); border-radius: 40px; padding: 8px 12px; }
+.choice { width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--ink); background: var(--paper); display: grid;
+  place-items: center; cursor: pointer; padding: 0; }
+.choice.is-picked { background: var(--pick); }
+.choice[disabled] { opacity: .3; cursor: default; }
+.choice i { display: block; border-radius: 50%; border: 3px solid var(--ink); background: var(--current); }
+.colors { display: grid; grid-template-columns: repeat(3, 64px); gap: 12px; background: var(--paper); border: 3px solid var(--ink);
+  border-radius: 28px; padding: 12px; align-content: center; }
+.sw { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
+.sw.is-picked { box-shadow: 0 0 0 3px var(--paper), 0 0 0 8px var(--ink); }
+.wheel { background: var(--paper); border: 3px solid var(--ink); border-radius: 28px; padding: 12px; display: grid; place-items: center; }
+.wheel path { stroke: var(--ink); stroke-width: 3; cursor: pointer; }
+.wheel path.is-picked { stroke-width: 7; }
+.badge { position: absolute; width: 62px; height: 62px; border-radius: 50%; border: 3px solid var(--ink); display: grid; place-items: center;
+  pointer-events: none; transform: translate(18px, -86px); box-shadow: 0 3px 0 var(--ink); }
+.badge .tool { background: var(--paper); border-radius: 50%; width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--ink); }
+.page svg.demo { position: absolute; inset: auto 18px 18px auto; width: 230px; height: 170px; border: 3px dashed var(--ink); border-radius: 18px;
+  background: rgba(255,255,255,.92); pointer-events: none; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.notes div { background: var(--card); border: 3px solid var(--ink); border-radius: 16px; padding: 10px 14px; min-width: 0; line-height: 1.45; }
+.notes h2 { font-family: var(--font-display); font-weight: 600; font-size: 17px; margin: 0 0 4px; }
+.notes p { margin: 0; color: var(--note); }
+@media (prefers-reduced-motion: reduce) { .btn, .btn.bounce { animation: none; transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Coloring buttons a kid can work out</h1>
+    <p>A prototype for ADR 0038. Tap the tools, sizes and colours as a kid would, and paint on the page. The yellow
+      line shows what the narrator would say; the sounds here are simple beeps standing in for the real ones.</p>
+  </header>
+
+  <div class="panel" role="group" aria-label="Prototype controls">
+    <label><input type="checkbox" id="wide" checked> Wide screen (family laptop): show the colour wheel</label>
+    <label><input type="checkbox" id="sound" checked> Stand-in sounds</label>
+    <button type="button" id="replay">Show the buttons (parent)</button>
+    <button type="button" id="reset">Start as a new kid</button>
+    <div class="hears" aria-live="polite">Kid hears: <span class="say" id="say">…</span></div>
+  </div>
+
+  <div class="stage" id="stage"><div class="kid" id="kid"></div></div>
+
+  <div class="notes">
+    <div><h2>1. Names and sounds</h2><p>Each button has its own sound. The narrator says its name for the first 3 picks per kid, then only the sound plays. Picks fire on touch-down.</p></div>
+    <div><h2>2. The tool at the finger</h2><p>A badge with the tool and colour follows a finger on the page. The picked tool is bigger, and the sizes grey out under the bucket.</p></div>
+    <div><h2>3. Show-how</h2><p>The first time a kid picks a tool, its badge does the job by itself in a corner while the narrator says one line. A touch stops it, and the picture stays unchanged.</p></div>
+    <div><h2>5. Colour wheel</h2><p>12 big segments of in-between colours, shown only where the screen has room beside the rail. Tap only, no dragging.</p></div>
+  </div>
+</div>
+
+<script>
+(() => {
+const INK = '#23201c';
+const svg = (body, size, stroke = 4) => `<svg width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" stroke="${INK}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+const CUR = 'style="fill: var(--current)"';
+const ICON = {
+  back: (s) => svg('<path d="M21 9L7 24l14 15"/><path d="M8 24h33"/>', s, 6),
+  bucket: (s) => svg(`<path d="M10 20L24 6l16 16-14 14z" fill="#fff"/><path d="M10 20h30"/><path d="M40 30s4 5 4 8a4 4 0 0 1-8 0c0-3 4-8 4-8z" ${CUR}/>`, s),
+  brush: (s) => svg(`<path d="M40 6L20 28l-4-4L38 4z" fill="#fff"/><path d="M16 26c-6 0-8 6-8 10 0 3-2 5-4 6 8 2 18 0 18-8z" ${CUR}/>`, s),
+  eraser: (s) => svg('<path d="M6 30L26 10l16 16-16 16H18z" fill="#ffb3c7"/><path d="M16 20l16 16"/><path d="M18 42h24"/>', s),
+  undo: (s) => svg('<path d="M17 9L7 19l10 10"/><path d="M7 19h20a11.5 11.5 0 0 1 0 23h-9"/>', s, 6),
+  startOver: (s) => svg('<path d="M11 5h19l8 8v30H11z" fill="#fff"/><path d="M30 5v8h8"/><path d="M29.5 27a6 6 0 1 1-1.8-4.3"/><path d="M29 18v5h-5"/>', s),
+  free: (s) => svg('<rect x="9" y="9" width="30" height="30" rx="7" fill="#fff"/><path d="M4 31l8-15 7 17 8-19 7 17 10-13" style="stroke: var(--current)" stroke-width="6"/>', s),
+  lines: (s) => svg(`<rect x="9" y="9" width="30" height="30" rx="7" ${CUR}/>`, s),
+};
+const RAIL = [
+  ['light-pink','Light pink','#ffc2d6'],['pink','Pink','#ff70a6'],['red','Red','#f23b2f'],['apricot','Apricot','#ffbf75'],
+  ['orange','Orange','#ff8a1f'],['dark-red','Dark red','#a8201a'],['yellow','Yellow','#ffd23f'],['lime','Light green','#9bd93c'],
+  ['green','Green','#2fa35f'],['dark-green','Dark green','#1b6b3c'],['teal','Teal','#12a8a3'],['sky','Light blue','#4cc9f0'],
+  ['pale-blue','Pale blue','#b5e8f8'],['blue','Blue','#2f6fed'],['navy','Dark blue','#1d3a9e'],['lavender','Lavender','#d2b7f7'],
+  ['purple','Purple','#9b5de5'],['gray','Gray','#9aa0a6'],['peach','Peach','#f6c9a0'],['tan','Tan','#c98f5a'],
+  ['brown','Brown','#8d5a3b'],['dark-brown','Dark brown','#5b3a26'],['black','Black','#23201c'],['rainbow','Rainbow','rainbow'],
+];
+const WHEEL = [['Coral','#ff6f61'],['Gold','#e3a21a'],['Chartreuse','#c4e538'],['Mint','#8ee6b8'],['Sea green','#1f9e89'],['Aqua','#63e2e6'],
+  ['Cornflower','#7c9cf2'],['Indigo','#4338a8'],['Violet','#b06ce8'],['Plum','#8e2f6f'],['Magenta','#d81b84'],['Rose','#f28cb1']];
+const DO = { bucket: 'Tap a space to fill it.', brush: 'Draw with your finger.', eraser: 'Rub it out.' };
+const NAMES = { bucket: 'Paint bucket.', brush: 'Brush.', eraser: 'Eraser.', undo: 'Undo.', startOver: 'Start over.', back: 'Back.',
+  s0: 'Small.', s1: 'Medium.', s2: 'Big.', free: 'Color anywhere.', lines: 'Stay in the lines.' };
+const TONE = { bucket: [520, 260], brush: [700, 900], eraser: [300, 280], undo: [600, 400], startOver: [400, 700], s0: [900, 900], s1: [650, 650], s2: [420, 420], free: [500, 800], lines: [500, 500], color: [760, 760], back: [440, 330] };
+const SIZES = [8, 18, 32];
+
+const st = { tool: 'brush', color: '#2f6fed', size: 1, mode: 'free', picks: {}, demoed: {}, demo: null, history: [] };
+const $ = (id) => document.getElementById(id);
+const kid = $('kid'), stage = $('stage'), sayEl = $('say');
+
+let audio;
+function beep(key) {
+  if (!$('sound').checked) return;
+  try {
+    audio = audio || new AudioContext();
+    const [a, b] = TONE[key] || TONE.color; const t = audio.currentTime;
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(a, t); o.frequency.linearRampToValueAtTime(b, t + .14);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.18, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + .2);
+    o.connect(g).connect(audio.destination); o.start(t); o.stop(t + .22);
+  } catch { /* no audio here */ }
+}
+function say(text, note) { sayEl.textContent = text ? `“${text}”` : (note || '(only the sound)'); }
+function picked(key, name, soundKey) {
+  st.picks[key] = (st.picks[key] || 0) + 1;
+  beep(soundKey || key);
+  if (st.picks[key] <= 3) say(name); else say('', '(only the sound now: picked more than 3 times)');
+}
+
+// ---- Build the kid screen ----
+kid.innerHTML = `
+  <div class="rail" id="tools"></div>
+  <div class="center">
+    <div class="page" id="page">
+      <svg viewBox="0 0 800 600" id="art" aria-label="Coloring page">
+        <rect x="0" y="0" width="800" height="600" fill="#fff" data-area="sky"/>
+        <path d="M60 560 Q 400 300 740 560 Z" fill="#fff" stroke="${INK}" stroke-width="8" data-area="hill"/>
+        <circle cx="620" cy="140" r="70" fill="#fff" stroke="${INK}" stroke-width="8" data-area="sun"/>
+        <path d="M150 210 a50 50 0 0 1 90 -30 a60 60 0 0 1 110 20 a45 45 0 0 1 10 90 h-200 a45 45 0 0 1 -10 -80z" fill="#fff" stroke="${INK}" stroke-width="8" data-area="cloud"/>
+        <rect x="330" y="360" width="140" height="120" fill="#fff" stroke="${INK}" stroke-width="8" data-area="house"/>
+        <path d="M310 365 L400 290 L490 365 Z" fill="#fff" stroke="${INK}" stroke-width="8" stroke-linejoin="round" data-area="roof"/>
+      </svg>
+      <canvas id="ink" width="800" height="600"></canvas>
+      <div class="badge" id="badge" hidden><div class="tool" id="badgeTool"></div></div>
+      <svg class="demo" id="demo" viewBox="0 0 230 170" hidden></svg>
+    </div>
+    <div class="tray">
+      <div class="group" id="sizes" role="group" aria-label="Brush size"></div>
+      <div class="group" id="modes" role="group" aria-label="Coloring mode"></div>
+    </div>
+  </div>
+  <div class="colors" id="colors" role="group" aria-label="Colors"></div>
+  <div class="wheel" id="wheelBox"><svg id="wheel" width="300" height="300" viewBox="-150 -150 300 300" role="group" aria-label="Colour wheel"></svg></div>`;
+kid.style.setProperty('--current', st.color);
+
+const tools = $('tools');
+const toolBtns = {};
+function addBtn(parent, key, label, html, onDown) {
+  const b = document.createElement('button');
+  b.className = 'btn'; b.type = 'button'; b.setAttribute('aria-label', label); b.innerHTML = html;
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); b.classList.remove('bounce'); void b.offsetWidth; b.classList.add('bounce'); onDown(); });
+  parent.append(b); return b;
+}
+addBtn(tools, 'back', 'Back', ICON.back(46), () => picked('back', NAMES.back));
+for (const t of ['bucket', 'brush', 'eraser']) toolBtns[t] = addBtn(tools, t, NAMES[t], ICON[t](50), () => pickTool(t));
+addBtn(tools, 'undo', 'Undo', ICON.undo(46), () => { picked('undo', NAMES.undo); undo(); });
+addBtn(tools, 'startOver', 'Start over', ICON.startOver(50), () => { picked('startOver', NAMES.startOver); startOver(); });
+
+const sizeBtns = SIZES.map((px, i) => {
+  const b = document.createElement('button'); b.className = 'choice'; b.type = 'button';
+  b.setAttribute('aria-label', NAMES['s' + i].replace('.', '') + ' brush');
+  b.innerHTML = `<i style="width:${px + 10}px;height:${px + 10}px"></i>`;
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); if (b.disabled) return; st.size = i; picked('s' + i, NAMES['s' + i]); render(); });
+  $('sizes').append(b); return b;
+});
+const modeBtns = ['free', 'lines'].map((m) => {
+  const b = document.createElement('button'); b.className = 'choice'; b.type = 'button'; b.setAttribute('aria-label', NAMES[m]);
+  b.innerHTML = ICON[m](46);
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); st.mode = m; picked(m, NAMES[m]); render(); });
+  $('modes').append(b); return b;
+});
+const swBtns = RAIL.map(([token, name, value]) => {
+  const b = document.createElement('button'); b.className = 'sw'; b.type = 'button'; b.setAttribute('aria-label', name);
+  b.style.background = value === 'rainbow' ? 'conic-gradient(#f23b2f,#ff8a1f,#ffd23f,#2fa35f,#2f6fed,#9b5de5,#f23b2f)' : value;
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); pickColor(value === 'rainbow' ? '#ff8a1f' : value, name + '.', 'c-' + token); });
+  $('colors').append(b); b.dataset.value = value; return b;
+});
+const wheel = $('wheel');
+const wheelPaths = WHEEL.map(([name, hex], i) => {
+  const a0 = (i / 12) * 2 * Math.PI - Math.PI / 2, a1 = ((i + 1) / 12) * 2 * Math.PI - Math.PI / 2, R = 140, r = 62;
+  const p = (rad, a) => `${(rad * Math.cos(a)).toFixed(1)} ${(rad * Math.sin(a)).toFixed(1)}`;
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', `M${p(r, a0)} L${p(R, a0)} A${R} ${R} 0 0 1 ${p(R, a1)} L${p(r, a1)} A${r} ${r} 0 0 0 ${p(r, a0)} Z`);
+  path.setAttribute('fill', hex); path.setAttribute('aria-label', name); path.setAttribute('role', 'button');
+  path.addEventListener('pointerdown', (e) => { e.preventDefault(); pickColor(hex, name + '.', 'w-' + i); });
+  wheel.append(path); path.dataset.value = hex; return path;
+});
+const mid = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+mid.setAttribute('r', '48'); mid.setAttribute('stroke', INK); mid.setAttribute('stroke-width', '4'); wheel.append(mid);
+
+function pickTool(t) {
+  st.tool = t; picked(t, NAMES[t]); render();
+  if (!st.demoed[t]) { st.demoed[t] = true; setTimeout(() => runDemo(t), 700); }
+}
+function pickColor(hex, name, key) { st.color = hex; kid.style.setProperty('--current', hex); picked(key, name, 'color'); render(); }
+
+function render() {
+  for (const [t, b] of Object.entries(toolBtns)) b.classList.toggle('is-picked', st.tool === t);
+  sizeBtns.forEach((b, i) => { b.classList.toggle('is-picked', st.size === i && st.tool !== 'bucket'); b.disabled = st.tool === 'bucket'; });
+  modeBtns.forEach((b, i) => b.classList.toggle('is-picked', st.mode === ['free', 'lines'][i]));
+  swBtns.forEach((b) => b.classList.toggle('is-picked', b.dataset.value === st.color || (b.dataset.value === 'rainbow' && st.color === '#ff8a1f' && false)));
+  wheelPaths.forEach((p) => p.classList.toggle('is-picked', p.dataset.value === st.color));
+  mid.setAttribute('fill', st.color);
+  $('badgeTool').innerHTML = ICON[st.tool](34);
+  $('badge').style.background = st.tool === 'eraser' ? '#fff' : st.color;
+}
+
+// ---- Painting ----
+const ink = $('ink'), ctx = ink.getContext('2d'), page = $('page'), badge = $('badge');
+function toPage(e) { const r = ink.getBoundingClientRect(); return [(e.clientX - r.left) * 800 / r.width, (e.clientY - r.top) * 600 / r.height]; }
+function snapshot() { st.history.push({ img: ctx.getImageData(0, 0, 800, 600), fills: [...document.querySelectorAll('[data-area]')].map((el) => el.getAttribute('fill')) }); if (st.history.length > 30) st.history.shift(); }
+function undo() { const h = st.history.pop(); if (!h) return; ctx.putImageData(h.img, 0, 0); document.querySelectorAll('[data-area]').forEach((el, i) => el.setAttribute('fill', h.fills[i])); }
+function startOver() { snapshot(); ctx.clearRect(0, 0, 800, 600); document.querySelectorAll('[data-area]').forEach((el) => el.setAttribute('fill', '#fff')); }
+let last = null;
+function moveBadge(e) { const r = page.getBoundingClientRect(), s = r.width / page.offsetWidth; badge.style.left = (e.clientX - r.left) / s + 'px'; badge.style.top = (e.clientY - r.top) / s + 'px'; }
+ink.addEventListener('pointerdown', (e) => {
+  e.preventDefault(); stopDemo(); ink.setPointerCapture(e.pointerId); badge.hidden = false; moveBadge(e);
+  snapshot();
+  if (st.tool === 'bucket') {
+    ink.style.pointerEvents = 'none'; const hit = document.elementFromPoint(e.clientX, e.clientY); ink.style.pointerEvents = '';
+    if (hit && hit.dataset && hit.dataset.area) hit.setAttribute('fill', st.color);
+    beep('bucket'); return;
+  }
+  last = toPage(e);
+});
+ink.addEventListener('pointermove', (e) => {
+  if (badge.hidden) return; moveBadge(e);
+  if (!last || st.tool === 'bucket') return;
+  const p = toPage(e);
+  ctx.strokeStyle = st.tool === 'eraser' ? '#fff' : st.color; ctx.lineWidth = SIZES[st.size] * 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(...last); ctx.lineTo(...p); ctx.stroke(); last = p;
+});
+const lift = () => { last = null; badge.hidden = true; };
+ink.addEventListener('pointerup', lift); ink.addEventListener('pointercancel', lift);
+
+// ---- Show-how demo: the tool's badge does the job in a corner, then everything fades; the picture is untouched ----
+const demo = $('demo');
+function stopDemo() { if (st.demo) { cancelAnimationFrame(st.demo); st.demo = null; } demo.hidden = true; }
+function runDemo(t, then) {
+  stopDemo(); demo.hidden = false; say(DO[t]); beep(t);
+  const color = t === 'eraser' ? '#fff' : st.color, t0 = performance.now(), dur = 2600;
+  const cloud = 'M40 110 a24 24 0 0 1 40 -22 a30 30 0 0 1 56 6 a22 22 0 0 1 10 40 h-96 a22 22 0 0 1 -10 -24z';
+  const frame = (now) => {
+    const k = Math.min(1, (now - t0) / dur);
+    const x = 30 + 160 * k, y = 120 - 40 * Math.sin(k * Math.PI * 3) * (t === 'bucket' ? 0 : 1);
+    let body = '';
+    if (t === 'bucket') body = `<path d="${cloud}" fill="${k > .55 ? color : '#fff'}" stroke="${INK}" stroke-width="5"/>`;
+    else {
+      const pts = []; for (let i = 0; i <= 40 * k; i++) { const q = i / 40; pts.push(`${30 + 160 * q},${120 - 40 * Math.sin(q * Math.PI * 3)}`); }
+      body = t === 'eraser'
+        ? `<polyline points="30,120 60,85 90,140 120,85 150,140 190,95" fill="none" stroke="${st.color}" stroke-width="14" stroke-linecap="round"/><polyline points="${pts.join(' ')}" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round"/>`
+        : `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round"/>`;
+    }
+    const bx = t === 'bucket' ? 95 + 10 * Math.sin(k * 10) : x, by = t === 'bucket' ? 60 : y - 30;
+    demo.innerHTML = body + `<g transform="translate(${bx - 26} ${by - 26})"><circle cx="26" cy="26" r="25" fill="${t === 'eraser' ? '#fff' : st.color}" stroke="${INK}" stroke-width="3"/><g transform="translate(9 9)">${ICON[t](34)}</g></g>`;
+    demo.style.opacity = k > .85 ? String((1 - k) / .15) : '1';
+    if (k < 1) st.demo = requestAnimationFrame(frame); else { stopDemo(); if (then) then(); }
+  };
+  st.demo = requestAnimationFrame(frame);
+}
+$('replay').addEventListener('click', () => {
+  const order = ['bucket', 'brush', 'eraser']; let i = 0;
+  const next = () => { if (i < order.length) { const t = order[i++]; st.tool = t; render(); say(NAMES[t]); setTimeout(() => runDemo(t, () => setTimeout(next, 600)), 900); } };
+  next();
+});
+$('reset').addEventListener('click', () => { st.picks = {}; st.demoed = {}; stopDemo(); say('', '(a new kid: names and show-how will play again)'); });
+
+// ---- Fit the 1280-wide kid screen into the page ----
+function fit() {
+  const wide = $('wide').checked;
+  $('wheelBox').hidden = !wide;
+  const w = wide ? 1640 : 1280, h = 800;
+  kid.style.width = w + 'px'; kid.style.height = h + 'px';
+  const s = stage.clientWidth / w;
+  kid.style.transform = `scale(${s})`; stage.style.height = h * s + 'px';
+}
+$('wide').addEventListener('change', fit);
+new ResizeObserver(fit).observe(stage);
+render(); fit(); say('', '(tap a button)');
+})();
+</script>

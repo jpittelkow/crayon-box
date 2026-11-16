@@ -2,7 +2,7 @@
 
 Research for the last item of section 5 of the [to-do list](../todo.md) ("tracing short words"), done 2026-11-15
 on the owner's request ("What would be good to help kids learn? What is out there that is known good tools we can
-build?"). The decision it feeds is [ADR 0038](../adr/0038-writing-words.md) (Proposed). It builds on
+build?"). The decision it feeds is [ADR 0039](../adr/0039-writing-words.md) (Proposed). It builds on
 [letters-learning.md](letters-learning.md) and does not repeat it: fingers first, fading help, the hint ladder,
 praise and short spoken lines all carry over to words.
 
@@ -174,7 +174,7 @@ published trial that was found, except where section 2 says so.
 
 | What the kid does | Who does it well | Evidence behind the idea | For us |
 |---|---|---|---|
-| **Traces a word one letter after another**, hears each letter, then the word | *Writing Wizard* (L'Escapadou), highly rated by reviewers | Tracing as a first step (letters 1.1) | The core of ADR 0038; our tracing screen already does a letter |
+| **Traces a word one letter after another**, hears each letter, then the word | *Writing Wizard* (L'Escapadou), highly rated by reviewers | Tracing as a first step (letters 1.1) | The core of ADR 0039; our tracing screen already does a letter |
 | **A parent adds their own words** and records each one | *Writing Wizard* (a paid add-on; reviewers single out how much a parent can customize) | Own name and family names matter most (1.1) | Family words, kept on the device; the narrator can't say a name, a parent's recording can |
 | **Tap the start dots, then trace, then write with no guide** | *LetterSchool*; *Duolingo ABC* has "guardrail" then "freehand" | Help that fades; free writing teaches most (letters 1.1, 2.3) | Already planned for letters (plan phase F); words follow it |
 | **Builds a word from loose letters** in a row of boxes; a letter says its sound when touched; three-letter words first | *Montessori Crosswords* (L'Escapadou); the Montessori moveable alphabet; classroom sound boxes | Sounds with letters (1.3), sound boxes (1.4) | A second activity, "Build it", with big tiles and no wrong answer |

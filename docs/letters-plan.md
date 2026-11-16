@@ -266,7 +266,7 @@ teaches most.
 - Needs its own short ADR when it is picked up.
 
 ### G. Then words (own ADR)
-Drafted 2026-11-15 as [ADR 0038](adr/0038-writing-words.md) (Proposed), from
+Drafted 2026-11-15 as [ADR 0039](adr/0039-writing-words.md) (Proposed), from
 [research/words-learning.md](research/words-learning.md). It asks for more narrator lines in this plan's second
 run (its decision W1) and proposes every word open rather than only words made of starred letters (W6). The
 outline it started from:

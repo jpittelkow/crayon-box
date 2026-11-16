@@ -1,4 +1,4 @@
-# 0038. Writing words: the kid's own name first, then short words, one big letter at a time
+# 0039. Writing words: the kid's own name first, then short words, one big letter at a time
 
 - Status: Proposed (draft, 2026-11-15). A first design for the owner to change; the choices still open are in the
   [table below](#decisions-for-the-owner). Acceptance also waits on mockups

@@ -68,7 +68,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    ([ADR 0028](../adr/0028-letter-tracing-whole-letter-and-confirm.md)), and the strokes follow how US schools
    teach print letters (Zaner-Bloser).
    **Writing words** (asked by the owner 2026-11-14), the next level after single letters: researched and
-   drafted 2026-11-15 as [ADR 0038](../adr/0038-writing-words.md) (Proposed, a draft), from
+   drafted 2026-11-15 as [ADR 0039](../adr/0039-writing-words.md) (Proposed, a draft), from
    [research/words-learning.md](../research/words-learning.md). Waiting on the owner's choices W1 to W10; W1 (more
    narrator lines) by 2026-12-06. Nothing built.
 
