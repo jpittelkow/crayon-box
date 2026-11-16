@@ -262,6 +262,124 @@ test("the app's Sounds switch silences the narrator, the drawing sound and the c
   expect(await clipsSaid(page)).toEqual([]);
 });
 
+// ---- The hint ladder (ADR 0037, hints.ts): real time, 5 s, 5 s more, then 8 s more ----
+
+/** Opens a letter from practice, logging clips. */
+async function openLetter(page: Page, ch: string): Promise<void> {
+  await openLetters(page);
+  await page.getByRole('button', { name: 'Practice' }).tap();
+  await page.getByRole('button', { name: `Letter ${ch}`, exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-letter', ch);
+}
+
+/** A finger down (or up) on the letter at a glyph point, as one synthetic pointer event. */
+async function finger(page: Page, type: 'pointerdown' | 'pointerup', at: Pt): Promise<void> {
+  const [p] = await toScreen(page, [at]);
+  await page.evaluate(
+    ({ type, p }) => {
+      document
+        .querySelector('.letters-svg')!
+        .dispatchEvent(new PointerEvent(type, { bubbles: true, pointerType: 'touch', pointerId: 11, width: 10, height: 10, clientX: p.x, clientY: p.y }));
+    },
+    { type, p },
+  );
+}
+
+const ladder = { timeout: 15_000 };
+
+test('a kid who does nothing sees step 1, then 2, then 3, each said (ADR 0037)', async ({ page }) => {
+  test.setTimeout(90_000);
+  await logClips(page);
+  await turnOnLetters(page);
+  await openLetter(page, 'L');
+  // Step 1 at 5 s: the dot pulses bigger and the arrow wiggles; "Start at the green dot.".
+  await expect(traceScreen(page)).toHaveAttribute('data-hints', '1', ladder);
+  await expect(traceScreen(page)).toHaveAttribute('data-nudge', 'dot');
+  await expect.poll(() => clipsSaid(page)).toEqual(['letter-L', 'tip-start-dot']);
+  // Step 2, 5 s later: the fingertip runs along the stroke, "Down." then "Across." at the corner.
+  await expect(traceScreen(page)).toHaveAttribute('data-hints', '1 2', ladder);
+  await expect(page.locator('.letters-demo .letters-hint')).toHaveCount(1);
+  await expect.poll(() => clipsSaid(page)).toEqual(['letter-L', 'tip-start-dot', 'stroke-down', 'stroke-across']);
+  // Step 3, 8 s later: the whole letter with its words, then the start dot and "Your turn!".
+  await expect(traceScreen(page)).toHaveAttribute('data-hints', '1 2 3', ladder);
+  await expect
+    .poll(() => clipsSaid(page), ladder)
+    .toEqual(['letter-L', 'tip-start-dot', 'stroke-down', 'stroke-across', 'stroke-down', 'stroke-across', 'demo-your-turn']);
+  await expect(traceScreen(page)).toHaveAttribute('data-nudge', 'dot');
+  await expect(page.locator('.letters-demo')).toHaveCount(0);
+  // Then it rests, and a finished letter with that much help gets no "All by yourself!".
+  await traceAndConfirm(page, 'L');
+  await expect.poll(async () => (await clipsSaid(page)).some(isPraise), ladder).toBe(true);
+  expect(await clipsSaid(page)).not.toContain('praise-by-yourself');
+});
+
+test('a finger on the letter holds the hints back, and touching it stops a hint being said (ADR 0037)', async ({ page }) => {
+  test.setTimeout(90_000);
+  await logClips(page);
+  await turnOnLetters(page);
+  await openLetter(page, 'L');
+  // A finger held down beside the letter past 5 s: nothing shown, nothing said.
+  const beside = { x: 85, y: 40 };
+  await finger(page, 'pointerdown', beside);
+  await page.waitForTimeout(6500);
+  expect(await traceScreen(page).getAttribute('data-hints')).toBeNull();
+  expect(await clipsSaid(page)).toEqual(['letter-L']);
+  await finger(page, 'pointerup', beside);
+  // Step 1 comes 5 s after the lift; the finger was not on the dot, so it is "Start at the top.".
+  await expect(traceScreen(page)).toHaveAttribute('data-hints', '1', ladder);
+  await expect.poll(() => clipsSaid(page)).toEqual(['letter-L', 'tip-top']);
+  // At step 2, a touch the moment the fingertip starts: it stops, and "Across." is never said.
+  const stopped = await page.evaluate(
+    () =>
+      new Promise<number>((resolve) => {
+        const host = document.querySelector<HTMLElement>('[data-screen="letters-trace"]')!;
+        new MutationObserver((_, obs) => {
+          if (host.dataset.hints !== '1 2') return;
+          obs.disconnect();
+          host.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', pointerId: 12, clientX: 5, clientY: 400 }));
+          host.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch', pointerId: 12, clientX: 5, clientY: 400 }));
+          resolve(document.querySelectorAll('.letters-demo').length);
+        }).observe(host, { attributes: true, attributeFilter: ['data-hints'] });
+      }),
+  );
+  expect(stopped).toBe(0);
+  await page.waitForTimeout(3000);
+  expect(await clipsSaid(page)).not.toContain('stroke-across');
+});
+
+test('a parent turns the spoken tips off; the hints still show (ADR 0037)', async ({ page }) => {
+  test.setTimeout(60_000);
+  await logClips(page);
+  await turnOnLetters(page);
+  await openParentArea(page);
+  await page.getByRole('button', { name: 'Letters', exact: true }).click();
+  const tips = page.getByRole('switch', { name: /^Spoken tips/ });
+  await expect(tips).toBeChecked();
+  await tips.click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await openLetter(page, 'L');
+  await expect(traceScreen(page)).toHaveAttribute('data-hints', '1', ladder);
+  await expect(traceScreen(page)).toHaveAttribute('data-nudge', 'dot');
+  await expect(traceScreen(page)).toHaveAttribute('data-hints', '1 2', ladder);
+  await page.waitForTimeout(2500);
+  // The letter's name is still said; no tip and no stroke word.
+  expect(await clipsSaid(page)).toEqual(['letter-L']);
+});
+
+test('all traced, the check pulses bigger and "Tap the check!" comes after 4 s (ADR 0037)', async ({ page }) => {
+  test.setTimeout(60_000);
+  await logClips(page);
+  await turnOnLetters(page);
+  await openLetter(page, 'L');
+  await trace(page, 'L');
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'ready');
+  await expect(page.locator('.letters-confirm.is-nudged')).toHaveCount(1);
+  await expect.poll(async () => (await clipsSaid(page)).at(-1), ladder).toBe('tip-tap-check');
+  // A letter traced with no hint past the dot: "All by yourself!" may come up (never checked by chance here).
+  await page.getByRole('button', { name: 'Done', exact: true }).tap();
+  await expect(traceScreen(page)).toHaveAttribute('data-done', 'true');
+});
+
 test('the game opens one letter at a time', async ({ page }) => {
   await turnOnLetters(page);
   await openLetters(page);

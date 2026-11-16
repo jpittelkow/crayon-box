@@ -10,7 +10,9 @@
 // over the whole screen) does not finish until it is wiped.
 // Two things for the sounds (ADR 0037): `near` says whether a point is on the letter's road (the drawing sound plays
 // only there), and `add` reports each stroke the moment it is traced, once (the chime).
+// For the hint ladder (hints.ts): `lift` says what a finger's line did, and `atStart` whether a point is on a start dot.
 import { strokeLength, type Glyph, type Pt } from './glyphs';
+import type { LineEnd } from './hints';
 
 /** Checkpoint spacing, in glyph units. */
 const SPACING = 3;
@@ -32,6 +34,8 @@ const OFF_LIMIT = 3;
 const FILL_STEP = 2;
 /** How far from a stroke's line a point is still on the road, in glyph units: half the road's dark edge (25 wide). */
 export const ROAD_HALF = 12.5;
+/** How near a stroke's first point a finger counts as on its start dot, in glyph units (the dot's ring is 14). */
+export const START_REACH = 14;
 
 export interface TraceOptions {
   ordered: boolean;
@@ -51,6 +55,8 @@ export class Tracer {
   private current = 0;
   /** Strokes already reported as traced, so each is reported once. */
   private readonly told: boolean[];
+  /** Per pointer: whether its line covered anything new, and the strokes whose own checkpoints it covered. */
+  private readonly lines = new Map<number, { added: boolean; strokes: Set<number> }>();
 
   constructor(
     readonly glyph: Glyph,
@@ -99,14 +105,16 @@ export class Tracer {
   add(pointer: number, p: Pt, tolerance: number): number[] {
     const prev = this.last.get(pointer);
     this.last.set(pointer, p);
+    let line = this.lines.get(pointer);
+    if (!line) this.lines.set(pointer, (line = { added: false, strokes: new Set() }));
     if (!prev) {
-      this.visit(p, tolerance, 0);
+      this.visit(p, tolerance, 0, line);
     } else {
       const dist = Math.hypot(p.x - prev.x, p.y - prev.y);
       const steps = Math.max(1, Math.ceil(dist / FILL_STEP));
       for (let i = 1; i <= steps; i++) {
         const q = { x: prev.x + ((p.x - prev.x) * i) / steps, y: prev.y + ((p.y - prev.y) * i) / steps };
-        this.visit(q, tolerance, dist / steps);
+        this.visit(q, tolerance, dist / steps, line);
       }
     }
     const finished: number[] = [];
@@ -124,8 +132,28 @@ export class Tracer {
     return this.glyph.strokes.some((stroke) => stroke.some((q) => Math.hypot(q.x - p.x, q.y - p.y) <= ROAD_HALF));
   }
 
-  lift(pointer: number): void {
+  /**
+   * Whether `p` is on the start dot of a stroke still to trace (in stroke order, the current one's): where step 1
+   * of the hints says "Start at the green dot." rather than "Start at the top.".
+   */
+  atStart(p: Pt): boolean {
+    return this.glyph.strokes.some((stroke, s) => {
+      if (this.opts.ordered ? s !== this.current : this.strokeTraced(s)) return false;
+      return Math.hypot(stroke[0].x - p.x, stroke[0].y - p.y) <= START_REACH;
+    });
+  }
+
+  /**
+   * A pointer lifted. Says what its line did: `added` when it covered anything new, `early` when it worked on a
+   * stroke and left it before its end (that stroke isn't traced yet).
+   */
+  lift(pointer: number): LineEnd {
     this.last.delete(pointer);
+    const line = this.lines.get(pointer);
+    this.lines.delete(pointer);
+    if (!line) return { added: false, early: false };
+    const early = !this.done && [...line.strokes].some((s) => !this.strokeTraced(s));
+    return { added: line.added, early };
   }
 
   /** Wipes the trace: the letter starts again. */
@@ -134,6 +162,7 @@ export class Tracer {
     for (const e of this.ends) e.fill(false);
     this.run.fill(0);
     this.last.clear();
+    this.lines.clear();
     this.offInk = 0;
     this.current = 0;
     this.told.fill(false);
@@ -197,7 +226,7 @@ export class Tracer {
     return this.covered.reduce((a, c) => a + c.filter(Boolean).length, 0) / total;
   }
 
-  private visit(p: Pt, tolerance: number, length: number): void {
+  private visit(p: Pt, tolerance: number, length: number, line: { added: boolean; strokes: Set<number> }): void {
     let near = false;
     const reach = tolerance * OFF_FACTOR;
     for (let s = 0; s < this.checkpoints.length; s++) {
@@ -212,6 +241,10 @@ export class Tracer {
         if (d <= Math.min(END_REACH, tolerance)) {
           if (i === 0) this.ends[s][0] = true;
           if (i === cps.length - 1) this.ends[s][1] = true;
+        }
+        if (!this.covered[s][i]) {
+          line.added = true;
+          if (this.own[s][i] || !this.own[s].some(Boolean)) line.strokes.add(s);
         }
         this.covered[s][i] = true;
       }

@@ -1,6 +1,6 @@
 // The letters game's screen in the parent area (ADR 0008, 0012, 0026, 0037): each kid's letter sets and stroke order,
 // resetting a kid's stars and game, what is said with a letter (its name, its sound or both), the voice that says
-// it (with recordings of names and sounds), and sounds.
+// it (with recordings of names and sounds), sounds, and whether the hints' tips are spoken.
 import { drawAvatar } from '../../shell/profiles';
 import type { ParentSectionContext } from '../../shell/types';
 import { button, card, confirmInline, h, segmented, switchRow } from '../../ui/parent';
@@ -138,6 +138,17 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
         settings.sounds,
         (on) => {
           settings.sounds = on;
+          void saveLettersSettings(storage, settings);
+        },
+      ),
+      switchRow(
+        'Spoken tips',
+        'When a kid is stuck, hints come one step at a time: a bigger start dot ("Start at the green dot."), a ' +
+          'fingertip along the next line ("Down."), then the whole letter shown ("Your turn!"). Off, the hints are ' +
+          'still shown, just not said.',
+        settings.tips,
+        (on) => {
+          settings.tips = on;
           void saveLettersSettings(storage, settings);
         },
       ),
