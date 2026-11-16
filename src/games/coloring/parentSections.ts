@@ -1,9 +1,10 @@
-// The coloring game's screens in the parent area (ADR 0005, 0007, 0012): Pictures and Page library.
+// The coloring game's screens in the parent area (ADR 0005, 0007, 0012, 0038): Coloring, Pictures and Page library.
 import { drawAvatar } from '../../shell/profiles';
 import type { KidProfile, ParentSectionContext } from '../../shell/types';
-import { button, card, confirmInline, formatDate, h, switchRow } from '../../ui/parent';
+import { button, card, confirmInline, formatDate, h, segmented, switchRow } from '../../ui/parent';
 import { loadCatalog, type Catalog } from './catalog';
 import { removeFamilyPage } from './family';
+import { NAMED_PICKS, loadNamesSetting, saveNamesSetting, type NamesSetting } from './names';
 import { deletePicture, finishedName, getPaint, hasPrevious, listPictures, restorePrevious, type Picture } from './pictures';
 import { loadSettings, saveSettings } from './settings';
 
@@ -108,6 +109,32 @@ export async function renderPictures(el: HTMLElement, ctx: ParentSectionContext)
     list,
   );
   await drawList();
+}
+
+/** The game's own settings (ADR 0038): how often the narrator says a button's name. */
+export async function renderColoring(el: HTMLElement, ctx: ParentSectionContext): Promise<void> {
+  const say = await loadNamesSetting(ctx.storage);
+  el.append(
+    card(
+      h('h2', {}, 'Button names'),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        `Each button on the coloring screen makes its own sound. The narrator also says its name ("Paint bucket", "Red") ` +
+          `the first ${NAMED_PICKS} times each kid picks it, then only the sound plays. Names follow the Sounds switch under Settings.`,
+      ),
+      segmented<NamesSetting>(
+        'Say button names',
+        [
+          ['first', `First ${NAMED_PICKS} times`],
+          ['always', 'Every time'],
+          ['never', 'Never'],
+        ],
+        say,
+        (value) => void saveNamesSetting(ctx.storage, value),
+      ),
+    ),
+  );
 }
 
 export async function renderLibrary(el: HTMLElement, ctx: ParentSectionContext): Promise<void> {

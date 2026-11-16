@@ -15,6 +15,11 @@ export function letterClip(ch: string): string | undefined {
   return undefined;
 }
 
+/** One of the narrator's clips by its name (`voice/<name>.mp3`, e.g. `tool-bucket`, `color-red`). */
+export function narratorClip(name: string): string | undefined {
+  return soundUrl(`voice/${name}.mp3`);
+}
+
 /** The narrator's praise words, said after a finished letter's cheer (ADR 0032). */
 export const PRAISE = ['yay', 'you-did-it', 'great-job', 'wow'] as const;
 
