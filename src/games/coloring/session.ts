@@ -2,9 +2,18 @@
 import type { ColoringMode, GameContext } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
-import { PALETTE, RAINBOW } from '../../ui/palette';
+import { PALETTE, RAINBOW, WHEEL } from '../../ui/palette';
 import { ToolBadge } from './badge';
-import { ACTION_BUTTONS, MODE_BUTTONS, Narrator, SIZE_BUTTONS, TOOL_BUTTONS, buttonFiles, colorButton } from './buttons';
+import {
+  ACTION_BUTTONS,
+  MODE_BUTTONS,
+  Narrator,
+  SIZE_BUTTONS,
+  TOOL_BUTTONS,
+  buttonFiles,
+  colorButton,
+  wheelButton,
+} from './buttons';
 import { ShowHow } from './demo';
 import { BRUSH_SIZES, ColoringEngine, type Tool } from './engine/engine';
 import { NameCounter, loadNamesSetting, type NamesSetting } from './names';
@@ -22,6 +31,7 @@ import {
 } from './showHow';
 import type { Page } from './pages';
 import { finishedName, savePicture, type Picture } from './pictures';
+import { ColorWheel, SIDE_PADDING, WHEEL_PX, wheelFits } from './wheel';
 
 /** Autosave runs this long after the last action (ADR 0007). */
 export const AUTOSAVE_MS = 1000;
@@ -60,6 +70,7 @@ export class ColoringSession {
   private screen!: HTMLElement;
   private sizePanel!: HTMLElement;
   private badge!: ToolBadge;
+  private wheel!: ColorWheel;
   private readonly names: NameCounter;
   private namesSetting: NamesSetting = 'first';
   private readonly narrator: Narrator;
@@ -297,8 +308,9 @@ export class ColoringSession {
     tray.append(this.sizePanel, modePanel);
     center.append(area, tray);
 
-    // Color rail, right
-    const colors = el('div', 'cb-panel color-rail', { role: 'group', 'aria-label': 'Colors' });
+    // Colors, right: the rail, and the colour wheel under it where the screen has the room (ADR 0038 part 5).
+    const side = el('div', 'cb-panel color-side');
+    const colors = el('div', 'color-rail', { role: 'group', 'aria-label': 'Colors' });
     for (const color of PALETTE) {
       const b = kidButton({
         kind: 'swatch',
@@ -316,11 +328,20 @@ export class ColoringSession {
       this.swatches.set(color.value, b);
       colors.append(b);
     }
+    // A wheel segment is picked like a swatch, works with every tool, and says its plain colour word.
+    this.wheel = new ColorWheel(WHEEL, (color) => {
+      say.pick(wheelButton(color));
+      this.colorValue = color.value;
+      this.engine.color = color.value;
+      this.update();
+    });
+    this.wheel.el.hidden = true;
+    side.append(colors, this.wheel.el);
 
     // The current tool on a dot of the current color follows a finger on the page (ADR 0038). It sits on the whole
     // screen, not the page, so near the page's edge it can stand out over the margin.
     this.badge = new ToolBadge(screen, this.engine.root);
-    screen.append(rail, center, colors, this.badge.el);
+    screen.append(rail, center, side, this.badge.el);
 
     // The show-how plays over the page's corner; any touch stops it (ADR 0038 part 3).
     this.showHow = new ShowHow({
@@ -338,8 +359,23 @@ export class ColoringSession {
     this.root.replaceChildren(screen);
 
     const fit = () => {
-      const w = area.clientWidth - PAGE_BORDER * 2;
       const h = area.clientHeight - PAGE_BORDER * 2 - PAGE_LEDGE;
+      // The wheel shows only where it fits without the page getting smaller (ADR 0019, 0038). Its column is wider than
+      // the rail's, so what the centre would have without it is worked out from what it has now.
+      const sideWithout = colors.offsetWidth + 2 * SIDE_PADDING;
+      const sideWith = Math.max(sideWithout, WHEEL_PX + 2 * SIDE_PADDING);
+      const show = wheelFits({
+        centreWithout: area.clientWidth + side.offsetWidth - sideWithout,
+        sideWithout,
+        sideWith,
+        pageByHeight: Math.floor((h * 4) / 3),
+        pageChrome: PAGE_BORDER * 2,
+        sideHeight: side.clientHeight,
+        swatchesHeight: colors.offsetHeight,
+      });
+      if (this.wheel.el.hidden === show) this.wheel.el.hidden = !show;
+      screen.dataset.wheel = String(show);
+      const w = area.clientWidth - PAGE_BORDER * 2;
       const pageW = Math.max(0, Math.floor(Math.min(w, (h * 4) / 3)));
       frame.style.width = `${pageW}px`;
       frame.style.height = `${Math.floor((pageW * 3) / 4)}px`;
@@ -347,6 +383,7 @@ export class ColoringSession {
     };
     this.resize = new ResizeObserver(fit);
     this.resize.observe(area);
+    this.resize.observe(screen);
     fit();
   }
 
@@ -354,6 +391,7 @@ export class ColoringSession {
     const e = this.engine;
     setPicked(this.tools.values(), this.tools.get(e.tool));
     setPicked(this.swatches.values(), this.swatches.get(this.colorValue));
+    this.wheel.pick(this.colorValue);
     // While the bucket is picked the sizes grey out and none is ringed: they don't apply (ADR 0016, 0038). A tap on
     // one still works: it picks that size and the brush.
     const bucket = e.tool === 'bucket';
