@@ -9,7 +9,10 @@ import { makeAnimals, stepAnimals, type Animal } from './animals';
 import type { AnimalCall } from './assets/animals';
 import { buildGuards, buildSand, guardAt, hillReach, onSand, type Guard } from './ground';
 import { buildLand, keepInland, randomInland, shore, type Land } from './land';
+import { FORD_SPEED, buildStreams } from './ford';
+import { LIGHTS_NEAR, lampFor, lightPosts, lightsJunction, stepLight, wayAt, wayOf, type Light, type Post } from './lights';
 import type { MapDef, OnRoad, ZoneKind } from './map';
+import { MUD_FLY, MUD_POOL, MUD_RINSE, MUD_SPEED, MUD_UP, MUD_WASH, MUD_WATER, zoneAt } from './mud';
 import { HOP_GRAVITY, groundHeight } from './ramps';
 import { buildJunctions, buildRoad, nearestOn, nearestRoad, passes, pointAt, wrapAlong, type Junction, type Road } from './roads';
 
@@ -127,6 +130,8 @@ export interface Car {
   h: number; vy: number;
   /** How soapy it is from a car wash: 1 just out of it, falling to 0 as it rinses off. */
   soap: number;
+  /** How muddy it is (ADR 0042): 0 clean, 1 covered. Mud puts it on; a car wash or clean water takes it off. */
+  mud: number;
   /**
    * Traffic only: the road it drives, how far along it, its lane now and its usual lane (metres right of the
    * centre line), and its own pace.
@@ -169,9 +174,11 @@ export const CONFETTI_POOL = 120;
 /** How many colours confetti comes in (the renderer's crayon colours). */
 export const CONFETTI_HUES = 8;
 
-/** A round patch of water: a shallow puddle, or the deep flood across the road. */
-/** A round patch of water: a shallow puddle, or the deep flood across the road; muddy on a building site. */
-export interface Water { x: number; z: number; r: number; deep: boolean; mud?: boolean }
+/**
+ * A round patch of water: a shallow puddle, or the deep flood across the road; muddy on a building site; or one of
+ * the circles a stream is made of (ADR 0042), which the look draws as the stream instead.
+ */
+export interface Water { x: number; z: number; r: number; deep: boolean; mud?: boolean; stream?: boolean }
 
 /** A ring on the water that spreads and disappears. */
 export interface Ripple { x: number; z: number; life: number; size: number }
@@ -270,10 +277,23 @@ export interface World {
   calls: AnimalCall[];
   /** The vehicles the garage hands out, in order (ADR 0035): the ones a parent has on. */
   pool: VehicleKind[];
+  /** Bits of mud flicked up by wheels in a mud patch (ADR 0042, `fx/mud`), pooled like the puffs. */
+  muds: Puff[];
+  mudNext: number;
+  /** The map's streams (ADR 0042), as paths for the look; their water is in `waters`. */
+  streams: Road[];
+  /** Each traffic-lights zone's lights (ADR 0042), and the poles they stand on (the kid's car slides along them). */
+  lights: Light[];
+  posts: Post[];
+  /** Lights that changed in the last step, for the sounds: `green` when the kid's own way just turned green. */
+  lightChanges: { light: number; green: boolean }[];
 }
 
-/** A map's zone, placed on the ground, and the way it faces. */
-export interface Zone { kind: ZoneKind; x: number; z: number; r: number; heading: number }
+/**
+ * A map's zone, placed on the ground, and the way it faces. One placed on a road also knows which, and how far
+ * along it (traffic lights find their junction that way).
+ */
+export interface Zone { kind: ZoneKind; x: number; z: number; r: number; heading: number; road?: number; s?: number }
 
 function rand(w: World): number {
   w.rng = (w.rng + 0x6d2b79f5) | 0;
@@ -329,14 +349,22 @@ export function makeWorld(
     cheers: [], stacks: [], confetti: [], confettiNext: 0,
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
+    muds: [], mudNext: 0, streams: [], lights: [], posts: [], lightChanges: [],
   };
   for (const z of map.zones ?? []) {
     const p = 'road' in z.on ? pointAt(roads[z.on.road]!, along(w, z.on), z.on.offset ?? 0) : z.on;
-    w.zones.push({ kind: z.kind, x: p.x, z: p.z, r: z.r, heading: 'heading' in p ? (p.heading ?? 0) : 0 });
+    const on = 'road' in z.on ? { road: z.on.road, s: along(w, z.on) } : {};
+    w.zones.push({ kind: z.kind, x: p.x, z: p.z, r: z.r, heading: 'heading' in p ? (p.heading ?? 0) : 0, ...on });
   }
+  // Traffic lights (ADR 0042): each starts green along its own road; its poles stand beside the roads.
+  w.zones.forEach((zone, i) => {
+    if (zone.kind !== 'lights') return;
+    w.lights.push({ zone: i, phase: 0, t: 0, heading: zone.heading, road: zone.road ?? 0, cross: lightsJunction(zone, w.junctions)?.road });
+    w.posts.push(...lightPosts(zone, i, roads, w.junctions));
+  });
   const car = (kind: VehicleKind, on: OnRoad, cruise: number): Car => {
     const c: Car = {
-      kind, x: 0, z: 0, heading: 0, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, h: 0, vy: 0, soap: 0,
+      kind, x: 0, z: 0, heading: 0, speed: cruise, spin: 0, y: 0, wet: 0, wake: 0, h: 0, vy: 0, soap: 0, mud: 0,
       road: on.road, s: along(w, on), lane: on.offset ?? 0, home: on.offset ?? 0, cruise,
       dir: 1, mode: CRUISE, timer: 0, cool: 0,
     };
@@ -371,6 +399,10 @@ export function makeWorld(
       w.waters.push({ x: x + Math.sin(lobe) * size * 0.7, z: z + Math.cos(lobe) * size * 0.7, r: size * 0.65, deep: false, mud: row.mud });
     }
   }
+  // Streams (ADR 0042): shallow water all along, crossed by the roads at fords.
+  const streams = buildStreams(map, w.land);
+  w.streams = streams.paths;
+  for (const s of streams.waters) w.waters.push({ ...s, deep: false, stream: true });
 
   // A random point on the land, no closer than `gap` to its edge.
   const onLand = (gap: number): [number, number] => randomInland(w.land, () => rand(w), gap);
@@ -423,6 +455,7 @@ export function makeWorld(
     if (w.trees.some((t) => Math.hypot(x - t.x, z - t.z) < 1.6 * t.scale)) continue;
     if (waterAt(w, x, z) === 2) continue;
     if (w.zones.some((zone) => Math.hypot(x - zone.x, z - zone.z) < zone.r + 1)) continue;
+    if (w.posts.some((p) => Math.hypot(x - p.x, z - p.z) < 1.5)) continue;
     if (nearTarget(x, z)) continue;
     // Not inside a hill (unless on its tunnel's road), and not out over the water on a bridge.
     if (onHill(x, z, 1) && !guardAt(w.guards, roads, x, z)) continue;
@@ -452,6 +485,7 @@ export function makeWorld(
   for (let i = 0; i < 48; i++) w.puffs.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 160; i++) w.drops.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < 40; i++) w.ripples.push({ x: 0, z: 0, life: 0, size: 1 });
+  for (let i = 0; i < MUD_POOL; i++) w.muds.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   for (let i = 0; i < CONFETTI_POOL; i++) {
     w.confetti.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0, hue: i % CONFETTI_HUES, turn: 0, phase: 0 });
   }
@@ -470,14 +504,20 @@ function toyAt(toy: ToyId, x: number, y: number, z: number, yaw: number): Prop {
   };
 }
 
-/** 0 for dry land, 1 in a puddle, 2 in the flood. */
+/** 0 for dry land, 1 in a puddle (or a stream), 2 in the flood. */
 export function waterAt(w: World, x: number, z: number): number {
-  let found = 0;
+  const p = waterUnder(w, x, z);
+  return p ? (p.deep ? 2 : 1) : 0;
+}
+
+/** The water at a point, or null on dry land; deep water first where two meet. */
+export function waterUnder(w: World, x: number, z: number): Water | null {
+  let found: Water | null = null;
   for (const p of w.waters) {
     const dx = x - p.x, dz = z - p.z;
     if (dx * dx + dz * dz > p.r * p.r) continue;
-    if (p.deep) return 2;
-    found = 1;
+    if (p.deep) return p;
+    found ??= p;
   }
   return found;
 }
@@ -592,6 +632,9 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   // Sand holds it to a slower top speed (milestone-3 B4).
   const sandy = onSand(w.sand, car.x, car.z);
   if (sandy) cap = Math.min(cap, SAND_SPEED);
+  // Mud and a ford hold it to a squelchy or splashy wade (ADR 0042).
+  const slow = wadeSpeed(w, car);
+  if (slow !== null) cap = Math.min(cap, slow);
 
   if (backing) {
     const want = -back;
@@ -605,6 +648,8 @@ function stepKidCar(w: World, input: Input, dt: number): void {
   if (car.wet === 2 && car.speed > wade) car.speed = Math.max(wade, car.speed - 30 * dt);
   // A car wash slows it to a crawl from just before it, so the brushes and the bubbles show.
   if (inWash(w, car, 5, ['car-wash', 'garage']) && car.speed > WASH_SPEED) car.speed = Math.max(WASH_SPEED, car.speed - 30 * dt);
+  // Driven into mud or a ford fast, it is held back harder, as in the flood.
+  if (slow !== null && car.speed > slow) car.speed = Math.max(slow, car.speed - 20 * dt);
 
   const turn = 2.1 * Math.min(1, car.speed / 5) * (1 - 0.35 * (car.speed / MAX_SPEED));
   if (w.assist === 'road' || w.rescue > 0) steer = roadSteer(w);
@@ -647,6 +692,8 @@ function stepKidCar(w: World, input: Input, dt: number): void {
     return [nx * over, nz * over];
   };
   for (const t of w.trees) pushOut(t.x, t.z, SCENERY[t.kind].radius * t.scale + 1.3, 0.985);
+  // The traffic lights' poles (ADR 0042): thin, beside the road; the car slides past one it touches.
+  for (const p of w.posts) pushOut(p.x, p.z, VEHICLE_SIZE[car.kind].side + POST_R, 0.99);
   // A bump with traffic is a toy bump (ADR 0031): both cars shove apart and the kid's car barely slows.
   const own = VEHICLE_SIZE[car.kind].side;
   for (let i = 1; i < w.cars.length; i++) {
@@ -790,6 +837,10 @@ function stepTraffic(w: World, dt: number): void {
     want = clamp(want, 3, MAX_SPEED + 4);
     if (c.wet === 2) want = Math.min(want, FLOOD_SPEED - 1);
     if (inWash(w, c, 5)) want = Math.min(want, WASH_SPEED);
+    const slow = wadeSpeed(w, c);
+    if (slow !== null) want = Math.min(want, slow);
+    // Traffic lights (ADR 0042): on its own, traffic waits at red and amber, stopping short of the junction.
+    if (c.mode === CRUISE) want = Math.min(want, lightsWant(w, c));
     // Traffic gives way (driving-assets.md): the kid's car just ahead in its lane, at a junction, on a bridge or
     // anywhere, and it slows and waits rather than drive into it.
     if (c.mode === CRUISE) {
@@ -851,12 +902,29 @@ function splash(w: World, x: number, z: number, vx: number, vz: number, count: n
 /** Splashes on the way in, spray off the back wheels, a wake and a sinking, bobbing car in the flood. */
 function stepWater(w: World, dt: number): void {
   w.cars.forEach((car, i) => {
-    const now = waterAt(w, car.x, car.z);
+    const water = waterUnder(w, car.x, car.z);
+    const now = water ? (water.deep ? 2 : 1) : 0;
     const fx = Math.sin(car.heading), fz = Math.cos(car.heading);
+    // A ford (ADR 0042) throws a bow wave going in and spray off both sides while crossing.
+    const ford = zoneAt(w.zones, 'ford', car.x, car.z) !== undefined;
     if (now > car.wet && car.speed > 2) {
-      splash(w, car.x + fx * 1.6, car.z + fz * 1.6, fx * car.speed, fz * car.speed, now === 2 ? 20 : 8, now === 2 ? 7.5 : 4.5);
+      const big = now === 2 || ford;
+      splash(w, car.x + fx * 1.6, car.z + fz * 1.6, fx * car.speed, fz * car.speed, big ? 20 : 8, now === 2 ? 7.5 : ford ? 6 : 4.5);
       if (i === 0) w.splashes.push(now);
     }
+    if (ford && now && Math.abs(car.speed) > 2) {
+      const { side } = VEHICLE_SIZE[car.kind];
+      for (const s of [-1, 1]) {
+        if (fxRand(w) > 0.6) continue;
+        // Right of the heading is (−cos h, sin h).
+        drop(w, car.x - fz * s * side, 0.25, car.z + fx * s * side,
+          -fz * s * (2 + fxRand(w) * 2) + fx * car.speed * 0.4, 2.5 + fxRand(w) * 2.5, fx * s * (2 + fxRand(w) * 2) + fz * car.speed * 0.4);
+      }
+    }
+    // Muddy water muds a car up a little (ADR 0042); clean water washes mud off, and a ford's as fast as a car wash.
+    if (water?.mud) car.mud = Math.max(car.mud, Math.min(MUD_WATER, car.mud + MUD_UP * dt));
+    else if (ford) car.mud = Math.max(0, car.mud - dt / MUD_WASH);
+    else if (water) car.mud = Math.max(0, car.mud - dt / MUD_RINSE);
     if (now && car.speed > 3 && rand(w) < car.speed / MAX_SPEED + 0.25) {
       const side = rand(w) < 0.5 ? -0.98 : 0.98;
       drop(w, car.x - fx * 1.3 + fz * side, 0.3, car.z - fz * 1.3 - fx * side,
@@ -1093,6 +1161,95 @@ function stepProps(w: World, dt: number): void {
   }
 }
 
+/** How thick a traffic light's pole is for the kid's car (its radius, metres). */
+const POST_R = 0.3;
+
+/** The top speed mud or a ford holds a vehicle to (ADR 0042), or null on firm ground. Good waders go faster. */
+function wadeSpeed(w: World, c: Car): number | null {
+  if (zoneAt(w.zones, 'mud', c.x, c.z)) return MUD_SPEED + VEHICLE_FEEL[c.kind].wade;
+  if (zoneAt(w.zones, 'ford', c.x, c.z)) return FORD_SPEED + VEHICLE_FEEL[c.kind].wade;
+  return null;
+}
+
+/**
+ * The speed a traffic car wants for the traffic lights ahead (ADR 0042): free on green; on amber or red it eases to
+ * a stop with its front at the junction's edge, or behind a car already waiting there. One already at the edge
+ * carries on through rather than stop in the junction.
+ */
+function lightsWant(w: World, c: Car): number {
+  let want = Infinity;
+  const fx = Math.sin(c.heading), fz = Math.cos(c.heading);
+  const ahead = (x: number, z: number) => (x - c.x) * fx + (z - c.z) * fz;
+  const across = (x: number, z: number) => -(x - c.x) * fz + (z - c.z) * fx;
+  for (const light of w.lights) {
+    const zone = w.zones[light.zone]!;
+    const a = ahead(zone.x, zone.z);
+    if (a <= 0 || a > 30 || Math.abs(across(zone.x, zone.z)) > zone.r + 2) continue;
+    const way = c.road === light.road ? 'main' : c.road === light.cross ? 'cross' : wayOf(light.heading, c.heading);
+    if (lampFor(light.phase, way) === 'green') continue;
+    const stop = zone.r + VEHICLE_SIZE[c.kind].half + 0.5;
+    if (a < stop - 0.5) continue;
+    want = Math.min(want, Math.max(0, (a - stop) * 1.2));
+    // A queue: stop behind traffic already waiting in this lane, rather than drive into it.
+    for (const o of w.cars.slice(1)) {
+      if (o === c || Math.cos(o.heading - c.heading) < 0.7) continue;
+      const oa = ahead(o.x, o.z);
+      if (oa <= 0 || oa > a || Math.abs(across(o.x, o.z)) > 1.6) continue;
+      want = Math.min(want, Math.max(0, (oa - VEHICLE_SIZE[c.kind].half - VEHICLE_SIZE[o.kind].half - 2) * 1.2));
+    }
+  }
+  return want;
+}
+
+/**
+ * Traffic lights (ADR 0042): each cycles on its own, but turns green for the kid's way as the kid's car comes near
+ * (moving toward them, or inside the junction), and stays green while it is there. The kid's car never waits.
+ */
+function stepLights(w: World, dt: number): void {
+  const kid = w.cars[0]!;
+  w.lights.forEach((light, i) => {
+    const zone = w.zones[light.zone]!;
+    const dx = zone.x - kid.x, dz = zone.z - kid.z, d = Math.hypot(dx, dz);
+    const toward = (dx * Math.sin(kid.heading) + dz * Math.cos(kid.heading)) * Math.sign(kid.speed) > 0;
+    const coming = d < zone.r + 4 || (d < LIGHTS_NEAR && Math.abs(kid.speed) > 1 && toward);
+    const want = coming ? wayAt(light, w.roads, kid.x, kid.z, kid.heading) : null;
+    if (stepLight(light, dt, want)) w.lightChanges.push({ light: i, green: want !== null && lampFor(light.phase, want) === 'green' });
+  });
+}
+
+/**
+ * Mud (ADR 0042): a vehicle in a mud patch gets muddy, and its wheels flick bits of mud up behind it (looks only,
+ * from the looks-only stream). The bits fly, fall and are gone.
+ */
+function stepMud(w: World, dt: number): void {
+  const kid = w.cars[0]!;
+  for (const c of w.cars) {
+    if (!zoneAt(w.zones, 'mud', c.x, c.z)) continue;
+    c.mud = Math.min(1, c.mud + MUD_UP * dt);
+    const v = Math.abs(c.speed);
+    if (v < 2 || Math.hypot(c.x - kid.x, c.z - kid.z) > 80 || fxRand(w) > 0.25 + (v / MAX_SPEED) * 0.8) continue;
+    const { half, side } = VEHICLE_SIZE[c.kind];
+    const fx = Math.sin(c.heading), fz = Math.cos(c.heading), back = Math.sign(c.speed);
+    const s = fxRand(w) < 0.5 ? -side * 0.8 : side * 0.8;
+    const m = w.muds[w.mudNext]!;
+    w.mudNext = (w.mudNext + 1) % w.muds.length;
+    m.x = c.x - fx * half * 0.7 * back + fz * s;
+    m.z = c.z - fz * half * 0.7 * back - fx * s;
+    m.y = 0.3;
+    m.vx = -fx * c.speed * 0.35 + (fxRand(w) - 0.5) * 2.5;
+    m.vz = -fz * c.speed * 0.35 + (fxRand(w) - 0.5) * 2.5;
+    m.vy = 2.5 + fxRand(w) * 3;
+    m.life = MUD_FLY * (0.7 + fxRand(w) * 0.3);
+  }
+  for (const m of w.muds) {
+    if (m.life <= 0) continue;
+    m.life -= dt;
+    m.vy -= 18 * dt;
+    m.x += m.vx * dt; m.y += m.vy * dt; m.z += m.vz * dt;
+    if (m.y < 0.08) m.life = 0;
+  }
+}
+
 /** Whether a car is inside a car wash's arch (or a garage, with `kinds`), or within `approach` metres of it. */
 function inWash(w: World, c: Car, approach = 0, kinds: ZoneKind[] = ['car-wash']): boolean {
   return w.zones.some((z) => kinds.includes(z.kind) && Math.hypot(c.x - z.x, c.z - z.z) < z.r + approach);
@@ -1103,7 +1260,12 @@ function inWash(w: World, c: Car, approach = 0, kinds: ZoneKind[] = ['car-wash']
  * car sheds bubbles while it is soapy, more the soapier it is.
  */
 function stepWash(w: World, dt: number): void {
-  for (const c of w.cars) c.soap = inWash(w, c) ? Math.min(1, c.soap + dt * 1.5) : Math.max(0, c.soap - dt / RINSE);
+  for (const c of w.cars) {
+    const washing = inWash(w, c);
+    c.soap = washing ? Math.min(1, c.soap + dt * 1.5) : Math.max(0, c.soap - dt / RINSE);
+    // The brushes take mud off (ADR 0042).
+    if (washing) c.mud = Math.max(0, c.mud - dt / MUD_WASH);
+  }
   const kid = w.cars[0]!;
   if (kid.soap > 0 && rand(w) < kid.soap * 0.9) {
     const b = w.bubbles[w.bubbleNext]!;
@@ -1198,11 +1360,14 @@ export function step(w: World, input: Input, dt: number): void {
   w.zoneEvents.length = 0;
   w.landings.length = 0;
   w.calls.length = 0;
+  w.lightChanges.length = 0;
   stepKidCar(w, input, dt);
   stepZones(w);
+  stepLights(w, dt);
   stepTraffic(w, dt);
   stepHops(w, dt);
   stepWash(w, dt);
+  stepMud(w, dt);
   stepAnimals(w.animals, w.cars[0]!, w.honked, dt, () => rand(w), w.calls);
   w.honked = false;
   stepWater(w, dt);
