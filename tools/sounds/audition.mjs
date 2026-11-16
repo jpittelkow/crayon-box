@@ -1,4 +1,4 @@
-// Picking narrator takes by ear (ADR 0032, 0037). Works on the folder generate.mjs writes with ONLY=letters2
+// Picking narrator takes by ear (ADR 0032, 0037). Works on the folder generate.mjs writes with ONLY=letters2 and ONLY=coloring
 // (copied back from the container, e.g. to C:\tmp\gen3).
 //
 //   node tools/sounds/audition.mjs page <gen folder>
@@ -7,7 +7,7 @@
 //   node tools/sounds/audition.mjs apply <gen folder> <picks.json> <sources folder>
 //     copies each picked take to <sources folder>/narrator/<id>.mp3, where prepare.mjs looks for narrator clips,
 //     and prints the IDS=… list of lines marked redo, for the next generate.mjs run.
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const [cmd, gen, picksFile, sources] = process.argv.slice(2);
@@ -15,13 +15,22 @@ if (!gen || (cmd !== 'page' && cmd !== 'apply') || (cmd === 'apply' && (!picksFi
   console.error('usage: audition.mjs page <gen folder> | apply <gen folder> <picks.json> <sources folder>');
   process.exit(1);
 }
-const manifest = JSON.parse(readFileSync(join(gen, 'manifest.json'), 'utf8'));
+// Every batch in the folder: manifest.json (letters2) and manifest-<batch>.json (coloring, …).
+const manifests = readdirSync(gen).filter((f) => /^manifest(-[a-z0-9]+)?\.json$/.test(f))
+  .sort((a, b) => (a === 'manifest.json' ? -1 : b === 'manifest.json' ? 1 : a.localeCompare(b)))
+  .map((f) => JSON.parse(readFileSync(join(gen, f), 'utf8')));
+if (manifests.length === 0) { console.error(`no manifest*.json in ${gen}`); process.exit(1); }
+const manifest = {
+  clips: manifests.flatMap((m) => m.clips.map((c) => ({ ...c, batch: m.batch ?? 'letters2' }))),
+  maisie: manifests.flatMap((m) => m.maisie ?? []),
+  errors: manifests.flatMap((m) => m.errors ?? []),
+};
 
 /** Lines in the order made, each with its takes. */
 function lines() {
   const byId = new Map();
   for (const c of manifest.clips) {
-    if (!byId.has(c.id)) byId.set(c.id, { id: c.id, input: c.input, takes: [] });
+    if (!byId.has(c.id)) byId.set(c.id, { id: c.id, input: c.input, batch: c.batch, takes: [] });
     byId.get(c.id).takes.push({ take: c.take, file: c.file });
   }
   return [...byId.values()];
@@ -35,21 +44,24 @@ if (cmd === 'apply') {
   let copied = 0;
   for (const line of lines()) {
     const pick = picks[line.id];
-    if (pick === 'redo' || pick === undefined) { redo.push(line.id); continue; }
-    const take = line.takes.find((t) => t.take === pick);
-    if (!take || !existsSync(join(gen, take.file))) { redo.push(line.id); continue; }
+    const take = pick === 'redo' ? undefined : line.takes.find((t) => t.take === pick);
+    if (!take || !existsSync(join(gen, take.file))) { redo.push(line); continue; }
     copyFileSync(join(gen, take.file), join(out, `${line.id}.mp3`));
     copied++;
   }
   console.log(`copied ${copied} picked takes to ${out}`);
-  if (redo.length) console.log(`not picked or marked redo (${redo.length}):\nIDS=${redo.join(',')}`);
+  if (redo.length) console.log(`not picked or marked redo (${redo.length}):`);
+  for (const batch of new Set(redo.map((l) => l.batch))) {
+    console.log(`  ONLY=${batch} IDS=${redo.filter((l) => l.batch === batch).map((l) => l.id).join(',')}`);
+  }
   process.exit(0);
 }
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const group = (id) => id.split('-')[0];
 const GROUPS = { sound: 'Letter sounds', tip: 'Tips', stroke: 'Stroke words', demo: 'How-to demo', praise: 'Praise',
-  shape: 'Lines and shapes', level: 'Later levels', word: 'Words' };
+  shape: 'Lines and shapes', level: 'Later levels', word: 'Words', tool: 'Coloring: tools', do: 'Coloring: what they do',
+  size: 'Coloring: brush sizes', mode: 'Coloring: modes', color: 'Coloring: colours' };
 let html = '';
 let last = '';
 for (const line of lines()) {
