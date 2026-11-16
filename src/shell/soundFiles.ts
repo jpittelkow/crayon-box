@@ -15,6 +15,11 @@ export function letterClip(ch: string): string | undefined {
   return undefined;
 }
 
+/** One of the narrator's clips by its name (`voice/<name>.mp3`, e.g. `tool-bucket`, `color-red`). */
+export function narratorClip(name: string): string | undefined {
+  return soundUrl(`voice/${name}.mp3`);
+}
+
 /**
  * The narrator saying a letter's sound ("buh" for B; the short vowels with their word, "ah… apple"), for the
  * "name then sound" and "sound only" settings (ADR 0037). Small letters share their capital's; digits have none.

@@ -4,7 +4,7 @@
 // setting); the setting is its own file so it syncs on its own (ADR 0024).
 import type { GameStorage } from '../storage/types';
 import { soundUrl } from './soundFiles';
-import type { Sound, SoundKind } from './types';
+import type { Effect, Sound, SoundKind } from './types';
 
 const PATH = 'sounds.json';
 
@@ -83,23 +83,45 @@ export class WebAudioSound implements Sound {
   }
 
   play(kind: SoundKind): void {
+    this.effect(SOUNDS[kind]);
+  }
+
+  effect(spec: Effect): void {
     if (!this.on) return;
     try {
       const ctx = this.context();
       if (ctx.state === 'suspended') void ctx.resume();
-      const spec = SOUNDS[kind];
       void this.buffer(ctx, spec.file).then((buf) => {
         if (!buf) return;
         const src = ctx.createBufferSource();
         src.buffer = buf;
-        src.playbackRate.value = spec.rate;
+        src.playbackRate.value = spec.rate ?? 1;
         const gain = ctx.createGain();
-        gain.gain.value = spec.gain;
+        const level = spec.gain ?? 1;
+        gain.gain.value = level;
         src.connect(gain).connect(ctx.destination);
-        src.start();
+        if (spec.seconds === undefined) {
+          src.start();
+          return;
+        }
+        // Only the start of the file: a short fade at the end, so it doesn't stop with a click.
+        const t = ctx.currentTime, fade = Math.min(0.04, spec.seconds / 3);
+        gain.gain.setValueAtTime(level, t + spec.seconds - fade);
+        gain.gain.linearRampToValueAtTime(0, t + spec.seconds);
+        src.start(t, 0, spec.seconds * (spec.rate ?? 1));
       });
     } catch {
       // No audio device, or audio blocked: stay silent. A kid screen never shows an error (ADR 0016 rule 6).
+    }
+  }
+
+  preload(files: readonly string[]): void {
+    if (!this.on) return;
+    try {
+      const ctx = this.context();
+      for (const file of files) void this.buffer(ctx, file);
+    } catch {
+      // No audio here: stay silent.
     }
   }
 

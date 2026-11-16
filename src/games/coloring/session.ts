@@ -3,7 +3,10 @@ import type { ColoringMode, GameContext } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import { PALETTE, RAINBOW } from '../../ui/palette';
+import { ToolBadge } from './badge';
+import { ACTION_BUTTONS, MODE_BUTTONS, Narrator, SIZE_BUTTONS, TOOL_BUTTONS, buttonFiles, colorButton } from './buttons';
 import { BRUSH_SIZES, ColoringEngine, type Tool } from './engine/engine';
+import { NameCounter, loadNamesSetting, type NamesSetting } from './names';
 import type { Page } from './pages';
 import { finishedName, savePicture, type Picture } from './pictures';
 
@@ -39,6 +42,10 @@ export class ColoringSession {
   private readonly modes = new Map<ColoringMode, HTMLButtonElement>();
   private screen!: HTMLElement;
   private sizePanel!: HTMLElement;
+  private badge!: ToolBadge;
+  private readonly names: NameCounter;
+  private namesSetting: NamesSetting = 'first';
+  private readonly narrator: Narrator;
 
   constructor(
     private readonly root: HTMLElement,
@@ -56,9 +63,20 @@ export class ColoringSession {
     });
     this.engine.mode = picture.meta.mode;
     this.colorValue = this.engine.color;
+    this.names = new NameCounter(ctx.storage, picture.kid);
+    this.narrator = new Narrator(ctx.sound, this.names, () => this.namesSetting);
   }
 
   async start(paint: Blob | undefined): Promise<void> {
+    // Names are a nicety: if their files can't be read, the screen still opens and every button still sounds.
+    await Promise.all([
+      this.names.load().catch((err) => console.error('Could not read the button names heard', err)),
+      loadNamesSetting(this.ctx.storage).then(
+        (s) => void (this.namesSetting = s),
+        (err) => console.error('Could not read the button names setting', err),
+      ),
+    ]);
+    this.ctx.sound.preload?.(buttonFiles());
     this.build();
     await this.engine.load(this.page.url, paint);
   }
@@ -89,6 +107,7 @@ export class ColoringSession {
   async close(): Promise<void> {
     clearTimeout(this.timer);
     this.resize?.disconnect();
+    this.badge?.destroy();
     await this.save();
     await this.writeFinished();
     this.engine.destroy();
@@ -110,11 +129,12 @@ export class ColoringSession {
   // ---- Screen ----
 
   private build(): void {
-    const sound = this.ctx.sound;
+    const say = this.narrator;
     const screen = el('div', 'coloring', { 'data-screen': 'coloring', 'data-page': this.page.id });
     this.screen = screen;
 
-    // Tool rail, left
+    // Tool rail, left. Picks (tools, sizes, modes, colors) fire on touch-down; back, undo and start over on lift
+    // (ADR 0038). Each says what it is (buttons.ts).
     const rail = el('div', 'cb-panel tool-rail');
     // Saving a big picture can take a moment; more taps on Back meanwhile must not leave twice.
     const back = kidButton({
@@ -124,6 +144,7 @@ export class ColoringSession {
       onTap: () => {
         if (this.leaving) return;
         this.leaving = true;
+        say.pick(ACTION_BUTTONS.back);
         this.back();
       },
     });
@@ -138,8 +159,8 @@ export class ColoringSession {
         kind: 'tool',
         label,
         html,
-        onTap: () => {
-          sound.play('tap');
+        onPress: () => {
+          say.pick(TOOL_BUTTONS[tool]);
           this.engine.tool = tool;
           this.update();
         },
@@ -155,7 +176,8 @@ export class ColoringSession {
         label: 'Undo',
         html: icons.undo(),
         onTap: () => {
-          if (this.engine.undo()) sound.play('undo');
+          // With nothing to undo the engine plays its quiet "nothing" tap instead.
+          if (this.engine.undo()) say.pick(ACTION_BUTTONS.undo);
         },
       }),
       kidButton({
@@ -163,7 +185,7 @@ export class ColoringSession {
         label: 'Start over',
         html: icons.startOver(),
         onTap: () => {
-          sound.play('tap');
+          say.pick(ACTION_BUTTONS['start-over']);
           this.engine.startOver();
         },
       }),
@@ -185,8 +207,8 @@ export class ColoringSession {
         label,
         className: 'cb-size',
         html: `<i style="width:${DOT_PX[i]}px;height:${DOT_PX[i]}px"></i>`,
-        onTap: () => {
-          sound.play('tap');
+        onPress: () => {
+          say.pick(SIZE_BUTTONS[i]!);
           this.sizeIndex = i;
           this.engine.size = BRUSH_SIZES[i];
           // Sizes belong to the brush and eraser: picking one while the bucket is picked picks the brush (ADR 0016).
@@ -208,8 +230,8 @@ export class ColoringSession {
         label,
         html,
         className: 'cb-mode',
-        onTap: () => {
-          sound.play('tap');
+        onPress: () => {
+          say.pick(MODE_BUTTONS[mode]);
           if (this.engine.mode === mode) return;
           // The mode belongs to the picture and only affects strokes made after the switch (ADR 0004).
           this.engine.mode = mode;
@@ -232,8 +254,8 @@ export class ColoringSession {
         kind: 'swatch',
         label: color.label,
         className: color.value === RAINBOW ? 'cb-swatch--rainbow' : '',
-        onTap: () => {
-          sound.play('tap');
+        onPress: () => {
+          say.pick(colorButton(color.token));
           this.colorValue = color.value;
           this.engine.color = color.value;
           this.update();
@@ -245,7 +267,10 @@ export class ColoringSession {
       colors.append(b);
     }
 
-    screen.append(rail, center, colors);
+    // The current tool on a dot of the current color follows a finger on the page (ADR 0038). It sits on the whole
+    // screen, not the page, so near the page's edge it can stand out over the margin.
+    this.badge = new ToolBadge(screen, this.engine.root);
+    screen.append(rail, center, colors, this.badge.el);
     this.update();
     this.root.replaceChildren(screen);
 
@@ -266,13 +291,16 @@ export class ColoringSession {
     const e = this.engine;
     setPicked(this.tools.values(), this.tools.get(e.tool));
     setPicked(this.swatches.values(), this.swatches.get(this.colorValue));
-    setPicked(this.sizes, this.sizes[this.sizeIndex]);
+    // While the bucket is picked the sizes grey out and none is ringed: they don't apply (ADR 0016, 0038). A tap on
+    // one still works: it picks that size and the brush.
+    const bucket = e.tool === 'bucket';
+    setPicked(this.sizes, bucket ? undefined : this.sizes[this.sizeIndex]);
     setPicked(this.modes.values(), this.modes.get(e.mode));
-    // While the bucket is picked the size tray fades (ADR 0016).
-    this.sizePanel.classList.toggle('is-faded', e.tool === 'bucket');
+    this.sizePanel.classList.toggle('is-faded', bucket);
     const rainbow = this.colorValue === RAINBOW;
     this.screen.style.setProperty('--current-paint', rainbow ? RAINBOW_ICON : this.colorValue);
     this.screen.style.setProperty('--current-dot', rainbow ? 'var(--crayon-rainbow)' : this.colorValue);
     this.screen.dataset.tool = e.tool;
+    this.badge.show(e.tool, this.sizeIndex, this.colorValue);
   }
 }
