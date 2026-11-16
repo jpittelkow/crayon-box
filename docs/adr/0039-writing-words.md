@@ -1,10 +1,13 @@
 # 0039. Writing words: the kid's own name first, then short words, one big letter at a time
 
-- Status: Proposed (draft, 2026-11-15). A first design for the owner to change; the choices still open are in the
-  [table below](#decisions-for-the-owner) (W1 is settled). Acceptance also waits on mockups
+- Status: Accepted (2026-11-15). The owner took the recommendation on every choice in the
+  [table below](#decisions-for-the-owner) (W1 to W10), with the pictures (W9) capped at $8 of AI calls, and
+  accepted it without mockups: the built screens are judged instead. The words batch ships take 1 of every line
+  (as for letters); for each slow word the stretched take is used and the other kept beside it, so a word can be
+  swapped after listening
 - Date: 2026-11-15
 - Builds on: [ADR 0026](0026-letter-practice.md), [0028](0028-letter-tracing-whole-letter-and-confirm.md),
-  [0032](0032-sounds-as-files.md) and [0037](0037-letters-sound-tips-and-how-to.md) (Proposed). Supersedes nothing
+  [0032](0032-sounds-as-files.md) and [0037](0037-letters-sound-tips-and-how-to.md). Supersedes nothing
 
 ## Context
 The owner asked (2026-11-14, again 2026-11-15) for a way to write words, the next level after single letters. ADR

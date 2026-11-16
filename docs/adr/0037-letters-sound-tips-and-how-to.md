@@ -1,7 +1,8 @@
 # 0037. Letters: more sound, a hint ladder, a first-time how-to, and every narrator line made before 2026-12-31
 
-- Status: Proposed (drafted 2026-11-15 from [letters-plan.md](../letters-plan.md)). The owner settled decisions
-  D1 to D12 on 2026-11-15, taking every recommendation; acceptance waits on the mockups
+- Status: Accepted (2026-11-15). Drafted from [letters-plan.md](../letters-plan.md); the owner settled D1 to D12
+  the same day, taking every recommendation, then accepted it without mockups: the built screens are judged
+  instead
 - Date: 2026-11-15
 - Builds on: [ADR 0026](0026-letter-practice.md), [0028](0028-letter-tracing-whole-letter-and-confirm.md),
   [0032](0032-sounds-as-files.md). Would supersede 0026's single idle hint ("a small hand shows the first stroke
