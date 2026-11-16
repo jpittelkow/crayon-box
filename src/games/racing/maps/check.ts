@@ -293,6 +293,29 @@ export function placeProblems(map: MapDef): string[] {
   return out;
 }
 
+/**
+ * How far from a road a place a kid can reach may be, in metres: the highway plan's decision D6 as proposed (45 m;
+ * ADR 0035 said 25 m, which neither built-in map keeps). Not a load check yet: the map viewer and the map editor
+ * show the places over it in red (`farFromRoad`).
+ */
+export const ROAD_REACH = 45;
+
+/**
+ * The places a kid can reach (on the land or a bridge, outside hills) further than `reach` metres from every road,
+ * sampled on a grid `step` metres apart: the middle of each cell over it. For the map tools; not a load check.
+ */
+export function farFromRoad(w: World, step = 4, reach = ROAD_REACH): [number, number][] {
+  const out: [number, number][] = [];
+  const { minX, maxX, minZ, maxZ } = w.land;
+  for (let x = minX + step / 2; x < maxX; x += step) {
+    for (let z = minZ + step / 2; z < maxZ; z += step) {
+      if (!allowedAt(w, x, z) || inHill(w, x, z)) continue;
+      if ((nearestRoad(w.roads, x, z)?.dist ?? Infinity) > reach) out.push([x, z]);
+    }
+  }
+  return out;
+}
+
 /** Everything wrong with a map, shape first: where things are is checked only once the shape is right. */
 export function mapProblems(raw: unknown): string[] {
   const shape = shapeProblems(raw);
