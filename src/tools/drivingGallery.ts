@@ -197,7 +197,7 @@ panel.style.cssText = 'position: fixed; left: 8px; top: 8px; max-width: 340px; m
 document.body.append(canvas, overlay, panel);
 
 const shownBy: Record<string, string> = {
-  vehicles: 'front row', toys: 'second row', scenery: 'third row', decor: 'bushes on the map', roads: 'the road loop',
+  vehicles: 'front row', toys: 'second row', scenery: 'third row', decor: 'bushes on the map', roads: 'the road loop, the roundabout, the quay',
   ground: 'the map: grass, sand, a puddle, the flood, a stream, the sea', setpieces: 'far side of the loop and beyond it (?row=setpieces)',
   animals: 'not in the gallery yet',
   effects: 'back row', sky: 'the sky',

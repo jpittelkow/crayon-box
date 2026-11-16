@@ -1,7 +1,8 @@
 # 0042. Driving game: more set pieces, mud, a ford, traffic lights, a roundabout and a harbour
 
 - Status: Accepted (2026-11-15, on the owner's defaults: all five pieces, each a zone with an animation and a
-  sound, stand-in sounds from shipped files; built in two parts, mud, the ford and the lights first)
+  sound, stand-in sounds from shipped files; built in two parts, mud, the ford and the lights first, the roundabout
+  and the harbour on 2026-11-16)
 - Date: 2026-11-15
 - Builds on [ADR 0012](0012-multi-game-shell.md) (no way to lose), [0021](0021-racing-game.md) (nothing stops or
   traps the car), [0025](0025-driving-game-toy-look-and-engine-sounds.md), [0032](0032-sounds-as-files.md),
@@ -14,8 +15,8 @@
 The to-do list's map pieces, second item: more set pieces and zone kinds, "each a zone plus an animation and a
 sound, like the ramp and car wash": a mud zone (mud puddles exist; a zone kind doesn't), a ford through a river, a
 roundabout, traffic lights for show only (they never stop the kid), and a harbour. The owner accepted all five on
-2026-11-15, with stand-in sounds. They are built in two parts: **mud, the ford and the lights now**; the roundabout
-and the harbour next, to the design below.
+2026-11-15, with stand-in sounds. They were built in two parts: **mud, the ford and the lights** on 2026-11-15, the
+**roundabout and the harbour** on 2026-11-16, to the design below (where the build differs, the text says so).
 
 Sorted with the catalog's rule, each is a **set piece** (category 7): something happens when the car arrives. What
 a set piece does to the car's look is a **vehicle state** (muddy, wet), not an asset. The ford also needs a **road
@@ -24,10 +25,11 @@ piece** (`road/ford`, the road through the water) and **water** to cross (`water
 ## Decision
 
 ### Every new set piece
-- **A zone kind** in `sim/map.ts` (`mud`, `ford`, `lights`; later `roundabout`, `harbour`), placed in a map's
+- **A zone kind** in `sim/map.ts` (`mud`, `ford`, `lights`, `roundabout`, `harbour`), placed in a map's
   `zones` like the ramp and the car wash: on a road (`OnRoad`) or by its middle. A zone on a road now also knows its
   road and how far along it (`Zone.road`, `Zone.s`).
-- **What it does** in its own file under `sim/` (`mud.ts`, `ford.ts`, `lights.ts`), plain numbers, tested in its
+- **What it does** in its own file under `sim/` (`mud.ts`, `ford.ts`, `lights.ts`, `roundabout.ts`, `harbour.ts`),
+  plain numbers, tested in its
   own test file. **The look** in `look/setpieces.ts`, at most 15,000 triangles each. **The sound** in
   `DrivingSound` (`sound.ts`), stand-ins from files the app ships (ADR 0032) until takes of their own.
 - **Traffic uses it too**, as it uses the car wash, and every vehicle gets the fun.
@@ -84,28 +86,44 @@ piece** (`road/ford`, the road through the water) and **water** to cross (`water
   the junction's lights are this set piece. When the wobble behaviour is built, the poles can wobble instead of
   being solid.
 
-### A roundabout (`setpiece/roundabout` on `road/roundabout`; next)
-- **The road:** a closed ring about 14 m across its centre line, as wide as the roads, with up to four roads joining
-  it at its edge (each a three-way junction on the ring, which the road network already has). Traffic goes round one
-  way only, anticlockwise seen from above (it keeps right, as on every map); a road can be marked one-way for this.
-  The kid's car may go either way; nothing stops it.
-- **The zone:** the whole roundabout. **The middle** is a low round bed of grass and flowers inside a kerb the car
-  drives over (cutting across is fine), with a fountain in the centre whose basin is a circle the car slides round.
-- **What happens:** "follows the road" goes round and takes the exits in turn (the junction rule); traffic gives way
-  to the kid's car coming onto the ring (as at every junction).
-- **The look and animation:** the fountain's jets rise and fall; painted arrows round the ring (no words). **The
-  sound:** the fountain's splashing, louder near it (stand-in: the puddle file, looped softly).
-- **On a map:** a town-like junction; on today's maps, where the spur meets the shortcut on the island, if it fits.
+### A roundabout (`setpiece/roundabout` on `road/roundabout`; built)
+- **The road:** a closed ring, as wide as the roads, with up to four roads joining it at its edge (each a three-way
+  junction on the ring, which the road network already has). Built **16 m across its centre line** (a radius of 8 m),
+  not about 14: with 9 m roads, 14 left a middle under 3 m across, too small for the bed and the fountain. The ring
+  is `ringRoad` in `sim/roads.ts`, marked **one-way** (`RoadDef.oneWay`): traffic goes round it anticlockwise seen
+  from above (it keeps right, as on every map). The kid's car may go either way; nothing stops it.
+- **The zone:** the whole roundabout, by its middle (`r` is the ring's outer edge); it finds its ring (`Zone.ring`).
+  **The middle** is a low round bed of grass and flowers inside a red and white kerb the car drives over (cutting
+  across is fine, at full speed), with a fountain in the centre whose basin (3.2 m across) is a circle the car slides
+  round.
+- **What happens:** traffic slows to **7 m/s** in the roundabout and goes round; at each junction on the ring it
+  leaves or not by the usual chance, so it leaves by every exit. "Follows the road" goes round **with** the traffic
+  (on a one-way road it always goes forward) and takes the exits in turn (the junction rule). Traffic gives way to
+  the kid's car as at every junction; on the ring's tight curve a straight line ahead cuts across the other lane, so
+  there traffic waits only for a kid's car in its own lane and passes one in the other lane.
+- **The look and animation:** the fountain's jets (six round a centre one) rise and fall in a wave; painted arrows in
+  both lanes round the ring (no words). **The sound:** the fountain's splashing, louder near it (stand-in: the puddle
+  file looped softly, a little high).
+- **On a map:** the island, where the spur meets the shortcut, south of the hill. The shortcut is cut in two by the
+  ring (the shortcut from the north, and on to the loop in the south, road 4), so three roads join it; the car wash
+  moved a little south to keep the zones apart.
 
-### A harbour (`setpiece/harbour`; next)
-- **The zone:** a stretch of road along the shore as a stone quay. Its sea side is a low edge with bollards that
-  keep the car on the quay, as a bridge's rails do (a guard on one side): the car slides along it and never drives
-  into the sea.
-- **What happens:** boats moored along it bob (moving parts the set piece owns; the island's moored boats move
-  into it), and one boat now and then sails out and comes back. **The kid's horn** in the harbour is answered by a
-  ship's horn (stand-in: the horn file, low and long); waves lap louder there.
+### A harbour (`setpiece/harbour`; built)
+- **The zone:** a stretch of road along the shore as a stone quay: the zone sits on the road, and the quay runs its
+  radius each way along it. The map puts the shore 2 m past the road's edge there. Its sea side (the side the land
+  ends on, found by the simulation) is a low edge with bollards that keeps the car on the quay, as a bridge's rails
+  do: a **guard on one side** (`Guard.side`, kind `quay`). The car slides along it and never drives into the sea; on
+  the quay itself the shore does not turn the car (the edge holds it), past its ends it does as anywhere.
+- **What happens:** boats moored along it bob (moving parts the set piece owns, `World.boats`: the island's two bay
+  boats moved into it, three in all); the last one along the quay sails out every minute, through the bay to the
+  sea and back on a path the zone gives (`sail`, about 38 s), and lies back along the quay. **The kid's horn** in the
+  harbour (or within 10 m of it) is answered by a ship's horn 0.7 s later, once, and not again for 3 s (stand-in:
+  the horn file, low and long); waves lap louder near it (stand-in: the puddle file looped low and slow, swelling and
+  falling).
 - **Traffic** drives the quay as any road.
-- **On a map:** the island's bay, by the bridge, where its boats already are.
+- **On a map:** the island's bay, by the bridge. The bay's north shore was redrawn: a basin opens north of the bay
+  between a narrow headland and the loop, and the loop runs along its west side, just north of the bridge, as the
+  quay (28 m). A puddle that sat there went, and a row of stars moved to the north of the loop.
 
 ### How a map places them
 - In `zones`, like the ramp and car wash; `maps.test.ts` keeps every map's zones apart (more than both radii and
@@ -116,11 +134,13 @@ piece** (`road/ford`, the road through the water) and **water** to cross (`water
 
 ### Budgets
 - **Looks:** each piece within 15,000 triangles (a patch of mud about 3,600; a ford with 60 m of stream about
-  3,500; a junction's lights about 4,200), checked in `assets.test.ts`.
+  3,500; a junction's lights about 4,200; a roundabout's middle and arrows about 4,300; the island's harbour, its
+  quay and three boats, about 9,000), checked in `assets.test.ts`.
 - **Effects:** one pool of 60 bits of mud; spray at a ford comes from the drops' pool.
 - **Simulation:** a few zone checks per vehicle a step; a stream adds about 40 shallow circles to the map's water
   (the island's water checks grow from about 20 circles to about 60); the lights check the kid's car against two
-  roads once a step.
+  roads once a step. A roundabout's ring is a path of about 200 points (close, so a lane's offset doesn't jump on so
+  tight a curve); the harbour moves a few boats a step and checks the horn.
 
 ## Consequences
 - Muddy is the first vehicle state that lasts until something takes it off; later states (a sandy car, a bubbly
@@ -128,6 +148,9 @@ piece** (`road/ford`, the road through the water) and **water** to cross (`water
 - The ford's stream is a new kind of water a map can draw anywhere; ducks paddling on it, and a bridge over it, are
   later work.
 - The sounds are stand-ins; takes of their own wait for the open question of how new sound files are made.
-- The building site and island pictures in the picker were drawn again (`npm run pictures:driving`).
+- The building site and island pictures in the picker were drawn again (`npm run pictures:driving`), and the
+  island's again for its roundabout and harbour.
+- A one-way road and a guard on one side are new to the road network; later maps can use them (a one-way street, a
+  quay or a sea wall).
 - If a playtest shows a kid wants the lights to stop them (some kids like to play "red light, green light"), that is
   a new ADR: today the kid never waits.

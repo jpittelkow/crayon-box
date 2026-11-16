@@ -218,9 +218,10 @@ Rules for roads:
 |---|---|---|
 | `road/curve` | built | any stretch between junctions; the ring is one closed curve |
 | `road/junction` | built (three-way, 2026-11-15) | an open road joins another at its ends (`from`, `to`); traffic and "follows the road" pick a way there, and traffic gives way to the kid's car. Four-way is still to do |
-| `road/roundabout` | planned (ADR 0042) | a one-way ring with roads joining at its edge; a drive-over flower bed and a fountain in the middle (`setpiece/roundabout`) |
+| `road/roundabout` | built (2026-11-16, ADR 0042, `ringRoad`) | a one-way ring (`oneWay`), 16 m across its centre line, with roads joining at its edge at three-way junctions; traffic goes round anticlockwise; a drive-over flower bed and a fountain in the middle (`setpiece/roundabout`) |
 | `road/bridge-deck` | built (2026-11-15, a `bridge` guard) | a wooden deck over the water with white rails the car slides along; the shore doesn't turn the car back on or near it |
 | `road/tunnel-floor` | built (2026-11-15, a `tunnel` guard) | walls keep the car on the road; stone portals at both ends; the hill around it is a map `hill`. Lamps were tried and dropped: with no tunnel walls drawn, they float when the hill fades |
+| `road/quay` | built (2026-11-16, ADR 0042, a `quay` guard from a `harbour` zone) | a road along the shore: stone out to the water, a low edge with bollards on the sea side only that the car slides along; the shore doesn't turn the car on it |
 | `road/ford` | built (2026-11-15, ADR 0042) | where a road crosses a `water/stream`: the stream runs over the road, foam at its edges; the `ford` zone (`setpiece/ford`) |
 | `road/ramp` | planned (ADR 0021) | the slope; the jump is the set piece |
 
@@ -232,7 +233,7 @@ Rules for roads:
 | `road/crossing` | idea | zebra stripes; picture only, no one waits at it |
 | `road/kerb` | idea | town streets; the car rolls over it |
 | `road/verge` | idea | grass strip along lanes |
-| `road/arrow` | idea | painted arrows at a roundabout, no words |
+| `road/arrow` | built (2026-11-16, ADR 0042) | painted arrows in both lanes round a roundabout's ring, no words |
 
 Things that stand along roads (lamp posts, traffic lights, signs, fence panels) are toys that wobble or tumble
 (see Border cases); a map can line them up along a road curve.
@@ -266,8 +267,8 @@ sails); see Border cases.
 | `setpiece/mud` | built (2026-11-15, ADR 0042, `sim/mud.ts`) | building site | a patch of mud: every vehicle crawls (7 m/s, good waders faster) and comes out muddy; mud flicks off the wheels; bubbles pop; a squelch (stand-in) |
 | `setpiece/ford` | built (2026-11-15, ADR 0042, `sim/ford.ts`) | island | where a road crosses a stream: a wade (9 m/s), a bow wave and spray, wet, mud washed off; ripples drift downstream; a big splash (stand-in) |
 | `setpiece/traffic-lights` | built (2026-11-15, ADR 0042, `sim/lights.ts`) | island | at a junction, for show: they cycle; the kid's way turns green as it comes, so the kid never waits; traffic waits at red and queues; a click and a ding (stand-ins) |
-| `setpiece/roundabout` | planned (ADR 0042) | town, island | on a `road/roundabout`: traffic goes round one way, the fountain in the middle splashes |
-| `setpiece/harbour` | planned (ADR 0042) | island | a quay along the shore with bollards the car slides along; boats bob, one sails out and back; a ship's horn answers the kid's |
+| `setpiece/roundabout` | built (2026-11-16, ADR 0042, `sim/roundabout.ts`) | island, town | on a `road/roundabout`: traffic slows to 7 m/s and goes round one way, leaving by every exit; "follows the road" goes round with it and takes the exits in turn; the kid's car may cut across the bed or go round either way and slides round the fountain's basin; the jets rise and fall; splashing (stand-in) |
+| `setpiece/harbour` | built (2026-11-16, ADR 0042, `sim/harbour.ts`) | island | on a `road/quay`: boats moored along it bob, the last sails out to sea and back every minute; a ship's horn answers the kid's (stand-in); waves lap louder near it (stand-in); traffic drives the quay |
 | `setpiece/windmill` | idea | country | sails turn faster when the car is near |
 | `setpiece/level-crossing` | idea | country | a train crosses on a bridge overhead, never across the road |
 
