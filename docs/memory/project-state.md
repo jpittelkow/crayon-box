@@ -69,8 +69,9 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    teach print letters (Zaner-Bloser).
    **Writing words** (asked by the owner 2026-11-14), the next level after single letters: researched and
    drafted 2026-11-15 as [ADR 0039](../adr/0039-writing-words.md) (Proposed, a draft), from
-   [research/words-learning.md](../research/words-learning.md). Waiting on the owner's choices W1 to W10; W1 (more
-   narrator lines) by 2026-12-06. Nothing built.
+   [research/words-learning.md](../research/words-learning.md). W1 settled 2026-11-15: 84 more narrator lines
+   (`ONLY=words` in `tools/sounds/generate.mjs`), not yet run; run and pick before 2026-12-13. Waiting on the
+   owner's choices W2 to W10. Nothing built.
 
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
 3D models and a lot of design; only its prototype came early. Deferred: printing and export (ADR 0010).

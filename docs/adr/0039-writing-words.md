@@ -1,7 +1,7 @@
 # 0039. Writing words: the kid's own name first, then short words, one big letter at a time
 
 - Status: Proposed (draft, 2026-11-15). A first design for the owner to change; the choices still open are in the
-  [table below](#decisions-for-the-owner). Acceptance also waits on mockups
+  [table below](#decisions-for-the-owner) (W1 is settled). Acceptance also waits on mockups
 - Date: 2026-11-15
 - Builds on: [ADR 0026](0026-letter-practice.md), [0028](0028-letter-tracing-whole-letter-and-confirm.md),
   [0032](0032-sounds-as-files.md) and [0037](0037-letters-sound-tips-and-how-to.md) (Proposed). Supersedes nothing
@@ -106,24 +106,32 @@ A finished word's tile gets a star, like a letter's.
 - No on-screen keyboard, timer, score, spelling test, sentences or sight-word drills (ADR 0003, 0012).
 
 ## Narrator lines to add before 2026-12-13
-Made like the rest of ADR 0037's batch (three takes each, picked by ear). Made on a guess, as that ADR accepted
-for its word lines; a line never used costs a few cents.
+**Settled by the owner on 2026-11-15 (W1): add them.** They are the `words` batch of `tools/sounds/generate.mjs`
+(`ONLY=words`), made like the rest of ADR 0037's lines: three takes each, picked by ear on the audition page, run
+the way the letters plan's phase A describes. Made on a guess, as that ADR accepted for its word lines; a line
+never used costs a few cents.
 
-| Group | Lines |
-|---|---|
-| Name | "Let's write your name." · "You wrote your name!" |
-| Words | "Let's write a word." · "Listen." · "Tap a letter to hear it." · "Let's write it again." |
-| Build it (later step 1) | "Build the word." · "Put the letters in the boxes." |
-| Your way (later step 3) | "Write it your way." · "What sound does it start with?" · "It starts with…" |
-| Slow words | the 24 words, each stretched ("sssuuunnn") |
-| More words (spares) | mom · dad · car · van · jet · zoo · bee · yes · no · hi · go · up · baby · love · truck · and their slow takes where they can be stretched |
+| Group | Clips | Lines |
+|---|---|---|
+| Name | `word-your-name` · `praise-your-name` | "Let's write your name." · "You wrote your name!" |
+| Words | `word-lets-write` · `word-listen` · `word-tap-letter` · `word-again` | "Let's write a word." · "Listen." · "Tap a letter to hear it." · "Let's write it again." |
+| Build it (later step 1) | `build-word` · `build-boxes` | "Build the word." · "Put the letters in the boxes." |
+| Your way (later step 3) | `way-your-way` · `way-what-sound` · `way-starts-with` | "Write it your way." · "What sound does it start with?" · "It starts with…" |
+| More words (spares) | `word-<word>` | mom · dad · car · van · jet · zoo · bee · yes · no · hi · go · up · baby · love · truck |
+| Slow words | `slow-<word>` and `slow-<word>-alt` | the 24 words of ADR 0037 and mom, dad, van, jet, yes |
 
-About 11 lines, 24 slow words and 15 spare words: roughly 50 to 65 lines, 150 to 200 requests.
+- **Each slow word is asked for two ways**, because it is not known which the voice does well: `slow-<word>` reads
+  a stretched spelling ("sssuuunnn": sounds that can be held are written three times, b, c, d, g, j, p, t and x
+  once), and `slow-<word>-alt` is the plain word with only the direction to draw it out. One of each pair is
+  picked by ear and the other left. If neither is good, the app plays the letters' sounds in a row instead.
+- The other spare words (car, zoo, bee, no, hi, go, up, baby, love, truck) have no slow take: their letters don't
+  each make their usual sound.
+- 11 lines, 15 spare words and 58 slow takes: **84 lines, 252 requests**, about what the letters batch cost.
 
 ## Decisions for the owner
 | # | Decision | Options | Recommended | Needed by |
 |---|---|---|---|---|
-| W1 | **More narrator lines** | the table above, edited · only ADR 0037's 26 | **Add them**, and add any family favourites a parent won't want to record | **2026-12-06**, the batch's second run |
+| W1 | **More narrator lines** | the table above, edited · only ADR 0037's 26 | **Add them**. **Settled 2026-11-15: added as listed.** A word the family wants said by the narrator can still join until the last run | the run itself by **2026-12-13**, the last planned one |
 | W2 | Where Words lives | a third tile in Letters · its own game on the home screen | **In Letters**: same screen, checker and settings | before building |
 | W3 | How a word is laid out | one big letter at a time with a row of boxes · the whole word across the screen · across only for words of three letters | **One big letter**: a name of eight letters across the laptop's screen leaves letters too small for a finger | before mockups |
 | W4 | Finishing | letters move on by themselves, one check for the word · a check after every letter (as in ADR 0028) | **One check per word**: four checks for a three-letter word is a lot of tapping | before mockups |
