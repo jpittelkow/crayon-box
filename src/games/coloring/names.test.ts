@@ -130,6 +130,41 @@ describe('the narrator', () => {
     expect(counter.heard('color-blue')).toBe(1);
   });
 
+  it('tells when it has gone quiet: after a name waiting and said, or at once when stopped (the show-how waits)', async () => {
+    const { sound } = setup();
+    let playing: { onended: (() => void) | null } | undefined;
+    vi.stubGlobal(
+      'Audio',
+      class {
+        onended: (() => void) | null = null;
+        constructor(readonly src: string) {}
+        play() {
+          playing = this;
+          return Promise.resolve();
+        }
+        pause() {}
+      },
+    );
+    const narrator = new Narrator(sound, new NameCounter(game(), 'star'), () => 'always');
+    let quiet = false;
+    await narrator.quiet();
+    narrator.pick(TOOL_BUTTONS.eraser);
+    void narrator.quiet().then(() => (quiet = true));
+    await vi.advanceTimersByTimeAsync(NAME_DELAY_MS + 10);
+    expect(playing).toBeDefined();
+    expect(quiet).toBe(false);
+    playing!.onended!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(quiet).toBe(true);
+
+    quiet = false;
+    narrator.pick(TOOL_BUTTONS.brush);
+    void narrator.quiet().then(() => (quiet = true));
+    narrator.stop();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(quiet).toBe(true);
+  });
+
   it('says nothing with names set to never, or with sounds off', async () => {
     const never = setup();
     new Narrator(never.sound, new NameCounter(game(), 'star'), () => 'never').pick(TOOL_BUTTONS.brush);

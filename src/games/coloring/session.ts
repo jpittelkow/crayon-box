@@ -5,8 +5,21 @@ import { el, kidButton, setPicked } from '../../ui/kid';
 import { PALETTE, RAINBOW } from '../../ui/palette';
 import { ToolBadge } from './badge';
 import { ACTION_BUTTONS, MODE_BUTTONS, Narrator, SIZE_BUTTONS, TOOL_BUTTONS, buttonFiles, colorButton } from './buttons';
+import { ShowHow } from './demo';
 import { BRUSH_SIZES, ColoringEngine, type Tool } from './engine/engine';
 import { NameCounter, loadNamesSetting, type NamesSetting } from './names';
+import {
+  demoOnOpen,
+  demoOnPick,
+  emptyRecord,
+  loadAsk,
+  loadRecord,
+  saveRecord,
+  seen,
+  started,
+  type Demo,
+  type ShowHowRecord,
+} from './showHow';
 import type { Page } from './pages';
 import { finishedName, savePicture, type Picture } from './pictures';
 
@@ -22,6 +35,10 @@ const RAINBOW_ICON = '#9b5de5';
 /** The page's outline and the drop under it, around the 4:3 drawing area. */
 const PAGE_BORDER = 5;
 const PAGE_LEDGE = 8;
+
+/** A first-page demo waits this long after the page appears; a first pick's waits for the tool's name too. */
+const OPEN_DEMO_MS = 1200;
+const PICK_DEMO_MS = 300;
 
 export class ColoringSession {
   private readonly engine: ColoringEngine;
@@ -46,6 +63,12 @@ export class ColoringSession {
   private readonly names: NameCounter;
   private namesSetting: NamesSetting = 'first';
   private readonly narrator: Narrator;
+  private showHow!: ShowHow;
+  private shown: ShowHowRecord = emptyRecord();
+  /** When a parent last asked for "Show the buttons" for this kid. */
+  private asked = 0;
+  private showHowSaving: Promise<void> = Promise.resolve();
+  private closed = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -75,10 +98,32 @@ export class ColoringSession {
         (s) => void (this.namesSetting = s),
         (err) => console.error('Could not read the button names setting', err),
       ),
+      // So is the show-how: unreadable, it just doesn't play.
+      Promise.all([loadRecord(this.ctx.storage, this.picture.kid), loadAsk(this.ctx.storage, this.picture.kid)]).then(
+        ([rec, asked]) => {
+          this.shown = rec;
+          this.asked = asked;
+        },
+        (err) => {
+          this.shown = { ...emptyRecord(), page: true, seen: ['bucket', 'brush', 'eraser'] };
+          console.error('Could not read the show-how record', err);
+        },
+      ),
     ]);
     this.ctx.sound.preload?.(buttonFiles());
     this.build();
     await this.engine.load(this.page.url, paint);
+    const demo = demoOnOpen(this.shown, this.asked, this.engine.tool, Date.now());
+    if (demo && !this.closed) this.showHow.play(demo, OPEN_DEMO_MS);
+  }
+
+  /** Keeps what the kid has seen of the show-how; saves run one after another and never throw. */
+  private recordShowHow(change: (rec: ShowHowRecord) => ShowHowRecord): void {
+    this.shown = change(this.shown);
+    const snapshot = this.shown;
+    this.showHowSaving = this.showHowSaving
+      .then(() => saveRecord(this.ctx.storage, this.picture.kid, snapshot))
+      .catch((err) => console.error('Could not save the show-how record', err));
   }
 
   private changed(): void {
@@ -105,10 +150,13 @@ export class ColoringSession {
   }
 
   async close(): Promise<void> {
+    this.closed = true;
     clearTimeout(this.timer);
     this.resize?.disconnect();
     this.badge?.destroy();
+    this.showHow?.destroy();
     await this.save();
+    await this.showHowSaving;
     await this.writeFinished();
     this.engine.destroy();
   }
@@ -163,6 +211,9 @@ export class ColoringSession {
           say.pick(TOOL_BUTTONS[tool]);
           this.engine.tool = tool;
           this.update();
+          // The first pick of a tool shows what it does, after its name (ADR 0038 part 3).
+          const demo = demoOnPick(this.shown, tool, Date.now());
+          if (demo) this.showHow.play(demo, PICK_DEMO_MS);
         },
       });
       b.dataset.tool = tool;
@@ -170,26 +221,25 @@ export class ColoringSession {
       toolGroup.append(b);
     }
     const actions = el('div', 'rail-group');
-    actions.append(
-      kidButton({
-        kind: 'action',
-        label: 'Undo',
-        html: icons.undo(),
-        onTap: () => {
-          // With nothing to undo the engine plays its quiet "nothing" tap instead.
-          if (this.engine.undo()) say.pick(ACTION_BUTTONS.undo);
-        },
-      }),
-      kidButton({
-        kind: 'action',
-        label: 'Start over',
-        html: icons.startOver(),
-        onTap: () => {
-          say.pick(ACTION_BUTTONS['start-over']);
-          this.engine.startOver();
-        },
-      }),
-    );
+    const undo = kidButton({
+      kind: 'action',
+      label: 'Undo',
+      html: icons.undo(),
+      onTap: () => {
+        // With nothing to undo the engine plays its quiet "nothing" tap instead.
+        if (this.engine.undo()) say.pick(ACTION_BUTTONS.undo);
+      },
+    });
+    const startOver = kidButton({
+      kind: 'action',
+      label: 'Start over',
+      html: icons.startOver(),
+      onTap: () => {
+        say.pick(ACTION_BUTTONS['start-over']);
+        this.engine.startOver();
+      },
+    });
+    actions.append(undo, startOver);
     rail.append(back, toolGroup, actions);
 
     // Page and tray, middle. The page takes all the room the rails and tray leave, at 4:3 (ADR 0019).
@@ -271,6 +321,19 @@ export class ColoringSession {
     // screen, not the page, so near the page's edge it can stand out over the margin.
     this.badge = new ToolBadge(screen, this.engine.root);
     screen.append(rail, center, colors, this.badge.el);
+
+    // The show-how plays over the page's corner; any touch stops it (ADR 0038 part 3).
+    this.showHow = new ShowHow({
+      screen,
+      frame,
+      page: this.engine.root,
+      narrator: say,
+      sound: this.ctx.sound,
+      look: () => ({ color: this.colorValue, sizeIndex: this.sizeIndex }),
+      button: (step) => (step === 'undo' ? undo : step === 'start-over' ? startOver : this.tools.get(step)),
+      onStart: () => this.recordShowHow((rec) => started(rec, Date.now())),
+      onSeen: (demo: Demo) => this.recordShowHow((rec) => seen(rec, demo)),
+    });
     this.update();
     this.root.replaceChildren(screen);
 
