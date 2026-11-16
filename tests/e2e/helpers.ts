@@ -118,6 +118,58 @@ export async function openParentArea(page: Page): Promise<void> {
   await expect(page.locator('[data-screen="parent-area"]')).toBeVisible();
 }
 
+/** The parent area's way back to the kid screens. */
+export const BACK_TO_KIDS = /^Back to (coloring|the kids)$/;
+
+/**
+ * Records, before the app loads, every sound file the app starts through Web Audio (`__sounds`, by URL) and every
+ * narrator clip it plays through an audio element (`__clips`). A buffer is traced back to its file through the
+ * response it was read from.
+ */
+export async function recordSounds(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __sounds: string[]; __clips: string[] };
+    w.__sounds = [];
+    w.__clips = [];
+    const fromResponse = new WeakMap<ArrayBuffer, string>();
+    const fromBuffer = new WeakMap<AudioBuffer, string>();
+    const read = Response.prototype.arrayBuffer;
+    Response.prototype.arrayBuffer = async function () {
+      const data = await read.call(this);
+      fromResponse.set(data, this.url);
+      return data;
+    };
+    const decode = BaseAudioContext.prototype.decodeAudioData;
+    BaseAudioContext.prototype.decodeAudioData = function (this: BaseAudioContext, data: ArrayBuffer) {
+      const url = fromResponse.get(data);
+      return decode.call(this, data).then((buf) => {
+        if (url) fromBuffer.set(buf, url);
+        return buf;
+      });
+    } as typeof decode;
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args: Parameters<typeof start>) {
+      w.__sounds.push((this.buffer && fromBuffer.get(this.buffer)) ?? '?');
+      return start.apply(this, args);
+    };
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function () {
+      w.__clips.push(this.currentSrc || this.src);
+      return play.call(this);
+    };
+  });
+}
+
+const count = (list: string[], part: string) => list.filter((u) => u.includes(part)).length;
+
+/** How many times a sound file whose URL contains `part` was started (after `recordSounds`). */
+export const sounds = async (page: Page, part: string) =>
+  count(await page.evaluate(() => (window as unknown as { __sounds: string[] }).__sounds), part);
+
+/** How many times a narrator clip whose URL contains `part` was played (after `recordSounds`). */
+export const clips = async (page: Page, part: string) =>
+  count(await page.evaluate(() => (window as unknown as { __clips: string[] }).__clips), part);
+
 export async function pick(page: Page, name: string): Promise<void> {
   if (name !== 'Back') {
     await page.getByRole('button', { name, exact: true }).tap();

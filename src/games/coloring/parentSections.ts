@@ -7,6 +7,7 @@ import { removeFamilyPage } from './family';
 import { NAMED_PICKS, loadNamesSetting, saveNamesSetting, type NamesSetting } from './names';
 import { deletePicture, finishedName, getPaint, hasPrevious, listPictures, restorePrevious, type Picture } from './pictures';
 import { loadSettings, saveSettings } from './settings';
+import { askShowButtons, showButtonsWaiting } from './showHow';
 
 const urls: string[] = [];
 function blobUrl(blob: Blob): string {
@@ -111,7 +112,7 @@ export async function renderPictures(el: HTMLElement, ctx: ParentSectionContext)
   await drawList();
 }
 
-/** The game's own settings (ADR 0038): how often the narrator says a button's name. */
+/** The game's own settings (ADR 0038): how often the narrator says a button's name, and "Show the buttons". */
 export async function renderColoring(el: HTMLElement, ctx: ParentSectionContext): Promise<void> {
   const say = await loadNamesSetting(ctx.storage);
   el.append(
@@ -134,6 +135,49 @@ export async function renderColoring(el: HTMLElement, ctx: ParentSectionContext)
         (value) => void saveNamesSetting(ctx.storage, value),
       ),
     ),
+    await showButtonsCard(ctx),
+  );
+}
+
+/** "Show the buttons" (ADR 0038 part 4): a parent asks for every demo, slowly, the next time a kid opens a page. */
+async function showButtonsCard(ctx: ParentSectionContext): Promise<HTMLElement> {
+  const rows = await Promise.all(
+    ctx.kids.map(async (kid) => {
+      const label = ctx.kidLabel(kid);
+      const status = h('span', { class: 'pw-muted' });
+      const waiting = (on: boolean) => {
+        status.textContent = on ? `Plays the next time ${label} opens a page.` : '';
+      };
+      waiting(await showButtonsWaiting(ctx.storage, kid.id).catch(() => false));
+      const dot = h('span', { class: 'pw-avatar', style: 'width: 32px; height: 32px; border-width: 2px' });
+      drawAvatar(dot, kid, undefined, 18);
+      return h(
+        'div',
+        { class: 'pw-row', 'data-kid': kid.id },
+        dot,
+        h('span', { style: 'font-weight: 700' }, label),
+        h('div', { class: 'pw-grow' }, status),
+        button(`Show ${label} the buttons`, () => {
+          void askShowButtons(ctx.storage, kid.id).then(
+            () => waiting(true),
+            (err) => console.error('Could not ask for the show-how', err),
+          );
+        }),
+      );
+    }),
+  );
+  return card(
+    h('h2', {}, 'Show the buttons'),
+    h('p', {}, 'Sit with your kid the first time. Tap each button and say what it does.'),
+    h(
+      'p',
+      { class: 'pw-muted' },
+      'Each tool shows what it does once, in a corner of the page: the first time a kid opens a page and the first ' +
+        'time they pick it, with the narrator saying what it does. Any touch stops it, and the picture is never ' +
+        'changed. "Show the buttons" plays every one in turn, slowly, the next time that kid opens a page, for you to ' +
+        'watch together.',
+    ),
+    ...rows,
   );
 }
 

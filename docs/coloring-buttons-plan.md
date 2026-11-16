@@ -3,7 +3,7 @@
 To-do section 2. In the playtest of 2026-11-15 a kid didn't know what any coloring button does, and the owner asked
 for a colour wheel next to the swatches. Drafted 2026-11-15; the decision is
 [ADR 0038](adr/0038-coloring-buttons-a-kid-can-work-out.md) (Accepted). **Built 2026-11-15:** phases B (names and
-sounds) and C (the tool at the finger); see "As built" under Phases. D, E and F are not built.
+sounds), C (the tool at the finger) and D (the show-how); see "As built" under Phases. E and F are not built.
 
 ## The screen today
 Left rail: back, paint bucket, brush, eraser, undo, start over. Under the page: three brush-size dots and two
@@ -126,6 +126,33 @@ Then a playtest: do kids pick the tool they mean, does the badge help, do the de
   tips back and forth (it holds still with reduce motion on). Palms and second fingers don't move it.
 - **Rail:** the picked tool is scaled 1.12; under the bucket the sizes are grey (grayscale, 40 % opacity) and none is
   ringed; tapping one still picks it and the brush.
+
+### As built (D, 2026-11-15)
+- **Where:** `src/games/coloring/showHow.ts` (when a demo is due, and what is kept), `demo.ts` (the demo on the page),
+  wired in `session.ts`; the parent's card in `parentSections.ts`. The narrator gained `quiet()`, so a demo waits for a
+  tool's name to finish. Tests: `showHow.test.ts`, `tests/e2e/showHow.spec.ts`.
+- **When:** the first page a kid ever opens shows the current tool (the brush, which every page opens with) about
+  1.2 s after the page appears; the first pick of each tool shows that tool after its name. At most one demo starts a
+  minute; a demo held back by that is still due at the next pick. A demo counts as seen once it has run 1 s without a
+  touch, so one cut off at once comes back later. Nothing starts while a finger is on the page.
+- **What:** a box with the demo's dashed outline in the page's bottom-right corner (36 % of the page's width), over the
+  page and never on it, with the tool's badge doing the thing: the brush draws a squiggle, the eraser rubs out a zigzag,
+  the bucket comes over a cloud and fills it (with the fill sound). It paints in the current colour and brush size and
+  fades out after about 2.8 s. The tool's rail button bounces, ringed with the same dashed line, while it plays. The
+  narrator says the "what it does" line (`do-bucket`, `do-brush`, `do-eraser`).
+- **Stopping:** any new touch anywhere on the screen stops a demo at once (caught on the way down, so the touch still
+  paints or picks as usual); the demo never takes a touch, so nothing is ever locked.
+- **Kept per kid** (two files, as the kid's screen and the parent area change them on their own, ADR 0024):
+  `kids/<id>/show-how.json` (first page seen, tools seen, when the last demo started, the parent ask last answered) and
+  `kids/<id>/show-buttons.json` (when a parent last asked). Both go with the kid's folder when a kid is deleted.
+- **Show the buttons:** Parent area › Coloring has a "Show the buttons" card with the tip and one "Show <kid> the
+  buttons" button per kid; the row says "Plays the next time <kid> opens a page." until it has played. Then, as that
+  kid opens a page, each tool in turn is pointed at and named, and its demo plays slower (4.2 s); then undo and start
+  over are pointed at, named and their line said (`do-undo`, `do-start-over`; they have no page demo). It doesn't wait
+  out the minute, counts as seeing every demo, and never changes the kid's tool. It says the names even when the names
+  setting is "Never" (the parent asked for it); names and lines follow the Sounds switch.
+- Not done: no parent switch to turn the first-time demos off (not asked for); the playtest questions above still
+  stand.
 
 ## Decisions for the owner
 **Settled 2026-11-15:** the owner took every recommendation, C1 to C8.
