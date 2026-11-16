@@ -144,6 +144,27 @@ test('arrow keys and WASD drive; back returns to the picker, then home', async (
   await expect(page.locator('[data-screen="home"]')).toBeVisible();
 });
 
+test('driving through a star takes it, with a burst of confetti (ADR 0041)', async ({ page }) => {
+  await turnOnDriving(page);
+  await openDriving(page);
+  interface Star { toy: string; homeX: number; homeZ: number; homeYaw: number; state: number }
+  type TargetWorld = { cars: CarState[]; props: Star[]; confetti: { life: number }[]; camHeading: number };
+  const world = 'document.querySelector(".driving-canvas").drivingWorld';
+  // The kid's car 8 m before the island's first star, facing along the road through it, standing still.
+  await page.evaluate(() => {
+    const w = (document.querySelector('.driving-canvas') as HTMLCanvasElement & { drivingWorld: TargetWorld }).drivingWorld;
+    const star = w.props.find((p) => p.toy === 'toy/star')!;
+    Object.assign(w.cars[0]!, { x: star.homeX - Math.sin(star.homeYaw) * 8, z: star.homeZ - Math.cos(star.homeYaw) * 8, heading: star.homeYaw, speed: 0 });
+    w.camHeading = star.homeYaw;
+  });
+  expect(await page.evaluate(`${world}.props.find((p) => p.toy === 'toy/star').state`)).toBe(0);
+  await page.keyboard.down('ArrowUp');
+  // Taken (no longer at home), and the confetti is flying.
+  await expect.poll(() => page.evaluate(`${world}.props.find((p) => p.toy === 'toy/star').state`), { timeout: 60_000 }).not.toBe(0);
+  expect(await page.evaluate(`${world}.confetti.filter((c) => c.life > 0).length`)).toBeGreaterThan(0);
+  await page.keyboard.up('ArrowUp');
+});
+
 test('a parent sets a kid to "follows the road"', async ({ page }) => {
   await turnOnDriving(page);
   await openParentArea(page);
