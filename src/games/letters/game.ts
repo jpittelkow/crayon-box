@@ -1,11 +1,15 @@
 // Letter practice (ADR 0026): trace big letters with a finger or a pen. Two ways in: practice, with every turned-on
 // letter open, and the game, where finishing a letter opens the next one along a path. Sound while tracing (ADR
 // 0037): the letter is said when it opens, a crayon sound plays while a finger moves on the road, a chime marks
-// each finished stroke, and the finished letter gets its name and a word of praise.
+// each finished stroke, and the finished letter gets its name and a word of praise. A kid who is stuck gets the
+// hint ladder (hints.ts): a bigger dot, then a fingertip along the next stroke, then the whole letter shown.
+import { demoClip, strokeClip, tipClip } from '../../shell/soundFiles';
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
+import { playDemo, type Demo } from './demo';
 import { arrowsFor, glyph, pathData, SET_CHARS, setOf, type SetId } from './glyphs';
+import { Hints, isKnown, TICK_MS, type HintAction } from './hints';
 import {
   finishLetter,
   forgetKid,
@@ -45,10 +49,11 @@ const INK = '#23201c';
 const GREEN = '#2fa35f';
 /** The tracing view: the 100 x 140 glyph box with room round it for the arrows. */
 const VIEW = '-16 -8 132 156';
-/** Once this much of the letter is traced, lifting the finger shows dots on what is left (ADR 0028). */
+/**
+ * Once this much of the letter is traced, lifting the finger shows dots on what is left at once (ADR 0028); with
+ * less, the hints show them after a pause ("Keep going!", hints.ts).
+ */
 const LEFT_FROM = 0.5;
-/** Seconds without a touch before the hint shows the first stroke. */
-const IDLE_MS = 8000;
 /**
  * The drawing sound's pitch (ADR 0037). Stand-in: the coloring game's crayon (`ui/crayon.wav`), raised, until a take
  * of its own (sounds recipe, way A).
@@ -414,21 +419,11 @@ class LettersGame {
       return outer;
     })();
 
-    // ---- The idle hint: a fingertip runs along the stroke still to do ----
-    let idle: ReturnType<typeof setTimeout> | undefined;
-    let hintFrame = 0;
-    const hint = svgEl('g', { class: 'letters-hint', visibility: 'hidden' });
-    hint.append(
-      svgEl('circle', { r: 15, stroke: INK, 'stroke-width': 1.5, opacity: 0.35 }),
-      svgEl('circle', { r: 10, fill: '#ffffff', stroke: INK, 'stroke-width': 2.5 }),
-    );
-    helpers.append(hint);
-
-    // ---- What is left: after a finger lifts with most of the letter traced, small dots mark the rest ----
+    // ---- What is left: small dots mark the rest, after a lift with most of the letter traced or from the hints ----
     const left = layer('letters-left');
-    const showLeft = () => {
+    const showLeft = (any = false) => {
       left.replaceChildren();
-      if (screen.dataset.done !== 'false' || tracer.progress < LEFT_FROM) return;
+      if (screen.dataset.done !== 'false' || tracer.progress === 0 || (!any && tracer.progress < LEFT_FROM)) return;
       // A dotted trail, a dot every 8 units, so it reads as "this way still" rather than one blob.
       let last: { x: number; y: number } | null = null;
       for (const p of tracer.missing) {
@@ -437,32 +432,93 @@ class LettersGame {
         left.append(svgEl('circle', { cx: p.x, cy: p.y, r: 3.4, fill: GREEN, stroke: INK, 'stroke-width': 1.2, class: 'letters-pulse' }));
       }
     };
-    const showHint = () => {
-      if (screen.dataset.done !== 'false') return;
-      const stroke = g.strokes[tracer.firstUnfinished];
-      const still = reducedMotion();
-      const t0 = performance.now();
-      const run = (now: number) => {
-        const t = still ? 0 : Math.min(1, (now - t0) / 1600);
-        const p = stroke[Math.round(t * (stroke.length - 1))];
-        hint.setAttribute('transform', `translate(${p.x} ${p.y})`);
-        hint.setAttribute('visibility', 'visible');
-        if (now - t0 < 1900) hintFrame = requestAnimationFrame(run);
-        else hint.setAttribute('visibility', 'hidden');
-      };
-      hintFrame = requestAnimationFrame(run);
-      screen.dataset.hinted = 'true';
-      armIdle();
+
+    // ---- The hint ladder (ADR 0037): hints.ts says what to show and say and when; this draws and says it ----
+    const hints = new Hints(
+      { ordered: this.prefs.ordered, known: isKnown(this.progress.help[keyOf(ch)]), speak: this.voice.tipsOn },
+      performance.now(),
+    );
+    const shows = layer('letters-shows');
+    let demo: Demo | null = null;
+    const stopShow = () => {
+      demo?.stop();
+      demo = null;
     };
-    const armIdle = () => {
-      clearTimeout(idle);
-      idle = setTimeout(showHint, IDLE_MS);
+    /** A fingertip draws `strokes` one after another, with their words when `words`; `then` once it ran to the end. */
+    const show = (strokes: number[], words: boolean, then?: () => void) => {
+      stopShow();
+      const d = playDemo({
+        glyph: g,
+        strokes,
+        layer: shows,
+        color: this.kidColor,
+        still: reducedMotion(),
+        say: words ? (kind) => this.voice.tip([strokeClip(kind)]) : undefined,
+      });
+      demo = d;
+      void d.done.then((ran) => {
+        if (demo === d) demo = null;
+        if (ran && screen.dataset.done === 'false') then?.();
+      });
     };
-    armIdle();
+    /** What the hints have shown on this letter, in order, for tests: `1 2 3 wiggle left check`. */
+    const shown = (what: string) => {
+      screen.dataset.hints = `${screen.dataset.hints ?? ''} ${what}`.trim();
+    };
+    const run = (actions: HintAction[]) => {
+      for (const a of actions) {
+        if (a.do === 'step') {
+          screen.dataset.hintStep = String(a.step);
+          shown(String(a.step));
+          if (a.step === 1) {
+            // Step 1: the start dot pulses bigger and the arrow wiggles (its words come as a tip).
+            screen.dataset.nudge = 'dot';
+          } else if (a.step === 2) {
+            // Step 2: the fingertip runs along the next stroke, saying its word.
+            delete screen.dataset.nudge;
+            show([tracer.firstUnfinished], a.words);
+          } else {
+            // Step 3: the whole letter, stroke by stroke with its words; then the start dot and "Your turn!".
+            delete screen.dataset.nudge;
+            show(
+              g.strokes.map((_, i) => i),
+              a.words,
+              () => {
+                screen.dataset.nudge = 'dot';
+                if (a.words) this.voice.tip([demoClip('your-turn')]);
+              },
+            );
+          }
+        } else if (a.do === 'wiggle') {
+          shown('wiggle');
+          screen.dataset.nudge = 'arrow';
+        } else if (a.do === 'left') {
+          shown('left');
+          showLeft(true);
+        } else if (a.do === 'check') {
+          shown('check');
+          confirm.classList.add('is-nudged');
+        } else {
+          screen.dataset.tip = a.tip;
+          this.voice.tip([tipClip(a.tip)]);
+        }
+      }
+    };
+    const ticker = setInterval(() => run(hints.tick(performance.now())), TICK_MS);
     this.cleanups.push(() => {
-      clearTimeout(idle);
-      cancelAnimationFrame(hintFrame);
+      clearInterval(ticker);
+      stopShow();
     });
+    // A touch anywhere: the wait starts again, and whatever the hints show stops (the kid has moved on).
+    screen.addEventListener(
+      'pointerdown',
+      () => {
+        hints.touch(performance.now());
+        stopShow();
+        delete screen.dataset.nudge;
+      },
+      { capture: true },
+    );
 
     // ---- The drawing sound: only while a finger moves on the road; leaving the road just stops it (ADR 0037) ----
     let drawing = false;
@@ -500,11 +556,10 @@ class LettersGame {
     };
     const endLine = (id: number) => {
       lines.delete(id);
-      tracer.lift(id);
+      return tracer.lift(id);
     };
     const onDown = (e: PointerEvent) => {
       notePen(e);
-      armIdle();
       if (screen.dataset.done === 'true' || screen.dataset.done === 'saving' || e.button > 0) return;
       const pen = e.pointerType === 'pen';
       if (!pen && e.pointerType === 'touch') {
@@ -531,6 +586,7 @@ class LettersGame {
       const node = svgEl('polyline', { 'stroke-width': pen ? 6 : 9, opacity: 0.92 });
       ink.append(node);
       lines.set(e.pointerId, { node, points: [], pen });
+      hints.down(performance.now(), tracer.atStart(p));
       // Nothing new is said while a finger is on the letter (ADR 0037).
       this.voice.hold(true);
       left.replaceChildren();
@@ -549,13 +605,18 @@ class LettersGame {
       line.last = p;
       line.at = now;
       const before = tracer.currentStroke;
+      const covered = tracer.progress;
       const finished = tracer.add(e.pointerId, p, line.pen ? TOLERANCE.pen : TOLERANCE.finger);
+      if (tracer.progress > covered) hints.progress(now);
       if (this.prefs.ordered && tracer.currentStroke !== before) drawGuides(true);
       if (tracer.done) ready();
-      else if (finished.length > 0 && this.voice.on) {
-        // A stroke traced: a quiet chime (the letter's own sound comes when the whole letter is ready).
-        this.ctx.sound.play('chime');
-        screen.dataset.chimes = String(++chimes);
+      else if (finished.length > 0) {
+        hints.strokeDone();
+        if (this.voice.on) {
+          // A stroke traced: a quiet chime (the letter's own sound comes when the whole letter is ready).
+          this.ctx.sound.play('chime');
+          screen.dataset.chimes = String(++chimes);
+        }
       }
     };
     const onMove = (e: PointerEvent) => {
@@ -565,13 +626,14 @@ class LettersGame {
     const onUp = (e: PointerEvent) => {
       notePen(e);
       if (e.pointerType === 'pen') penDown = false;
-      endLine(e.pointerId);
+      if (!lines.has(e.pointerId)) return;
+      const end = endLine(e.pointerId);
       if (lines.size === 0) {
         drawSound(0);
         this.voice.hold(false);
         showLeft();
       }
-      armIdle();
+      run(hints.up(performance.now(), end));
     };
     svg.addEventListener('pointerdown', onDown);
     svg.addEventListener('pointermove', onMove);
@@ -598,9 +660,10 @@ class LettersGame {
         drawSound(0);
         this.voice.hold(false);
         tracer.reset();
+        hints.wipe(performance.now());
+        confirm.classList.remove('is-nudged');
         screen.dataset.done = 'false';
         drawGuides(started);
-        armIdle();
       },
     });
 
@@ -616,14 +679,15 @@ class LettersGame {
       if (screen.dataset.done !== 'false') return;
       screen.dataset.done = 'ready';
       drawSound(0);
-      clearTimeout(idle);
-      hint.setAttribute('visibility', 'hidden');
+      stopShow();
+      delete screen.dataset.nudge;
       left.replaceChildren();
       arrows.replaceChildren();
       starts.replaceChildren();
       guide(filled);
       this.ctx.sound.play('fill');
       screen.append(confirm);
+      run(hints.ready(performance.now()));
     };
 
     // ---- Done ----
@@ -633,11 +697,12 @@ class LettersGame {
       for (const id of [...lines.keys()]) endLine(id);
       this.voice.hold(false);
       confirm.remove();
-      this.progress = await finishLetter(this.ctx.storage, this.ctx.kid.id, ch, mode === 'game');
+      clearInterval(ticker);
+      this.progress = await finishLetter(this.ctx.storage, this.ctx.kid.id, ch, mode === 'game', hints.reached);
       this.ctx.sound.play('cheer');
-      // The bell first, then the letter's name and a word of praise (ADR 0032); "All by yourself!" only when the
-      // fingertip hint never had to show (ADR 0037).
-      void this.voice.sayFinished(ch, screen.dataset.hinted === 'true');
+      // The bell first, then the letter's name and a word of praise (ADR 0032); "All by yourself!" only when no hint
+      // past step 1 (the bigger dot) was needed (ADR 0037).
+      void this.voice.sayFinished(ch, hints.helped);
       screen.dataset.said = ch;
       wipe.remove();
       card.append(this.badge('letters-done-star', STAR), this.badge('letters-speaker', SPEAKER));
