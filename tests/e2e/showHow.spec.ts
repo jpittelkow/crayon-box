@@ -52,14 +52,15 @@ test("a new kid's first page shows what the brush does, once, and leaves the pic
   const demo = page.locator('.show-how');
   await expect(demo).toBeVisible(SLOW);
   await expect(demo).toHaveAttribute('data-demo', 'brush');
-  await expect.poll(() => clips(page, '/voice/do-brush.mp3'), SLOW).toBe(1);
-  // The brush in the rail is pointed at while it plays; the demo sits inside the page, in its corner.
+  // The brush in the rail is pointed at while it plays (checked first: under load the line can end the demo's
+  // 2.8 s before a later check runs); the demo sits inside the page, in its corner.
   await expect(page.locator('.tool-rail [data-tool="brush"]')).toHaveClass(/is-showing/);
   const box = (await demo.boundingBox())!;
   const pageBox = (await page.locator('.coloring-page').boundingBox())!;
   expect(box.x).toBeGreaterThan(pageBox.x + pageBox.width / 2);
   expect(box.y + box.height).toBeLessThanOrEqual(pageBox.y + pageBox.height + 1);
   await expect(page.locator('.show-how-badge')).toHaveAttribute('data-tool', 'brush');
+  await expect.poll(() => clips(page, '/voice/do-brush.mp3'), SLOW).toBe(1);
 
   await expect(demo).toBeHidden(SLOW);
   await expect(page.locator('.is-showing')).toHaveCount(0);

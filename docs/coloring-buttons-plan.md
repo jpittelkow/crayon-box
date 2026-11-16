@@ -3,7 +3,8 @@
 To-do section 2. In the playtest of 2026-11-15 a kid didn't know what any coloring button does, and the owner asked
 for a colour wheel next to the swatches. Drafted 2026-11-15; the decision is
 [ADR 0038](adr/0038-coloring-buttons-a-kid-can-work-out.md) (Accepted). **Built 2026-11-15:** phases B (names and
-sounds), C (the tool at the finger) and D (the show-how); see "As built" under Phases. E and F are not built.
+sounds), C (the tool at the finger) and D (the show-how); **2026-11-16:** E (the colour wheel) and F (plainer icons).
+See "As built" under Phases. Left: the kid playtest.
 
 ## The screen today
 Left rail: back, paint bucket, brush, eraser, undo, start over. Under the page: three brush-size dots and two
@@ -81,7 +82,8 @@ Six parts. Parts 1 to 3 are the core; 4 is for the parent; 5 is the wheel; 6 is 
 - **Where:** in the room the laptop's wider screen leaves beside the colour rail (the page is 4:3 and limited by
   height; at 1920 × 1080 there is a column of spare width). Each segment's tap area is at least 64 px across, like
   a swatch, so the wheel needs about 300 px of width. On a screen without that room the wheel is not shown (the
-  rail is unchanged), so nothing gets smaller (ADR 0019).
+  rail is unchanged), so nothing gets smaller (ADR 0019). As built it sits under the swatches in the same panel,
+  which widens into the spare width (a column of its own would have shrunk the page; see "As built (E and F)").
 - The wheel's 12 colours are in-between hues the rail lacks (e.g. coral, gold, mint, aqua, violet, magenta), so
   it adds colours, as the owner asked, rather than repeating the rail.
 - Kept away from the screen's very edge, where wrists rest.
@@ -153,6 +155,39 @@ Then a playtest: do kids pick the tool they mean, does the badge help, do the de
   setting is "Never" (the parent asked for it); names and lines follow the Sounds switch.
 - Not done: no parent switch to turn the first-time demos off (not asked for); the playtest questions above still
   stand.
+
+### As built (E and F, 2026-11-16)
+- **Where:** `src/games/coloring/wheel.ts` (the ring, and `wheelFits`, the room rule), wired in `session.ts`; the 12
+  colours are `WHEEL` in `src/ui/palette.ts` and `--crayon-wheel-*` in `tokens.css`. Icons in `src/ui/icons.ts`. Tests:
+  `wheel.test.ts`, `palette.test.ts`, `names.test.ts`, `tests/e2e/wheel.spec.ts`.
+- **Place:** under the 24 swatches, in the same white colours panel, not in a column of its own beside it. A ring whose
+  12 segments each hold a 64 px circle is about 312 px across (332 px drawn); at 1920 × 1080 the spare width beside the
+  page is about 270 px, so a separate column would have taken about 70 px off the page. Under the swatches, the panel
+  only widens (244 to 360 px) into the spare width and the page stays 1213 px wide. The column is centred top to
+  bottom, so the wheel ends about 66 px above the screen's bottom edge.
+- **When shown:** only when the page keeps the width it has without the wheel and the panel has the height for the
+  swatches, the wheel and 24 px more top and bottom (`wheelFits`, checked on every resize). Shown at 1920 × 1080 and
+  bigger; hidden at 1280 × 800, and also at 1536 × 864 (a 1920 × 1080 screen at Windows' 125 % display scale), which
+  hasn't the height. Nothing on the screen changes size either way.
+- **Ring:** segments from 90 to 156 px out from the middle, 30° each; a 64 px circle centred 124 px out fits in every
+  one, and a touch belongs to the segment whose shape it lands in (not a neighbour's outline). The picked segment gets
+  a thick ink ring with a paper line, like a picked swatch; a rail pick takes it off. The middle is a disc of the
+  current colour (the rainbow too). It picks on touch-down and dips while held, like a swatch.
+- **Colours (C7):** clockwise from the top, coral, gold, chartreuse, mint, sea green, aqua, cornflower, indigo, violet,
+  plum, magenta, rose: the prototype's twelve, coral a little more orange. None is a rail colour.
+- **Names:** there are no clips for these colours, so each says the plain colour word it falls under, from the shipped
+  clips: coral "Orange", gold "Yellow", chartreuse "Light green", mint "Green", sea green "Teal", aqua "Light blue",
+  cornflower "Blue", indigo "Dark blue", violet and plum "Purple", magenta and rose "Pink". Each segment has its own
+  count (`wheel-<colour>`), so picks on the rail don't use up the wheel's names. Own clips ("Coral." ...) could still be
+  made in the narrator batch before the voice retires on 2026-12-31; then only `says` changes.
+- **Show-how:** none for the wheel. It works like the swatches, which have none, and there is no "what it does" line
+  for it; "Show the buttons" doesn't point at it.
+- **Icons (F):** the bucket is a real pail with a handle, tipped, pouring the current colour into a puddle; the brush is
+  a real paintbrush (wooden handle, metal band, bristles in the current colour). Undo tries the plan's idea: a short
+  scribble in the current colour whose end has gone dotted, as if wiped off, under a short arrow pointing back. The
+  eraser, back, start over and the modes are unchanged (modes stay on the kid screen, C8). Same kit as before: ink
+  outlines, round joins, flat fills (ADR 0016). Checked by eye at 96, 50 and 32 px (the badge's size); the kid playtest
+  is still to come, undo especially.
 
 ## Decisions for the owner
 **Settled 2026-11-15:** the owner took every recommendation, C1 to C8.
