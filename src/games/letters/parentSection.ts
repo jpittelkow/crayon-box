@@ -1,19 +1,22 @@
 // The letters game's screen in the parent area (ADR 0008, 0012, 0026, 0037): each kid's letter sets and stroke order,
 // resetting a kid's stars and game, showing a kid the first-time how-to again, a note for parents, what is said with
 // a letter (its name, its sound or both), the voice that says it (with recordings of names and sounds), sounds, and
-// whether the hints' tips are spoken.
+// whether the hints' tips are spoken. Words (ADR 0039): turned on per kid, and a recording of each kid's name.
 import { drawAvatar } from '../../shell/profiles';
 import type { ParentSectionContext } from '../../shell/types';
 import { button, card, confirmInline, h, segmented, switchRow } from '../../ui/parent';
 import { allChars, SET_ORDER, type SetId } from './glyphs';
 import {
+  deleteNameRecording,
   deleteRecording,
+  findNameRecording,
   findRecording,
   loadLettersSettings,
   loadPrefs,
   recordingKey,
   resetProgress,
   saveLettersSettings,
+  saveNameRecording,
   savePrefs,
   saveRecording,
   showDemoAgain,
@@ -23,6 +26,10 @@ import {
   type Voice,
 } from './progress';
 import { recordClip } from './voice';
+import { nameCells } from './words';
+
+/** How long a recording of a kid's name runs: a name can be longer than a letter. */
+const NAME_RECORD_MS = 2200;
 
 const SET_LABELS: Record<SetId, string> = { shapes: '○ □ △', capitals: 'A B C', small: 'a b c', numbers: '1 2 3' };
 const SET_NAMES: Record<SetId, string> = {
@@ -58,6 +65,16 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
     });
     sets.append(...setButtons);
 
+    // Words (ADR 0039): off at first, turned on per kid.
+    const words = h('div', { class: 'pw-seg', role: 'group', 'aria-label': `Words for ${label}` });
+    const wordsButton = h('button', { type: 'button', 'aria-pressed': String(prefs.words === true), title: 'Writing words' }, 'Words');
+    wordsButton.addEventListener('click', () => {
+      prefs.words = wordsButton.getAttribute('aria-pressed') !== 'true';
+      wordsButton.setAttribute('aria-pressed', String(prefs.words));
+      void savePrefs(storage, kid.id, prefs);
+    });
+    words.append(wordsButton);
+
     const order = segmented<'any' | 'order'>(
       `How tracing counts for ${label}`,
       [
@@ -78,7 +95,7 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
       style: 'flex-wrap: wrap; row-gap: 10px; padding: 10px 0; border-bottom: 1px solid #e3e7ec',
     });
     const reset = button('Reset stars and game', () =>
-      confirmInline(row, `Reset ${label}'s stars and game? This can't be undone.`, 'Reset', async () => {
+      confirmInline(row, `Reset ${label}'s stars (letters and words) and game? This can't be undone.`, 'Reset', async () => {
         await resetProgress(storage, kid.id);
         el.replaceChildren();
         await renderLetters(el, ctx);
@@ -96,6 +113,7 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
       h('span', { style: 'min-width: 110px; font-weight: 700' }, label),
       sets,
       order,
+      words,
       h('div', { class: 'pw-grow' }),
       again,
       reset,
@@ -124,6 +142,30 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
           'capitals come easiest first: straight lines (L F E H T I), then curves, then slants. Practice stays A to Z.',
       ),
       rows,
+    ),
+    card(
+      h('h2', {}, 'Writing words'),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        'With Words on for a kid (above), Letters shows a third tile: their own name first, then 24 short words. Each ' +
+          'letter is traced big, one at a time, and drops into a row of boxes; then the word is said slowly and the ' +
+          "kid taps the check. A name comes from the kid's profile; spaces and hyphens are skipped and accents are " +
+          'traced plain. Capitals, or small letters once those are on for the kid.',
+      ),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        "The app's voice can't say a name, so record each kid's name here. Without a recording, a finished name gets " +
+          '"You wrote your name!". Recordings stay on this device and your own sync server.',
+      ),
+      await nameRecordings(ctx),
+      h(
+        'p',
+        { class: 'pw-muted' },
+        'This gives a kid their name and the idea that a word is letters in a row; it does not teach reading by ' +
+          'itself. A card with their name on it and crayons on paper help too.',
+      ),
     ),
     card(
       h('h2', {}, 'Helping a kid learn'),
@@ -204,6 +246,68 @@ export async function renderLetters(el: HTMLElement, ctx: ParentSectionContext):
       ),
     ),
   );
+}
+
+/** One row per kid with a name: record their name (a couple of seconds), play it back, or remove it (ADR 0039). */
+async function nameRecordings(ctx: ParentSectionContext): Promise<HTMLElement> {
+  const { storage } = ctx;
+  const box = h('div', { style: 'display: flex; flex-direction: column; gap: 8px', 'data-name-recordings': '' });
+  const status = h('p', { class: 'pw-muted', 'aria-live': 'polite' });
+  let busy = false;
+  for (const kid of ctx.kids) {
+    const label = ctx.kidLabel(kid);
+    const row = h('div', { class: 'pw-row', 'data-name-recording': kid.id, style: 'gap: 8px' });
+    if (nameCells(kid.name ?? '', false).length === 0) {
+      row.append(
+        h('span', { style: 'min-width: 110px; font-weight: 700' }, label),
+        h('span', { class: 'pw-muted' }, 'No name yet: give this kid a name under Kids to have them write it.'),
+      );
+      box.append(row);
+      continue;
+    }
+    let has = !!(await findNameRecording(storage, kid.id));
+    const draw = () => {
+      row.replaceChildren(
+        h('span', { style: 'min-width: 110px; font-weight: 700' }, label),
+        button(has ? 'Record again' : 'Record the name', () => void record()),
+        ...(has ? [button('Play', () => void play()), button('Remove', () => void remove())] : []),
+      );
+    };
+    const record = async () => {
+      if (busy) return;
+      busy = true;
+      status.textContent = `Recording ${label}'s name… say it now.`;
+      try {
+        await saveNameRecording(storage, kid.id, await recordClip(NAME_RECORD_MS));
+        has = true;
+        status.textContent = `${label}'s name is recorded.`;
+      } catch {
+        status.textContent = 'No microphone could be used. Check that one is plugged in and allowed.';
+      } finally {
+        busy = false;
+        draw();
+      }
+    };
+    const play = async () => {
+      const path = await findNameRecording(storage, kid.id);
+      const blob = path ? await storage.getBlob(path) : undefined;
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.addEventListener('ended', () => URL.revokeObjectURL(url));
+      void audio.play().catch(() => URL.revokeObjectURL(url));
+    };
+    const remove = async () => {
+      await deleteNameRecording(storage, kid.id);
+      has = false;
+      status.textContent = '';
+      draw();
+    };
+    draw();
+    box.append(row);
+  }
+  box.append(status);
+  return box;
 }
 
 /** Recordings of each letter's name, and below them each letter's sound (ADR 0037). */

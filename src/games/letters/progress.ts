@@ -7,6 +7,7 @@
 //                            tips are spoken (ADR 0037)
 //   voice/<key>.<ext>        a parent's own recording of a letter's name
 //   voice/sound-<a-z>.<ext>  a parent's own recording of a letter's sound (one per letter: A and a share it)
+//   voice/name-<kid id>.<ext> a parent's recording of a kid's name, said when the kid writes it (ADR 0039)
 // Letters are stored by a key that keeps capitals and small letters apart on a file system that ignores case
 // (Windows, the installer's file storage): `cap-A`, `small-a`, `num-3`.
 import type { GameStorage } from '../../storage/types';
@@ -18,6 +19,8 @@ export interface KidPrefs {
   sets: SetId[];
   /** Stroke order counts (ADR 0026). Off by default. */
   ordered: boolean;
+  /** Words is on for this kid (ADR 0039): a third tile on the start screen. Off by default; left out when off. */
+  words?: boolean;
 }
 
 export interface KidProgress {
@@ -31,6 +34,10 @@ export interface KidProgress {
   demoSeen: boolean;
   /** The last day a letter was opened, `YYYY-MM-DD` on the device's clock: the how-to comes back after a while away. */
   lastPlayed?: string;
+  /** Keys of words with a star (`word-sun`, `name`; ADR 0039). Left out while there are none. */
+  words?: string[];
+  /** How often "Now the next letter." was said to this kid (ADR 0039: the first few times only). */
+  nextSaid?: number;
 }
 
 /** Who says the letters: the app's narrator (stored as 'windows', its name before ADR 0032), or a parent. */
@@ -70,11 +77,19 @@ export function cleanSets(sets: unknown): SetId[] {
 
 export async function loadPrefs(storage: GameStorage, kidId: string): Promise<KidPrefs> {
   const raw = await storage.getJson<Partial<KidPrefs>>(prefsPath(kidId));
-  return { sets: cleanSets(raw?.sets ?? DEFAULT_PREFS.sets), ordered: raw?.ordered === true };
+  return {
+    sets: cleanSets(raw?.sets ?? DEFAULT_PREFS.sets),
+    ordered: raw?.ordered === true,
+    ...(raw?.words === true ? { words: true } : {}),
+  };
 }
 
 export async function savePrefs(storage: GameStorage, kidId: string, prefs: KidPrefs): Promise<void> {
-  await storage.putJson(prefsPath(kidId), { sets: cleanSets(prefs.sets), ordered: prefs.ordered });
+  await storage.putJson(prefsPath(kidId), {
+    sets: cleanSets(prefs.sets),
+    ordered: prefs.ordered,
+    ...(prefs.words ? { words: true } : {}),
+  });
 }
 
 export async function loadProgress(storage: GameStorage, kidId: string): Promise<KidProgress> {
@@ -87,6 +102,10 @@ export async function loadProgress(storage: GameStorage, kidId: string): Promise
     demoSeen: raw?.demoSeen === true,
   };
   if (typeof raw?.lastPlayed === 'string' && DAY.test(raw.lastPlayed)) progress.lastPlayed = raw.lastPlayed;
+  const words = list(raw?.words);
+  if (words.length > 0) progress.words = words;
+  const said = raw?.nextSaid;
+  if (typeof said === 'number' && Number.isFinite(said) && said > 0) progress.nextSaid = Math.floor(said);
   return progress;
 }
 
@@ -178,7 +197,25 @@ export async function finishLetter(
   return progress;
 }
 
-/** A parent's reset: the kid's stars and game start again. */
+/** A word written to the end and checked (ADR 0039): it gets its star (`key` from `wordKey`). */
+export async function finishWord(storage: GameStorage, kidId: string, key: string): Promise<KidProgress> {
+  const progress = await loadProgress(storage, kidId);
+  const words = progress.words ?? [];
+  if (!words.includes(key)) words.push(key);
+  progress.words = words;
+  await storage.putJson(progressPath(kidId), progress);
+  return progress;
+}
+
+/** "Now the next letter." was said once more (ADR 0039). */
+export async function noteNextSaid(storage: GameStorage, kidId: string): Promise<KidProgress> {
+  const progress = await loadProgress(storage, kidId);
+  progress.nextSaid = (progress.nextSaid ?? 0) + 1;
+  await storage.putJson(progressPath(kidId), progress);
+  return progress;
+}
+
+/** A parent's reset: the kid's stars (letters and words) and game start again. */
 export async function resetProgress(storage: GameStorage, kidId: string): Promise<void> {
   await storage.delete(progressPath(kidId));
 }
@@ -205,6 +242,7 @@ export async function saveLettersSettings(storage: GameStorage, value: LettersSe
 /** Deletes what the game keeps for a kid, when a parent deletes the kid (ADR 0012). */
 export async function forgetKid(storage: GameStorage, kidId: string): Promise<void> {
   for (const path of await storage.list(kidDir(kidId))) await storage.delete(path);
+  await deleteNameRecording(storage, kidId);
 }
 
 // ---- Recordings ----
@@ -232,6 +270,29 @@ export async function saveRecording(storage: GameStorage, ch: string, blob: Blob
 
 export async function deleteRecording(storage: GameStorage, ch: string, what: Said = 'name'): Promise<void> {
   const old = await findRecording(storage, ch, what);
+  if (old) await storage.delete(old);
+}
+
+/**
+ * A parent's recording of a kid's name (ADR 0039): the narrator can't say a name. Kept by the kid's id (never the
+ * name), on the device and the family's own server only.
+ */
+const namePrefix = (kidId: string) => `${VOICE_DIR}name-${kidId}.`;
+
+export async function findNameRecording(storage: GameStorage, kidId: string): Promise<string | undefined> {
+  return (await storage.list(namePrefix(kidId)))[0];
+}
+
+export async function saveNameRecording(storage: GameStorage, kidId: string, blob: Blob): Promise<void> {
+  const old = await findNameRecording(storage, kidId);
+  const ext = /ogg/.test(blob.type) ? 'ogg' : /mp4|aac/.test(blob.type) ? 'm4a' : 'webm';
+  const path = `${namePrefix(kidId)}${ext}`;
+  if (old && old !== path) await storage.delete(old);
+  await storage.putBlob(path, blob);
+}
+
+export async function deleteNameRecording(storage: GameStorage, kidId: string): Promise<void> {
+  const old = await findNameRecording(storage, kidId);
   if (old) await storage.delete(old);
 }
 

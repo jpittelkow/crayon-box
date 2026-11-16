@@ -105,6 +105,8 @@ export interface GameContext {
   storage: GameStorage;
   sound: Sound;
   exitToHome(): void;
+  /** The kid's photo, when a parent gave them one (ADR 0018): for a game that shows it (Letters' "My name"). */
+  photo?(): Promise<Blob | undefined>;
   /** Present in the Windows app only. */
   finished?: FinishedPictures;
   /** Present in the Windows app only (and on the dev server with `?fake-maps`). */
