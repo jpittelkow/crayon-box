@@ -1,6 +1,7 @@
 // The land of a map as an outline (milestone-3 phase B2): any shape, not only a circle. The simulation asks how far
 // a point is from the shore and which way is inland, to turn the car back before the edge, keep it on the land and
 // place things. Plain TypeScript, no three.js.
+import { GRID_FROM, LOOKUP, SEG_SQUARE, buildGrid, nearest, segmentGrid, squareAt, type Grid } from './grid';
 
 /** The land as a map file gives it. */
 export interface LandDef {
@@ -18,6 +19,12 @@ export interface Land {
   minX: number; maxX: number; minZ: number; maxZ: number;
   /** The middle of the outline's points: a fallback "inland" for a point right on the shore. */
   cx: number; cz: number;
+  /**
+   * For a long shoreline (sim/grid.ts): its segments in squares (segment `i` joins point `i - 1` to point `i`), and
+   * in bands across the map by z (the segments a line across at that z could cross).
+   */
+  grid?: Grid;
+  bands?: Grid;
 }
 
 /** Where a point is relative to the shore. */
@@ -40,17 +47,36 @@ export function buildLand(def: LandDef): Land {
     cx += x / n;
     cz += z / n;
   });
-  return { def, xs, zs, minX, maxX, minZ, maxZ, cx, cz };
+  if (n < GRID_FROM) return { def, xs, zs, minX, maxX, minZ, maxZ, cx, cz };
+  const prev = (i: number) => (i + n - 1) % n;
+  const grid = segmentGrid(xs, zs, n, prev);
+  const bands = buildGrid(n, SEG_SQUARE / 4, (i, out) => {
+    out[0] = out[2] = 0;
+    out[1] = Math.min(zs[i]!, zs[prev(i)]!);
+    out[3] = Math.max(zs[i]!, zs[prev(i)]!);
+  });
+  return { def, xs, zs, minX, maxX, minZ, maxZ, cx, cz, grid, bands };
 }
 
 /** Whether a point is on the land (inside the outline). */
 export function onLand(land: Land, x: number, z: number): boolean {
-  const { xs, zs } = land;
+  const { xs, zs, bands } = land;
   let inside = false;
-  for (let i = 0, j = xs.length - 1; i < xs.length; j = i++) {
+  const cross = (i: number, j: number) => {
     const zi = zs[i]!, zj = zs[j]!;
     if (zi > z !== zj > z && x < ((xs[j]! - xs[i]!) * (z - zi)) / (zj - zi) + xs[i]!) inside = !inside;
+  };
+  if (bands && LOOKUP.grid) {
+    // Only the segments reaching across this z can be crossed; which order they are counted in doesn't matter.
+    const k = squareAt(bands, 0, z);
+    if (k < 0) return false;
+    for (let j = bands.start[k]!; j < bands.start[k + 1]!; j++) {
+      const i = bands.items[j]!;
+      cross(i, i === 0 ? xs.length - 1 : i - 1);
+    }
+    return inside;
   }
+  for (let i = 0, j = xs.length - 1; i < xs.length; j = i++) cross(i, j);
   return inside;
 }
 
@@ -58,16 +84,32 @@ export function onLand(land: Land, x: number, z: number): boolean {
 export function shore(land: Land, x: number, z: number): Shore {
   const { xs, zs } = land;
   let best = Infinity, bx = 0, bz = 0;
-  for (let i = 0, j = xs.length - 1; i < xs.length; j = i++) {
+  // The shoreline's segment i, from the point before it (j) to point i: how far it is, and its nearest point.
+  let px = 0, pz = 0;
+  const segment = (i: number, j: number) => {
     const ax = xs[j]!, az = zs[j]!, dx = xs[i]! - ax, dz = zs[i]! - az;
     const len2 = dx * dx + dz * dz || 1;
     const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len2));
-    const px = ax + dx * t, pz = az + dz * t;
-    const d2 = (x - px) ** 2 + (z - pz) ** 2;
-    if (d2 < best) {
-      best = d2;
+    px = ax + dx * t;
+    pz = az + dz * t;
+    return (x - px) ** 2 + (z - pz) ** 2;
+  };
+  if (land.grid && LOOKUP.grid) {
+    const found = nearest(land.grid, x, z, (k) => segment(k, k === 0 ? xs.length - 1 : k - 1));
+    if (found.i >= 0) {
+      segment(found.i, found.i === 0 ? xs.length - 1 : found.i - 1);
       bx = px;
       bz = pz;
+    }
+    best = found.d2;
+  } else {
+    for (let i = 0, j = xs.length - 1; i < xs.length; j = i++) {
+      const d2 = segment(i, j);
+      if (d2 < best) {
+        best = d2;
+        bx = px;
+        bz = pz;
+      }
     }
   }
   const dist = Math.sqrt(best);
