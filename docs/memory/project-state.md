@@ -70,8 +70,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    **Writing words** (asked by the owner 2026-11-14), the next level after single letters: researched and
    drafted 2026-11-15 as [ADR 0039](../adr/0039-writing-words.md) (Proposed, a draft), from
    [research/words-learning.md](../research/words-learning.md). W1 settled 2026-11-15: 84 more narrator lines
-   (`ONLY=words` in `tools/sounds/generate.mjs`). Run 2026-11-15: 213 of 252 takes, stopped by an empty OpenRouter
-   balance; 16 lines to redo once credits are added, then picks, before 2026-12-13. Waiting on the
+   (`ONLY=words` in `tools/sounds/generate.mjs`). Made 2026-11-15: all 252 takes, on the laptop in
+   `C:\tmp\gen3\words`, not yet listened to or picked; the clips are not in the repo. Waiting on the
    owner's choices W2 to W10. Nothing built.
 
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
