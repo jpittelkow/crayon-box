@@ -168,6 +168,24 @@ test('driving through a star takes it, with a burst of confetti (ADR 0041)', asy
   await page.keyboard.up('ArrowUp');
 });
 
+test('the island has a roundabout and a harbour, where a ship\'s horn answers the kid\'s (ADR 0042)', async ({ page }) => {
+  await turnOnDriving(page);
+  await openDriving(page);
+  const world = 'document.querySelector(".driving-canvas").drivingWorld';
+  type HarbourWorld = { cars: CarState[]; zones: { kind: string; x: number; z: number; ring?: number }[]; camHeading: number };
+  // The roundabout knows its ring; the harbour has its boats.
+  expect(await page.evaluate(`${world}.zones.find((z) => z.kind === 'roundabout').ring`)).toBe(3);
+  expect(await page.evaluate(`${world}.boats.length`)).toBe(3);
+  // The kid's car parked on the quay, then the horn.
+  await page.evaluate(() => {
+    const w = (document.querySelector('.driving-canvas') as HTMLCanvasElement & { drivingWorld: HarbourWorld }).drivingWorld;
+    const zone = w.zones.find((z) => z.kind === 'harbour')!;
+    Object.assign(w.cars[0]!, { x: zone.x, z: zone.z, speed: 0 });
+  });
+  await page.keyboard.press('Space');
+  await expect.poll(() => page.evaluate(`${world}.shipHorn.rest`), SLOW).toBeGreaterThan(0);
+});
+
 test('a parent sets a kid to "follows the road"', async ({ page }) => {
   await turnOnDriving(page);
   await openParentArea(page);

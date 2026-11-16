@@ -4,8 +4,11 @@ import { buildLand, onLand, type Land } from './land';
 import type { GuardDef, HillDef } from './map';
 import { nearestOn, type Road, type RoadSpot } from './roads';
 
-/** A guarded stretch, placed: from `s0` to `s1` metres along its road. */
-export interface Guard { kind: GuardDef['kind']; road: number; s0: number; s1: number }
+/**
+ * A guarded stretch, placed: from `s0` to `s1` metres along its road. A harbour's quay (ADR 0042) is guarded on its
+ * sea side only (`side`: 1 right of the road's direction, -1 left); a bridge and a tunnel on both.
+ */
+export interface Guard { kind: GuardDef['kind'] | 'quay'; road: number; s0: number; s1: number; side?: 1 | -1 }
 
 export function buildGuards(defs: GuardDef[] | undefined, roads: Road[]): Guard[] {
   return (defs ?? []).map((g) => {

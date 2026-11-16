@@ -18,6 +18,7 @@ export const VEHICLE_IDS = (Object.keys(VEHICLE_SIZE) as VehicleKind[]).map((k) 
 export const SET_PIECES: Record<ZoneKind, string> = {
   ramp: 'setpiece/ramp', 'car-wash': 'setpiece/car-wash', garage: 'setpiece/garage',
   mud: 'setpiece/mud', ford: 'setpiece/ford', lights: 'setpiece/traffic-lights',
+  roundabout: 'setpiece/roundabout', harbour: 'setpiece/harbour',
 };
 export const SET_PIECE_IDS = Object.values(SET_PIECES);
 
@@ -27,7 +28,7 @@ export const CATEGORIES: Category[] = [
   { id: 'toys', name: 'Toys', assets: TOY_IDS },
   { id: 'scenery', name: 'Solid scenery', assets: SCENERY_IDS },
   { id: 'decor', name: 'Decor', assets: DECOR_IDS },
-  { id: 'roads', name: 'Roads', assets: ['road/street'] },
+  { id: 'roads', name: 'Roads', assets: ['road/street', 'road/roundabout', 'road/quay'] },
   { id: 'ground', name: 'Ground and water', assets: ['ground/grass', 'ground/sand', 'water/puddle', 'water/flood', 'water/stream', 'water/sea'] },
   { id: 'setpieces', name: 'Set pieces', assets: SET_PIECE_IDS },
   { id: 'animals', name: 'Animals', assets: ANIMAL_IDS },

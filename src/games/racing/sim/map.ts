@@ -12,9 +12,10 @@ export interface OnRoad { road: number; at: number; offset?: number }
 
 /**
  * The kinds of zone a set piece can have (milestone-3 phase B3). ADR 0042 adds a patch of mud, a ford where a
- * stream crosses a road, and traffic lights at a junction (for show: they never stop the kid).
+ * stream crosses a road, traffic lights at a junction (for show: they never stop the kid), a roundabout (by the
+ * middle of a one-way ring road, `ringRoad`) and a harbour (on a road along the shore: its quay).
  */
-export type ZoneKind = 'ramp' | 'car-wash' | 'garage' | 'mud' | 'ford' | 'lights';
+export type ZoneKind = 'ramp' | 'car-wash' | 'garage' | 'mud' | 'ford' | 'lights' | 'roundabout' | 'harbour';
 
 /** A stretch of road, from one fraction along it to another, that the car is held on. */
 export interface GuardDef { kind: 'bridge' | 'tunnel'; road: number; from: number; to: number }
@@ -32,6 +33,11 @@ export interface ZoneDef {
   /** On a road (facing along it), or by its middle and the way it faces (a heading, default 0). */
   on: OnRoad | { x: number; z: number; heading?: number };
   r: number;
+  /**
+   * A harbour only (ADR 0042): the way its sailing boat goes out to sea and back, from its berth (the last boat
+   * along the quay) through these points on the water, and home the same way.
+   */
+  sail?: [number, number][];
 }
 
 export interface MapDef {

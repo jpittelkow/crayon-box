@@ -3,10 +3,12 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { guardAt, hillReach, type Guard } from '../sim/ground';
+import { QUAY_FACE, type Boat } from '../sim/harbour';
 import { onLand } from '../sim/land';
 import { lampFor, lightsJunction, type Lamp, type Post, type Way } from '../sim/lights';
 import type { HillDef } from '../sim/map';
 import { RAMP } from '../sim/ramps';
+import { BASIN_R, JETS, jetHeights, ringRadius } from '../sim/roundabout';
 import { nearestRoad, pointAt, type Road } from '../sim/roads';
 import type { World, Zone } from '../sim/sim';
 import { flatShape } from './island';
@@ -431,6 +433,158 @@ function stopLines(world: World, zone: Zone): THREE.Mesh | null {
   return merged(lines, plastic(0xf4f4f0, 0.6), false);
 }
 
+/** A flat arrow lying on the road, pointing along `heading` (painted, no words: ADR 0003). */
+function arrow(x: number, z: number, heading: number, y: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape([
+    new THREE.Vector2(-0.22, -1.2), new THREE.Vector2(0.22, -1.2), new THREE.Vector2(0.22, 0.1), new THREE.Vector2(0.65, 0.1),
+    new THREE.Vector2(0, 1.2), new THREE.Vector2(-0.65, 0.1), new THREE.Vector2(-0.22, 0.1),
+  ]);
+  // The shape points along its y; laid down, y becomes -z, so it is turned round to point along +z, then the heading.
+  return new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2).rotateY(Math.PI + heading).translate(x, y, z);
+}
+
+/**
+ * A roundabout (ADR 0042): painted arrows round its one-way ring, and in the middle a low round bed of grass and
+ * flowers inside a red and white kerb, with a fountain whose jets rise and fall (`animate`). The ring itself is a
+ * road, drawn with the others.
+ */
+function roundabout(world: World, zone: Zone, seed: number): { group: THREE.Group; jets: THREE.Object3D[] } {
+  const g = new THREE.Group();
+  const road = zone.ring === undefined ? undefined : world.roads[zone.ring];
+  const ringR = road ? ringRadius(zone, road, zone.ring!) : zone.r - 4.5;
+  const bedR = Math.max(BASIN_R + 0.8, ringR - (road ? road.def.width / 2 : 4.5));
+  const r = seeded(seed * 53 + 3);
+  // Arrows in both lanes, all the way round, pointing the way traffic goes.
+  if (road) {
+    const arrows: THREE.BufferGeometry[] = [];
+    const n = 6;
+    for (let i = 0; i < n; i++) {
+      const s = ((i + 0.5) / n) * road.length;
+      for (const lane of [-2.2, 2.2]) {
+        const p = pointAt(road, s, lane);
+        arrows.push(arrow(p.x, p.z, p.heading, 0.062));
+      }
+    }
+    g.add(merged(arrows, plastic(0xf4f4f0, 0.6), false));
+  }
+  // The bed, raised a little inside its kerb; the kerb's stones red and white in turn.
+  const grass = plastic(0x6cbf45, 0.9), soil = plastic(0x7a5a3a, 0.95);
+  g.add(merged([new THREE.CylinderGeometry(bedR - 0.25, bedR - 0.25, 0.16, ROUND * 2).translate(zone.x, 0.08, zone.z)], grass, false));
+  const red: THREE.BufferGeometry[] = [], white: THREE.BufferGeometry[] = [];
+  const stones = Math.max(12, Math.round((Math.PI * 2 * bedR) / 1.1));
+  for (let i = 0; i < stones; i++) {
+    const a = (i / stones) * Math.PI * 2;
+    const len = (Math.PI * 2 * bedR) / stones - 0.06;
+    (i % 2 ? red : white).push(new THREE.BoxGeometry(0.34, 0.2, len).rotateY(a + Math.PI / 2)
+      .translate(zone.x + Math.sin(a) * bedR, 0.1, zone.z + Math.cos(a) * bedR));
+  }
+  g.add(merged(red, plastic(0xe63946, 0.6)), merged(white, plastic(0xf4f6f8, 0.55)));
+  // Flowers between the kerb and the fountain: a stalk and a round head, in crayon colours.
+  const colours = [0xff4d6d, 0xffd23f, 0xff8a1f, 0xffffff, 0xb15cff];
+  const heads = colours.map(() => [] as THREE.BufferGeometry[]);
+  const stalks: THREE.BufferGeometry[] = [];
+  const soilRing = [new THREE.RingGeometry(BASIN_R + 0.15, BASIN_R + 0.65, ROUND * 2).rotateX(-Math.PI / 2).translate(zone.x, 0.165, zone.z)];
+  const flowers = Math.round(Math.PI * (bedR * bedR - (BASIN_R + 0.4) ** 2) * 2.2);
+  for (let i = 0; i < flowers; i++) {
+    const a = r() * Math.PI * 2, d = BASIN_R + 0.45 + r() * (bedR - BASIN_R - 0.85);
+    const x = zone.x + Math.sin(a) * d, z = zone.z + Math.cos(a) * d, h = 0.28 + r() * 0.22;
+    stalks.push(new THREE.CylinderGeometry(0.025, 0.03, h, 5).translate(x, 0.16 + h / 2, z));
+    heads[Math.floor(r() * heads.length)]!.push(new THREE.IcosahedronGeometry(0.11 + r() * 0.05, 0).translate(x, 0.16 + h, z));
+  }
+  g.add(merged(soilRing, soil, false), merged(stalks, plastic(0x3f8f2e, 0.8), false));
+  heads.forEach((list, i) => {
+    if (list.length) g.add(merged(list, plastic(colours[i]!, 0.5), false));
+  });
+  // The fountain: a stone basin full of water, a pedestal with a bowl in the middle, and jets round it.
+  const stone = plastic(0xc9c3b6, 0.75);
+  const water = new THREE.MeshPhysicalMaterial({ color: 0x5ab8f0, roughness: 0.1, clearcoat: 0.6, transparent: true, opacity: 0.85 });
+  const basin = new THREE.Group();
+  basin.add(part(new THREE.CylinderGeometry(BASIN_R, BASIN_R + 0.08, 0.55, ROUND * 2, 1, true), stone, 0, 0.275, 0));
+  basin.add(part(new THREE.TorusGeometry(BASIN_R - 0.06, 0.1, 8, ROUND * 2).rotateX(Math.PI / 2), stone, 0, 0.55, 0));
+  basin.add(part(new THREE.CircleGeometry(BASIN_R - 0.05, ROUND * 2).rotateX(-Math.PI / 2), water, 0, 0.42, 0));
+  basin.add(part(new THREE.CylinderGeometry(0.22, 0.3, 1.1, 16), stone, 0, 0.6, 0));
+  basin.add(part(new THREE.CylinderGeometry(0.6, 0.18, 0.22, 20), stone, 0, 1.2, 0));
+  basin.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
+  });
+  basin.position.set(zone.x, 0, zone.z);
+  g.add(basin);
+  // Jets: thin columns of water, scaled up and down by `animate`; their bases sit in the basin (the last on the bowl).
+  const spray = new THREE.MeshPhysicalMaterial({ color: 0xd8f0ff, roughness: 0.05, transparent: true, opacity: 0.7, depthWrite: false });
+  const jetGeo = new THREE.CylinderGeometry(0.03, 0.09, 1, 8).translate(0, 0.5, 0);
+  const jets: THREE.Object3D[] = [];
+  for (let i = 0; i <= JETS; i++) {
+    const centre = i === JETS, a = (i / JETS) * Math.PI * 2, d = BASIN_R * 0.7;
+    const jet = part(jetGeo, spray, zone.x + (centre ? 0 : Math.sin(a) * d), centre ? 1.3 : 0.42, zone.z + (centre ? 0 : Math.cos(a) * d));
+    // Ring jets lean in a little toward the middle.
+    if (!centre) jet.rotation.set(-Math.cos(a) * 0.25, 0, Math.sin(a) * 0.25, 'YXZ');
+    jets.push(jet);
+    g.add(jet);
+  }
+  return { group: g, jets };
+}
+
+/** The tallest the fountain's jets go, metres: the ring's and the centre's. */
+const JET_HEIGHT = { ring: 1.3, centre: 1.9 };
+
+/**
+ * A harbour's quay (ADR 0042): stone from the road's edge out to the quay's face over the water, a low stone edge
+ * with dark bollards along the road (the car slides along it), and a few mooring posts at the face. The boats are
+ * drawn by `buildSetPieces` from the simulation's (they bob, and one sails).
+ */
+function quay(world: World, guard: Guard): THREE.Group {
+  const g = new THREE.Group();
+  const road = world.roads[guard.road]!, half = road.def.width / 2, side = guard.side ?? 1;
+  // Where the quay meets a bridge, the bridge's deck (3 m past its ends) takes over.
+  let s0 = guard.s0, s1 = guard.s1;
+  for (const b of world.guards) {
+    if (b.kind !== 'bridge' || b.road !== guard.road || b.s0 - 3 >= s1 || b.s1 + 3 <= s0) continue;
+    if (b.s0 > s0) s1 = Math.min(s1, b.s0 - 3);
+    else s0 = Math.max(s0, b.s1 + 3);
+  }
+  const stone = plastic(0xa8a39a, 0.85), coping = plastic(0xd2cdc2, 0.7), iron = plastic(0x2b2f36, 0.45);
+  const face = half + QUAY_FACE;
+  // A strip from `a` to `b` metres off the road's centre line on the sea side, at height y.
+  const band = (a: number, b: number, y: number) => (side > 0 ? roadStrip(road, a, b, y, s0, s1, 1) : roadStrip(road, -b, -a, y, s0, s1, 1));
+  // The top: from the road's edge (a little under it, so the road's edge line shows) to the face.
+  const flats = [band(half - 0.05, face, 0.03)];
+  // The face: a wall down into the water, in short pieces along the curve, and a pale coping along its top.
+  const walls: THREE.BufferGeometry[] = [], tops: THREE.BufferGeometry[] = [];
+  const n = Math.ceil((s1 - s0) / 1.5);
+  const piece = (at: number, i: number) => {
+    const a = pointAt(road, s0 + (i / n) * (s1 - s0), side * at), b = pointAt(road, s0 + ((i + 1) / n) * (s1 - s0), side * at);
+    return { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, len: Math.hypot(b.x - a.x, b.z - a.z) + 0.05, turn: Math.atan2(b.x - a.x, b.z - a.z) };
+  };
+  for (let i = 0; i < n; i++) {
+    const p = piece(face, i);
+    walls.push(new THREE.BoxGeometry(0.5, 1.0, p.len).rotateY(p.turn).translate(p.x, -0.47, p.z));
+    tops.push(new THREE.BoxGeometry(0.6, 0.12, p.len).rotateY(p.turn).translate(p.x, 0.08, p.z));
+  }
+  // The low edge along the road, and bollards on it every 3 m.
+  const edge: THREE.BufferGeometry[] = [band(half + 0.35, half + 0.85, 0.32)];
+  for (const at of [half + 0.35, half + 0.85]) {
+    for (let i = 0; i < n; i++) {
+      const p = piece(at, i);
+      edge.push(new THREE.BoxGeometry(0.04, 0.3, p.len).rotateY(p.turn).translate(p.x, 0.17, p.z));
+    }
+  }
+  const bollards: THREE.BufferGeometry[] = [];
+  const posts = Math.max(2, Math.round((s1 - s0) / 3));
+  for (let i = 0; i <= posts; i++) {
+    const p = pointAt(road, s0 + (i / posts) * (s1 - s0), side * (half + 0.6));
+    bollards.push(new THREE.CylinderGeometry(0.17, 0.2, 0.5, 12).translate(p.x, 0.57, p.z));
+    bollards.push(new THREE.SphereGeometry(0.21, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(p.x, 0.82, p.z));
+  }
+  // Mooring posts near the face, between the berths.
+  for (let s = s0 + 3.5; s < s1 - 2; s += 7.5) {
+    const p = pointAt(road, s, side * (face - 0.6));
+    bollards.push(new THREE.CylinderGeometry(0.2, 0.24, 0.45, 12).translate(p.x, 0.3, p.z));
+    bollards.push(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 12).translate(p.x, 0.55, p.z));
+  }
+  g.add(merged(flats, stone, false), merged(walls, stone), merged([...tops, ...edge], coping), merged(bollards, iron));
+  return g;
+}
+
 /** Every set piece on the map, and a step for the ones that move. */
 export function buildSetPieces(world: World): { group: THREE.Group; animate(w: World, dt: number): void } {
   const g = new THREE.Group();
@@ -439,7 +593,13 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
   const muds: THREE.Object3D[][] = [];
   const foams: THREE.Material[] = [];
   const lights: { light: number; lamps: Record<Way, Record<Lamp, THREE.MeshStandardMaterial>> }[] = [];
+  const fountains: THREE.Object3D[][] = [];
   world.zones.forEach((zone, i) => {
+    if (zone.kind === 'roundabout') {
+      const piece = roundabout(world, zone, i);
+      g.add(piece.group);
+      fountains.push(piece.jets);
+    }
     if (zone.kind === 'mud') {
       const patch = mudPatch(world, zone, i);
       g.add(patch.group);
@@ -496,6 +656,17 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
   const boats = (world.map.boats ?? []).map((b, i) => boat(b.x, b.z, b.heading, [0xe63946, 0x3a86ff, 0xffc400][i % 3]!));
   for (const b of boats) g.add(b);
   for (const guard of world.guards) if (guard.kind === 'bridge') g.add(bridge(world, guard));
+  // Harbours (ADR 0042): the quay, and the boats moored along it, which move as the simulation's do.
+  for (const guard of world.guards) if (guard.kind === 'quay') g.add(quay(world, guard));
+  const moored = world.boats.map((b, i) => boat(b.x, b.z, b.heading, [0x3a86ff, 0xffc400, 0xe63946, 0x2fa35f][i % 4]!));
+  for (const b of moored) g.add(b);
+  const placeBoats = (list: Boat[]) => list.forEach((b, i) => {
+    const m = moored[i];
+    if (!m) return;
+    m.position.set(b.x, -0.3 + b.y, b.z);
+    m.rotation.set(0, b.heading, b.roll, 'YXZ');
+  });
+  placeBoats(world.boats);
   const hills = (world.map.hills ?? []).map((h) => hill(world, h));
   for (const h of hills) g.add(h.group);
   return {
@@ -523,6 +694,15 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
         s.ripples.instanceMatrix.needsUpdate = true;
       }
       showLights(w);
+      placeBoats(w.boats);
+      // The fountains' jets rise and fall.
+      const heights = jetHeights(w.time);
+      for (const jets of fountains) {
+        jets.forEach((jet, i) => {
+          const h = heights[i]! * (i === JETS ? JET_HEIGHT.centre : JET_HEIGHT.ring);
+          jet.scale.set(1, Math.max(0.05, h), 1);
+        });
+      }
       boats.forEach((b, i) => {
         b.position.y = -0.3 + Math.sin(w.time * 1.3 + i) * 0.08;
         b.rotation.z = Math.sin(w.time * 0.9 + i * 2) * 0.04;

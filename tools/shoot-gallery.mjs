@@ -15,7 +15,7 @@ try {
   page.on('pageerror', (e) => console.error('page error:', e.message));
   page.on('console', (m) => m.type() === 'error' && console.error('console:', m.text()));
   // The set pieces' row, then each new set piece close up (ADR 0042).
-  const pieces = ['mud', 'ford', 'lights'].map((at) => `setpieces&at=${at}`);
+  const pieces = ['mud', 'ford', 'lights', 'roundabout', 'harbour'].map((at) => `setpieces&at=${at}`);
   for (const row of ['', 'vehicles', 'toys', 'scenery', 'effects', 'setpieces', ...pieces]) {
     await page.goto(`http://localhost:${PORT}/tools/driving-gallery.html${row ? `?row=${row}` : ''}`);
     await page.waitForFunction(() => window.galleryReady === true, null, { timeout: 120_000 });
