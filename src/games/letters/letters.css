@@ -270,6 +270,28 @@
 .letters-march {
   animation: lt-march 0.9s linear infinite;
 }
+/* ---- Hints (ADR 0037, hints.ts): step 1 and "Start at the green dot.": the dot pulses bigger, the arrow wiggles ---- */
+.letters-screen[data-nudge='dot'] .letters-starts .letters-pulse {
+  animation: lt-pulse-big 0.8s ease-in-out infinite;
+}
+.letters-screen[data-nudge] .letters-arrows {
+  opacity: 1;
+}
+.letters-screen[data-nudge] .letters-arrows > g {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lt-wiggle 0.5s ease-in-out infinite;
+}
+.letters-shows {
+  pointer-events: none;
+}
+.letters-screen[data-showing] .letters-finger {
+  visibility: hidden;
+}
+/* All traced: the check pulses bigger until it is tapped. */
+.letters-confirm.cb-action.is-nudged {
+  animation: lt-beat-big 0.8s ease-in-out infinite;
+}
 .letters-confetti {
   position: absolute;
   inset: 0;
@@ -295,6 +317,24 @@
 @keyframes lt-beat {
   50% {
     scale: 1.06;
+  }
+}
+@keyframes lt-pulse-big {
+  50% {
+    transform: scale(1.6);
+  }
+}
+@keyframes lt-wiggle {
+  25% {
+    transform: rotate(-7deg) scale(1.08);
+  }
+  75% {
+    transform: rotate(7deg) scale(1.08);
+  }
+}
+@keyframes lt-beat-big {
+  50% {
+    scale: 1.16;
   }
 }
 @keyframes lt-poke {
@@ -323,7 +363,20 @@
   .letters-march,
   .letters-stop.is-now,
   .letters-next.cb-action,
-  .letters-confirm.cb-action {
+  .letters-confirm.cb-action,
+  .letters-screen[data-nudge] .letters-arrows > g,
+  .letters-screen[data-nudge='dot'] .letters-starts .letters-pulse,
+  .letters-confirm.cb-action.is-nudged {
     animation: none;
+  }
+  /* Less motion: the hints still show, held still and bigger. */
+  .letters-screen[data-nudge='dot'] .letters-starts .letters-pulse {
+    transform: scale(1.5);
+  }
+  .letters-screen[data-nudge] .letters-arrows > g {
+    transform: scale(1.1);
+  }
+  .letters-confirm.cb-action.is-nudged {
+    scale: 1.12;
   }
 }

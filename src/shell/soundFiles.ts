@@ -48,3 +48,24 @@ export type Praise = (typeof PRAISE)[number];
 export function praiseClip(word: Praise): string | undefined {
   return soundUrl(`voice/praise-${word}.mp3`);
 }
+
+/** The letters game's spoken tips (ADR 0037): `start-dot` is "Start at the green dot.", and so on. */
+export const TIPS = ['start-dot', 'top', 'follow-arrow', 'keep-going', 'next-line', 'tap-check'] as const;
+export type TipId = (typeof TIPS)[number];
+
+export function tipClip(id: TipId): string | undefined {
+  return soundUrl(`voice/tip-${id}.mp3`);
+}
+
+/** The stroke words (ADR 0037): "Down.", "Across.", "Slant.", "Around.", "Down, up and over.", "Dot.". */
+export const STROKE_WORDS = ['down', 'across', 'slant', 'around', 'down-over', 'dot'] as const;
+export type StrokeWord = (typeof STROKE_WORDS)[number];
+
+export function strokeClip(kind: StrokeWord): string | undefined {
+  return soundUrl(`voice/stroke-${kind}.mp3`);
+}
+
+/** The how-to's two lines (ADR 0037): "Watch me." and "Your turn!" (the hints' step 3 ends with the second). */
+export function demoClip(line: 'watch' | 'your-turn'): string | undefined {
+  return soundUrl(`voice/demo-${line}.mp3`);
+}

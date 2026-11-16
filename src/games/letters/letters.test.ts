@@ -254,7 +254,7 @@ describe('progress and the game path (ADR 0026)', () => {
     expect(isOpenInGame(path, p, 'C')).toBe(false);
 
     await resetProgress(s, 'k1');
-    expect(await loadProgress(s, 'k1')).toEqual({ stars: [], game: [] });
+    expect(await loadProgress(s, 'k1')).toEqual({ stars: [], game: [], help: {} });
   });
 
   it('forgetting a kid removes only their letters', async () => {
@@ -354,13 +354,13 @@ describe('sound while tracing (ADR 0037)', () => {
 
   it("keeps the setting, name by default, and cleans what it doesn't know", async () => {
     const s = appStorage(memoryBackend()).game('letters');
-    expect(await loadLettersSettings(s)).toEqual({ sounds: true, voice: 'windows', saying: 'name' });
-    await saveLettersSettings(s, { sounds: true, voice: 'own', saying: 'name-sound' });
+    expect(await loadLettersSettings(s)).toEqual({ sounds: true, voice: 'windows', saying: 'name', tips: true });
+    await saveLettersSettings(s, { sounds: true, voice: 'own', saying: 'name-sound', tips: true });
     expect((await loadLettersSettings(s)).saying).toBe('name-sound');
     await s.putJson('settings.json', { sounds: false, voice: 'windows', saying: 'shout' });
-    expect(await loadLettersSettings(s)).toEqual({ sounds: false, voice: 'windows', saying: 'name' });
+    expect(await loadLettersSettings(s)).toEqual({ sounds: false, voice: 'windows', saying: 'name', tips: true });
     await saveLettersSettings(s, { sounds: true, voice: 'windows', saying: 'nope' } as unknown as LettersSettings);
-    expect(await s.getJson('settings.json')).toEqual({ sounds: true, voice: 'windows', saying: 'name' });
+    expect(await s.getJson('settings.json')).toEqual({ sounds: true, voice: 'windows', saying: 'name', tips: true });
   });
 
   it("uses a parent's recordings of names and of sounds where there are some, else the narrator", async () => {
@@ -372,6 +372,7 @@ describe('sound while tracing (ADR 0037)', () => {
       sounds: true,
       voice,
       saying,
+    tips: true,
     });
     expect(await letterParts(s, settings('name-sound'), 'B')).toEqual([{ own: 'voice/cap-B.webm' }, { clip: soundClip('B') }]);
     // One sound recording serves the capital and the small letter.
@@ -408,7 +409,7 @@ describe('the line queue (ADR 0037)', () => {
     FakeAudio.playing.shift()?.dispatchEvent(new Event('ended'));
     await tick();
   };
-  const settings: LettersSettings = { sounds: true, voice: 'windows', saying: 'name' };
+  const settings: LettersSettings = { sounds: true, voice: 'windows', saying: 'name', tips: true };
   const voice = (enabled = true) => new LetterVoice(appStorage(memoryBackend()).game('letters'), settings, { play() {}, enabled });
   const clip = (c: string): Part => ({ clip: c });
 
