@@ -118,8 +118,16 @@ pictured, made of letters with clear sounds: cat, dog, sun, bus, pig, hat, cup, 
 pan, pin, sat, tap, top, red, run, hop, big, mud, jam. Plus `word-next-letter`: "Now the next letter." and
 `praise-a-word`: "You wrote a word!" The list is final (owner, 2026-11-15).
 
-**Total:** 26 + 6 + 6 + 2 + 4 + 5 + 2 + 26 = **77 lines**, 3 takes each (231 requests), plus 10 Maisie samples.
+**Total:** 26 + 6 + 6 + 2 + 4 + 5 + 2 + 26 = **77 lines**, plus 5 extra takes of the short vowels with their
+example word (`sound-A-alt` "ah… apple", and E egg, I igloo, O octopus, U umbrella), so the owner can pick the
+plain sound or the one with the word: **82 lines**, 3 takes each (246 requests), plus 10 Maisie samples.
 The letter's name when it opens (phase B) reuses today's clips; no new lines.
+
+**Maisie through OpenRouter is not certain.** OpenRouter's page for ElevenLabs v4 lists only the default voices
+by name (Matilda among them), not Maisie or custom voice ids (checked 2026-11-15). The script asks for Maisie by
+her ElevenLabs voice id and logs an error if that is refused. If it is, options 2 and 3 below would need a direct
+ElevenLabs key on the server, and after 2026-12-31 OpenRouter may offer no ElevenLabs voice this project has used.
+That is one more reason to make everything now.
 
 ---
 
@@ -127,9 +135,23 @@ The letter's name when it opens (phase B) reuses today's clips; no new lines.
 
 ### A. The narrator batch (first, dated above)
 - **Builds:** the line list in `tools/sounds/generate.mjs` (a second list, `ONLY=letters2`, so today's clips are
-  not remade); its entries in `tools/sounds/picks.json`; a throwaway audition page in `spikes/` with every take;
-  the picked files through `prepare.mjs` into `assets/sounds/voice/` and `sounds.json`.
-- **Files:** `tools/sounds/generate.mjs`, `tools/sounds/picks.json`, `assets/sounds/voice/*`,
+  not remade; **done 2026-11-15**); `tools/sounds/audition.mjs`, which makes a page to pick a take of each line
+  and copies the picks to where `prepare.mjs` looks (**done 2026-11-15**); the picked files through `prepare.mjs`
+  into `assets/sounds/voice/` and `sounds.json`. `picks.json` needs no new entries: its `narrator` entry takes
+  every file in the sources folder's `narrator/`.
+- **How to run it:**
+  1. Check the list: `DRY=1 ONLY=letters2 node tools/sounds/generate.mjs` (no key needed).
+  2. Copy `tools/sounds/generate.mjs` into the sync server's container as `/tmp/generate.mjs`, then
+     `docker exec -e ONLY=letters2 <container> node /tmp/generate.mjs`. One request at a time; 256 requests.
+  3. Copy `/tmp/gen3` back to the laptop (e.g. `C:\tmp\gen3`), then
+     `node tools/sounds/audition.mjs page C:\tmp\gen3` and open `C:\tmp\gen3\audition.html`.
+  4. Pick a take of every line (or "redo"), then "Download picks".
+  5. `node tools/sounds/audition.mjs apply C:\tmp\gen3 <letters2-picks.json> <sources folder>` copies the picks
+     into `<sources folder>\narrator\` and prints an `IDS=…` list for a redo run
+     (`docker exec -e ONLY=letters2 -e IDS=… <container> node /tmp/generate.mjs`).
+  6. `node tools/sounds/prepare.mjs <sources folder>` (the same sources folder as the first batch, so today's
+     clips are kept), then commit `assets/sounds/`.
+- **Files:** `tools/sounds/generate.mjs`, `tools/sounds/audition.mjs`, `assets/sounds/voice/*`,
   `assets/sounds/sounds.json` (by the tool), `src/shell/soundFiles.ts` (clip helpers: `soundClip(ch)`,
   `tipClip(id)`, `strokeClip(kind)`, `wordClip(word)`, the longer `PRAISE` list).
 - **Clips:** the 77 lines above.
