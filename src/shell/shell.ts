@@ -148,6 +148,7 @@ export class Shell {
         storage: this.storage.game(entry.id),
         sound: this.sounds(),
         exitToHome: () => void this.afterGame(kid),
+        photo: () => getPhoto(this.storage.shell, kid),
         finished: this.platform.finished,
       });
     } finally {
