@@ -36,6 +36,13 @@ _Last updated: 2026-11-21_
   not set to start by itself on the server). It was started to run the batch. Whether it should start by itself
   is the owner's setting on the server's Docker page.
 
+- **A Linux version** ([ADR 0046](../adr/0046-linux-version.md), Proposed 2026-11-21; the owner said to plan it,
+  to build and release it on GitHub like Windows, and that it updates itself the same way): accept the ADR or
+  not, and L1 to L10 in [linux-plan.md](../linux-plan.md), each with a recommended default. The ones that shape
+  the work: L2 (which Linux the laptop runs), L3 (a kids' session that is only the app, or an ordinary desktop),
+  L7 (must a release be tried on both systems before publishing) and L10 (where it sits in the to-do order).
+  Phase B needs the owner and the real laptop.
+
 - **From the overnight build (2026-11-16)**, each built on a default the owner can overrule:
   - **Coloring:** a parent switch to turn the first-time demos off (none now)? Back says "Back" the first 3 times
     as it leaves: keep? The laptop's display scale: at 125 % (1536 × 864) the wheel is hidden.

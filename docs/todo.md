@@ -92,6 +92,18 @@ The kids asked for hands-on "make a thing" games; the owner picked a Kitchen gam
 - Then: the idle hand (the rest of phase C), the shelf and the parent screen (D), the recipe doc (E), and more
   recipes (F: cupcake, birthday cake, ice cream, cookie).
 
+## 8. A Linux version (asked 2026-11-21, not yet placed in the order)
+For a touch laptop or PC. [ADR 0046](adr/0046-linux-version.md) (Proposed), [linux-plan.md](linux-plan.md) with
+the owner's choices L1 to L10. A trial build ran on 2026-11-21 (`spikes/linux-trial/`): the app builds and runs
+under WebKitGTK.
+- **Phase A is built** on the branch `linux/phase-a` (2026-11-21): the faults the trial found are fixed, the Linux
+  bundle settings are in, and CI has a `linux-appimage` job with a smoke run beside `windows-installer`. Checked
+  in WSL; **the job has not run on GitHub yet**: the first pull request shows whether it holds there.
+- **Phase B, the gate (next, the owner):** try the AppImage from that pull request's run on the real laptop: the
+  driving game's speed, touch, pen, sound. Go or no-go for everything after it.
+- Then: what differs in the app (C), the kids' session and the Linux setup guide (D), releases and in-app updates
+  from GitHub as on Windows (E), and the first Linux release with its checklist (F).
+
 ## Parked (not planned)
 - iPad version ([ADR 0030](adr/0030-ipad-home-screen-web-app.md), a draft kept for later).
 - Printing and export (ADR 0010, Deferred).

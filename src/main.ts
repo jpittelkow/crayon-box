@@ -29,12 +29,19 @@ async function boot(): Promise<void> {
   let finished: FinishedPictures | undefined;
   let pagesFolder: PagesFolder | undefined;
   let mapsFolder: MapsFolder | undefined;
+  let noPicturesFolder = false;
   if (inTauri()) {
     try {
       const files = await import('./shell/tauriFiles');
       backend = await files.openTauriBackend();
-      finished = files.tauriFinishedPictures();
-      pagesFolder = files.tauriPagesFolder();
+      // Both live in the account's Pictures folder, which a bare Linux account may not have (ADR 0046).
+      if (await files.picturesFolderFound()) {
+        finished = files.tauriFinishedPictures();
+        pagesFolder = files.tauriPagesFolder();
+      } else {
+        noPicturesFolder = true;
+        console.warn('This account has no Pictures folder; finished pictures and the Pages folder are off');
+      }
       mapsFolder = files.tauriMapsFolder();
     } catch (err) {
       console.error('App files unavailable; using browser storage instead', err);
@@ -64,7 +71,7 @@ async function boot(): Promise<void> {
   const kiosk = await openKiosk(storage.shell);
   // Family sync runs in the background when a parent has set it up (ADR 0024); kid screens never wait for it.
   const sync = new SyncService({ backend, shell: storage.shell });
-  const shell = new Shell(frame, storage, undefined, { finished, pagesFolder, mapsFolder, updates, kiosk, sync });
+  const shell = new Shell(frame, storage, undefined, { finished, pagesFolder, noPicturesFolder, mapsFolder, updates, kiosk, sync });
   kiosk?.onQuitRequested(() => void shell.quit());
   if (kiosk) window.addEventListener(QUIT_KEYS_EVENT, () => void shell.quit());
   await shell.start();

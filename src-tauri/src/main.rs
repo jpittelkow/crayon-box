@@ -6,6 +6,10 @@
 // No console window behind the app in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+// Off Windows there is no keyboard hook, so the key rules in `kiosk.rs` have no caller there (their tests still run).
+// Without this, a Linux build prints unused-code warnings for them, and Ubuntu's rustc 1.93.1 crashed doing so
+// (ADR 0046, found 2026-11-21).
+#[cfg_attr(not(windows), allow(dead_code))]
 mod kiosk;
 
 use tauri::WindowEvent;

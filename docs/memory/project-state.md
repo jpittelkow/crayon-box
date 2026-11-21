@@ -106,6 +106,16 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    The other ideas offered the same day (car wash, vehicle workshop, robot or monster, garden, building site)
    are not planned.
 
+8. **A Linux version** (asked by the owner 2026-11-21, for a touch laptop or PC): the same Tauri shell on
+   WebKitGTK, released as an AppImage that updates itself like the Windows app, with the lock done by a kids'
+   session that runs only the app. Design: [ADR 0046](../adr/0046-linux-version.md), **Proposed** 2026-11-21;
+   phases A to F, the GitHub build and release work and the owner's choices L1 to L10 are in
+   [linux-plan.md](../linux-plan.md). A trial build ran in WSL the same day (`spikes/linux-trial/`): it builds and
+   runs. **Phase A is built** on the branch `linux/phase-a` (2026-11-21): the trial's faults fixed,
+   `src-tauri/tauri.linux.conf.json`, `tools/linux-smoke.mjs` and CI's `linux-appimage` job; checked in WSL, the
+   job not yet run on GitHub. Phase B is a gate on the real laptop (driving speed, touch) before anything past
+   phase A.
+
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
 3D models and a lot of design; only its prototype came early. Deferred: printing and export (ADR 0010).
 

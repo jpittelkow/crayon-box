@@ -10,7 +10,7 @@ vi.mock('@tauri-apps/plugin-opener', () => ({ openPath: vi.fn(async () => {}) })
 vi.mock('@tauri-apps/plugin-fs', () => ({ BaseDirectory: { AppLocalData: 1, Picture: 2 } }));
 
 import { openFileBackend } from '../storage/files';
-import { kidFolder, tauriFileSystem, tauriFinishedPictures, tauriMapsFolder } from './tauriFiles';
+import { finishedTempName, kidFolder, picturesFolderFound, tauriFileSystem, tauriFinishedPictures, tauriMapsFolder } from './tauriFiles';
 
 /** A fake of the fs plugin's functions: files and folders in maps, keyed by `<base>:<path>`. */
 function fakePlugin() {
@@ -105,6 +105,22 @@ describe('finished pictures in Pictures', () => {
     plugin.rename.mockRejectedValueOnce(new Error('in use'));
     await expect(finished.save('star', 'a.png', new Blob([new Uint8Array([2])]))).rejects.toThrow('in use');
     expect([...plugin.files.entries()]).toEqual([['2:Coloring Book/Art/star/a.png', new Uint8Array([1])]]);
+  });
+
+  it('writes through a temp file whose name does not start with a dot (Linux refuses dot files, ADR 0046)', async () => {
+    const plugin = fakePlugin();
+    await tauriFinishedPictures(plugin as never).save('star', 'a.png', new Blob([new Uint8Array([1])]));
+    const written = plugin.writeFile.mock.calls.map(([path]) => path);
+    expect(written).toEqual(['Coloring Book/Art/star/a.png.tmp']);
+    expect(finishedTempName('a.png')).toBe('a.png.tmp');
+    for (const path of written) for (const part of path.split('/')) expect(part.startsWith('.')).toBe(false);
+  });
+
+  it('knows when the account has no Pictures folder (a bare Linux account)', async () => {
+    expect(await picturesFolderFound()).toBe(true);
+    expect(await picturesFolderFound(async () => '/home/someone/Pictures')).toBe(true);
+    expect(await picturesFolderFound(async () => '')).toBe(false);
+    expect(await picturesFolderFound(async () => Promise.reject(new Error('unknown path')))).toBe(false);
   });
 
   it('opens the Art folder wherever Windows keeps Pictures', async () => {

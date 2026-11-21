@@ -1,0 +1,3 @@
+# These run under Linux (WSL reads the Windows checkout): keep Unix line ends whatever the checkout does.
+*.sh text eol=lf
+*.mjs text eol=lf

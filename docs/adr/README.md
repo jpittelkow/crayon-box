@@ -51,6 +51,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0043](0043-driving-maps-from-a-folder.md) | Driving game: maps loaded from a folder on the device, checked as they load | Accepted |
 | [0044](0044-kitchen-make-it-game-pizza-first.md) | Kitchen: a game for making things step by step, pizza first | Proposed |
 | [0045](0045-every-game-shows-by-default.md) | Every game shows on the home screen by default | Accepted |
+| [0046](0046-linux-version.md) | A Linux version: the same Tauri shell, an AppImage, and a kids' session that is only the app | Proposed |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H

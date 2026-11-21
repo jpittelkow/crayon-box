@@ -28,6 +28,8 @@ export interface ParentAreaOptions {
   finished?: FinishedPictures;
   /** Present in the Windows app only (phase F). */
   pagesFolder?: PagesFolder;
+  /** True in the app when the account has no Pictures folder (ADR 0046). */
+  noPicturesFolder?: boolean;
   /** Present in the Windows app only (ADR 0043). */
   mapsFolder?: MapsFolder;
   /** Present in the Windows app only (ADR 0009). */
@@ -119,6 +121,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
       kidLabel,
       finished: opts.finished,
       pagesFolder: opts.pagesFolder,
+      noPicturesFolder: opts.noPicturesFolder,
       mapsFolder: opts.mapsFolder,
       ai: opts.sync ? () => opts.sync!.aiMaker() : undefined,
     });

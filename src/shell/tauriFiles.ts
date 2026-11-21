@@ -63,6 +63,24 @@ export function kidFolder(kidId: string): string {
   return /^[a-z0-9][a-z0-9-]*$/.test(kidId) ? kidId : kidId.replace(/[^a-z0-9-]+/gi, '-').toLowerCase() || 'kid';
 }
 
+/** The temp file a finished picture is written to before it takes its real name. Never a dot file (see `save`). */
+export function finishedTempName(name: string): string {
+  return `${name}.tmp`;
+}
+
+/**
+ * Whether this account has a Pictures folder. Windows always does. A Linux account only has one when its standard
+ * folders are set up (`xdg-user-dirs`); without it there is nowhere for finished pictures or the Pages folder, and
+ * the app goes on without them (ADR 0046).
+ */
+export async function picturesFolderFound(dir: () => Promise<string> = pictureDir): Promise<boolean> {
+  try {
+    return (await dir()).length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /** Finished pictures in the Pictures folder (ADR 0007), for parents to find, back up and share. */
 export function tauriFinishedPictures(fs: Fs = tauriFs, open: (path: string) => Promise<void> = openPath): FinishedPictures {
   const files = tauriFileSystem(BaseDirectory.Picture, ART, fs);
@@ -71,8 +89,9 @@ export function tauriFinishedPictures(fs: Fs = tauriFs, open: (path: string) => 
       const dir = kidFolder(kidId);
       await files.mkdir(dir);
       // Temp file, then rename, in the same folder: OneDrive may hold the old file open, and then the rename fails
-      // with the old picture still whole. The next save tries again.
-      const tmp = `${dir}/.${name}.tmp`;
+      // with the old picture still whole. The next save tries again. The temp name must not start with a dot: on
+      // Linux the fs plugin's scope does not match dot files, and the write is refused (ADR 0046).
+      const tmp = `${dir}/${finishedTempName(name)}`;
       await files.write(tmp, new Uint8Array(await png.arrayBuffer()));
       try {
         await files.rename(tmp, `${dir}/${name}`);

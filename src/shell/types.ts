@@ -123,6 +123,11 @@ export interface ParentSectionContext {
   finished?: FinishedPictures;
   /** Present in the Windows app only. */
   pagesFolder?: PagesFolder;
+  /**
+   * True in the app when the account has no Pictures folder (a bare Linux account, ADR 0046): `finished` and
+   * `pagesFolder` are then absent, and the parent screens say why. Never true in the browser.
+   */
+  noPicturesFolder?: boolean;
   /** Present in the Windows app only (and on the dev server with `?fake-maps`). */
   mapsFolder?: MapsFolder;
   /** Family sync's AI page maker (ADR 0029): resolves to null unless a connected server has AI set up. */
