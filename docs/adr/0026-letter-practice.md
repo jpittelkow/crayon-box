@@ -1,6 +1,6 @@
 # 0026. Letter practice: trace big letters with a finger or a stylus
 
-- Status: Accepted (by the owner, 2026-11-14); finishing and checking partly superseded by [0028](0028-letter-tracing-whole-letter-and-confirm.md); letter names by Windows speech superseded by [0032](0032-sounds-as-files.md)
+- Status: Accepted (by the owner, 2026-11-14); finishing and checking partly superseded by [0028](0028-letter-tracing-whole-letter-and-confirm.md); letter names by Windows speech superseded by [0032](0032-sounds-as-files.md); starting hidden superseded by [0045](0045-every-game-shows-by-default.md)
 - Date: 2026-11-14
 - Mockups: boards 19–24 on the mockup canvas (linked from the [ADR index](README.md))
 

@@ -3,7 +3,7 @@
 Decisions waiting on the owner. Remove an item once it is answered (and record the answer in an ADR or the
 relevant memory file).
 
-_Last updated: 2026-11-16_
+_Last updated: 2026-11-21_
 
 - **Sync security trade-offs** (flagged by an automated review, 2026-11-14, kept as ADR 0024 decided): plain `http`
   on the home network carries the sync token; the Windows app may connect to any `http:`/`https:` address (CSP);
@@ -24,6 +24,12 @@ _Last updated: 2026-11-16_
 - **The very large map** ([ADR 0040](../adr/0040-driving-very-large-map-highway-and-building-site.md), Proposed 2026-11-15): when it starts. The to-do list's order
   stands (its pieces in section 4, the map last) unless the owner moves it up. Accepting the ADR waits for the
   two-level road to be proven on a small test map.
+
+- **Kitchen** ([ADR 0044](../adr/0044-kitchen-make-it-game-pizza-first.md), Proposed 2026-11-21, built the same
+  day on the defaults): K1 to K12 in [kitchen-plan.md](../kitchen-plan.md) were not gone through one by one; the
+  owner said to start building, and settled K2 and K11 (shown by default, ADR 0045; mockups made). **Waiting on the owner:** the go-ahead to run the narrator batch on the family's
+  server (93 lines, by 2026-12-13), and before that any change to the toppings (K3), the sauces (K4) or the car
+  wash lines (K8), which the batch fixes for good. Then: accept the ADR once the built game has been looked at.
 
 - **From the overnight build (2026-11-16)**, each built on a default the owner can overrule:
   - **Coloring:** a parent switch to turn the first-time demos off (none now)? Back says "Back" the first 3 times

@@ -3,7 +3,7 @@
 Non-obvious traps, workarounds and lessons learned. Add one bullet per gotcha with the date found and, if it
 came from a session, the journal entry.
 
-_Last updated: 2026-11-16_
+_Last updated: 2026-11-21_
 
 - ADRs are never rewritten once Accepted; a change gets a new ADR that supersedes the old one (ADR 0001).
   Proposed ADRs may still be edited before acceptance.
@@ -149,3 +149,12 @@ _Last updated: 2026-11-16_
   second (2026-11-16, mud and ford).
 - PowerShell's `Get-Content`/`Set-Content` mangle UTF-8 in this repo's files; edit with Node or the file tools
   (2026-11-16).
+- Playwright's `tap()` never fires on a button that keeps moving (Kitchen's next arrow pulses): it waits for the
+  element to be "stable" until the test times out. Tap its middle with `page.touchscreen.tap` instead, as
+  `kitchen.spec.ts` does (2026-11-21).
+- A game's timed logic should not hang off `requestAnimationFrame` alone: frames stop in a hidden pane. Kitchen's
+  oven runs on a timer and only the drawing on frames (2026-11-21).
+- To see a mockup artboard before publishing it: save a copy without the `support.js` line and with its `{{holes}}`
+  filled in, and screenshot that with the repo's Playwright (imported by file URL). The Browser pane shows a local
+  file outside the project only as a snapshot its tools can't read. Stay clear of `clipPath`, `mask` and `<use>` in
+  artboards: none of the canvas's boards use them, so they are untried there (2026-11-21).

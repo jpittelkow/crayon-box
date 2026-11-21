@@ -4,13 +4,10 @@ import { openParentArea } from './helpers';
 // The shell's own screens (ADR 0012): getting back to the kid picker, and the app's name (ADR 0027).
 
 test('Back on the home screen goes to the kid picker, from every game', async ({ page }) => {
+  // Every game shows by default (ADR 0045).
   await page.goto('/');
-  await openParentArea(page);
-  await page.getByText('Show Letters').click();
-  // Driving shows by default.
-  await page.getByRole('button', { name: 'Back to the kids' }).click();
 
-  for (const game of ['Coloring', 'Letters', 'Driving']) {
+  for (const game of ['Coloring', 'Letters', 'Driving', 'Kitchen']) {
     await page.getByRole('button', { name: 'Star kid' }).tap();
     await expect(page.locator('[data-screen="home"]')).toBeVisible();
     await page.getByRole('button', { name: game, exact: true }).tap();
@@ -31,7 +28,6 @@ test('The app name shows on the kid picker, the home screen and the parent area'
 
   await openParentArea(page);
   await expect(page.locator('.pw-nav').getByRole('img', { name: 'Crayon Box' })).toBeVisible();
-  await page.getByText('Show Letters').click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
 
   await page.getByRole('button', { name: 'Star kid' }).tap();

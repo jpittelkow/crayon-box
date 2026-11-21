@@ -5,17 +5,15 @@ import { openParentArea } from './helpers';
 // Letter practice (ADR 0026, 0028): practice, the game path, tracing with fingers and a pen, and the parent's settings.
 
 /**
- * Turns Letters on. Unless `howTo`, the Star kid has already seen the first-time how-to (ADR 0037), so a test opens
- * the letter it picks; with `howTo: 'away'` it was seen, but the last letter was opened long ago.
+ * Opens the app ready for Letters (it shows by default, ADR 0045). Unless `howTo`, the Star kid has already seen the
+ * first-time how-to (ADR 0037), so a test opens the letter it picks; with `howTo: 'away'` it was seen, but the last
+ * letter was opened long ago.
  */
-async function turnOnLetters(page: Page, opts: { howTo?: boolean | 'away' } = {}): Promise<void> {
+async function readyLetters(page: Page, opts: { howTo?: boolean | 'away' } = {}): Promise<void> {
   await page.goto('/');
   if (opts.howTo !== true) {
     await seedProgress(page, opts.howTo === 'away' ? { demoSeen: true, lastPlayed: '2026-01-01' } : { demoSeen: true });
   }
-  await openParentArea(page);
-  await page.getByText('Show Letters').click();
-  await page.getByRole('button', { name: 'Back to the kids' }).click();
 }
 
 /** Writes the Star kid's letters progress straight into the app's storage (it is read when Letters opens). */
@@ -93,20 +91,25 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
 });
 
-test('letters stay hidden until a parent turns them on', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Star kid' }).tap();
-  // Coloring and Driving on (Driving shows by default), Letters not.
-  await expect(page.locator('[data-screen="home"]')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Letters', exact: true })).toHaveCount(0);
-  await turnOnLetters(page);
+test('letters show on the home screen by default, and a parent can hide them', async ({ page }) => {
+  await readyLetters(page);
   await openLetters(page);
   await expect(page.getByRole('button', { name: 'Practice' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Game' })).toBeVisible();
+
+  // Hidden: the other games still show, Letters doesn't (ADR 0045).
+  await page.goto('/');
+  await openParentArea(page);
+  await page.getByText('Show Letters').click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await expect(page.locator('[data-screen="home"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Coloring', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Letters', exact: true })).toHaveCount(0);
 });
 
 test('practice: every letter is open; tracing one gives it a star and the arrow goes to the next', async ({ page }) => {
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await expect(page.locator('.letters-tile')).toHaveCount(26);
@@ -148,7 +151,7 @@ const isPraise = (c: string) => c.startsWith('praise-');
 
 test("a finished letter: the narrator says its name, then a word of praise (ADR 0032)", async ({ page }) => {
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
@@ -163,7 +166,7 @@ test("a finished letter: the narrator says its name, then a word of praise (ADR 
 
 test("a letter's name is said as it opens, from the grid and from the next arrow (ADR 0037)", async ({ page }) => {
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
@@ -177,7 +180,7 @@ test("a letter's name is said as it opens, from the grid and from the next arrow
 
 test('the parent setting says the name then the sound, or the sound alone (ADR 0037)', async ({ page }) => {
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openParentArea(page);
   await page.getByRole('button', { name: 'Letters', exact: true }).click();
   const saying = page.getByRole('group', { name: 'What is said with a letter' });
@@ -228,7 +231,7 @@ async function drawingWhile(page: Page, steps: { type: 'down' | 'move' | 'up'; a
 }
 
 test('the drawing sound plays only while a finger moves on the road, and just stops off it (ADR 0037)', async ({ page }) => {
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter L', exact: true }).tap();
@@ -254,7 +257,7 @@ test('the drawing sound plays only while a finger moves on the road, and just st
 });
 
 test('a chime for each finished stroke, but not the last: the letter itself is ready then (ADR 0037)', async ({ page }) => {
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
@@ -267,7 +270,7 @@ test('a chime for each finished stroke, but not the last: the letter itself is r
 
 test("the app's Sounds switch silences the narrator, the drawing sound and the chimes (ADR 0037)", async ({ page }) => {
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openParentArea(page);
   await page.getByRole('switch', { name: /^Sounds/ }).click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
@@ -317,7 +320,7 @@ const ladder = { timeout: 15_000 };
 test('a kid who does nothing sees step 1, then 2, then 3, each said (ADR 0037)', async ({ page }) => {
   test.setTimeout(90_000);
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetter(page, 'L');
   // Step 1 at 5 s: the dot pulses bigger and the arrow wiggles; "Start at the green dot.".
   await expect(traceScreen(page)).toHaveAttribute('data-hints', '1', ladder);
@@ -343,7 +346,7 @@ test('a kid who does nothing sees step 1, then 2, then 3, each said (ADR 0037)',
 test('a finger on the letter holds the hints back, and touching it stops a hint being said (ADR 0037)', async ({ page }) => {
   test.setTimeout(90_000);
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetter(page, 'L');
   // A finger held down beside the letter past 5 s: nothing shown, nothing said.
   const beside = { x: 85, y: 40 };
@@ -377,7 +380,7 @@ test('a finger on the letter holds the hints back, and touching it stops a hint 
 test('a parent turns the spoken tips off; the hints still show (ADR 0037)', async ({ page }) => {
   test.setTimeout(60_000);
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openParentArea(page);
   await page.getByRole('button', { name: 'Letters', exact: true }).click();
   const tips = page.getByRole('switch', { name: /^Spoken tips/ });
@@ -396,7 +399,7 @@ test('a parent turns the spoken tips off; the hints still show (ADR 0037)', asyn
 test('all traced, the check pulses bigger and "Tap the check!" comes after 4 s (ADR 0037)', async ({ page }) => {
   test.setTimeout(60_000);
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetter(page, 'L');
   await trace(page, 'L');
   await expect(traceScreen(page)).toHaveAttribute('data-done', 'ready');
@@ -414,7 +417,7 @@ const howTo = { timeout: 20_000 };
 test("a new kid's first letter starts with the how-to: L shown, then the kid traces it, then the letter picked", async ({ page }) => {
   test.setTimeout(90_000);
   await logClips(page);
-  await turnOnLetters(page, { howTo: true });
+  await readyLetters(page, { howTo: true });
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter B', exact: true }).tap();
@@ -443,7 +446,7 @@ test("a new kid's first letter starts with the how-to: L shown, then the kid tra
 test("a touch ends the how-to at once; it doesn't come back until a parent asks (ADR 0037)", async ({ page }) => {
   test.setTimeout(90_000);
   await logClips(page);
-  await turnOnLetters(page, { howTo: true });
+  await readyLetters(page, { howTo: true });
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
@@ -490,7 +493,7 @@ test("a touch ends the how-to at once; it doesn't come back until a parent asks 
 });
 
 test('after 14 days away the how-to comes back (D7)', async ({ page }) => {
-  await turnOnLetters(page, { howTo: 'away' });
+  await readyLetters(page, { howTo: 'away' });
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter E', exact: true }).tap();
@@ -499,7 +502,7 @@ test('after 14 days away the how-to comes back (D7)', async ({ page }) => {
 });
 
 test('the game opens one letter at a time, easy ones first (D8)', async ({ page }) => {
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Game' }).tap();
   // Straight lines first: L F E H T I, then D P B R …
@@ -528,7 +531,7 @@ test('the game opens one letter at a time, easy ones first (D8)', async ({ page 
 
 test('a parent turns on lines and shapes for one kid: they come first, traced and named like letters (D9)', async ({ page }) => {
   await logClips(page);
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openParentArea(page);
   await page.getByRole('button', { name: 'Letters', exact: true }).click();
   const sets = page.getByRole('group', { name: 'Letter sets for Star' });
@@ -567,7 +570,7 @@ test('a parent turns on lines and shapes for one kid: they come first, traced an
 });
 
 test('a scribble does not finish a letter; wipe and a real trace do', async ({ page }) => {
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter O', exact: true }).tap();
@@ -581,7 +584,7 @@ test('a scribble does not finish a letter; wipe and a real trace do', async ({ p
 });
 
 test('a pen near the screen mutes touches (the resting hand)', async ({ page }) => {
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter I', exact: true }).tap();
@@ -607,7 +610,7 @@ test('a pen near the screen mutes touches (the resting hand)', async ({ page }) 
 });
 
 test('a parent turns on more sets and stroke order', async ({ page }) => {
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openParentArea(page);
   await page.getByRole('button', { name: 'Letters', exact: true }).click();
   const sets = page.getByRole('group', { name: 'Letter sets for Star' });
@@ -633,7 +636,7 @@ test('a parent turns on more sets and stroke order', async ({ page }) => {
 });
 
 test('most of a letter is not enough: dots show what is left, then the kid confirms (ADR 0028)', async ({ page }) => {
-  await turnOnLetters(page);
+  await readyLetters(page);
   await openLetters(page);
   await page.getByRole('button', { name: 'Practice' }).tap();
   await page.getByRole('button', { name: 'Letter L', exact: true }).tap();

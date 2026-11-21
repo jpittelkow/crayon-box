@@ -1,7 +1,7 @@
 # Owner preferences
 
 What the owner (the parent building this) has asked for, beyond what the ADRs spell out.
-_Last confirmed: 2026-11-14_
+_Last confirmed: 2026-11-21_
 
 ## Product
 - Wants to test early as a web app before any installer (ADR 0014). The web app is only a stepping stone to the
@@ -51,8 +51,12 @@ _Last confirmed: 2026-11-14_
 - **Milestone 3, worked through without stopping** (asked 2026-11-15): each step's PR may be merged into main
   by Claude once its checks pass; the owner reviews afterwards. Nothing merges on red.
 
-- **Driving shows on the home screen by default** (owner, 2026-11-15, after milestone 3 was built), so the home
-  screen now opens with Coloring and Driving; Letters still starts hidden.
+- **Every game shows on the home screen by default** ([ADR 0045](../adr/0045-every-game-shows-by-default.md)):
+  Driving since 2026-11-15 (owner, after milestone 3 was built), Letters and Kitchen since 2026-11-21, when the
+  owner looked for them, didn't find them, and said "Show both". A parent can still hide any game.
+- **Hands-on "make a thing" games** (asked 2026-11-21: the kids want games like the make-a-cupcake, cake and pizza
+  ones on a kids' games site). The owner picked a Kitchen game, pizza first (ADR 0044), asked for mockups before
+  building, then said to build.
 
 ## Tooling and hosting
 - The repo is public, one repo for code and releases (ADR 0013). The owner renamed it from `kidsapp` to

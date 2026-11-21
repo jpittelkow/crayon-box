@@ -34,3 +34,5 @@ the journal is append-only history. Newest entry is the place to pick up from.
   picture flow, kid names and photos, parent area; milestone 1 phases A and B; racing game ADR proposed;
   three.js and Babylon.js test, with water
 - [2026-11-15](2026-11-15.md): sound options, the milestone 3 plan for the driving game, driving to a spot (ADR 0031); letters research and plan (ADR 0037 proposed); words research and a draft ADR 0039
+- [2026-11-16](2026-11-16.md): the overnight build of to-do sections 2, 4 and 5, released as 0.9.0
+- [2026-11-21](2026-11-21.md): ideas for "make a thing" games; the Kitchen game designed (ADR 0044 proposed, kitchen-plan.md), mocked up and its pizza built on a branch

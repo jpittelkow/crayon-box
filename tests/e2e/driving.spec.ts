@@ -85,10 +85,21 @@ test('the driving game shows on the home screen by default, and a parent can hid
   await expect(page.locator('[data-screen="home"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Driving', exact: true })).toBeVisible();
 
-  // Hidden again: one game on, so straight into coloring, no home screen (ADR 0012).
+  // Hidden: the home screen no longer has it.
   await page.goto('/');
   await openParentArea(page);
   await page.getByText('Show Driving').click();
+  await page.getByRole('button', { name: 'Back to the kids' }).click();
+  await page.getByRole('button', { name: 'Star kid' }).tap();
+  await expect(page.locator('[data-screen="home"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Coloring', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Driving', exact: true })).toHaveCount(0);
+
+  // Every other game hidden too: one game on, so straight into coloring, no home screen (ADR 0012).
+  await page.goto('/');
+  await openParentArea(page);
+  await page.getByText('Show Letters').click();
+  await page.getByText('Show Kitchen').click();
   await page.getByRole('button', { name: 'Back to the kids' }).click();
   await page.getByRole('button', { name: 'Star kid' }).tap();
   await expect(page.locator('[data-screen="game-coloring"]')).toBeVisible();

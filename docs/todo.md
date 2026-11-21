@@ -57,8 +57,9 @@ All five items of the old section 4 are built: [ADR 0041](adr/0041-driving-targe
 - Writing words, the later steps of [ADR 0039](adr/0039-writing-words.md): "build it" with letter tiles (W10,
   after the first playtest), less help on a word done before, "write it your way" (its own ADR). Their narrator
   lines are already made.
-- **Narrator deadline:** every line the plans need is shipped; any new line (wheel colour names, a word the family
-  wants said) must be made before the voice retires on 2026-12-31.
+- **Narrator deadline:** every line the letters and coloring plans need is shipped; any new line (wheel colour
+  names, a word the family wants said, the Kitchen game's lines in section 7) must be made before the voice
+  retires on 2026-12-31.
 
 ## 6. More maps (last)
 - **A very large map: a highway round a big building site.** [highway-map-plan.md](highway-map-plan.md), layout
@@ -71,6 +72,20 @@ All five items of the old section 4 are built: [ADR 0041](adr/0041-driving-targe
 - **The home map** (milestone 5): a map of the family's own area from real map and terrain data, with the house
   and a few neighbours'. Built only in the private folder, never committed ([privacy rule](../CLAUDE.md)); it
   loads through the maps folder (ADR 0043). Needs a short design first: where the data comes from.
+
+## 7. Kitchen: a new game (asked 2026-11-21, not yet placed in the order)
+The kids asked for hands-on "make a thing" games; the owner picked a Kitchen game with pizza first.
+[ADR 0044](adr/0044-kitchen-make-it-game-pizza-first.md) (Proposed), [kitchen-plan.md](kitchen-plan.md).
+- **Built 2026-11-21** on the branch `kitchen/pizza` (not committed): a whole pizza can be made, with the look and
+  stand-in sounds. It and Letters show on the home screen by default
+  ([ADR 0045](adr/0045-every-game-shows-by-default.md), the owner's choice). Built on the plan's defaults for the
+  rest of K1 to K12, which the owner can still overrule.
+- **Its narrator batch can't wait:** 93 lines, ready in `tools/sounds/generate.mjs` (`ONLY=kitchen`), to be made by
+  2026-12-13, before the voice retires on 2026-12-31 (plan phase A). **Needs the owner's go-ahead to run**; say
+  first if any topping or sauce should change (K3, K4), or the car wash lines be dropped (K8).
+- **Look and play:** the owner tries it in the web app; then a kid.
+- Then: speech and the idle hand (the rest of phase C), the shelf and the parent screen (D), the recipe doc (E),
+  and more recipes (F: cupcake, birthday cake, ice cream, cookie).
 
 ## Parked (not planned)
 - iPad version ([ADR 0030](adr/0030-ipad-home-screen-web-app.md), a draft kept for later).

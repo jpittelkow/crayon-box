@@ -31,7 +31,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0023](0023-ai-pages-from-a-prompt.md) | The AI page maker also makes pages from a typed idea | Accepted |
 | [0024](0024-family-sync-server.md) | Family sync: a small self-hosted server the app syncs to | Accepted |
 | [0025](0025-driving-game-toy-look-and-engine-sounds.md) | Driving game: a polished toy look and an engine sound for every vehicle | Accepted, engine voices superseded by 0032 |
-| [0026](0026-letter-practice.md) | Letter practice: trace big letters with a finger or a stylus | Accepted, letter voice superseded by 0032 |
+| [0026](0026-letter-practice.md) | Letter practice: trace big letters with a finger or a stylus | Accepted, letter voice superseded by 0032, starting hidden by 0045 |
 | [0027](0027-app-name-wordmark.md) | The app's name as a wordmark on a few screens | Accepted |
 | [0028](0028-letter-tracing-whole-letter-and-confirm.md) | Letter tracing: letters formed as taught in school, the whole letter traced, then a check to finish | Accepted |
 | [0029](0029-ai-pages-through-the-family-server.md) | AI pages through the family server: one OpenRouter key, kept off the laptops | Accepted |
@@ -49,6 +49,8 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0041](0041-driving-targets-to-collect-and-hit.md) | Driving game: targets, stacks of boxes to knock over and stars to collect | Accepted |
 | [0042](0042-driving-more-set-pieces.md) | Driving game: more set pieces, mud, a ford, traffic lights, a roundabout and a harbour | Accepted |
 | [0043](0043-driving-maps-from-a-folder.md) | Driving game: maps loaded from a folder on the device, checked as they load | Accepted |
+| [0044](0044-kitchen-make-it-game-pizza-first.md) | Kitchen: a game for making things step by step, pizza first | Proposed |
+| [0045](0045-every-game-shows-by-default.md) | Every game shows on the home screen by default | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H
