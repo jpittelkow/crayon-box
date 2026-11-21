@@ -4,7 +4,7 @@
 // setting); the setting is its own file so it syncs on its own (ADR 0024).
 import type { GameStorage } from '../storage/types';
 import { soundUrl } from './soundFiles';
-import type { Sound, SoundKind } from './types';
+import type { Effect, Sound, SoundKind } from './types';
 
 const PATH = 'sounds.json';
 
@@ -44,6 +44,9 @@ export const SOUNDS: Record<SoundKind, SoundSpec> = {
   nothing: { file: 'ui/tap.wav', gain: 0.4, rate: 0.75 },
   cheer: { file: 'ui/cheer.wav', gain: 1, rate: 1 },
   page: { file: 'ui/page.wav', gain: 0.8, rate: 1 },
+  // A stroke of a letter traced (ADR 0037): quieter and higher than the finished letter's bell. Stand-in: the bell
+  // itself, pitched up, until a CC0 chime of its own (sounds recipe, way B).
+  chime: { file: 'ui/cheer.wav', gain: 0.4, rate: 1.6 },
 };
 
 /** The kinds that answer a touch: they stay under 300 ms (ADR 0016). */
@@ -80,33 +83,60 @@ export class WebAudioSound implements Sound {
   }
 
   play(kind: SoundKind): void {
+    this.effect(SOUNDS[kind]);
+  }
+
+  effect(spec: Effect): void {
     if (!this.on) return;
     try {
       const ctx = this.context();
       if (ctx.state === 'suspended') void ctx.resume();
-      const spec = SOUNDS[kind];
       void this.buffer(ctx, spec.file).then((buf) => {
         if (!buf) return;
         const src = ctx.createBufferSource();
         src.buffer = buf;
-        src.playbackRate.value = spec.rate;
+        src.playbackRate.value = spec.rate ?? 1;
         const gain = ctx.createGain();
-        gain.gain.value = spec.gain;
+        const level = spec.gain ?? 1;
+        gain.gain.value = level;
         src.connect(gain).connect(ctx.destination);
-        src.start();
+        if (spec.seconds === undefined) {
+          src.start();
+          return;
+        }
+        // Only the start of the file: a short fade at the end, so it doesn't stop with a click.
+        const t = ctx.currentTime, fade = Math.min(0.04, spec.seconds / 3);
+        gain.gain.setValueAtTime(level, t + spec.seconds - fade);
+        gain.gain.linearRampToValueAtTime(0, t + spec.seconds);
+        src.start(t, 0, spec.seconds * (spec.rate ?? 1));
       });
     } catch {
       // No audio device, or audio blocked: stay silent. A kid screen never shows an error (ADR 0016 rule 6).
     }
   }
 
+  preload(files: readonly string[]): void {
+    if (!this.on) return;
+    try {
+      const ctx = this.context();
+      for (const file of files) void this.buffer(ctx, file);
+    } catch {
+      // No audio here: stay silent.
+    }
+  }
+
   private crayon: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   private crayonStop: ReturnType<typeof setTimeout> | undefined;
   private crayonLevel = 0;
+  private crayonRate = 1;
 
-  /** The crayon sound: `level` 0 fades it out, up to 1 for a fast scribble. Called on every move of a drawing finger. */
-  scratch(level: number): void {
+  /**
+   * The crayon sound: `level` 0 fades it out, up to 1 for a fast scribble; `rate` above 1 plays it higher. Called on
+   * every move of a drawing finger.
+   */
+  scratch(level: number, rate = 1): void {
     this.crayonLevel = level;
+    this.crayonRate = rate;
     try {
       clearTimeout(this.crayonStop);
       if (level <= 0) {
@@ -141,6 +171,7 @@ export class WebAudioSound implements Sound {
           src.start(0, Math.random() * buf.duration);
           this.crayon = { src, gain };
         }
+        this.crayon.src.playbackRate.value = this.crayonRate;
         this.crayon.gain.gain.setTargetAtTime(CRAYON.gain * Math.min(1, this.crayonLevel), ctx.currentTime, 0.03);
       });
     } catch {

@@ -15,9 +15,57 @@ export function letterClip(ch: string): string | undefined {
   return undefined;
 }
 
-/** The narrator's praise words, said after a finished letter's cheer (ADR 0032). */
-export const PRAISE = ['yay', 'you-did-it', 'great-job', 'wow'] as const;
+/** One of the narrator's clips by its name (`voice/<name>.mp3`, e.g. `tool-bucket`, `color-red`). */
+export function narratorClip(name: string): string | undefined {
+  return soundUrl(`voice/${name}.mp3`);
+}
 
-export function praiseClip(word: (typeof PRAISE)[number]): string | undefined {
+/**
+ * The narrator saying a letter's sound ("buh" for B; the short vowels with their word, "ah… apple"), for the
+ * "name then sound" and "sound only" settings (ADR 0037). Small letters share their capital's; digits have none.
+ */
+export function soundClip(ch: string): string | undefined {
+  return /^[a-z]$/i.test(ch) ? soundUrl(`voice/sound-${ch.toUpperCase()}.mp3`) : undefined;
+}
+
+/**
+ * The narrator's praise, said after a finished letter's cheer (ADR 0032): the first four from the first batch, the
+ * last four about what the kid did (ADR 0037, D11). `by-yourself` is only for a letter done without a hint.
+ */
+export const PRAISE = [
+  'yay',
+  'you-did-it',
+  'great-job',
+  'wow',
+  'all-the-way',
+  'kept-going',
+  'whole-letter',
+  'by-yourself',
+] as const;
+
+export type Praise = (typeof PRAISE)[number];
+
+export function praiseClip(word: Praise): string | undefined {
   return soundUrl(`voice/praise-${word}.mp3`);
+}
+
+/** The letters game's spoken tips (ADR 0037): `start-dot` is "Start at the green dot.", and so on. */
+export const TIPS = ['start-dot', 'top', 'follow-arrow', 'keep-going', 'next-line', 'tap-check'] as const;
+export type TipId = (typeof TIPS)[number];
+
+export function tipClip(id: TipId): string | undefined {
+  return soundUrl(`voice/tip-${id}.mp3`);
+}
+
+/** The stroke words (ADR 0037): "Down.", "Across.", "Slant.", "Around.", "Down, up and over.", "Dot.". */
+export const STROKE_WORDS = ['down', 'across', 'slant', 'around', 'down-over', 'dot'] as const;
+export type StrokeWord = (typeof STROKE_WORDS)[number];
+
+export function strokeClip(kind: StrokeWord): string | undefined {
+  return soundUrl(`voice/stroke-${kind}.mp3`);
+}
+
+/** The how-to's two lines (ADR 0037): "Watch me." and "Your turn!" (the hints' step 3 ends with the second). */
+export function demoClip(line: 'watch' | 'your-turn'): string | undefined {
+  return soundUrl(`voice/demo-${line}.mp3`);
 }

@@ -1,5 +1,5 @@
-// The letters and numbers as stroke data (ADR 0026): a simple print style of straight sticks and round balls.
-// Original work, CC0 (ADR 0011). Not a font: the strokes carry their order and direction, which give the guide,
+// The letters and numbers, and the lines and shapes before them, as stroke data (ADR 0026, 0037): a simple print
+// style of straight sticks and round balls. Original work, CC0 (ADR 0011). Not a font: the strokes carry their order and direction, which give the guide,
 // the start dots, the arrows and the hint.
 //
 // Strokes follow how print letters are taught in US schools (Zaner-Bloser and Handwriting Without Tears agree on
@@ -19,12 +19,30 @@ export interface Glyph {
   strokes: Stroke[];
 }
 
-export type SetId = 'capitals' | 'small' | 'numbers';
-export const SET_ORDER: readonly SetId[] = ['capitals', 'small', 'numbers'];
+export type SetId = 'shapes' | 'capitals' | 'small' | 'numbers';
+/** The sets in their fixed order: lines and shapes come before letters (ADR 0037, D9; research 1.3). */
+export const SET_ORDER: readonly SetId[] = ['shapes', 'capitals', 'small', 'numbers'];
+/** The sets of letters and numbers: the 62 characters a parent can record and the narrator names by letter. */
+export const LETTER_SETS: readonly SetId[] = ['capitals', 'small', 'numbers'];
 export const SET_CHARS: Record<SetId, string> = {
+  // Each shape has a symbol of its own that is no letter or digit, in the order they are learned: line down, line
+  // across, circle, cross, slant, square, X, triangle. Kids never see the symbols; a tile draws the shape.
+  shapes: '|-○+\\□×△',
   capitals: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
   small: 'abcdefghijklmnopqrstuvwxyz',
   numbers: '0123456789',
+};
+
+/** Each shape's key (in progress, `shape-circle`) and its name for screen readers and parents. */
+export const SHAPES: Record<string, { key: string; label: string }> = {
+  '|': { key: 'line-down', label: 'Line down' },
+  '-': { key: 'line-across', label: 'Line across' },
+  '○': { key: 'circle', label: 'Circle' },
+  '+': { key: 'cross', label: 'Cross' },
+  '\\': { key: 'slant', label: 'Slant' },
+  '□': { key: 'square', label: 'Square' },
+  '×': { key: 'x', label: 'X shape' },
+  '△': { key: 'triangle', label: 'Triangle' },
 };
 
 export const BOX = { w: 100, h: 140 };
@@ -153,6 +171,17 @@ const DATA: Record<string, Stroke[]> = {
   '7': [s(line(20, 10, 80, 10), line(80, 10, 40, 110))],
   '8': [s(arc(50, 35, 22, 25, -90, -270), arc(50, 85, 27, 25, -90, 270), arc(50, 35, 22, 25, 90, -90))],
   '9': [s(arc(50, 37, 25, 27, 0, -360), line(75, 37, 75, 110))],
+
+  // ---- Lines and shapes (ADR 0037, D9): the strokes letters are made of, taught the same way (top first, down then
+  // across, round ones counterclockwise from the top). The square and the triangle are built like D and A. ----
+  '|': [s(line(50, 10, 50, 110))],
+  '-': [s(line(10, 60, 90, 60))],
+  '○': [s(arc(50, 60, 40, 40, -90, -450))],
+  '+': [s(line(50, 15, 50, 105)), s(line(10, 60, 90, 60))],
+  '\\': [s(line(20, 10, 80, 110))],
+  '□': [s(line(15, 25, 15, 95)), s(line(15, 25, 85, 25), line(85, 25, 85, 95), line(85, 95, 15, 95))],
+  '×': [s(line(15, 20, 85, 100)), s(line(85, 20, 15, 100))],
+  '△': [s(line(50, 15, 10, 100)), s(line(50, 15, 90, 100)), s(line(10, 100, 90, 100))],
 };
 
 const GLYPHS = new Map<string, Glyph>(Object.entries(DATA).map(([ch, strokes]) => [ch, { ch, strokes }]));
@@ -163,8 +192,9 @@ export function glyph(ch: string): Glyph {
   return g;
 }
 
+/** Every letter and number (62), without the shapes. */
 export function allChars(): string[] {
-  return SET_ORDER.flatMap((set) => [...SET_CHARS[set]]);
+  return LETTER_SETS.flatMap((set) => [...SET_CHARS[set]]);
 }
 
 export function setOf(ch: string): SetId {
@@ -220,6 +250,125 @@ function runs(stroke: Stroke): Stroke[] {
     out.at(-1)!.push(stroke[i]);
   }
   return out;
+}
+
+// ---- Stroke words (ADR 0037): the same word for the same kind of stroke, said as a hint or the demo draws it ----
+
+/** What a stroke is called: "Down.", "Across.", "Slant.", "Around.", "Down, up and over." (b h m n p r), "Dot.". */
+export type StrokeKind = 'down' | 'across' | 'slant' | 'around' | 'down-over' | 'dot';
+
+/** A stroke shorter than this is a dot (i, j). */
+const DOT_LENGTH = 6;
+/** A line within this many degrees of straight down (or up) is "down"; of level, "across"; anything else is a slant. */
+const STRAIGHT_DEG = 8;
+/** Steps of this length measure how a stroke bends, so the rounding in the data reads as straight. */
+const BEND_STEP = 3;
+/** A bend between steps of more than this (degrees) is curve; one over CORNER_DEG is a corner, not curve. */
+const CURVE_DEG = 1.5;
+const CORNER_DEG = 60;
+/** A stroke that turns more than this (degrees) in its first quarter starts round: "Around." */
+const ROUND_START_DEG = 20;
+/** A stroke that starts across but is at least this share curve (the bumps of B, D, P, R; e) is "Around." */
+const ROUND_SHARE = 0.3;
+/** Inside a stroke of straight lines, a turn of more than this (degrees) at a point starts a new line (L, Z, 7). */
+const LINE_TURN_DEG = 30;
+
+/** Which way a straight move goes, by the words: down, across or slant; up only inside a stroke (n's way back). */
+function directionOf(a: Pt, b: Pt): StrokeKind | 'up' {
+  const deg = (Math.atan2(Math.abs(b.y - a.y), Math.abs(b.x - a.x)) * 180) / Math.PI;
+  if (deg >= 90 - STRAIGHT_DEG) return b.y > a.y ? 'down' : 'up';
+  if (deg <= STRAIGHT_DEG) return 'across';
+  return 'slant';
+}
+
+/** The point `dist` units along a stroke (or its end). */
+function pointAlong(stroke: Stroke, dist: number): Pt {
+  let run = 0;
+  for (let i = 1; i < stroke.length; i++) {
+    run += Math.hypot(stroke[i].x - stroke[i - 1].x, stroke[i].y - stroke[i - 1].y);
+    if (run >= dist) return stroke[i];
+  }
+  return stroke.at(-1)!;
+}
+
+/** How a stroke bends: the share of its length that is curve, and how far it turns (degrees) in its first quarter. */
+function bends(stroke: Stroke): { curveShare: number; startTurn: number } {
+  const total = strokeLength(stroke);
+  const steps: { len: number; angle: number; at: number }[] = [];
+  let from = stroke[0];
+  let run = 0;
+  let at = 0;
+  for (let i = 1; i < stroke.length; i++) {
+    const d = Math.hypot(stroke[i].x - stroke[i - 1].x, stroke[i].y - stroke[i - 1].y);
+    run += d;
+    at += d;
+    if (run >= BEND_STEP || i === stroke.length - 1) {
+      steps.push({ len: run, angle: Math.atan2(stroke[i].y - from.y, stroke[i].x - from.x), at });
+      from = stroke[i];
+      run = 0;
+    }
+  }
+  let curve = 0;
+  let startTurn = 0;
+  for (let i = 1; i < steps.length; i++) {
+    let turn = Math.abs(steps[i].angle - steps[i - 1].angle) * (180 / Math.PI);
+    if (turn > 180) turn = 360 - turn;
+    if (turn <= CURVE_DEG || turn >= CORNER_DEG) continue;
+    curve += steps[i].len;
+    if (steps[i].at <= total / 4) startTurn += turn;
+  }
+  return { curveShare: total > 0 ? curve / total : 0, startTurn };
+}
+
+/**
+ * What to call a stroke, from its shape: a dot; down then straight back up and over (b h m n p r); round from its
+ * start, or across into a bump (B D P R, e): around; else by which way it starts: down, across or a slant.
+ */
+export function strokeKind(stroke: Stroke): StrokeKind {
+  return strokeWords(stroke)[0].kind;
+}
+
+/**
+ * The words for a stroke, each with where along it (0..1) to say it. A stroke of straight lines gets a word per
+ * line where the way changes (L: "Down." then "Across."); a way back up says nothing. Any other stroke gets one word.
+ */
+export function strokeWords(stroke: Stroke): { kind: StrokeKind; at: number }[] {
+  const total = strokeLength(stroke);
+  if (total < DOT_LENGTH) return [{ kind: 'dot', at: 0 }];
+  const parts = runs(stroke);
+  if (parts.length >= 2) {
+    const first = directionOf(parts[0][0], pointAlong(parts[0], 8));
+    const back = directionOf(parts[1][0], pointAlong(parts[1], 8));
+    if (first === 'down' && back === 'up') return [{ kind: 'down-over', at: 0 }];
+  }
+  const { curveShare, startTurn } = bends(stroke);
+  if (startTurn > ROUND_START_DEG) return [{ kind: 'around', at: 0 }];
+  const start = directionOf(stroke[0], pointAlong(stroke, 8));
+  if (start === 'across' && curveShare >= ROUND_SHARE) return [{ kind: 'around', at: 0 }];
+  if (curveShare > 0.05) return [{ kind: start === 'up' ? 'down' : start, at: 0 }];
+  // Straight lines only: a word where each new line starts, the same word twice in a row said once.
+  const out: { kind: StrokeKind; at: number }[] = [];
+  let begin = 0;
+  let run = 0;
+  const push = (from: number, to: number, at: number) => {
+    const way = directionOf(stroke[from], stroke[to]);
+    if (way === 'up' || out.at(-1)?.kind === way) return;
+    out.push({ kind: way, at: total > 0 ? at / total : 0 });
+  };
+  let lineStart = 0;
+  for (let i = 1; i < stroke.length - 1; i++) {
+    run += Math.hypot(stroke[i].x - stroke[i - 1].x, stroke[i].y - stroke[i - 1].y);
+    const u = { x: stroke[i].x - stroke[i - 1].x, y: stroke[i].y - stroke[i - 1].y };
+    const v = { x: stroke[i + 1].x - stroke[i].x, y: stroke[i + 1].y - stroke[i].y };
+    const cos = (u.x * v.x + u.y * v.y) / ((Math.hypot(u.x, u.y) || 1) * (Math.hypot(v.x, v.y) || 1));
+    if (cos < Math.cos((LINE_TURN_DEG * Math.PI) / 180)) {
+      push(begin, i, lineStart);
+      begin = i;
+      lineStart = run;
+    }
+  }
+  push(begin, stroke.length - 1, lineStart);
+  return out.length > 0 ? out : [{ kind: 'down', at: 0 }];
 }
 
 /** Arrows beside a stroke, one per run of at least 30 units (or the stroke's one run): see `arrowFor`. */

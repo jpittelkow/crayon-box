@@ -1,8 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // A port of its own: other dev servers in this repo (the app on 5173, spikes on 5180 and up) must never be mistaken
-// for the test server, which `reuseExistingServer` would do silently.
-const PORT = 5391;
+// for the test server, which `reuseExistingServer` would do silently. `PW_PORT` gives a worktree its own port when
+// several run their browser tests at once.
+const PORT = Number(process.env.PW_PORT ?? 5391);
 
 // Browser tests (ADR 0015): Chromium with touch emulation on the 1280 x 800 reference screen (ADR 0016).
 export default defineConfig({

@@ -25,7 +25,10 @@ export interface KidButtonOptions {
   label: string;
   html?: string;
   className?: string;
+  /** Fires when the finger lifts inside the button: actions (back, undo, start over) and everything else. */
   onTap?: () => void;
+  /** Fires as the finger touches: pick buttons (tools, sizes, modes, colors; ADR 0038). */
+  onPress?: () => void;
 }
 
 export function kidButton(opts: KidButtonOptions): HTMLButtonElement {
@@ -34,8 +37,38 @@ export function kidButton(opts: KidButtonOptions): HTMLButtonElement {
   button.className = KIND_CLASSES[opts.kind] + (opts.className ? ` ${opts.className}` : '');
   button.setAttribute('aria-label', opts.label);
   if (opts.html) button.innerHTML = opts.html;
-  if (opts.onTap) onTap(button, opts.onTap);
+  if (opts.onPress) onPress(button, opts.onPress);
+  else if (opts.onTap) onTap(button, opts.onTap);
   return button;
+}
+
+/**
+ * Fires `handler` as soon as a finger touches `el` (ADR 0038, superseding ADR 0003 rule 2 for pick buttons: kids
+ * hold the finger down until something happens). Only the first finger on a button counts; the button looks
+ * pressed until it lifts. `el` may be an SVG shape too (the colour wheel's segments), which takes the same events.
+ */
+export function onPress(target: HTMLElement | SVGElement, handler: () => void): void {
+  const el = target as HTMLElement;
+  let active: number | null = null;
+  const release = (e: PointerEvent) => {
+    if (e.pointerId !== active) return;
+    active = null;
+    el.classList.remove('is-pressed');
+  };
+  el.addEventListener('pointerdown', (e) => {
+    if (active !== null || e.button > 0) return;
+    active = e.pointerId;
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {
+      // Synthetic events in tests may not be capturable; the press still works.
+    }
+    el.classList.add('is-pressed');
+    handler();
+  });
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointercancel', release);
+  el.addEventListener('lostpointercapture', release);
 }
 
 /**
@@ -81,7 +114,7 @@ export function onTap(el: HTMLElement, handler: () => void): void {
 }
 
 /** Marks one element of a set as picked and the rest as not picked. */
-export function setPicked(elements: Iterable<HTMLElement>, picked: HTMLElement | undefined): void {
+export function setPicked(elements: Iterable<Element>, picked: Element | undefined): void {
   for (const el of elements) {
     const on = el === picked;
     el.classList.toggle('is-picked', on);

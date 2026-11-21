@@ -23,12 +23,31 @@ export interface KidProfile {
   created: string;
 }
 
-export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer' | 'page';
+export type SoundKind = 'tap' | 'fill' | 'undo' | 'nothing' | 'cheer' | 'page' | 'chime';
+
+/**
+ * A game's own short sound from a shipped file (ADR 0032), e.g. a coloring button's (ADR 0038): which file under
+ * assets/sounds/, how loud (default 1), how fast (default 1; lower is also lower in pitch), and, to use only the
+ * start of a longer file, how many seconds of it to play (it fades out at the end).
+ */
+export interface Effect {
+  file: string;
+  gain?: number;
+  rate?: number;
+  seconds?: number;
+}
 
 export interface Sound {
   play(kind: SoundKind): void;
-  /** The crayon sound while a finger draws (ADR 0032): 0 is silent, 1 a fast scribble. Optional for test doubles. */
-  scratch?(level: number): void;
+  /** Plays a game's own effect. Optional for test doubles. */
+  effect?(effect: Effect): void;
+  /** Starts loading effects' files ahead of the first touch. Optional for test doubles. */
+  preload?(files: readonly string[]): void;
+  /**
+   * The crayon sound while a finger draws (ADR 0032): 0 is silent, 1 a fast scribble. `rate` raises its pitch (1 is
+   * the coloring crayon). Optional for test doubles.
+   */
+  scratch?(level: number, rate?: number): void;
   /** False when a parent turned sounds off. Games that make other sounds (a voice) follow it too. */
   readonly enabled?: boolean;
 }
@@ -62,13 +81,36 @@ export interface PagesFolder {
   openFolder(): Promise<void>;
 }
 
+/** A file in the Windows app's maps folder (ADR 0043): its name and its text. */
+export interface MapsFolderFile {
+  name: string;
+  text: string;
+  /** Set when the file couldn't be read. */
+  error?: string;
+}
+
+/**
+ * The driving game's maps folder (ADR 0043): `maps\` in the app's local data, which the app may only read. Map
+ * files dropped there show on the picker after the built-in maps.
+ */
+export interface MapsFolder {
+  /** Every `.json` file in the folder (not in folders inside it), by name. */
+  read(): Promise<MapsFolderFile[]>;
+  /** Opens the folder in File Explorer, making it first if it isn't there. */
+  openFolder(): Promise<void>;
+}
+
 export interface GameContext {
   kid: KidProfile;
   storage: GameStorage;
   sound: Sound;
   exitToHome(): void;
+  /** The kid's photo, when a parent gave them one (ADR 0018): for a game that shows it (Letters' "My name"). */
+  photo?(): Promise<Blob | undefined>;
   /** Present in the Windows app only. */
   finished?: FinishedPictures;
+  /** Present in the Windows app only (and on the dev server with `?fake-maps`). */
+  mapsFolder?: MapsFolder;
 }
 
 /** What a game's parent-area section gets to work with. */
@@ -81,6 +123,8 @@ export interface ParentSectionContext {
   finished?: FinishedPictures;
   /** Present in the Windows app only. */
   pagesFolder?: PagesFolder;
+  /** Present in the Windows app only (and on the dev server with `?fake-maps`). */
+  mapsFolder?: MapsFolder;
   /** Family sync's AI page maker (ADR 0029): resolves to null unless a connected server has AI set up. */
   ai?: () => Promise<AiPageMaker | null>;
 }

@@ -6,13 +6,18 @@ Every asset has two halves: a **definition** in `sim/` (plain TypeScript, no thr
 Paths below are under `src/games/racing/`.
 
 ## Recipe: a toy (knocked about, comes back)
-1. Definition in `sim/assets/toys.ts`: `half` (half its height, metres), `behaviour` (`tumble` or `roll`; a new
-   behaviour from the catalog's list is its own piece of work in `sim/sim.ts`), `bump` (`ping`, `knock`, `boing`,
-   `thump`).
+1. Definition in `sim/assets/toys.ts`: `half` (half its height, metres), `behaviour` (`tumble`, `roll`, `topple`
+   or `collect`; a new behaviour from the catalog's list is its own piece of work in `sim/sim.ts`), `bump` (`ping`,
+   `knock`, `boing`, `thump`). A **target** (ADR 0041) also names its celebration, `target` (`silly`, `twinkle`):
+   confetti and that sound when the kid's car gets it.
 2. Look in `look/toys.ts` (`TOY_LOOKS`): one small group, centred, ≤ 1.5k triangles.
 3. **Sound:** pick its `bump`. A new kind of bump is a new row in `BUMP` in `sound.ts` (a pitch and loudness of the
    knock) or a new effect file ([sounds.md](sounds.md)).
-4. Place it: add its id to a map's `props.kinds` with a share.
+4. Place it: add its id to a map's `props.kinds` with a share. A target instead goes in the map's `targets`, at a
+   fixed spot on a road (a row of stars with `count`); `maps.test.ts` checks it is clear of zones, water, bridges
+   and hills.
+5. Test in `sim/sim.test.ts` (a toy settles and returns) or `sim/targets.test.ts` (a target is got once, celebrates
+   and comes back; traffic doesn't take it).
 
 ## Recipe: solid scenery (stays put, the car slides along it)
 1. Definition in `sim/assets/scenery.ts`: `radius` (kept out of, at scale 1) and `shrinks` (shrinks away between
@@ -54,7 +59,18 @@ Paths below are under `src/games/racing/`.
 - **Poles, signs and fences are toys** (they wobble or tumble), so less in the world can stop the car.
 - **Things taller than the car fade or shrink** when they come between the camera and the car.
 - **Animals move first,** always: they start stepping aside before the car could reach them.
-- **Everything repeats in batches** (one batch per kind), so a map can have a hundred toys.
+- **Everything repeats in batches** (one batch per kind), so a map can have a hundred toys. A toy in several
+  colours (a stack's boxes) is still one batch: the renderer tints each copy (`TOY_TINTS`).
+- **What no car feels uses the looks-only random stream** (`fxRand`: confetti, a stack's flying boxes), so adding
+  targets to a map doesn't change what traffic does there (2026-11-15).
+- **A set piece that slows cars caps the kid's top speed as well as braking it** (`wadeSpeed` in `sim/sim.ts`):
+  braking alone fights the throttle and the car stays fast for half a second (found 2026-11-15, mud).
+- **A vehicle state from a set piece names what takes it off** (ADR 0042): muddy stays until a car wash or clean
+  water, so one set piece gives another a job.
+- **Prove "never stops the kid" by driving the same lap with and without the piece** and comparing every step (the
+  traffic lights' test in `sim/lights.test.ts`).
+- **Water along a path is a chain of shallow circles to the simulation** (a stream), so every rule for puddles
+  (splash, wet, trees and toys kept out) applies; the look draws it as one strip.
 
 ## Anti-recipes
 - **Something that stops the car dead or traps it** (a box corner, a gap between two rocks, a fence pen).

@@ -38,8 +38,9 @@ the layout picture and will move as it is built.
 - A map is one data file (`MapDef`, `sim/map.ts`): a shoreline, roads as point paths joined at three-way
   junctions, bridge and tunnel guards, hills, sand, zones (`ramp`, `car-wash`, `garage`), pools and puddles, and
   **one** scatter rule each for trees, toys and decor for the whole map. Roads are `street` or `dirt`.
-- Things further than 150 m from the chase camera are not drawn (`HIDE_M`, `render.ts`); the haze runs from 90 m
-  to 340 m. Map tiles and the map editor are on the [to-do list](todo.md), section 4, not built.
+- Things further than 150 m from the chase camera are not drawn (`HIDE_M`, `render.ts`, in `sim/view.ts` since
+  2026-11-16); the haze runs from 90 m to 340 m. Map tiles and the map editor are on the [to-do list](todo.md),
+  section 4, not built. (Map tiles, phases 1 and 2 below, were built on 2026-11-16.)
 - **Measured: the simulation is the first thing that breaks, not the drawing.** One step of the island takes
   1.24 ms on the dev machine; without toys 0.03 ms. The time is every vehicle checking every toy: four times the
   toys took 5.1 ms, four times the traffic 4.6 ms. A stand-in big map (the building site stretched four times
@@ -90,9 +91,9 @@ rest can follow in later releases. The owner trims or adds (D8).
 | The overpass: the highway over itself, on a deck that rises, with rails | Roads | new: roads on two levels (phase 7) | none yet: phase 7 writes it | first |
 | Long bridge in concrete (a second look for `road/bridge-deck`), tunnel | Roads | bridge look new; tunnel built | maps | first |
 | Road works: a stretch half dirt, cones and barrels **in rows** | Roads, toys | rows are new in the map format | maps | first |
-| `road/ford` on a site track | Roads | idea (to-do section 4) | maps | later |
+| `road/ford` on a site track | Roads | built (ADR 0042; needs a `water/stream` across the track) | maps | later |
 | Dirt ground for the site, an asphalt yard at the rest stop | Ground | new (only sand can be painted today) | maps | first |
-| A `mud` zone: the car comes out muddy, the car wash cleans it | Ground, vehicle state | idea (to-do section 4) | [scenery](recipes/scenery.md), set piece | first |
+| A `mud` zone: the car comes out muddy, the car wash cleans it | Set pieces, vehicle state | built (ADR 0042, `setpiece/mud`) | [scenery](recipes/scenery.md), set piece | first |
 | `setpiece/crane`: a tower crane; its hook lowers a load and lifts it as the car arrives, the horn swings it | Set pieces | new | scenery, set piece | first |
 | `setpiece/chute`: gravel pours over the car from a hopper, in puffs | Set pieces | new | scenery, set piece | first |
 | `setpiece/toll-gate`: the arm lifts before the car arrives, a ding; it never stops anyone | Set pieces | new | scenery, set piece | first |
@@ -176,6 +177,38 @@ They are a draft: each moves into `recipes/maps.md` once building this map has p
   without the game turning its picture down (`detail.ts`); the map opens in under 3 s on the laptop.
 - **Files:** `maps/stress.ts`, `sim/sim.test.ts` (or a new `sim/budget.test.ts`), `tools/driving-gallery.html`.
 - **Done when:** the numbers are written into this plan, and phase 2's list is cut to what they call for.
+- **Built 2026-11-16** (with phase 2, the to-do list's "map tiles"):
+  - `maps/stress.ts`: 1,080 m by 660 m, a loop with four roads north to south and one east to west in five
+    stretches (10 roads, about 6 km, street and dirt), 3,000 toys (3,136 with the targets), 600 trees, 1,500 bush
+    clumps, 25 zones (ramps, car washes, garages, mud, lights at four crossroads, a ford on a stream), a bridge, a
+    tunnel, three hills, sand, two pools and 60 puddles, three herds, and 10 vehicles of traffic by a rule.
+  - `sim/budget.test.ts`: times a step of the island, the building site and the stand-in ("follows the road",
+    every vehicle switched on) and writes them to the file `BUDGET_OUT` names. It fails over 8 ms a step (20 ms on
+    CI): it catches the old engine, not a noisy run.
+  - `tools/driving-frames.html?map=…`: the map driven round by "follows the road", drawn by the game's renderer,
+    with a readout of frames a second, frame, step and draw times, draw calls and triangles.
+    `node tools/measure-frames.mjs [seconds] [map …]` reads it for several maps (screenshots in
+    `test-results/frames/`).
+- **Measured on the dev machine, 2026-11-16** (often about 70 % busy with other work, so a few tenths of a
+  millisecond either way). A step, in ms, in the unit tests:
+
+  | | Island | Building site | Stand-in (11 vehicles) |
+  |---|---|---|---|
+  | Before (`main`) | 1.83 | 1.21 | **20.7** |
+  | After phase 2 | 0.33 to 0.45 | 0.15 to 0.21 | **0.54 to 0.59** |
+
+  Making the stand-in's world takes 80 to 160 ms (100 ms before). Frame page in Chromium with the graphics card,
+  1280 by 800, 15 s each; all three keep 60 frames a second both before and after:
+
+  | | Island | Building site | Stand-in |
+  |---|---|---|---|
+  | Draw, main thread, mean (slowest 5 %) | 3.1 (4.0) → 3.3 (4.2) ms | 2.6 (3.8) → 2.3 (3.4) ms | **6.4 (12.1) → 4.9 to 5.2 (7.4 to 8.0) ms** |
+  | Triangles a frame (shadows included) | 1.13 M → 1.04 M | 0.99 M → 0.85 M | **7.76 M → 1.30 to 1.35 M** |
+  | Draw calls | 343 → 343 | 183 → 186 | 288 → 288 to 384 |
+
+  "Before" for the frame page is today's renderer with the new simulation (on the old one the stand-in's step
+  alone is 20 ms a frame). **Not measured: the family laptop** (the 45 frames a second and 3 s budgets need a CI
+  installer run there), so phase 2 is not "done when" yet.
 
 ### 2. A simulation and a renderer that only work on what is near (to-do: "map tiles")
 - **Builds:**
@@ -195,6 +228,39 @@ They are a draft: each moves into `recipes/maps.md` once building this map has p
   the kid can see it and is never the kid's own vehicle; `maps.test.ts` passes unchanged on the island and the
   building site; the shipped map pictures come out the same; the stand-in map meets phase 1's budgets.
 - **Done when:** the stand-in map runs inside the budgets on the laptop, and the two maps of today play as before.
+- **As built, 2026-11-16:**
+  - `sim/grid.ts` has two sizes of square: road and shoreline segments in 12.5 m squares (a road is a point every
+    1.5 m, a roundabout's ring one every 25 cm, so a 50 m square would hold 35 to 200 of one road's segments), and
+    trees, toys (by home), waters and zones in 50 m squares. The shoreline is also cut into 3 m bands across, for
+    "is this on the land" (only the segments across a point's band can be crossed). A road or shore under 32
+    segments is looked through whole. `nearestOn`, `nearestRoad`, `nearestWithin` (new: for a bridge or tunnel,
+    only a road within reach matters), `shore`, `onLand`, `onSand`, `guardAt`, `waterUnder`, `zoneAt` and the
+    kid's car's tree bumps use the squares. **The answers are exactly the old ones,** ties and the order things are
+    met included: `sim/grid.test.ts` asks every lookup both ways (`LOOKUP.grid` off is the old, slow way) on 3,000
+    random points of each map (both of today's, the stand-in, the ring and the example file), and drives each map
+    a minute both ways, free and following the road, comparing the whole world step by step.
+  - **The biggest saving wasn't the grid:** a vehicle checking a toy built the vehicle's body points every time.
+    A distance test first (`beyond`, sim.ts) skips that for any toy out of reach, which alone took the island from
+    about 1 ms to 0.2 ms a step.
+  - **Toys asleep:** `World.awake` lists the toys away from home and the stars (they turn and bob); each step adds
+    the toys at home near a moving vehicle (with the rest of a stack, which falls as one), steps those in the
+    list's order and drops the ones home again. On the stand-in under a tenth of the toys are awake at once.
+  - **Traffic near the kid:** `MapDef.trafficNear` (`count`, `roads`, `cruise` from and to), checked in map files
+    too. Its vehicles start 30 to 220 m from the kid; one more than 250 m away (behind, or left far ahead) is put
+    on a road 160 to 220 m away, in a random lane and direction (forward on a one-way road). Both distances are
+    past `HIDE_M`, so a vehicle is never seen to go or come. The map's listed traffic and the kid's car never move.
+  - **Drawing:** the tree and toy batches are packed with the ones in reach each frame (a stack box's colour is
+    set as it is packed). Roads and their paint, puddles and bushes are cut into 100 m tiles (`look/tiles.ts`, each
+    triangle to the tile its middle is in, so nothing changes shape): the camera skips tiles out of view, the
+    renderer hides those out of reach. The grass, the beach and the sea stay one flat shape each (a few hundred
+    triangles; cutting them saves nothing). The sea is 700 m wider than the land's reach (900 m round, as before,
+    on today's maps) and the camera's far end grows with the map, so a map picture from above sees all of it.
+  - **Not built:** landmarks (no asset is one yet; the first, the tower crane, comes with phase 4, and with it
+    the simpler far shape). The draw calls didn't go down (about 290 to 380 on the stand-in, most of them the
+    vehicles' parts and the shadow pass); worth a look if the laptop can't keep 45 frames a second.
+  - **Today's maps:** `maps.test.ts` unchanged and passing; the building site's map picture comes out byte for
+    byte the same; the island's differs in a few pixels by at most 18 of 255 (not visible side by side), so the
+    shipped pictures were not regenerated.
 
 ### 3. The highway
 No recipe covers a new road kind yet; this phase writes one into `recipes/maps.md` ("Recipe: a road kind").

@@ -1,13 +1,15 @@
 # Project state
 
-_Last updated: 2026-11-15_
+_Last updated: 2026-11-16_
 
-**What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15).
+**What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15, brought up to date 2026-11-16).
 
 ## Phase
 **Latest release: 0.8.1** (2026-11-15): the Outside coloring theme on top of 0.8.0 (animal pages, unlocking the
 window, paste in the parent area, driving playtest fixes). 0.7.0 was milestone 3 (fourteen vehicles, two maps, one
 picker, Driving on by default).
+**Latest release: 0.9.0** (2026-11-16): the overnight build of to-do sections 2, 4 and 5 (PRs #59 to #74), none of it
+playtested yet. Before it: 0.8.1 (the Outside theme), 0.8.0, 0.7.0 (milestone 3).
 Milestone 1 (web app) in progress. `npm run dev` opens the kid picker. A kid starts a new picture from the page
 library or continues one from My pictures (ADR 0017), and can fill, paint, erase, undo, start over and switch the
 coloring mode. The page fills the window (ADR 0019). Holding the lock on the kid picker for a second opens the
@@ -20,7 +22,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    interface. Runs from the Vite dev server on the dev machine only (no container, ADR 0020). Never hosted
    online. Used to test with the kids early. Art made here is throwaway.
 2. **Installer:** Tauri 2 + NSIS, kiosk lock, file storage, signed in-app updates, AI page maker.
-   **Next up** (owner, 2026-11-14): milestone 1's page themes are all in (Outside added 2026-11-15); left is the coloring button design (to-do list);
+   **Next up** (owner, 2026-11-14): milestone 1's page themes are all in (Outside added 2026-11-15); the coloring buttons and colour wheel were built 2026-11-16 ([ADR 0038](../adr/0038-coloring-buttons-a-kid-can-work-out.md), Accepted; plan phases B to F, PRs #61, #64, #67), waiting on a kid playtest;
    milestone 2 is planned in eight phases in [milestone-2.md](../milestone-2.md) (A Tauri window, B files, C sync,
    D kiosk lock, E updates, F family pages, G AI page maker, H family release). **Phase A done 2026-11-14**
    (`src-tauri/`, the `windows-installer` CI job): the installer ran on Windows. A `v*` tag drafts a release
@@ -53,7 +55,12 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    [highway-map-plan.md](../highway-map-plan.md): about 1 km across, engine work first. The owner chose
    **layout B** (2026-11-15): a figure of eight that crosses over itself, so roads on two levels are built
    before the map. The owner's choices are in [ADR 0040](../adr/0040-driving-very-large-map-highway-and-building-site.md) (Proposed, 2026-11-15); when it starts is
-   open. Nothing built.
+   open. **Built 2026-11-16:** its engine work, phases 1 and 2 (`sim/grid.ts`, toys asleep, traffic near the kid,
+   drawing only what is near; a 1 km stand-in `maps/stress.ts` steps in about 0.55 ms), and the pieces every map
+   draws on: targets ([ADR 0041](../adr/0041-driving-targets-to-collect-and-hit.md)), mud, ford, show-only lights,
+   roundabout and harbour ([ADR 0042](../adr/0042-driving-more-set-pieces.md)), maps from a folder
+   ([ADR 0043](../adr/0043-driving-maps-from-a-folder.md)), and the dev map editor and viewer. The map itself is
+   not started.
 5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
    of the family's own area, made from real map and terrain data, with the roads, the family's house and a few
    neighbours' houses. It must never be committed: it lives in a folder kept out of the repo that can be dropped
@@ -73,13 +80,17 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    "Show Letters" under Settings, Games. Not yet playtested with the kids or tried with a real pen. Since
    2026-11-14 the whole letter must be traced and the kid taps a check to finish
    ([ADR 0028](../adr/0028-letter-tracing-whole-letter-and-confirm.md)), and the strokes follow how US schools
-   teach print letters (Zaner-Bloser).
+   teach print letters (Zaner-Bloser). **Built 2026-11-16** under [ADR 0037](../adr/0037-letters-sound-tips-and-how-to.md)
+   (Accepted), plan phases B to E: the name on open and a name/sound setting, a drawing sound and stroke chime,
+   eight praise words, a hint ladder (`hints.ts`), a first-time how-to on `L`, easy-first game path, and a
+   lines-and-shapes set (PRs #60, #63, #66). Not playtested.
    **Writing words** (asked by the owner 2026-11-14), the next level after single letters: researched and
-   drafted 2026-11-15 as [ADR 0039](../adr/0039-writing-words.md) (Proposed, a draft), from
-   [research/words-learning.md](../research/words-learning.md). W1 settled 2026-11-15: 84 more narrator lines
-   (`ONLY=words` in `tools/sounds/generate.mjs`). Made 2026-11-15: all 252 takes, on the laptop in
-   `C:\tmp\gen3\words`, not yet listened to or picked; the clips are not in the repo. Waiting on the
-   owner's choices W2 to W10. Nothing built.
+   drafted 2026-11-15 as [ADR 0039](../adr/0039-writing-words.md) (Accepted 2026-11-15 with every recommendation), from
+   [research/words-learning.md](../research/words-learning.md). Its 84 narrator lines (`ONLY=words` in
+   `tools/sounds/generate.mjs`) shipped 2026-11-16 as take 1, both slow takes (`SLOW_TAKES` picks), not yet
+   listened to. **Built 2026-11-16:** the Words tile, the kid's name and 24 words with AI-made pictures, one big
+   letter at a time into boxes, the slow word, one check, word stars (PRs #70, #71) and family words
+   (#73: up to 10 per family, each with an optional recording and photo, one file per word). Not playtested.
 
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
 3D models and a lot of design; only its prototype came early. Deferred: printing and export (ADR 0010).

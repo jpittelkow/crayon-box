@@ -1,6 +1,7 @@
 // The building site (milestone-3 E; ADR 0035): a square of land by the sea, about 230 m across. A loop of dirt
 // track round it, a north-south track through the middle and an east-west track from the loop's west side to it,
-// joined at three-way junctions. Dirt hills to drive round, three ramps, mud puddles and a muddy pond, a sand pit,
+// joined at three-way junctions. Dirt hills to drive round, three ramps, two patches of mud (ADR 0042), mud
+// puddles and a muddy pond, a sand pit,
 // cones and crates to knock down, cows in a field, the site office as the garage, a car wash, and the building
 // vehicles first in traffic. Places are in the simulation's own x and z, in metres.
 import type { MapDef, OnRoad } from '../sim/map';
@@ -59,6 +60,10 @@ export const SITE: MapDef = {
     { kind: 'car-wash', on: { road: 2, at: atCross(-46) }, r: 4 },
     // The site office: the garage (ADR 0035).
     { kind: 'garage', on: { road: 1, at: atMiddle(30) }, r: 4 },
+    // Mud (ADR 0042): a patch across the loop's south side and one on the middle track's north end. The car wash
+    // on the east-west track washes it off.
+    { kind: 'mud', on: onLoop(-22, -72), r: 6.5 },
+    { kind: 'mud', on: { road: 1, at: atMiddle(52) }, r: 6 },
   ],
   traffic: [
     { kind: 'bus', on: onLoop(-60, 64, 2.2), cruise: 6 },
@@ -84,5 +89,22 @@ export const SITE: MapDef = {
     nearRoad: 0.65, spread: 5, edgeGap: 6, spawnGap: 8,
   },
   decor: [{ id: 'decor/bush', clumps: 50, perClump: 3 }],
+  // Targets (ADR 0041): rows of stars on the tracks, stacks of boxes just inside the loop and beside the middle
+  // track, and one out in the yard west of the middle track.
+  targets: [
+    { id: 'toy/star', on: onLoop(-80, -16), count: 4 },
+    { id: 'toy/star', on: onLoop(-44, 68), count: 4 },
+    { id: 'toy/star', on: onLoop(81, -18), count: 4 },
+    { id: 'toy/star', on: onLoop(42, -67), count: 4 },
+    { id: 'toy/star', on: { road: 1, at: atMiddle(16) }, count: 3 },
+    { id: 'toy/star', on: { road: 2, at: atCross(-36) }, count: 3 },
+    { id: 'toy/box-stack', on: onLoop(-79, 30, 6) },
+    { id: 'toy/box-stack', on: onLoop(40, 69, 6) },
+    { id: 'toy/box-stack', on: onLoop(81, 30, 6) },
+    { id: 'toy/box-stack', on: onLoop(-40, -67, 6) },
+    { id: 'toy/box-stack', on: { road: 1, at: atMiddle(-37), offset: 6 } },
+    { id: 'toy/box-stack', on: { road: 2, at: atCross(-64), offset: 6 } },
+    { id: 'toy/box-stack', on: { road: 1, at: atMiddle(50), offset: -14 } },
+  ],
   animals: [{ id: 'animal/cow', x: -42, z: 36, count: 3, roam: 8 }],
 };

@@ -5,8 +5,11 @@ import { openParentArea } from './helpers';
 // compared picture by picture.
 
 // The browser tests draw in software, and the toy look (ADR 0025) is heavy there: one test at a time, with time
-// to spare.
-test.describe.configure({ mode: 'serial', timeout: 90_000 });
+// to spare. On CI a frame can take seconds while other test files run beside these, and the game runs at most five
+// steps of its simulation per frame, so game time crawls: a car takes many seconds to speed up and the page answers
+// slowly. Every wait on the game gets `SLOW` (found 2026-11-15: two tests failed on main with the 10 s default).
+test.describe.configure({ mode: 'serial', timeout: 180_000 });
+const SLOW = { timeout: 60_000 };
 
 interface CarState { x: number; z: number; speed: number; heading: number }
 
@@ -125,23 +128,62 @@ test('arrow keys and WASD drive; back returns to the picker, then home', async (
   await openDriving(page);
 
   await page.keyboard.down('KeyW');
-  await expect.poll(async () => (await car(page)).speed).toBeGreaterThan(4);
+  await expect.poll(async () => (await car(page)).speed, SLOW).toBeGreaterThan(4);
   await page.keyboard.up('KeyW');
   await page.keyboard.down('ArrowDown');
-  await expect.poll(async () => (await car(page)).speed).toBe(0);
+  await expect.poll(async () => (await car(page)).speed, SLOW).toBe(0);
   await page.keyboard.up('ArrowDown');
 
   await page.keyboard.down('ArrowUp');
   await page.keyboard.down('ArrowLeft');
   const before = (await car(page)).heading;
-  await expect.poll(async () => (await car(page)).heading).toBeGreaterThan(before + 0.3);
+  await expect.poll(async () => (await car(page)).heading, SLOW).toBeGreaterThan(before + 0.3);
   await page.keyboard.up('ArrowLeft');
   await page.keyboard.up('ArrowUp');
 
   await page.getByRole('button', { name: 'Back' }).tap();
-  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true');
+  await expect(page.locator('.driving-picker')).toHaveAttribute('data-ready', 'true', SLOW);
   await page.getByRole('button', { name: 'Back' }).tap();
-  await expect(page.locator('[data-screen="home"]')).toBeVisible();
+  await expect(page.locator('[data-screen="home"]')).toBeVisible(SLOW);
+});
+
+test('driving through a star takes it, with a burst of confetti (ADR 0041)', async ({ page }) => {
+  await turnOnDriving(page);
+  await openDriving(page);
+  interface Star { toy: string; homeX: number; homeZ: number; homeYaw: number; state: number }
+  type TargetWorld = { cars: CarState[]; props: Star[]; confetti: { life: number }[]; camHeading: number };
+  const world = 'document.querySelector(".driving-canvas").drivingWorld';
+  // The kid's car 8 m before the island's first star, facing along the road through it, standing still.
+  await page.evaluate(() => {
+    const w = (document.querySelector('.driving-canvas') as HTMLCanvasElement & { drivingWorld: TargetWorld }).drivingWorld;
+    const star = w.props.find((p) => p.toy === 'toy/star')!;
+    Object.assign(w.cars[0]!, { x: star.homeX - Math.sin(star.homeYaw) * 8, z: star.homeZ - Math.cos(star.homeYaw) * 8, heading: star.homeYaw, speed: 0 });
+    w.camHeading = star.homeYaw;
+  });
+  expect(await page.evaluate(`${world}.props.find((p) => p.toy === 'toy/star').state`)).toBe(0);
+  await page.keyboard.down('ArrowUp');
+  // Taken (no longer at home), and the confetti is flying.
+  await expect.poll(() => page.evaluate(`${world}.props.find((p) => p.toy === 'toy/star').state`), SLOW).not.toBe(0);
+  expect(await page.evaluate(`${world}.confetti.filter((c) => c.life > 0).length`)).toBeGreaterThan(0);
+  await page.keyboard.up('ArrowUp');
+});
+
+test('the island has a roundabout and a harbour, where a ship\'s horn answers the kid\'s (ADR 0042)', async ({ page }) => {
+  await turnOnDriving(page);
+  await openDriving(page);
+  const world = 'document.querySelector(".driving-canvas").drivingWorld';
+  type HarbourWorld = { cars: CarState[]; zones: { kind: string; x: number; z: number; ring?: number }[]; camHeading: number };
+  // The roundabout knows its ring; the harbour has its boats.
+  expect(await page.evaluate(`${world}.zones.find((z) => z.kind === 'roundabout').ring`)).toBe(3);
+  expect(await page.evaluate(`${world}.boats.length`)).toBe(3);
+  // The kid's car parked on the quay, then the horn.
+  await page.evaluate(() => {
+    const w = (document.querySelector('.driving-canvas') as HTMLCanvasElement & { drivingWorld: HarbourWorld }).drivingWorld;
+    const zone = w.zones.find((z) => z.kind === 'harbour')!;
+    Object.assign(w.cars[0]!, { x: zone.x, z: zone.z, speed: 0 });
+  });
+  await page.keyboard.press('Space');
+  await expect.poll(() => page.evaluate(`${world}.shipHorn.rest`), SLOW).toBeGreaterThan(0);
 });
 
 test('a parent sets a kid to "follows the road"', async ({ page }) => {
@@ -212,11 +254,11 @@ test('a tray in the game swaps the vehicle on the spot (playtest, 2026-11-15)', 
   const tray = page.locator('.driving-tray');
   await expect(tray).toBeHidden();
   await page.getByRole('button', { name: 'Change vehicle' }).tap();
-  await expect(tray).toBeVisible();
+  await expect(tray).toBeVisible(SLOW);
   await expect(tray.locator('.driving-tray-tile')).toHaveCount(14);
   await expect(tray.getByRole('button', { name: 'Car', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await tray.getByRole('button', { name: 'Digger', exact: true }).tap();
-  await expect(tray).toBeHidden();
+  await expect(tray).toBeHidden(SLOW);
   const kind = () => page.evaluate(() => {
     const canvas = document.querySelector('.driving-canvas') as HTMLCanvasElement & { drivingWorld?: { cars: { kind: string }[] } };
     return canvas.drivingWorld!.cars[0]!.kind;
@@ -224,8 +266,9 @@ test('a tray in the game swaps the vehicle on the spot (playtest, 2026-11-15)', 
   expect(await kind()).toBe('digger');
   // A tap beside the tray closes it without a change.
   await page.getByRole('button', { name: 'Change vehicle' }).tap();
-  await expect(tray).toBeVisible();
-  await page.mouse.click(20, 400);
-  await expect(tray).toBeHidden();
+  await expect(tray).toBeVisible(SLOW);
+  // A finger, as a kid would; the tray's pictures are still loading one by one, so wait for the tap to land.
+  await page.touchscreen.tap(20, 400);
+  await expect(tray).toBeHidden(SLOW);
   expect(await kind()).toBe('digger');
 });

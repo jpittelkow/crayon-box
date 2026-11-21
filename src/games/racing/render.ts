@@ -1,25 +1,27 @@
 // Draws the world in the polished toy look (ADR 0025) with three.js. Everything that repeats (props, trees,
 // splashes) is one batch per material; the few vehicles are drawn piece by piece. One sun shadow follows the car.
+// Only what is within reach of the camera is drawn (docs/highway-map-plan.md, phase 2): the batches of trees and
+// toys are packed with the near ones each frame, and the ground tiles (look/tiles.ts) further off are hidden.
 // Loaded only when the game opens.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { ANIMAL_LOOKS } from './look/animals';
-import { buildGround } from './look/island';
+import { buildGround, landReach } from './look/island';
 import { buildSetPieces } from './look/setpieces';
 import { sceneryPieces } from './look/scenery';
-import { toyPieces, type Pieces } from './look/toys';
+import { CONFETTI_COLORS, TOY_TINTS, toyPieces, type Pieces } from './look/toys';
+import { mudCoat, type MudCoat } from './look/states';
 import { OWN_COLOR, buildKidVehicle, buildVehicle, type VehicleModel } from './look/vehicles';
+import { MUD_FLY } from './sim/mud';
 import type { SceneryId } from './sim/assets/scenery';
 import type { ToyId } from './sim/assets/toys';
-import { DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
-import { CAMERA_FOV, chaseView, stepTreeSizes, type View } from './sim/view';
+import { CONFETTI_LIFE, DROP_LIFE, RIPPLE_LIFE, type VehicleKind, type World } from './sim/sim';
+import { CAMERA_FOV, HIDE_M, chaseView, stepTreeSizes, type View } from './sim/view';
 
 /** The most real pixels drawn per CSS pixel. Built-in laptop graphics (ADR 0021) get no more than this. */
 export const MAX_PIXEL_RATIO = 1.5;
 
 const WATER_Y = 0.09;
-/** Things further than this from where the chase camera looks are not drawn (milestone-3 E). */
-const HIDE_M = 150;
 
 export interface Renderer {
   resize(cssWidth: number, cssHeight: number, pixelRatio: number): void;
@@ -31,6 +33,8 @@ export interface Renderer {
    * a picker picture), rather than when the canvas is collected: a browser keeps only about 16 at a time.
    */
   dispose(loseContext?: boolean): void;
+  /** What the last frame sent to the graphics card, for dev tools: draw calls and triangles. */
+  stats(): { calls: number; triangles: number };
 }
 
 function skyTexture(): THREE.CanvasTexture {
@@ -88,7 +92,13 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   scene.add(sun, sun.target);
 
   const setPieces = buildSetPieces(world);
-  scene.add(buildGround(world), setPieces.group);
+  const ground = buildGround(world);
+  scene.add(ground, setPieces.group);
+  // The ground's tiles (roads, puddles, bushes), each with its middle and reach, to hide the ones out of reach.
+  const tiles: THREE.Object3D[] = [];
+  ground.traverse((o) => {
+    if (o.userData.tile) tiles.push(o);
+  });
   let lastTime = world.time;
 
   // Trees: one batch per kind on this map; each tree can shrink away from the camera (ADR 0021).
@@ -105,6 +115,17 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     toyBatches.set(id, batch(toyPieces(id), world.props.filter((p) => p.toy === id).length));
   }
   [...toyBatches.values()].flat().forEach((m) => scene.add(m));
+  // Toys in several colours (a stack's boxes, ADR 0041): each copy's colour by its place. Copies are packed with
+  // the toys in reach each frame, so a tinted kind's colours are set as it is packed.
+  const tint = new THREE.Color();
+  // Every copy gets a colour once here, so the batch has its colours from the first frame on.
+  for (const [id, meshes] of toyBatches) {
+    if (!TOY_TINTS[id]) continue;
+    for (const mesh of meshes) {
+      if (!(mesh.material as THREE.Material).userData.tint) continue;
+      for (let n = 0; n < mesh.instanceMatrix.count; n++) mesh.setColorAt(n, tint.set(TOY_TINTS[id]![0]!));
+    }
+  }
   const placed = new Map<string, number>();
 
   // Vehicles: the kid's car in their colour, traffic in its own colours.
@@ -119,15 +140,20 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   });
 
   // The kid's vehicle in their colour, or with their flag (milestone-3 B5); traffic in its own colours.
-  const vehicleModel = (kind: VehicleKind, kid: boolean): VehicleModel => {
+  // Each with its coat of mud (ADR 0042), shown as muddy as the vehicle is.
+  const mudMat = new THREE.MeshStandardMaterial({ color: 0x5a3b22, roughness: 0.55 });
+  const coats: MudCoat[] = [];
+  const vehicleModel = (kind: VehicleKind, kid: boolean, i: number): VehicleModel => {
     const v = kid ? buildKidVehicle(kind, kidColor) : buildVehicle(kind, OWN_COLOR[kind]);
     v.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true;
     });
+    coats[i] = mudCoat(v.group, kind, mudMat);
+    v.group.add(coats[i]!.mesh);
     scene.add(v.group);
     return v;
   };
-  const vehicles: VehicleModel[] = world.cars.map((c, i) => vehicleModel(c.kind, i === 0));
+  const vehicles: VehicleModel[] = world.cars.map((c, i) => vehicleModel(c.kind, i === 0, i));
   // The kind each model was built as: the garage (ADR 0035) changes the kid's vehicle, and its model with it.
   const builtAs = world.cars.map((c) => c.kind);
 
@@ -142,14 +168,25 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const puffs = effect(new THREE.IcosahedronGeometry(1, 1), 0xffffff, world.puffs.length);
   const drops = effect(new THREE.SphereGeometry(1, 8, 6), 0xd6efff, world.drops.length);
   const ripples = effect(new THREE.RingGeometry(0.9, 1, 32).rotateX(-Math.PI / 2), 0xffffff, world.ripples.length);
+  // Bits of mud off the wheels (ADR 0042, `fx/mud`).
+  const muds = effect(new THREE.IcosahedronGeometry(1, 1), 0x5a3b22, world.muds.length);
   // Car wash bubbles: pale, see-through and shiny.
   const bubbles = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8),
     new THREE.MeshPhysicalMaterial({ color: 0xffffff, emissive: 0x9ab8cc, roughness: 0.05, clearcoat: 1, transparent: true, opacity: 0.8 }), world.bubbles.length);
   bubbles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   bubbles.frustumCulled = false;
   scene.add(bubbles);
+  // Confetti (ADR 0041, `fx/confetti`): little paper pieces, two triangles each, coloured per piece once.
+  const confetti = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.26, 0.16),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, side: THREE.DoubleSide }), world.confetti.length);
+  confetti.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  confetti.frustumCulled = false;
+  world.confetti.forEach((c, i) => confetti.setColorAt(i, tint.set(CONFETTI_COLORS[c.hue % CONFETTI_COLORS.length]!)));
+  scene.add(confetti);
+  const turn = new THREE.Euler();
 
-  const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.5, 900);
+  // The camera sees across the whole map from above (a map picture), however big it is.
+  const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.5, Math.max(900, landReach(world) * 2 + 300));
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const v = new THREE.Vector3();
@@ -159,8 +196,13 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
   const place = (meshes: THREE.InstancedMesh[], i: number, matrix: THREE.Matrix4) => {
     for (const mesh of meshes) mesh.setMatrixAt(i, matrix);
   };
-  const dirty = (meshes: THREE.InstancedMesh[]) => {
-    for (const mesh of meshes) mesh.instanceMatrix.needsUpdate = true;
+  /** A batch draws its first `count` copies, the ones placed this frame. */
+  const pack = (meshes: THREE.InstancedMesh[], count: number) => {
+    for (const mesh of meshes) {
+      mesh.count = count;
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
   };
 
   const update = (w: World, given?: View) => {
@@ -172,7 +214,12 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     scene.fog = given ? null : haze;
     const lx = view.target[0], lz = view.target[2];
     const far = (x: number, z: number) => (x - lx) ** 2 + (z - lz) ** 2 > hide * hide;
-    // Trees
+    // Ground tiles out of reach are hidden; the camera skips the rest that are out of view.
+    for (const t of tiles) {
+      const { x, z, r } = t.userData.tile as { x: number; z: number; r: number };
+      t.visible = Math.hypot(x - lx, z - lz) - r <= hide;
+    }
+    // Trees and toys in reach, packed at the front of their batches; only those are drawn.
     stepTreeSizes(w, treeSizes);
     placed.clear();
     const next = (id: string) => {
@@ -182,17 +229,24 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     };
     w.trees.forEach((t, i) => {
       const size = t.scale * treeSizes[i]!;
+      if (size <= 0 || far(t.x, t.z)) return;
       m.compose(v.set(t.x, 0, t.z), q.identity(), s.setScalar(size));
-      place(treeBatches.get(t.kind)!, next(t.kind), size > 0 && !far(t.x, t.z) ? m : zero);
+      place(treeBatches.get(t.kind)!, next(t.kind), m);
     });
-    treeBatches.forEach(dirty);
+    treeBatches.forEach((meshes, id) => pack(meshes, placed.get(id) ?? 0));
 
-    // Toys
     for (const p of w.props) {
+      if (p.scale <= 0 || far(p.x, p.z)) continue;
+      const n = next(p.toy), meshes = toyBatches.get(p.toy)!;
       m.compose(v.set(p.x, p.y, p.z), q.set(p.qx, p.qy, p.qz, p.qw), s.setScalar(p.scale));
-      place(toyBatches.get(p.toy)!, next(p.toy), p.scale > 0 && !far(p.x, p.z) ? m : zero);
+      place(meshes, n, m);
+      const colors = TOY_TINTS[p.toy];
+      if (colors) {
+        tint.set(colors[p.slot % colors.length]!);
+        for (const mesh of meshes) if ((mesh.material as THREE.Material).userData.tint) mesh.setColorAt(n, tint);
+      }
     }
-    toyBatches.forEach(dirty);
+    toyBatches.forEach((meshes, id) => pack(meshes, placed.get(id) ?? 0));
 
     // Animals: a little bob in their step as they walk, and their hop.
     w.animals.forEach((a, i) => {
@@ -207,10 +261,11 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     w.cars.forEach((c, i) => {
       if (c.kind !== builtAs[i]) {
         scene.remove(vehicles[i]!.group);
-        vehicles[i] = vehicleModel(c.kind, i === 0);
+        vehicles[i] = vehicleModel(c.kind, i === 0, i);
         builtAs[i] = c.kind;
       }
       const model = vehicles[i]!;
+      coats[i]!.show(c.mud);
       model.group.visible = i === 0 || !far(c.x, c.z);
       model.group.position.set(c.x, c.y + c.h, c.z);
       // Nose up while climbing a ramp or rising from it, down while coming down (never enough to look like a flip).
@@ -227,9 +282,18 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
       const size = r.size * (1 + 2.2 * (1 - r.life / RIPPLE_LIFE));
       ripples.setMatrixAt(i, r.life > 0 ? m.compose(v.set(r.x, WATER_Y + 0.012, r.z), q.identity(), s.setScalar(size)) : zero);
     });
+    w.muds.forEach((d, i) => muds.setMatrixAt(i, d.life > 0 ? m.compose(v.set(d.x, d.y, d.z), q.identity(), s.setScalar(0.1 + 0.12 * (d.life / MUD_FLY))) : zero));
     // Bubbles swell a little, then shrink away as they rise.
     w.bubbles.forEach((b, i) => bubbles.setMatrixAt(i, b.life > 0 ? m.compose(v.set(b.x, b.y, b.z), q.identity(), s.setScalar(0.12 + 0.16 * Math.min(1, b.life))) : zero));
-    for (const e of [puffs, drops, ripples, bubbles]) e.instanceMatrix.needsUpdate = true;
+    // Confetti turns over and over as it flutters down, lies flat once it lands, and shrinks away at the end.
+    w.confetti.forEach((c, i) => {
+      if (c.life <= 0) return confetti.setMatrixAt(i, zero);
+      const age = CONFETTI_LIFE - c.life;
+      if (c.y > 0.031) turn.set(c.phase + age * c.turn, c.phase * 2 + age * c.turn * 0.7, c.phase);
+      else turn.set(-Math.PI / 2, 0, c.phase);
+      confetti.setMatrixAt(i, m.compose(v.set(c.x, c.y, c.z), q.setFromEuler(turn), s.setScalar(Math.min(1, c.life / 0.3))));
+    });
+    for (const e of [puffs, drops, ripples, muds, bubbles, confetti]) e.instanceMatrix.needsUpdate = true;
 
     // Moving set pieces (car wash brushes).
     setPieces.animate(w, Math.max(0, Math.min(0.1, w.time - lastTime)));
@@ -254,6 +318,9 @@ export function createRenderer(canvas: HTMLCanvasElement, world: World, kidColor
     render(w, view) {
       update(w, view);
       renderer.render(scene, camera);
+    },
+    stats() {
+      return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
     },
     dispose(loseContext = false) {
       scene.traverse((o) => {

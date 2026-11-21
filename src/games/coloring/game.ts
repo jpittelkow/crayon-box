@@ -4,6 +4,7 @@ import { icons, themeIcon } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import './coloring.css';
 import { loadCatalog, type Catalog } from './catalog';
+import { forgetKidNames } from './names';
 import { BLANK_PAGE, type Page } from './pages';
 import { forgetKid, getPaint, keepPreviousVersion, listPictures, newPicture, type Picture } from './pictures';
 import { ColoringSession } from './session';
@@ -16,6 +17,11 @@ export const coloringGame: GameModule = {
     return () => game.unmount();
   },
   parentSettings: [
+    {
+      id: 'coloring',
+      title: 'Coloring',
+      render: async (el, ctx) => (await import('./parentSections')).renderColoring(el, ctx),
+    },
     {
       id: 'pictures',
       title: 'Pictures',
@@ -32,7 +38,10 @@ export const coloringGame: GameModule = {
       render: async (el, ctx) => (await import('./addPages')).renderAddPages(el, ctx),
     },
   ],
-  forgetKid,
+  forgetKid: async (storage, kidId) => {
+    await forgetKid(storage, kidId);
+    await forgetKidNames(storage, kidId);
+  },
 };
 
 /** Six tiles at most; with more, the sixth is a "more" arrow (ADR 0016 rule 6). */

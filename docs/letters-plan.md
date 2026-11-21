@@ -175,7 +175,7 @@ That is one more reason to make everything now.
   every line; for the short vowels the take with the word ("ah… apple") ships as `sound-A` (likewise E, I, O,
   U). 117 clips added to `assets/sounds/voice/` (letters and coloring), with `NARRATOR_ONLY=1 prepare.mjs`.
 
-### B. More sound while tracing
+### B. More sound while tracing (built 2026-11-15)
 - **Builds:**
   - The letter's **name said when it opens** (today only when tapped in the grid or finished).
   - **A drawing sound** while a finger is on the road: a soft crayon loop that plays only while the finger moves
@@ -201,8 +201,24 @@ That is one more reason to make everything now.
   open (a played-clip log, as the existing tests use); the sound setting changes what is said after the check.
 - **Done when:** the three sound settings work with the narrator and with a parent's recordings, the drawing
   sound stops off the road, and the app's Sounds switch silences all of it.
+- **Built 2026-11-15** (not yet heard by the kids). As built, where it differs from or adds to the above:
+  - The name is said in `showTrace` itself, so every way into a letter (grid, path, next arrow) uses the setting.
+  - "On the road" is within 12.5 glyph units of a stroke's line (`ROAD_HALF`, the road's dark edge). The drawing
+    sound also stops after 150 ms held still, since it should play only while the finger moves. It is the crayon at
+    1.3 times the speed (`DRAW_RATE` in `game.ts`), and louder with speed, like coloring's.
+  - The chime is the `chime` sound kind: `ui/cheer.wav` (the finish bell) at 1.6 times the speed and 0.4 gain, a
+    stand-in until a CC0 chime. A stroke that finishes the whole letter gets no chime: the letter's own "ready"
+    sound plays then. In lenient mode a stroke counts as traced as `done` judges it (both ends reached and 92 % of its
+    own checkpoints), so the chimes and the finish agree.
+  - "All by yourself!" is left out when the fingertip hint (today's 8 s idle hint) showed; the dots on what is left
+    after a lift are not counted as a hint.
+  - The game's own Sounds switch in the parent Letters screen also covers the drawing sound and the chimes.
+  - A parent's sound recordings are one per letter (`voice/sound-a.webm` for A and a); numbers have no sound and
+    always say their name.
+  - The line queue lets a line that has started finish (a finger going down doesn't cut a clip off); it holds back
+    the next one.
 
-### C. A hint ladder for a kid who is stuck
+### C. A hint ladder for a kid who is stuck (built 2026-11-15)
 Replaces the single idle hint. Small steps, most help last, each one shown and spoken (research 3.1), and the
 whole thing in one place with its numbers, so a playtest can tune it.
 - **The ladder** (waits from the last touch; D5):
@@ -238,8 +254,39 @@ whole thing in one place with its numbers, so a playtest can tune it.
   1, 2, then 3 in order; touching the letter stops a tip from being said.
 - **Done when:** the ladder runs on every letter, its numbers are in one place, and the parent Letters screen has
   a switch for the spoken tips (shown tips can't be turned off).
+- **Built 2026-11-15** (not yet seen by the kids). As built, where it differs from or adds to the above:
+  - `hints.ts` is the state machine (`Hints`: `touch`, `down`, `progress`, `up`, `strokeDone`, `ready`, `wipe`,
+    `tick`; actions `step`, `wiggle`, `left`, `check`, `say`), with every number at its top; the trace screen asks
+    it every 200 ms (`TICK_MS`). Times are `performance.now()`, so unit tests pass plain numbers.
+  - **The show is its own module**, `demo.ts` (`playDemo`): a fingertip draws the given strokes one after another
+    in the kid's colour, saying each stroke's word, then the drawing clears. Step 2 plays it for one stroke, step 3
+    for the whole letter; phase D can call it as it is. Its timing (`demoPlan`, about 75 glyph units a second, 1.1
+    to 2.6 s a stroke, 0.6 s for a dot) is in `hints.ts` with the rest. A whole letter takes under 12 s.
+  - **Stroke words:** `strokeKind(stroke)` in `glyphs.ts`, from the shape, with the table for all 62 glyphs in
+    `hints.test.ts`. A stroke of straight lines gets a word where its way changes (`strokeWords`): L's one stroke
+    says "Down." then "Across." at the corner, Z "Across.", "Slant.", "Across."; a way back up says nothing; a curved
+    stroke gets one word. Calls worth a look by ear: J, U and 5 are "Down." (they start down), u is "Around.", f is
+    "Around." then "Across.".
+  - **"At most one tip every 6 s"** counts the `tip-…` lines only. Stroke words and "Your turn!" belong to their
+    step, otherwise step 2's word would always be dropped (it comes 5 s after step 1's tip).
+  - **The parent switch** ("Spoken tips", `LettersSettings.tips`, on by default) silences everything the hints say:
+    tips, stroke words and "Your turn!". The letter's name and the praise follow only the Sounds switches.
+  - **A tip is never kept for later:** `voice.tip()` drops it while a finger is down, and a finger going down drops
+    one waiting behind another line. A touch anywhere stops a show at once, so its later words are never said.
+  - **Lifting early** is a line that covered some of a stroke's own checkpoints and left that stroke untraced
+    (`Tracer.lift` returns `{ added, early }`). Today's dots at half the letter still show at once on a lift; with
+    less done, the dots come with "Keep going!" after 3 s.
+  - "Start at the top." is said when the last finger came down away from every start dot of a stroke still to
+    trace (`Tracer.atStart`, within 14 units, the dot's ring).
+  - The check pulses bigger as soon as it appears (it is always "not yet tapped" then).
+  - `KidProgress.help[key]` keeps `{ done, alone, top }`: times finished, times with no hint past step 1, the
+    highest step ever needed. A letter is known at `alone >= 2`. "All by yourself!" is left out when step 2 or 3
+    showed (the triggers beside the ladder don't count as hints for it).
+  - The pressing hand on the first dot steps aside while a show runs. With less motion (the browser's setting) the
+    bigger dot and the arrow are held still and larger, and the show draws each stroke whole at its turn.
+  - Not built: the parent area showing the help counts; per-kid spoken tips (the switch is per family, like Sounds).
 
-### D. The first-time how-to
+### D. The first-time how-to (built 2026-11-15)
 - **Builds:** before a kid's first letter ever (and after 14 days without Letters, D7), the tracing screen opens on
   the demo letter (D6, `L`: a line down and a line across, the first two strokes small kids can make, research
   1.3). The narrator says "Watch me.", a hand traces each stroke with its stroke word ("Down." … "Across."), the
@@ -255,8 +302,25 @@ whole thing in one place with its numbers, so a playtest can tune it.
 - **Tests:** unit: the demo is due on first play, after 14 days, after a parent's replay, and not otherwise. Browser:
   a new kid sees the demo then traces `L`; a touch cuts it short; the replay button brings it back.
 - **Done when:** a new kid's first visit starts with the demo, and a parent can bring it back.
+- **Built 2026-11-15** (not yet seen by the kids). As built, where it differs from or adds to the above:
+  - It plays when the kid picks a letter (from the grid or the path) while it is due: the trace screen opens on `L`
+    instead, and after the kid's `L` the next arrow goes to the letter they picked. Picking `L` itself goes on as
+    usual after it.
+  - The order: "Watch me." (the letter's name is not said on open), the show starts once that line ends (at least
+    0.6 s, at most 2 s), the fingertip draws `L` with "Down." and "Across.", the drawing clears, the start dot
+    pulses bigger and "Your turn!". About 4 to 5 seconds. The show is `playDemo` as step 3 uses it.
+  - Its lines follow only the Sounds switches, not "Spoken tips": the how-to is not a hint (`LetterVoice.howTo`).
+  - While it plays the hint ladder waits; its 5 s start from the end of the how-to. A touch anywhere ends it at once
+    (`data-how-to="stopped"`), without "Your turn!", and it counts as seen.
+  - `KidProgress.demoSeen` is set when the how-to opens; `lastPlayed` (`YYYY-MM-DD`, the device's clock) is set each
+    time a letter opens. It is due when not seen, or after 14 days with no letter opened (`HOWTO_AGAIN_DAYS`; the
+    letter and the timings are at the top of `hints.ts` with the other numbers). Progress files from before have no
+    `demoSeen`, so a kid who already played sees it once. A parent's "Reset stars and game" also brings it back.
+  - The `L` counts like any letter: a star, and a step on the game path when the path has `L` open.
+  - Parent area: "Show how to trace again" in each kid's row (`showDemoAgain`), and a "Helping a kid learn" card
+    with the note about sitting with the youngest and crayons on paper.
 
-### E. Easier order and a lines-and-shapes set (if the owner wants them, D8, D9)
+### E. Easier order and a lines-and-shapes set (D8, D9; built 2026-11-15)
 - **Easy first on the game path** (D8): the game path walks capitals as straight lines first, then the ones with
   curves and slants, in groups that share a start (research 1.2): `L F E H T I` · `D P B R` · `C O Q G S` ·
   `U J` · `N M K` · `A V W X Y Z`. The practice grid stays alphabetical. No study proves one order better, so this
@@ -271,6 +335,25 @@ whole thing in one place with its numbers, so a playtest can tune it.
 - **Tests:** the existing glyph tests (in its box, no gaps, a good trace finishes in both modes) run over the
   shapes too; the game path order; old progress files load.
 - **Done when:** the chosen order is on the path and shapes can be turned on for a kid.
+- **Built 2026-11-15** (not yet seen by the kids). As built, where it differs from or adds to the above:
+  - The order is the table `GAME_GROUPS` in `progress.ts`, one row per set; only capitals differ from practice
+    (`LFEHTI DPBR COQGS UJ NMK AVWXYZ`). `lettersOf` builds the game path from it; the practice grid and its next
+    arrow still use `SET_CHARS` (A to Z). Old game progress needs no change: done letters keep their stars and stay
+    open; a kid who had done A B C now has L next. With capitals on and shapes off, the how-to's `L` is the first
+    stop, so the how-to also counts as the first step of the game when played from the path.
+  - The shapes are a set, `shapes`, first in `SET_ORDER`, with symbols as ids that are no letter or digit
+    (`|-○+\□×△`; kids never see them, the tiles and stops draw the shape). `SHAPES` in `glyphs.ts` gives each a key
+    for progress (`shape-circle`) and a name for screen readers ("Circle", "X shape"). `allChars()` stays the 62
+    letters and numbers (`LETTER_SETS`), so a parent's recordings and the stroke table are unchanged.
+  - The strokes, all in the capitals' box: line down; line across; circle (counterclockwise from the top, like O);
+    cross (down, then across); slant (top left to bottom right, like X's first stroke); square (down the left side,
+    then across, down and back across in one stroke, built like D); X (two slants); triangle (both slants from the
+    top, then across the bottom, built like A).
+  - The narrator: "Line." for line down, line across and slant; "Circle.", "Cross.", "Square.", "Triangle."; the X
+    says the letter X's clip (`nameClip` in `voice.ts`). Shapes have no sound, so every saying setting says the name.
+  - The parent switch is a fourth button in each kid's set row, `○ □ △`, off by default; the "What each kid traces"
+    card explains it and the game's order. Practice shows a "Lines and shapes" tab first, eight tiles in two rows.
+  - Not built: a parent's own recording of a shape's name (the recordings grid stays letters and numbers).
 
 ### F. Later, after a playtest: fade the guide, then draw beside it
 Not built until the kids have played with B–D. Research 1.1 and 2.3 say help should fade and freehand copying
@@ -281,7 +364,16 @@ teaches most.
 - Clips: `level-draw-it`, `level-draw-here` (made in phase A so this phase is still possible after 2026-12-31).
 - Needs its own short ADR when it is picked up.
 
-### G. Then words (own ADR)
+### G. Then words (own ADR; part 1 built 2026-11-16)
+**Part 1 built 2026-11-16:** the Words tile (on per kid), the kid's name and the 24 words, one letter at a time into
+a row of boxes, the slow word and the check, word stars, a parent's recording of a name, and the 84 words-batch clips
+(take 1, not yet listened to). Part 2: family words and the 24 pictures. What differs from the ADR is in its
+[Built](adr/0039-writing-words.md#built-part-1-2026-11-16) section.
+**Part 2 built 2026-11-16:** family words on the parent Letters screen (up to 10, each with an optional recording
+and photo, shared by every kid), shown after the name, and the 24 pictures on the built-in words' tiles and as each
+word's picture (big, then in the corner while tracing, big again after the check); see
+[Built, part 2](adr/0039-writing-words.md#built-part-2-2026-11-16).
+
 Drafted 2026-11-15 as [ADR 0039](adr/0039-writing-words.md) (Proposed), from
 [research/words-learning.md](research/words-learning.md). It asks for more narrator lines in this plan's second
 run (its decision W1) and proposes every word open rather than only words made of starred letters (W6). The

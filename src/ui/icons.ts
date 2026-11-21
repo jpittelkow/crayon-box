@@ -16,24 +16,46 @@ const CURRENT = 'style="fill: var(--current-paint)"';
 
 export const icons = {
   back: (size = 58) => svg('<path d="M21 9L7 24l14 15"/><path d="M8 24h33"/>', size, { stroke: 6 }),
+  /**
+   * Undo, as the plan's "backwards scribble being wiped off" (ADR 0038 part 6): a scribble in the current color whose
+   * end has gone dotted, with a short arrow running back along it. Checked by eye; a kid playtest comes later.
+   */
   undo: (size = 50) =>
-    svg('<path d="M17 9L7 19l10 10"/><path d="M7 19h20a11.5 11.5 0 0 1 0 23h-9"/>', size, { stroke: 6 }),
+    svg(
+      '<path d="M4 34c3-11 7-11 9.5 0s6.5 11 9.5 0" stroke-width="8.5"/>' +
+        '<path d="M4 34c3-11 7-11 9.5 0s6.5 11 9.5 0" stroke-width="4.5" style="stroke: var(--current-paint)"/>' +
+        '<path d="M23 34c2.5-11 6.5-11 9.5 0s6.5 11 9.5 0" stroke-width="3.5" stroke-dasharray="0.1 6.5" stroke-dashoffset="-6.6"/>' +
+        '<path d="M41 11H13"/><path d="M20 4l-7 7 7 7"/>',
+      size,
+      { stroke: 5 },
+    ),
   startOver: (size = 50) =>
     svg(
       '<path d="M11 5h19l8 8v30H11z" fill="#ffffff"/><path d="M30 5v8h8"/>' +
         '<path d="M29.5 27a6 6 0 1 1-1.8-4.3"/><path d="M29 18v5h-5"/>',
       size,
     ),
+  /** A real pail with a handle, tipped to pour the current color into a puddle (ADR 0038 part 6). */
   bucket: (size = 50) =>
     svg(
-      '<path d="M10 20L24 6l16 16-14 14z" fill="#ffffff"/><path d="M10 20h30"/>' +
-        `<path d="M40 30s4 5 4 8a4 4 0 0 1-8 0c0-3 4-8 4-8z" ${CURRENT}/>`,
+      '<g transform="rotate(28 20 24)" stroke-width="3.5">' +
+        '<path d="M5 15c0-16 28-16 28 0" stroke-width="3"/>' +
+        '<path d="M6 14h26l-4 27H10z" fill="#ffffff"/>' +
+        `<ellipse cx="19" cy="14" rx="13" ry="4.5" ${CURRENT}/>` +
+        '</g>' +
+        '<path d="M36 22c3 5 4 10 4 15" stroke-width="8"/>' +
+        '<path d="M36 22c3 5 4 10 4 15" stroke-width="3.5" style="stroke: var(--current-paint)"/>' +
+        `<ellipse cx="38.5" cy="42" rx="7.5" ry="3" stroke-width="3.5" ${CURRENT}/>`,
       size,
     ),
+  /** A real paintbrush: wooden handle, metal band, bristles dipped in the current color (ADR 0038 part 6). */
   brush: (size = 50) =>
     svg(
-      '<path d="M40 6L20 28l-4-4L38 4z" fill="#ffffff"/>' +
-        `<path d="M16 26c-6 0-8 6-8 10 0 3-2 5-4 6 8 2 18 0 18-8z" ${CURRENT}/>`,
+      '<g transform="rotate(40 24 24)" stroke-width="3.5">' +
+        '<rect x="20" y="0" width="8" height="21" rx="4" fill="#c98f5a"/>' +
+        '<rect x="17" y="20" width="14" height="9" rx="1.5" fill="#d4d8dc"/>' +
+        `<path d="M17 29h14v4c0 7-3.5 11-7 14-3.5-3-7-7-7-14z" ${CURRENT}/>` +
+        '</g>',
       size,
     ),
   eraser: (size = 50) =>

@@ -3,13 +3,19 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { ANIMAL_LOOKS } from './look/animals';
 import { DECOR_LOOKS, SCENERY_LOOKS } from './look/scenery';
+import { buildSetPieces } from './look/setpieces';
 import { TOY_LOOKS } from './look/toys';
 import { buildVehicle } from './look/vehicles';
-import { ISLAND } from './maps/island';
-import { CATEGORIES, VEHICLE_IDS } from './sim/assets';
+import { MAPS } from './maps';
+import { RING, acrossRing } from './maps/ring';
+import { CATEGORIES, SET_PIECES, VEHICLE_IDS } from './sim/assets';
 import { ANIMAL_IDS } from './sim/assets/animals';
 import { DECOR_IDS, SCENERY, SCENERY_IDS } from './sim/assets/scenery';
-import { TOYS, TOY_IDS } from './sim/assets/toys';
+import { TARGET_IDS, TOYS, TOY_IDS } from './sim/assets/toys';
+import type { MapDef } from './sim/map';
+import { MUD_POOL } from './sim/mud';
+import { ringRoad } from './sim/roads';
+import { CONFETTI_BURST, CONFETTI_POOL, makeWorld } from './sim/sim';
 import type { VehicleKind } from './sim/sim';
 
 const triangles = (root: THREE.Object3D) => {
@@ -49,14 +55,60 @@ describe('the asset registry', () => {
   it('definitions are sensible: toys have a size and behaviour, scenery a collision radius', () => {
     for (const id of TOY_IDS) {
       expect(TOYS[id].half).toBeGreaterThan(0);
-      expect(['tumble', 'roll']).toContain(TOYS[id].behaviour);
+      expect(['tumble', 'roll', 'topple', 'collect']).toContain(TOYS[id].behaviour);
     }
+    // Targets (ADR 0041): a stack and a star, each with its celebration; the other toys have none.
+    expect([...TARGET_IDS].sort()).toEqual(['toy/box-stack', 'toy/star']);
+    for (const id of TOY_IDS) expect('target' in TOYS[id], id).toBe(['topple', 'collect'].includes(TOYS[id].behaviour));
     for (const id of SCENERY_IDS) expect(SCENERY[id].radius).toBeGreaterThan(0);
   });
 
-  it('the island uses only registered toys, scenery and decor', () => {
-    for (const k of ISLAND.props.kinds) expect(TOY_IDS).toContain(k.id);
-    for (const k of ISLAND.trees.kinds) expect(SCENERY_IDS).toContain(k.id);
-    for (const d of ISLAND.decor) expect(DECOR_IDS).toContain(d.id);
+  it('every map uses only registered toys, targets, scenery and decor, and scatters no targets', () => {
+    for (const map of MAPS) {
+      for (const k of map.props.kinds) expect(TOY_IDS, map.id).toContain(k.id);
+      for (const k of map.props.kinds) expect(TARGET_IDS, map.id).not.toContain(k.id);
+      for (const t of map.targets ?? []) expect(TARGET_IDS, map.id).toContain(t.id);
+      for (const k of map.trees.kinds) expect(SCENERY_IDS, map.id).toContain(k.id);
+      for (const d of map.decor) expect(DECOR_IDS, map.id).toContain(d.id);
+    }
+  });
+
+  it('confetti stays within the effects budget (ADR 0041): one small pool, three bursts at once', () => {
+    expect(CONFETTI_POOL).toBeLessThanOrEqual(120);
+    expect(CONFETTI_POOL / CONFETTI_BURST).toBeGreaterThanOrEqual(3);
+  });
+
+  it('every zone kind is a registered set piece, and the new ones (ADR 0042) look within budget', () => {
+    const setPieces = CATEGORIES.find((c) => c.id === 'setpieces')!.assets;
+    expect([...setPieces].sort()).toEqual(Object.values(SET_PIECES).sort());
+    const at = (angle: number) => ({ road: 0, at: angle / (Math.PI * 2) });
+    const bare: MapDef = { ...RING, zones: [], water: { pools: [], puddles: [] } };
+    // Each on the ring by itself; the ford with its stream (on the island, about 70 m on the land), and the lights at
+    // a junction with a road across the ring.
+    const maps: Record<'mud' | 'ford' | 'lights', MapDef> = {
+      mud: { ...bare, zones: [{ kind: 'mud', on: at(1.1), r: 6.5 }] },
+      ford: { ...bare, zones: [{ kind: 'ford', on: at(1.1), r: 6 }], water: { pools: [], puddles: [], streams: [{ points: acrossRing(1.1, -10, 70), width: 6 }] } },
+      lights: { ...bare, roads: [...RING.roads, { kind: 'street', width: 9, closed: false, from: 0, to: 0, points: acrossRing(1.1, 38, -38) }], zones: [{ kind: 'lights', on: at(1.1), r: 5 }] },
+    };
+    const empty = triangles(buildSetPieces(makeWorld(1, 0, 'free', bare)).group);
+    for (const [kind, map] of Object.entries(maps)) {
+      expect(triangles(buildSetPieces(makeWorld(1, 0, 'free', map)).group) - empty, kind).toBeLessThanOrEqual(15000);
+    }
+    // The roundabout: a ring inside the ring road, its arrows, bed, flowers and fountain (the ring's surface is a
+    // road's). The harbour: the island's quay and its boats, against the island without it.
+    const round: MapDef = {
+      ...bare, roads: [...RING.roads, ringRoad(0, 0, 8, 9), { kind: 'street', width: 9, closed: false, from: 1, to: 0, points: acrossRing(0, 8, 38) }],
+      zones: [{ kind: 'roundabout', on: { x: 0, z: 0 }, r: 12.5 }],
+    };
+    const roundabout = triangles(buildSetPieces(makeWorld(1, 0, 'free', round)).group) - empty;
+    expect(roundabout, 'roundabout').toBeGreaterThan(1000);
+    expect(roundabout, 'roundabout').toBeLessThanOrEqual(15000);
+    const island = MAPS.find((m) => m.id === 'island')!;
+    const harbour = triangles(buildSetPieces(makeWorld(1, 0, 'free', island)).group)
+      - triangles(buildSetPieces(makeWorld(1, 0, 'free', { ...island, zones: island.zones!.filter((z) => z.kind !== 'harbour') })).group);
+    expect(harbour, 'harbour').toBeGreaterThan(1000);
+    expect(harbour, 'harbour').toBeLessThanOrEqual(15000);
+    // Mud off the wheels: one small pool.
+    expect(MUD_POOL).toBeLessThanOrEqual(60);
   });
 });

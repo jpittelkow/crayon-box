@@ -76,6 +76,36 @@
   background: #e6f7df;
 }
 
+/* Words on too (ADR 0039): three tiles in the row. */
+.letters-start-row[data-count='3'] {
+  gap: 40px;
+}
+.letters-start-row[data-count='3'] .letters-big.cb-paper {
+  --big-w: min(calc((100cqw - 2 * 140px - 2 * 40px) / 3), calc((100cqh - 2 * 120px) * 4 / 3), 400px);
+}
+.letters-mini-boxes {
+  display: flex;
+  gap: 4%;
+  width: 84%;
+}
+.letters-mini-boxes span {
+  flex: 1;
+  aspect-ratio: 5 / 6;
+  box-sizing: border-box;
+  border: 5px solid var(--ink);
+  border-radius: 18px;
+  padding: 6%;
+  background: #fff4d6;
+}
+.letters-mini-boxes span:nth-child(2) {
+  background: #e3f6ff;
+}
+.letters-mini-boxes span:last-child {
+  background: var(--paper);
+  border-color: #2fa35f;
+  box-shadow: 0 0 0 5px #2fa35f;
+}
+
 /* ---- Practice: set buttons and the letter grid ---- */
 .letters-screen[data-screen='letters-practice'] {
   padding: 140px 40px 32px;
@@ -119,6 +149,12 @@
 }
 .letters-grid[data-count='10'] {
   --cols: 5;
+  --rows: 2;
+  --gap: 28px;
+}
+/* Lines and shapes (ADR 0037, D9): eight big tiles. */
+.letters-grid[data-count='8'] {
+  --cols: 4;
   --rows: 2;
   --gap: 28px;
 }
@@ -270,6 +306,28 @@
 .letters-march {
   animation: lt-march 0.9s linear infinite;
 }
+/* ---- Hints (ADR 0037, hints.ts): step 1 and "Start at the green dot.": the dot pulses bigger, the arrow wiggles ---- */
+.letters-screen[data-nudge='dot'] .letters-starts .letters-pulse {
+  animation: lt-pulse-big 0.8s ease-in-out infinite;
+}
+.letters-screen[data-nudge] .letters-arrows {
+  opacity: 1;
+}
+.letters-screen[data-nudge] .letters-arrows > g {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lt-wiggle 0.5s ease-in-out infinite;
+}
+.letters-shows {
+  pointer-events: none;
+}
+.letters-screen[data-showing] .letters-finger {
+  visibility: hidden;
+}
+/* All traced: the check pulses bigger until it is tapped. */
+.letters-confirm.cb-action.is-nudged {
+  animation: lt-beat-big 0.8s ease-in-out infinite;
+}
 .letters-confetti {
   position: absolute;
   inset: 0;
@@ -287,6 +345,228 @@
   animation: lt-fall 1.8s ease-in forwards;
 }
 
+/* ---- Words (ADR 0039) ---- */
+.letters-screen[data-screen='letters-words'] {
+  padding: 140px 40px 32px;
+}
+.words-grid {
+  --gap: 18px;
+  /* Five rows of five tiles, each 3 : 2; with family words, as many rows (and six a row) as it takes to fit. */
+  --cols: 5;
+  --rows: 5;
+  --h: min(
+    calc((100cqh - (var(--rows) - 1) * var(--gap)) / var(--rows)),
+    calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols) * 2 / 3)
+  );
+  display: grid;
+  grid-template-columns: repeat(var(--cols), calc(var(--h) * 1.5));
+  grid-auto-rows: var(--h);
+  gap: var(--gap);
+}
+/* A family word's photo (ADR 0039): square, cropped like a kid's, as big as the tile or picture lets it be. */
+.words-photo,
+.cb-paper img.words-photo {
+  position: static;
+  display: block;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 4px solid var(--ink);
+  box-sizing: border-box;
+  border-radius: 14%;
+  pointer-events: none;
+}
+/* A built-in word's picture (ADR 0039, W9): square, whole, as big as the tile or picture lets it be. */
+.words-art,
+.cb-paper img.words-art {
+  position: static;
+  display: block;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* The pictures are drawn on white: on a tinted tile the white takes the tile's tint. */
+.words-tile img.words-art {
+  mix-blend-mode: multiply;
+}
+/* A gap between two parts of a family word's letters (a space or hyphen), half a letter wide. */
+.words-letters > span.words-letters-gap {
+  flex: 0 1 calc(50% / max(var(--n), 3));
+}
+.words-tile.cb-paper {
+  width: 100%;
+  height: 100%;
+  border-radius: 28px;
+  overflow: visible;
+  padding: 8% 10%;
+  box-shadow: 0 6px 0 var(--ink);
+}
+.words-tile:nth-child(5n + 2) {
+  background: #fff4d6;
+}
+.words-tile:nth-child(5n + 3) {
+  background: #e3f6ff;
+}
+.words-tile:nth-child(5n + 4) {
+  background: #ffe3ee;
+}
+.words-tile:nth-child(5n + 5) {
+  background: #e6f7df;
+}
+.words-tile[data-word='name'] {
+  background: var(--kid-paint);
+}
+.words-letters {
+  display: flex;
+  justify-content: center;
+  gap: 4%;
+  width: 100%;
+  height: 100%;
+}
+.words-letters > span {
+  flex: 0 1 calc(100% / max(var(--n), 3));
+  min-width: 0;
+}
+.words-avatar {
+  box-sizing: border-box;
+  height: 100%;
+  aspect-ratio: 1;
+  border: 5px solid var(--ink);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Writing a word: the row of boxes along the top, the letter below it a little smaller than on its own. */
+.letters-screen[data-word] .letters-card {
+  height: calc(100cqh - 196px);
+  margin-top: 150px;
+  margin-bottom: 30px;
+}
+.words-boxes {
+  --box: 96px;
+  position: absolute;
+  z-index: 2;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  transition:
+    top 0.5s ease,
+    transform 0.5s ease,
+    opacity 0.3s;
+}
+.words-boxes.is-waiting {
+  opacity: 0;
+  pointer-events: none;
+}
+.words-boxes.is-big {
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.words-box {
+  box-sizing: border-box;
+  width: var(--box);
+  height: calc(var(--box) * 1.2);
+  border: max(3px, calc(var(--box) / 24)) solid var(--ink);
+  border-radius: calc(var(--box) / 6);
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--ink);
+  transition:
+    width 0.5s ease,
+    height 0.5s ease,
+    background 0.15s,
+    scale 0.15s;
+}
+.words-box.is-now {
+  border-color: #2fa35f;
+  box-shadow:
+    0 0 0 4px #2fa35f,
+    0 4px 0 4px var(--ink);
+  animation: lt-beat 1.2s ease-in-out infinite;
+}
+.words-box.is-lit {
+  background: var(--crayon-yellow);
+  scale: 1.1;
+}
+.words-box svg {
+  display: block;
+}
+.words-gap {
+  width: calc(var(--box) / 2);
+}
+.words-picture {
+  --pw: 150px;
+  position: absolute;
+  z-index: 4;
+  box-sizing: border-box;
+  width: var(--pw);
+  height: calc(var(--pw) * 0.75);
+  padding: calc(var(--pw) * 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  border: 5px solid var(--ink);
+  border-radius: calc(var(--pw) / 7);
+  box-shadow: 0 8px 0 var(--ink);
+  pointer-events: none;
+  transition:
+    width 0.5s ease,
+    height 0.5s ease,
+    left 0.5s ease,
+    top 0.5s ease;
+}
+.words-picture.is-corner {
+  left: calc(100cqw - var(--pw) - 28px);
+  top: 26px;
+}
+.words-picture.is-big {
+  --pw: min(64cqw, 72cqh * 4 / 3);
+  left: calc(50cqw - var(--pw) / 2);
+  top: calc(50cqh - var(--pw) * 0.375);
+}
+/* After the check: big again, below the boxes so the kid's own letters stay in view. */
+.words-picture.is-big.is-after {
+  --pw: min(56cqw, 60cqh * 4 / 3);
+  top: calc(50cqh - var(--pw) * 0.375 + 64px);
+}
+/* While the word opens, the letter waits under the picture (a touch still starts it). */
+.letters-screen[data-intro='playing'] .letters-card {
+  opacity: 0;
+}
+.letters-screen[data-word] .letters-card {
+  transition: opacity 0.3s;
+}
+.words-picture.is-bounce {
+  animation: lt-bounce 0.6s ease-out;
+}
+.words-picture .letters-done-star {
+  right: -40px;
+  top: -40px;
+}
+.words-fly {
+  position: absolute;
+  z-index: 5;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+@keyframes lt-bounce {
+  40% {
+    scale: 1.08;
+  }
+  70% {
+    scale: 0.97;
+  }
+}
 @keyframes lt-pulse {
   50% {
     transform: scale(1.18);
@@ -295,6 +575,24 @@
 @keyframes lt-beat {
   50% {
     scale: 1.06;
+  }
+}
+@keyframes lt-pulse-big {
+  50% {
+    transform: scale(1.6);
+  }
+}
+@keyframes lt-wiggle {
+  25% {
+    transform: rotate(-7deg) scale(1.08);
+  }
+  75% {
+    transform: rotate(7deg) scale(1.08);
+  }
+}
+@keyframes lt-beat-big {
+  50% {
+    scale: 1.16;
   }
 }
 @keyframes lt-poke {
@@ -323,7 +621,28 @@
   .letters-march,
   .letters-stop.is-now,
   .letters-next.cb-action,
-  .letters-confirm.cb-action {
+  .letters-confirm.cb-action,
+  .letters-screen[data-nudge] .letters-arrows > g,
+  .letters-screen[data-nudge='dot'] .letters-starts .letters-pulse,
+  .letters-confirm.cb-action.is-nudged,
+  .words-box.is-now,
+  .words-picture.is-bounce {
     animation: none;
+  }
+  .words-boxes,
+  .words-box,
+  .words-picture,
+  .letters-screen[data-word] .letters-card {
+    transition: none;
+  }
+  /* Less motion: the hints still show, held still and bigger. */
+  .letters-screen[data-nudge='dot'] .letters-starts .letters-pulse {
+    transform: scale(1.5);
+  }
+  .letters-screen[data-nudge] .letters-arrows > g {
+    transform: scale(1.1);
+  }
+  .letters-confirm.cb-action.is-nudged {
+    scale: 1.12;
   }
 }

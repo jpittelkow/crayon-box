@@ -1,10 +1,15 @@
 # 0039. Writing words: the kid's own name first, then short words, one big letter at a time
 
-- Status: Proposed (draft, 2026-11-15). A first design for the owner to change; the choices still open are in the
-  [table below](#decisions-for-the-owner) (W1 is settled). Acceptance also waits on mockups
+- Status: Accepted (2026-11-15). The owner took the recommendation on every choice in the
+  [table below](#decisions-for-the-owner) (W1 to W10), with the pictures (W9) capped at $8 of AI calls, and
+  accepted it without mockups: the built screens are judged instead. The words batch ships take 1 of every line
+  (as for letters); for each slow word the stretched take is used and the other kept beside it, so a word can be
+  swapped after listening. **Part 1 built 2026-11-16** (everything but family words and the pictures, which are part
+  2); where the build differs from the text below is listed under [Built](#built-part-1-2026-11-16). **Part 2
+  built 2026-11-16:** family words and the 24 pictures, see [Built, part 2](#built-part-2-2026-11-16)
 - Date: 2026-11-15
 - Builds on: [ADR 0026](0026-letter-practice.md), [0028](0028-letter-tracing-whole-letter-and-confirm.md),
-  [0032](0032-sounds-as-files.md) and [0037](0037-letters-sound-tips-and-how-to.md) (Proposed). Supersedes nothing
+  [0032](0032-sounds-as-files.md) and [0037](0037-letters-sound-tips-and-how-to.md). Supersedes nothing
 
 ## Context
 The owner asked (2026-11-14, again 2026-11-15) for a way to write words, the next level after single letters. ADR
@@ -88,6 +93,9 @@ A finished word's tile gets a star, like a letter's.
 - One small colour picture per built-in word, all in one style, original or made with the AI page tools and
   checked by a person (ADR 0011, 0022). The words that aren't things get a simple scene (a bunny for "hop").
 - The picture shows before the first letter and after the check, not while a letter is being traced.
+- Made 2026-11-16 with GPT-5 Image Mini through OpenRouter, one style prompt for every word, two takes each and the
+  better kept by eye: `assets/pictures/words/<word>.webp` (512 px), each listed with what it shows in
+  `pictures.json` beside them, loaded by `src/games/letters/wordPictures.ts`.
 
 ### Saved
 - Per kid, in the Letters game's storage: which words have a star. Nothing of the traces. A parent's reset of a
@@ -104,6 +112,64 @@ A finished word's tile gets a star, like a letter's.
 
 ### Not built
 - No on-screen keyboard, timer, score, spelling test, sentences or sight-word drills (ADR 0003, 0012).
+
+## Built (part 1, 2026-11-16)
+Everything above except **family words** and **the 24 pictures** (part 2). Code: `src/games/letters/words.ts` (the
+word table, a name as boxes, box sizes, the slow take), `wordView.ts` (boxes, picture, the drop), the word screens in
+`game.ts`, the Words switch and name recordings in `parentSection.ts`; tests in `words.test.ts` and
+`tests/e2e/words.spec.ts`. The clips: take 1 of all 84 words-batch lines, not yet listened to. Where the build
+differs from, or adds to, the text above:
+- **The pictures for now:** until part 2, a built-in word's tile and its picture show the word's letters drawn in
+  ink, like letter tiles. (Part 2 replaced this: the pictures are found by word id, family words kept apart.)
+- **The easy order** puts **fox** with the held-sound words (f can be held): sun, sat, map, mud, run, red, fox, then
+  the other 17. The tiles are five rows of five, the name first.
+- **The opening** says the word ("Let's write your name." and the parent's recording for the name). The letter is
+  said once the picture is in its corner. A touch ends the opening at once. The first-time how-to (ADR 0037) plays
+  before a word too when it is due.
+- **"Now the next letter."** is said before the next letter's name the first 4 times for each kid
+  (`NEXT_LETTER_TIMES`), counted in the kid's progress.
+- **The slow word** is one clip, so the boxes light **evenly through it**, not exactly as each sound passes. Which
+  take a word uses is one line in `SLOW_TAKES` (`stretched` or `alt`). A word with no slow take (a family word, part
+  2) says its letters' sounds one after another, a box lighting with each.
+- **The name with a recording:** the recording is said in the opening, again as the boxes light (in place of the
+  slow word), and after the check (in place of "You wrote your name!"). Without one the boxes light with nothing
+  said, and the check brings the cheer and "You wrote your name!".
+- **The name's letters:** each part after a space or hyphen starts with a capital; digits and symbols are left out;
+  a kid with no name (or none with a letter) has no name tile. Boxes shrink for a long name down to 22 px, the
+  letter being traced never. The recording is kept as `voice/name-<kid id>.<ext>` and deleted with the kid.
+- **Letters in a word count** like letters traced on their own: each gets its star and its help count (hints).
+- **After the check** the picture comes back big below the boxes, so the kid's own letters stay in view.
+- Saved: `prefs.json` has `words: true` when Words is on; `progress.json` has `words` (the word stars) and
+  `nextSaid`; both go with a parent's "Reset stars and game".
+
+## Built (part 2, 2026-11-16)
+**Family words** (W8). Code: `src/games/letters/familyWords.ts` (saving), `familyCells` and `wordOrder` in
+`words.ts`, the family-word list in `parentSection.ts`, the tiles and saying in `game.ts`; tests in `words.test.ts`
+and `tests/e2e/words.spec.ts`. Where the build differs from, or adds to, the text above:
+- **Saved:** `words/<id>.json` holds `{ text, added }`; the photo is `words/<id>.jpg` (cropped square and scaled to
+  320 px, as a kid's photo, ADR 0018) and the recording `voice/family-<id>.<ext>`. The id is `fam-` and 8 random
+  characters, never made from the word. Deleting a word deletes all three; kids' stars for it stay in their
+  progress, unused.
+- **At most 10 family words** and 16 characters each, so all the tiles still fit one screen: past 25 tiles the
+  grid goes to six a row (and six rows past 30). A word needs at least one letter A to Z to be kept.
+- **Letters:** handled like the name (gaps, accents, symbols), but with small letters on each letter **keeps the
+  case the parent typed** ("pup" stays small, "Pup" starts with a capital), since a family word can be a name or a
+  thing. Without small letters, capitals.
+- **Order:** oldest first, after My name and before the 24 words; "Next word" runs through them in that order.
+- **Said:** with a recording, "Let's write a word." and the recording to open, the recording again as the boxes
+  light (evenly through it, like a name), and the recording in place of "You wrote a word!" after the check (the
+  cheer still plays). Without one: a word the narrator already has a clip for (the spares: mom, dad, car…) opens
+  with it and uses its slow take when there is one; any other word opens with "Let's write a word.", lights its
+  boxes with its letters' sounds, and gets the cheer and "You wrote a word!". The word's text is only ever matched
+  against the shipped clips' names; it is never spoken by a browser voice or sent anywhere.
+- **Tiles and picture:** the photo, square, in the tile and as the word's picture; without one, the word's letters
+  in ink with a gap between its parts.
+
+**The pictures** (W9), made in PR #71 (`wordPictures.ts`), are wired in: each built-in word's tile shows its picture
+(drawn on white, which takes the tile's tint), and replaces the letters-in-ink stand-in of part 1. The word opens
+with its picture big, the picture shrinks to the top-right corner while letters are traced (never beside the
+letter), and comes back big with a small bounce after the check, below the kid's boxes. A word with no picture
+would still fall back to its letters.
 
 ## Narrator lines to add before 2026-12-13
 **Settled by the owner on 2026-11-15 (W1): add them.** They are the `words` batch of `tools/sounds/generate.mjs`

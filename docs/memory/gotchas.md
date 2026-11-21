@@ -3,7 +3,7 @@
 Non-obvious traps, workarounds and lessons learned. Add one bullet per gotcha with the date found and, if it
 came from a session, the journal entry.
 
-_Last updated: 2026-11-15_
+_Last updated: 2026-11-16_
 
 - ADRs are never rewritten once Accepted; a change gets a new ADR that supersedes the old one (ADR 0001).
   Proposed ADRs may still be edited before acceptance.
@@ -129,8 +129,23 @@ _Last updated: 2026-11-15_
   starts Vite itself (`spikes/*/shoot.mjs`) (2026-11-15).
 - TRELLIS.2 Space: decimation target can't go below 50,000 triangles; cut down afterwards (meshoptimizer's
   simplifier ships in `three/addons/libs`). Its GLBs face +x; turn them +90° about y to face +z (2026-11-15).
-- The driving simulation's step time grows with toys times vehicles (every vehicle checks every toy): 1.24 ms on
-  the island, 105 ms on a stand-in map four times as wide. Nothing spatial is indexed yet. Measured 2026-11-15;
-  the fix is planned in `docs/highway-map-plan.md`, phase 2.
+- The driving simulation looks things up through a grid (`sim/grid.ts`, 2026-11-16) and toys far from any moving
+  vehicle sleep. `grid.test.ts` compares every grid answer with the slow way step by step, so a change to roads,
+  zones, water or toys that the grid doesn't index shows up there first. Most of the old cost was rebuilding each
+  toy's body points, not the search.
 - ADR 0035 says every reachable place is within 25 m of a road. Neither map keeps that (farthest 46 m, about a
   quarter of the land over 25 m) and no test checks it (measured 2026-11-15). Don't quote 25 m as a tested rule.
+- **Parallel worktrees (2026-11-16):** give each one its own browser-test port with `PW_PORT` (the gallery and
+  picture scripts take `GALLERY_PORT` and `PICTURES_PORT`), stop dev servers when done (a leftover one held 5393
+  all night), and give scratch files names of their own: lanes sharing one scratch folder used each other's
+  `pr-body.md` twice. `gh pr merge --delete-branch` fails locally when another worktree has `main` checked out; the
+  merge still happens, then delete the branch with `git push origin --delete <branch>`.
+- **CI draws the game in software:** a frame can take seconds and the game runs at most 5 steps a frame, so
+  browser waits on driving game state need about 60 s; the detail watcher ignores frames over 500 ms, so the
+  picture never turns down there (2026-11-16, the driving tests that flaked on `main`).
+- To test timer rules in the browser quickly, `page.clock.install()` plus `fastForward` works; on the letters
+  trace screen, synthetic pointer events sent in one `page.evaluate` finish a letter at once (2026-11-16).
+- A driving set piece that slows cars must cap the top speed, not only brake, or the car stays fast for half a
+  second (2026-11-16, mud and ford).
+- PowerShell's `Get-Content`/`Set-Content` mangle UTF-8 in this repo's files; edit with Node or the file tools
+  (2026-11-16).

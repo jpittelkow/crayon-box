@@ -5,6 +5,20 @@ import type { MapDef } from '../sim/map';
 import { roundOutline } from '../sim/land';
 import { circlePath } from '../sim/roads';
 
+/**
+ * A straight path across the ring road at `angle` (see `around`), from `inner` to `outer` metres from the middle,
+ * for tests: a stream crossing the road (a ford), or a short road joining it (a junction for traffic lights).
+ */
+export function acrossRing(angle: number, inner: number, outer: number, step = 1.5): [number, number][] {
+  // The way out from the middle through the ring road's point at that angle (circlePath's own layout).
+  const ox = Math.sin(angle), oz = Math.cos(angle);
+  const n = Math.max(1, Math.round((outer - inner) / step));
+  return Array.from({ length: n + 1 }, (_, i): [number, number] => {
+    const d = inner + ((outer - inner) * i) / n;
+    return [ox * d, oz * d];
+  });
+}
+
 /** The island's radius, the ring road's radius and its width, in metres. */
 export const LAND_R = 60;
 export const ROAD_R = 38;

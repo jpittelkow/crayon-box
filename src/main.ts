@@ -5,7 +5,7 @@ import { memoryBackend, openIdbBackend } from './storage/idb';
 import { deviceInfo } from './storage/ids';
 import { appStorage } from './storage/namespaced';
 import type { Backend } from './storage/types';
-import type { FinishedPictures, PagesFolder } from './shell/types';
+import type { FinishedPictures, MapsFolder, PagesFolder } from './shell/types';
 import { UpdateController, loadUpdateSettings } from './shell/updates';
 import { KioskControl, loadKioskSettings, type KioskBridge } from './shell/kiosk';
 import { SyncService } from './sync/service';
@@ -28,15 +28,20 @@ async function boot(): Promise<void> {
   let backend: Backend | undefined;
   let finished: FinishedPictures | undefined;
   let pagesFolder: PagesFolder | undefined;
+  let mapsFolder: MapsFolder | undefined;
   if (inTauri()) {
     try {
       const files = await import('./shell/tauriFiles');
       backend = await files.openTauriBackend();
       finished = files.tauriFinishedPictures();
       pagesFolder = files.tauriPagesFolder();
+      mapsFolder = files.tauriMapsFolder();
     } catch (err) {
       console.error('App files unavailable; using browser storage instead', err);
     }
+  } else if (import.meta.env.DEV && new URLSearchParams(location.search).has('fake-maps')) {
+    // The browser has no maps folder (ADR 0043); on the dev server `?fake-maps` stands in for it (`fakeMapsFolder.ts`).
+    mapsFolder = (await import('./shell/fakeMapsFolder')).fakeMapsFolder();
   }
   if (!backend) {
     try {
@@ -59,7 +64,7 @@ async function boot(): Promise<void> {
   const kiosk = await openKiosk(storage.shell);
   // Family sync runs in the background when a parent has set it up (ADR 0024); kid screens never wait for it.
   const sync = new SyncService({ backend, shell: storage.shell });
-  const shell = new Shell(frame, storage, undefined, { finished, pagesFolder, updates, kiosk, sync });
+  const shell = new Shell(frame, storage, undefined, { finished, pagesFolder, mapsFolder, updates, kiosk, sync });
   kiosk?.onQuitRequested(() => void shell.quit());
   if (kiosk) window.addEventListener(QUIT_KEYS_EVENT, () => void shell.quit());
   await shell.start();

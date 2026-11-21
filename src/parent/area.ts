@@ -9,7 +9,7 @@ import {
   saveProfile,
   saveShellSettings,
 } from '../shell/profiles';
-import type { FinishedPictures, GameEntry, GameModule, KidProfile, PagesFolder, SettingsSection } from '../shell/types';
+import type { FinishedPictures, GameEntry, GameModule, KidProfile, MapsFolder, PagesFolder, SettingsSection } from '../shell/types';
 import type { KioskControl } from '../shell/kiosk';
 import type { UpdateController } from '../shell/updates';
 import type { SyncService } from '../sync/service';
@@ -28,6 +28,8 @@ export interface ParentAreaOptions {
   finished?: FinishedPictures;
   /** Present in the Windows app only (phase F). */
   pagesFolder?: PagesFolder;
+  /** Present in the Windows app only (ADR 0043). */
+  mapsFolder?: MapsFolder;
   /** Present in the Windows app only (ADR 0009). */
   updates?: UpdateController;
   /** Family sync (ADR 0024), in the browser too. */
@@ -117,6 +119,7 @@ export async function parentArea(opts: ParentAreaOptions): Promise<{ el: HTMLEle
       kidLabel,
       finished: opts.finished,
       pagesFolder: opts.pagesFolder,
+      mapsFolder: opts.mapsFolder,
       ai: opts.sync ? () => opts.sync!.aiMaker() : undefined,
     });
   };

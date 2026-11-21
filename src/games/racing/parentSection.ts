@@ -1,7 +1,9 @@
-// The driving game's screen in the parent area (ADR 0008, 0012, 0021): each kid's assist level, and sounds.
+// The driving game's screen in the parent area (ADR 0008, 0012, 0021): each kid's assist level, sounds, the
+// vehicles, and in the Windows app the maps from the device's maps folder (ADR 0043).
 import { drawAvatar } from '../../shell/profiles';
-import type { ParentSectionContext } from '../../shell/types';
-import { card, h, segmented, switchRow } from '../../ui/parent';
+import type { MapsFolder, ParentSectionContext } from '../../shell/types';
+import { button, card, h, segmented, switchRow } from '../../ui/parent';
+import { loadFolderMaps, loadFolderMapsOff, saveFolderMapsOff } from './maps/folder';
 import { VEHICLE_NAMES } from './names';
 import { VEHICLES, loadDrivingSettings, loadKidDriving, saveDrivingSettings, saveKidDriving } from './settings';
 import type { Assist } from './sim/sim';
@@ -68,5 +70,38 @@ export async function renderDriving(el: HTMLElement, ctx: ParentSectionContext):
         }),
       ),
     ),
+  );
+  if (ctx.mapsFolder) el.append(await folderCard(ctx.mapsFolder, ctx));
+}
+
+/**
+ * Maps from the folder (ADR 0043): each one that loaded, with a switch to take it off the picker, and each file
+ * left out, with why. Read afresh every time this screen opens.
+ */
+async function folderCard(folder: MapsFolder, ctx: ParentSectionContext): Promise<HTMLElement> {
+  const [{ maps, problems }, off] = await Promise.all([loadFolderMaps(folder), loadFolderMapsOff(ctx.storage)]);
+  const rows = maps.map((m) => {
+    const row = switchRow(m.name, m.file, !off.includes(m.map.id), async (on) => {
+      const now = (await loadFolderMapsOff(ctx.storage)).filter((id) => id !== m.map.id);
+      if (!on) now.push(m.map.id);
+      await saveFolderMapsOff(ctx.storage, now);
+    });
+    row.dataset.folderMap = m.file;
+    return row;
+  });
+  const left = problems.map((p) =>
+    h('p', { class: 'pw-problem', role: 'alert', 'data-map-problem': p.file }, p.file ? `${p.file} was left out. ${p.reason}` : p.reason),
+  );
+  return card(
+    h('h2', {}, 'Maps from the folder'),
+    h(
+      'p',
+      { class: 'pw-muted' },
+      'Map files (.json) put in the app’s maps folder show on the picker after the built-in maps, the next time a kid opens Driving. A file with a problem is left out, and the problem shows here.',
+    ),
+    ...(rows.length || left.length ? [] : [h('p', { class: 'pw-muted', 'data-folder-empty': '' }, 'No map files in the folder.')]),
+    ...rows,
+    ...left,
+    h('div', { class: 'pw-row' }, button('Open the maps folder', () => void folder.openFolder().catch((err) => console.error(err)))),
   );
 }

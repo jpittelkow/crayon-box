@@ -42,10 +42,13 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0034](0034-photo-prompt-and-two-to-choose-from.md) | AI pages: a photo prompt for everyone in the picture, and two pages to choose from | Accepted |
 | [0035](0035-driving-vehicles-maps-picker-garage.md) | Driving game: fourteen vehicles, two big maps, one picker screen and a garage | Accepted |
 | [0036](0036-driving-screen-is-a-joystick.md) | Driving game: the screen is a joystick; the picker picks a colour; a quick swap in the game | Accepted |
-| [0037](0037-letters-sound-tips-and-how-to.md) | Letters: more sound, a hint ladder, a first-time how-to, and every narrator line made before 2026-12-31 | Proposed |
-| [0038](0038-coloring-buttons-a-kid-can-work-out.md) | Coloring buttons a kid can work out: names and sounds, the tool at the finger, a show-how, a colour wheel | Proposed |
-| [0039](0039-writing-words.md) | Writing words: the kid's own name first, then short words, one big letter at a time | Proposed (draft) |
+| [0037](0037-letters-sound-tips-and-how-to.md) | Letters: more sound, a hint ladder, a first-time how-to, and every narrator line made before 2026-12-31 | Accepted |
+| [0038](0038-coloring-buttons-a-kid-can-work-out.md) | Coloring buttons a kid can work out: names and sounds, the tool at the finger, a show-how, a colour wheel | Accepted |
+| [0039](0039-writing-words.md) | Writing words: the kid's own name first, then short words, one big letter at a time | Accepted |
 | [0040](0040-driving-very-large-map-highway-and-building-site.md) | Driving game: a very large map, a highway in a figure of eight round a building site and a quarry | Proposed |
+| [0041](0041-driving-targets-to-collect-and-hit.md) | Driving game: targets, stacks of boxes to knock over and stars to collect | Accepted |
+| [0042](0042-driving-more-set-pieces.md) | Driving game: more set pieces, mud, a ford, traffic lights, a roundabout and a harbour | Accepted |
+| [0043](0043-driving-maps-from-a-folder.md) | Driving game: maps loaded from a folder on the device, checked as they load | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H

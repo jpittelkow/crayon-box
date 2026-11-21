@@ -2,7 +2,7 @@
 // another map is another file. Plain TypeScript, no three.js.
 import type { AnimalId } from './assets/animals';
 import type { DecorId, SceneryId } from './assets/scenery';
-import type { ToyId } from './assets/toys';
+import type { TargetId, ToyId } from './assets/toys';
 import type { LandDef } from './land';
 import type { RoadDef } from './roads';
 import type { VehicleKind } from './sim';
@@ -10,8 +10,12 @@ import type { VehicleKind } from './sim';
 /** A place on a road: a fraction of the way along it (0 to 1) and metres right of its centre line. */
 export interface OnRoad { road: number; at: number; offset?: number }
 
-/** The kinds of zone a set piece can have (milestone-3 phase B3). */
-export type ZoneKind = 'ramp' | 'car-wash' | 'garage';
+/**
+ * The kinds of zone a set piece can have (milestone-3 phase B3). ADR 0042 adds a patch of mud, a ford where a
+ * stream crosses a road, traffic lights at a junction (for show: they never stop the kid), a roundabout (by the
+ * middle of a one-way ring road, `ringRoad`) and a harbour (on a road along the shore: its quay).
+ */
+export type ZoneKind = 'ramp' | 'car-wash' | 'garage' | 'mud' | 'ford' | 'lights' | 'roundabout' | 'harbour';
 
 /** A stretch of road, from one fraction along it to another, that the car is held on. */
 export interface GuardDef { kind: 'bridge' | 'tunnel'; road: number; from: number; to: number }
@@ -29,6 +33,11 @@ export interface ZoneDef {
   /** On a road (facing along it), or by its middle and the way it faces (a heading, default 0). */
   on: OnRoad | { x: number; z: number; heading?: number };
   r: number;
+  /**
+   * A harbour only (ADR 0042): the way its sailing boat goes out to sea and back, from its berth (the last boat
+   * along the quay) through these points on the water, and home the same way.
+   */
+  sail?: [number, number][];
 }
 
 export interface MapDef {
@@ -60,11 +69,22 @@ export interface MapDef {
   spawn: OnRoad;
   /** Traffic: each vehicle starts on a road, keeps to its lane and drives at its own pace. */
   traffic: { kind: VehicleKind; on: OnRoad; cruise: number }[];
+  /**
+   * Traffic by a rule, for a big map (docs/highway-map-plan.md, phase 2), on top of `traffic`: `count` vehicles
+   * that live near the kid, on `roads` (all of them when left out), each at a pace between `cruise`'s two numbers.
+   * One that falls far behind is put back on a road ahead or behind, out of sight (`TRAFFIC_NEAR`, sim.ts).
+   */
+  trafficNear?: { count: number; roads?: number[]; cruise: [number, number] };
   water: {
     /** Round pools placed by hand: the flood is a deep one. */
     pools: { on: OnRoad; r: number; deep: boolean; mud?: boolean }[];
     /** Puddles along a road, each with a smaller lobe so it is not a perfect circle. */
     puddles: { road: number; at: number[]; spread: number; size: [number, number]; mud?: boolean }[];
+    /**
+     * Streams (ADR 0042, `water/stream`): shallow water along a path, `width` metres across, never deep anywhere.
+     * Where one crosses a road, a `ford` zone makes the crossing. Only the stretches on the land are water.
+     */
+    streams?: { points: [number, number][]; width: number }[];
   };
   /** Trees scattered over the land, kept off the roads and out of the water; which kinds, by share. */
   trees: {
@@ -75,6 +95,12 @@ export interface MapDef {
   props: { kinds: { id: ToyId; share: number }[]; nearRoad: number; spread: number; edgeGap: number; spawnGap: number };
   /** Decor scattered in clumps, off the roads and out of the water (drawn only; the car drives through it). */
   decor: { id: DecorId; clumps: number; perClump: number }[];
+  /**
+   * Targets (ADR 0041), at fixed spots on the roads: a stack of boxes to knock over, or a star to collect. With
+   * `count`, a row of them along the road from `on`, `gap` metres apart (4 when left out), all at its offset. A
+   * stack faces along its road.
+   */
+  targets?: { id: TargetId; on: OnRoad; count?: number; gap?: number }[];
   /** Herds of animals (driving-assets.md category 8): `count` of one kind wandering within `roam` metres of a spot. */
   animals?: { id: AnimalId; x: number; z: number; count: number; roam: number }[];
 }
