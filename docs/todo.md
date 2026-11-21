@@ -11,9 +11,10 @@ loading a map from a folder), but more vehicles come first.
 ## 1. Look, listen and playtest what was built overnight
 Nothing built on 2026-11-16 has been heard, seen on the laptop or played by a kid. The owner's choices it raised
 are in [open questions](memory/open-questions.md).
-- **Release 0.10.0 is a draft** (tagged 2026-11-21: Kitchen, and Letters and Kitchen shown by default). The owner
-  runs the [release checklist](release-checklist.md)'s hand checks on the laptop, then publishes it; until then
-  installed copies stay on 0.9.0.
+- **Release 0.10.0 is published** (2026-11-21: Kitchen, and Letters and Kitchen shown by default). Installed
+  copies offer it at their next check. The [release checklist](release-checklist.md)'s hand checks were not run
+  first: do them on the laptop as it updates (the update itself, the kiosk lock, files), and listen to Kitchen's
+  narrator lines. A parent can hide Kitchen under Settings, Games if it isn't ready for the kids.
 - **Release 0.9.0** (coloring buttons and wheel; letters sound, tips, how-to and shapes; writing words; driving
   targets, set pieces and folder maps). The release checklist's hand checks on the laptop have not been run.
 - **On the laptop:** the Windows display scale (at 125 % the colour wheel stays hidden); drop
