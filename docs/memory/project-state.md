@@ -5,6 +5,9 @@ _Last updated: 2026-11-16_
 **What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15, brought up to date 2026-11-16).
 
 ## Phase
+**Latest release: 0.8.1** (2026-11-15): the Outside coloring theme on top of 0.8.0 (animal pages, unlocking the
+window, paste in the parent area, driving playtest fixes). 0.7.0 was milestone 3 (fourteen vehicles, two maps, one
+picker, Driving on by default).
 **Latest release: 0.9.0** (2026-11-16): the overnight build of to-do sections 2, 4 and 5 (PRs #59 to #74), none of it
 playtested yet. Before it: 0.8.1 (the Outside theme), 0.8.0, 0.7.0 (milestone 3).
 Milestone 1 (web app) in progress. `npm run dev` opens the kid picker. A kid starts a new picture from the page

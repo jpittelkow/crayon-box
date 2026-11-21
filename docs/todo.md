@@ -8,6 +8,10 @@ in the [journal](journal/README.md)); details live in the linked plans and ADRs.
 New maps come last on purpose: every piece a map is made from now exists (targets, set pieces, tiles, the editor,
 loading a map from a folder), but more vehicles come first.
 
+## 1. Finish what is in flight
+- **Release 0.9.0** when there is enough to ship. Nothing a kid can see is waiting: 0.8.1 (released 2026-11-15)
+  carried the Outside theme. It also ships the new narrator clips for letters and coloring, which nothing plays
+  until parts 2 and 5 below are built. (0.8.0, released 2026-11-15, finished milestone 3.)
 ## 1. Look, listen and playtest what was built overnight
 Nothing built on 2026-11-16 has been heard, seen on the laptop or played by a kid. The owner's choices it raised
 are in [open questions](memory/open-questions.md).
