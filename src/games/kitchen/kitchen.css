@@ -1,0 +1,113 @@
+/* Kitchen (ADR 0044): the counter. Back is top-left (ADR 0016 rule 5), the thing sits in the middle on a tiled
+   worktop, and the step's choices and the next arrow are on the right. No text anywhere (ADR 0003). */
+.kitchen-screen {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-6);
+}
+.kitchen-corner {
+  align-self: flex-start;
+}
+
+/* The worktop is the picture's frame: outlined, with a ledge, but it is not a button (the canvas takes the touches). */
+.kitchen-worktop {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  border: var(--outline) solid var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 0 var(--ink);
+  overflow: hidden;
+  background-color: var(--crayon-pale-blue);
+  background-image:
+    linear-gradient(to right, transparent calc(100% - 4px), rgb(255 255 255 / 0.75) 0),
+    linear-gradient(to bottom, transparent calc(100% - 4px), rgb(255 255 255 / 0.75) 0);
+  background-size: 118px 122px;
+}
+.kitchen-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.kitchen-side {
+  width: 244px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 8px;
+}
+/* The rail: a panel (no outline, no ledge) of round picks, at most eight, all on screen. */
+.kitchen-rail {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 18px 14px;
+  border-radius: var(--radius-xl);
+  background: var(--paper);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  justify-items: center;
+}
+.kitchen-rail[data-cols='1'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.kitchen-rail[hidden] {
+  display: none;
+}
+.kitchen-pick.cb-choice {
+  width: 96px;
+  height: 96px;
+  box-shadow: var(--ledge-rest);
+}
+.kitchen-rail[data-cols='1'] .kitchen-pick.cb-choice {
+  width: 104px;
+  height: 104px;
+}
+.kitchen-pick.cb-choice.is-pressed {
+  box-shadow: var(--ledge-pressed);
+}
+.kitchen-pick.cb-choice.is-picked {
+  background: var(--pick);
+  box-shadow: var(--ring-picked);
+}
+
+/* Next: always there, always works; it pulses once the step is done enough. */
+.kitchen-next.cb-action {
+  width: 128px;
+  height: 128px;
+  margin-top: auto;
+  border-radius: 42px;
+  background: var(--pick);
+  box-shadow: 0 8px 0 var(--ink);
+}
+.kitchen-next.cb-action.is-pressed {
+  transform: translateY(5px);
+  box-shadow: 0 3px 0 var(--ink);
+}
+.kitchen-next.is-ready:not(.is-pressed) {
+  animation: kitchen-pulse 1.2s ease-in-out infinite;
+}
+@keyframes kitchen-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kitchen-next.is-ready:not(.is-pressed) {
+    animation: none;
+  }
+}

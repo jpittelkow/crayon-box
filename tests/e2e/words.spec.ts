@@ -58,8 +58,8 @@ async function setUp(page: Page, opts: { words?: boolean; name?: string; small?:
   await expect(page.getByRole('button', { name: 'Star kid' })).toBeVisible();
   await seed(page, 'games/letters/kids/star/progress.json', { json: { demoSeen: true } });
   if (opts.recording) await seed(page, 'games/letters/voice/name-star.wav', { wav: true });
+  // Letters shows by default (ADR 0045); the parent area is for the kid's name and the Words switch.
   await openParentArea(page);
-  await page.getByText('Show Letters').click();
   if (opts.name) {
     await page.getByRole('button', { name: 'Edit Star' }).click();
     await page.getByLabel('Name (optional)').fill(opts.name);

@@ -1,5 +1,5 @@
-// Picking narrator takes by ear (ADR 0032, 0037, 0039). Works on the folder generate.mjs writes with ONLY=letters2,
-// ONLY=coloring and ONLY=words
+// Picking narrator takes by ear (ADR 0032, 0037, 0039, 0044). Works on the folder generate.mjs writes with
+// ONLY=letters2, ONLY=coloring, ONLY=words and ONLY=kitchen
 // (copied back from the container, e.g. to C:\tmp\gen3).
 //
 //   node tools/sounds/audition.mjs page <gen folder>
@@ -63,7 +63,8 @@ const group = (id) => id.split('-')[0];
 const GROUPS = { sound: 'Letter sounds', tip: 'Tips', stroke: 'Stroke words', demo: 'How-to demo', praise: 'Praise',
   shape: 'Lines and shapes', level: 'Later levels', word: 'Words', tool: 'Coloring: tools', do: 'Coloring: what they do',
   size: 'Coloring: brush sizes', mode: 'Coloring: modes', color: 'Coloring: colours', build: 'Words: build it',
-  way: 'Words: your way', slow: 'Words, said slowly (two ways of asking each: pick one, leave the other)' };
+  way: 'Words: your way', slow: 'Words, said slowly (two ways of asking each: pick one, leave the other)',
+  food: 'Kitchen: what things are called', cook: 'Kitchen: steps', wash: 'A car wash game (not designed yet)' };
 let html = '';
 let last = '';
 for (const line of lines()) {
@@ -101,7 +102,7 @@ const page = `<!doctype html>
  audio { height: 32px; max-width: 240px; }
  pre { white-space: pre-wrap; }
 </style></head><body>
-<h1>Narrator takes: letters batch 2 (ADR 0037)</h1>
+<h1>Narrator takes: letters, coloring, words and Kitchen (ADR 0032)</h1>
 <div class="bar"><span id="count"></span><button id="dl">Download picks</button><span id="redo"></span></div>
 ${html}
 <script>

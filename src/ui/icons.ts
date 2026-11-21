@@ -106,6 +106,16 @@ export const icons = {
         '<path d="M23 9L13 36" stroke="#ff9f1c" stroke-width="3"/>',
       size,
     ),
+  /** The Kitchen game's home tile: a chef's hat (ADR 0044). Original, CC0. */
+  kitchen: (size = 120) =>
+    svg(
+      '<path d="M14.5 27C6 27 5 15.500 12.500 13.500 12 6 22 3.500 25.500 9.500 29.500 4 39.500 7 38 14.500 45 16.500 43 27 34.500 27Z" fill="#ffffff"/>' +
+        '<path d="M14.500 27h20v10q-10 3-20 0z" fill="#ffffff"/><path d="M19.500 30v7.500M24.500 30.500v8M29.500 30v7.500" stroke-width="2.500"/>',
+      size,
+      { stroke: 3 },
+    ),
+  /** An arrow to the right: on to the next step (Kitchen, ADR 0044). The back arrow, the other way. */
+  next: (size = 58) => svg('<path d="M27 9l14 15-14 15"/><path d="M40 24H7"/>', size, { stroke: 6 }),
   /** A squeeze-bulb horn, not a speaker, so it never reads as a sound setting. */
   horn: (size = 58) =>
     svg(

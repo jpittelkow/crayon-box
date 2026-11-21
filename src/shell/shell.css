@@ -89,7 +89,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 56px;
+  /* Three tiles across at most (ADR 0016 rule 6): a fourth game starts a second row, so four tiles never run off
+     a 1280 px screen. */
+  flex-wrap: wrap;
+  align-content: center;
+  box-sizing: border-box;
+  padding-inline: max(0px, calc((100% - 3 * 300px - 2 * 56px - 4px) / 2));
+  gap: 40px 56px;
   /* The row fills the screen to center the tiles; only the tiles take touches, so the Back button and the lock
      under it stay reachable. */
   pointer-events: none;

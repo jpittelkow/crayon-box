@@ -1,6 +1,6 @@
 # Project state
 
-_Last updated: 2026-11-16_
+_Last updated: 2026-11-21_
 
 **What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15, brought up to date 2026-11-16).
 
@@ -76,8 +76,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    2026-11-14 (mockups on the canvas, boards 19–24). **Built 2026-11-14** in the web app: practice and the game
    path, capitals, small letters and numbers, start dots, arrows and the finger, stroke order, pen palm
    rejection, the app's narrator (shipped clips since 2026-11-15, ADR 0032) or a parent's recordings, the parent
-   Letters screen. Off until a parent turns on
-   "Show Letters" under Settings, Games. Not yet playtested with the kids or tried with a real pen. Since
+   Letters screen. Shown on the home screen by default since 2026-11-21
+   ([ADR 0045](../adr/0045-every-game-shows-by-default.md); on the branch `kitchen/pizza`). Not yet playtested with the kids or tried with a real pen. Since
    2026-11-14 the whole letter must be traced and the kid taps a check to finish
    ([ADR 0028](../adr/0028-letter-tracing-whole-letter-and-confirm.md)), and the strokes follow how US schools
    teach print letters (Zaner-Bloser). **Built 2026-11-16** under [ADR 0037](../adr/0037-letters-sound-tips-and-how-to.md)
@@ -91,6 +91,20 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    listened to. **Built 2026-11-16:** the Words tile, the kid's name and 24 words with AI-made pictures, one big
    letter at a time into boxes, the slow word, one check, word stars (PRs #70, #71) and family words
    (#73: up to 10 per family, each with an optional recording and photo, one file per word). Not playtested.
+
+7. **Kitchen** (asked by the owner 2026-11-21: the kids want hands-on "make a thing" games): a fourth game module
+   where a kid makes food step by step with their fingers, pizza first, then cupcake, birthday cake, ice cream and
+   cookie as recipes on the same verbs. Design: [ADR 0044](../adr/0044-kitchen-make-it-game-pizza-first.md),
+   **Proposed** 2026-11-21; phases, the narrator lines and the owner's choices K1 to K12 are in
+   [kitchen-plan.md](../kitchen-plan.md). Mockups: boards 25 to 34 on the canvas (2026-11-21). **Built
+   2026-11-21** on the branch `kitchen/pizza` (plan phase B and the look from C): the whole pizza, stand-in sounds,
+   saved as it is made; shown on the home screen by default (ADR 0045), which now wraps to a second row after
+   three tiles. It speaks since 2026-11-21 (`voice.ts`: names, step lines, moments; take 1
+   of all 93 lines shipped as `voice/food-*`, `cook-*`, `wash-*`). No shelf, idle hand or parent screen yet; not
+   seen on the laptop or played by a kid. Its narrator batch (93 lines, `ONLY=kitchen` in `generate.mjs`) was made
+   2026-11-21: 279 takes on the laptop in `C:\tmp\gen3\kitchen`; take 1 of each is in the app, none listened to.
+   The other ideas offered the same day (car wash, vehicle workshop, robot or monster, garden, building site)
+   are not planned.
 
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs
 3D models and a lot of design; only its prototype came early. Deferred: printing and export (ADR 0010).
@@ -157,6 +171,11 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   checker, no DOM), `progress.ts` (stars, the game path, prefs and settings, recordings under `voice/`),
   `game.ts` (start, practice, path and tracing screens), `voice.ts` (narrator clips, praise, a parent's
   recordings), `parentSection.ts`. Unit tests in `letters.test.ts`, browser tests in `tests/e2e/letters.spec.ts`.
+- `src/games/kitchen/` (ADR 0044): `recipe.ts` (a recipe is steps, each with a verb) and `recipes/pizza.ts` (data);
+  `make/made.ts` (the thing being made as plain data, `readMade`) and `make/verbs.ts` (the seven verbs, `next`; no
+  DOM); `look/art.ts` (the art as data, raw and baked colours) and `look/pizza.ts` (canvas drawing); `game.ts` (the
+  counter screen, fingers, timers), `store.ts` (`kids/<id>/making/<recipe>.json`), `sounds.ts` (stand-ins). Unit
+  tests in `kitchen.test.ts`, browser tests in `tests/e2e/kitchen.spec.ts`.
 - Sounds (ADR 0032): every sound is a file in `assets/sounds/` (`sounds.json` lists each one's source and
   license), loaded through `src/shell/soundFiles.ts`. `tools/sounds/` remakes them: `generate.mjs` (AI clips, run
   inside the sync container) and `prepare.mjs` (trim, level, cut loops; needs ffmpeg) from `picks.json`.

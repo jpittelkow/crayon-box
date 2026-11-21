@@ -12,16 +12,18 @@
 // IDS=a,b,c makes only those lines (a redo run: the batch's manifest keeps the other lines' takes).
 // ONLY=coloring does the same for the coloring screen's lines into /tmp/gen3/coloring/ and manifest-coloring.json.
 // ONLY=words does the same for writing words (ADR 0039, decision W1) into /tmp/gen3/words/ and manifest-words.json.
+// ONLY=kitchen does the same for the Kitchen game (ADR 0044, docs/kitchen-plan.md phase A) into /tmp/gen3/kitchen/
+// and manifest-kitchen.json.
 //
 // ElevenLabs retires Matilda on 2026-12-31: clips made later need her replacement or a new voice for the whole set.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const KEY = process.env.OPENROUTER_API_KEY;
 const DRY = process.env.DRY === '1';
-const LATER_BATCHES = ['letters2', 'coloring', 'words'];
+const LATER_BATCHES = ['letters2', 'coloring', 'words', 'kitchen'];
 if (!KEY && !DRY) { console.error('no key'); process.exit(1); }
-if (DRY && !LATER_BATCHES.includes(process.env.ONLY)) { console.error('DRY=1 works with ONLY=letters2, ONLY=coloring or ONLY=words'); process.exit(1); }
-// ONLY=narrator or ONLY=effects makes just that half; ONLY=letters2, coloring or words a later batch (see above).
+if (DRY && !LATER_BATCHES.includes(process.env.ONLY)) { console.error('DRY=1 works with ONLY=letters2, ONLY=coloring, ONLY=words or ONLY=kitchen'); process.exit(1); }
+// ONLY=narrator or ONLY=effects makes just that half; ONLY=letters2, coloring, words or kitchen a later batch (see above).
 const ONLY = process.env.ONLY ?? '';
 const OUT = '/tmp/gen2';
 if (!LATER_BATCHES.includes(ONLY) && !DRY) {
@@ -158,10 +160,60 @@ const words = [
     [`slow-${w}-alt`, `[very slowly, drawn out, every sound held and joined to the next] ${w}.`],
   ]),
 ];
+// ---- Kitchen (ADR 0044, docs/kitchen-plan.md phase A; asked by the owner 2026-11-21): what each thing is called
+// (`food-<id>`, the id the recipe's rail uses) and one short line a step (`cook-<id>`). The pizza's lines are the
+// game's; the rest are a guess at what the next recipes (cupcake, cake, ice cream, cookie) and a car wash game
+// (`wash-<id>`) will need, and spares, made now because Matilda ends on 2026-12-31. Already shipped and reused: the
+// colours, numbers 0 to 9, the praise words, "Cup.", "Jam.", "Pan.", the shape words.
+const FOODS = [
+  // Things to make.
+  ['pizza', 'Pizza'], ['cupcake', 'Cupcake'], ['cake', 'Cake'], ['ice-cream', 'Ice cream'], ['cookie', 'Cookie'],
+  ['sandwich', 'Sandwich'], ['pancake', 'Pancake'], ['smoothie', 'Smoothie'],
+  // The pizza's things (src/games/kitchen/recipes/pizza.ts), then spare toppings.
+  ['dough', 'Dough'], ['tomato-sauce', 'Tomato sauce'], ['green-sauce', 'Green sauce'], ['white-sauce', 'White sauce'],
+  ['cheese', 'Cheese'], ['pepperoni', 'Pepperoni'], ['mushroom', 'Mushroom'], ['pepper', 'Pepper'], ['olive', 'Olive'],
+  ['tomato', 'Tomato'], ['pineapple', 'Pineapple'], ['corn', 'Corn'], ['basil', 'Basil'],
+  ['ham', 'Ham'], ['sausage', 'Sausage'], ['onion', 'Onion'], ['spinach', 'Spinach'], ['bacon', 'Bacon'],
+  ['chicken', 'Chicken'], ['egg', 'Egg'], ['broccoli', 'Broccoli'],
+  // Things for the next recipes.
+  ['batter', 'Batter'], ['frosting', 'Frosting'], ['sprinkles', 'Sprinkles'], ['cherry', 'Cherry'],
+  ['strawberry', 'Strawberry'], ['banana', 'Banana'], ['blueberry', 'Blueberry'], ['candy', 'Candy'],
+  ['candle', 'Candle'], ['chocolate', 'Chocolate'], ['vanilla', 'Vanilla'], ['cone', 'Cone'], ['scoop', 'Scoop'],
+  ['chocolate-sauce', 'Chocolate sauce'], ['star', 'Star'], ['heart', 'Heart'], ['oven', 'Oven'], ['plate', 'Plate'],
+];
+const kitchen = [
+  ...FOODS.map(([id, name]) => [`food-${id}`, `[warmly] ${name}.`]),
+  // The pizza's steps.
+  ['cook-lets-make-pizza', "[excited] Let's make a pizza!"], ['cook-pat-dough', '[warmly] Pat the dough.'],
+  ['cook-spread-sauce', '[warmly] Spread the sauce.'], ['cook-sprinkle-cheese', '[warmly] Sprinkle the cheese.'],
+  ['cook-pick-topping', '[warmly] Pick a topping.'], ['cook-put-on-pizza', '[warmly] Put it on the pizza.'],
+  ['cook-into-oven', '[excited] Into the oven!'], ['cook-ready', "[excited] It's ready!"],
+  ['cook-eat-it-up', '[excited] Eat it up!'], ['cook-all-gone', '[excited] All gone!'], ['cook-yum', '[excited] Yum!'],
+  ['cook-yummy', '[warmly] Mmm, yummy!'], ['cook-made-pizza', '[excited] You made a pizza!'],
+  ['cook-another', "[warmly] Let's make another one."],
+  // Steps for the next recipes.
+  ['cook-lets-make-cupcake', "[excited] Let's make a cupcake!"], ['cook-lets-make-cake', "[excited] Let's make a cake!"],
+  ['cook-lets-make-ice-cream', "[excited] Let's make an ice cream!"], ['cook-lets-make-cookie', "[excited] Let's make a cookie!"],
+  ['cook-what-shall-we-make', '[warmly] What shall we make?'], ['cook-pour-batter', '[warmly] Pour the batter.'],
+  ['cook-stir', '[warmly] Stir it round.'], ['cook-squeeze-frosting', '[warmly] Squeeze the frosting.'],
+  ['cook-shake-sprinkles', '[warmly] Shake the sprinkles.'], ['cook-cherry-on-top', '[warmly] Put a cherry on top.'],
+  ['cook-candles-on', '[warmly] Put the candles on.'], ['cook-blow-out', '[excited] Blow out the candles!'],
+  ['cook-happy-birthday', '[excited] Happy birthday!'], ['cook-scoop-ice-cream', '[warmly] Scoop the ice cream.'],
+  ['cook-roll-dough', '[warmly] Roll the dough.'], ['cook-cut-shape', '[warmly] Cut out a shape.'],
+  ['cook-made-cupcake', '[excited] You made a cupcake!'], ['cook-made-cake', '[excited] You made a cake!'],
+  ['cook-made-ice-cream', '[excited] You made an ice cream!'], ['cook-made-cookie', '[excited] You made a cookie!'],
+  ['cook-made-it', '[excited] You made it!'],
+  // A car wash game (kitchen-plan.md, K8): not designed yet.
+  ['wash-lets-wash', "[excited] Let's wash the car!"], ['wash-squirt', '[warmly] Squirt the water.'],
+  ['wash-rub-soap', '[warmly] Rub the soap on.'], ['wash-rinse', '[warmly] Rinse it off.'], ['wash-dry', '[warmly] Dry it.'],
+  ['wash-all-clean', '[excited] All clean!'], ['wash-shiny', '[excited] Shiny!'], ['wash-soap', '[warmly] Soap.'],
+  ['wash-sponge', '[warmly] Sponge.'], ['wash-bubbles', '[warmly] Bubbles.'], ['wash-muddy', '[warmly] Muddy.'],
+];
 const BATCHES = {
   letters2: { lines: letters2, samples: maisieLines, dir: 'narrator' },
   coloring: { lines: coloring, samples: [], dir: 'coloring' },
   words: { lines: words, samples: [], dir: 'words' },
+  kitchen: { lines: kitchen, samples: [], dir: 'kitchen' },
 };
 if (BATCHES[ONLY]) {
   const OUT3 = '/tmp/gen3';
