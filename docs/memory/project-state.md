@@ -96,9 +96,10 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    [kitchen-plan.md](../kitchen-plan.md). Mockups: boards 25 to 34 on the canvas (2026-11-21). **Built
    2026-11-21** on the branch `kitchen/pizza` (plan phase B and the look from C): the whole pizza, stand-in sounds,
    saved as it is made; shown on the home screen by default (ADR 0045), which now wraps to a second row after
-   three tiles. No speech, shelf or parent screen yet; not
-   seen on the laptop or played by a kid. Its narrator batch (93 lines, in `generate.mjs`) has to be made by
-   2026-12-13 and has not been run.
+   three tiles. It speaks since 2026-11-21 (`voice.ts`: names, step lines, moments; take 1
+   of all 93 lines shipped as `voice/food-*`, `cook-*`, `wash-*`). No shelf, idle hand or parent screen yet; not
+   seen on the laptop or played by a kid. Its narrator batch (93 lines, `ONLY=kitchen` in `generate.mjs`) was made
+   2026-11-21: 279 takes on the laptop in `C:\tmp\gen3\kitchen`; take 1 of each is in the app, none listened to.
    The other ideas offered the same day (car wash, vehicle workshop, robot or monster, garden, building site)
    are not planned.
 

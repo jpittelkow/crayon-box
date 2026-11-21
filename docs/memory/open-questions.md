@@ -27,9 +27,14 @@ _Last updated: 2026-11-21_
 
 - **Kitchen** ([ADR 0044](../adr/0044-kitchen-make-it-game-pizza-first.md), Proposed 2026-11-21, built the same
   day on the defaults): K1 to K12 in [kitchen-plan.md](../kitchen-plan.md) were not gone through one by one; the
-  owner said to start building, and settled K2 and K11 (shown by default, ADR 0045; mockups made). **Waiting on the owner:** the go-ahead to run the narrator batch on the family's
-  server (93 lines, by 2026-12-13), and before that any change to the toppings (K3), the sauces (K4) or the car
-  wash lines (K8), which the batch fixes for good. Then: accept the ADR once the built game has been looked at.
+  owner said to start building, and settled K2 and K11 (shown by default, ADR 0045; mockups made). The narrator
+  batch was run on the owner's go-ahead on 2026-11-21 and ships take 1 of every line (the owner's choice).
+  **Waiting on the owner:** listen to the Kitchen lines in the game, and say which need another take (the other
+  takes are on `C:\tmp\gen3\audition.html`; a redo run has to happen before 2026-12-31); and accept the ADR once
+  the built game has been looked at.
+- **The family's sync server** was found stopped on 2026-11-21 (its container had exited the morning before and is
+  not set to start by itself on the server). It was started to run the batch. Whether it should start by itself
+  is the owner's setting on the server's Docker page.
 
 - **From the overnight build (2026-11-16)**, each built on a default the owner can overrule:
   - **Coloring:** a parent switch to turn the first-time demos off (none now)? Back says "Back" the first 3 times

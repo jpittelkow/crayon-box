@@ -15,10 +15,16 @@ recommended default. On the branch `kitchen/pizza`, not yet committed:
   the home screen by default (K2, ADR 0045). 19 unit tests and 4 browser tests pass.
 - **Phase C, sounds:** every verb has a stand-in from the shipped files (`src/games/kitchen/sounds.ts`). No
   speech yet: there are no clips.
-- **Phase A:** the batch is in `tools/sounds/generate.mjs` (`DRY=1 ONLY=kitchen` lists its 93 lines). **It has
-  not been run**: that takes the owner's go-ahead (it runs on the family's server and spends a little on the key).
-- **Left before the kids try it:** the narrator run and speech, the idle hand, the shelf and the parent screen
-  (phase D), the recipe doc and playtest questions (phase E).
+- **Phase A:** the batch is in `tools/sounds/generate.mjs` (`DRY=1 ONLY=kitchen` lists its 93 lines). **Run on
+  2026-11-21** on the owner's go-ahead: 279 takes, no errors. The takes are on the laptop in `C:\tmp\gen3\kitchen`
+  with `manifest-kitchen.json`, and `C:\tmp\gen3\audition.html` lists them for picking by ear. **Take 1 of all 93
+  lines ships** (the owner's choice, 2026-11-21): 93 clips in `assets/sounds/voice/` (`food-*`, `cook-*`,
+  `wash-*`, 1.4 MB), not yet listened to. K3, K4 and K8 are now fixed as built, short of a redo run before
+  2026-12-31.
+- **Phase C, speech: built 2026-11-21** (`voice.ts`): a picked thing's name the first three times per kid, one
+  line as each step opens the first three times, "It's ready!" and one of three endings every time.
+- **Left before the kids try it:** the idle hand, the shelf and the parent screen (phase D: until it exists a
+  parent can't change how often names are said), the recipe doc and playtest questions (phase E).
 
 ## The narrator deadline (read first)
 The narrator's voice retires on **2026-12-31** (ADR 0032; the dates and the reasons to run early are in
@@ -30,7 +36,7 @@ to follow (which are not designed yet, so these are a guess), and spares.
 |---|---|---|
 | 2026-11-21 (Sat) | This plan and ADR 0044 (Proposed) | Claude, done |
 | 2026-11-29 (Sun) | Owner settles K1 to K12 below; K3, K4 and K8 are the ones the batch waits for | Owner |
-| 2026-12-06 (Sun) | `ONLY=kitchen` added to `tools/sounds/generate.mjs`; one run in the sync container, three takes a line; the audition page. Sooner if K3, K4 and K8 are settled sooner | Claude, on the owner's request |
+| ~~2026-12-06 (Sun)~~ | `ONLY=kitchen` added to `tools/sounds/generate.mjs`; one run in the sync container, three takes a line; the audition page. **Done 2026-11-21:** 279 takes, no errors | Claude, on the owner's request |
 | 2026-12-13 (Sun) | Owner's picks by ear; redos and added lines in a second run; `prepare.mjs`; clips committed. **Last planned run** | Owner, Claude |
 | 2026-12-20 (Sun) | Emergency run only | Claude |
 | 2026-12-31 (Thu) | The voice is gone. Building goes on with the files in hand | |
@@ -101,7 +107,8 @@ The whole pizza, start to finish. Hidden.
   the data survives a save and a load and odd data is dropped; every rail option has art. Browser
   (`tests/e2e/kitchen.spec.ts`, 3): a whole pizza by touch (a palm ignored, picks on the touch, a miss off the
   pizza, a dragged trail, the oven, a bite, leave and come back); next on an untouched pizza; eating it all.
-  Still to add to the recipe check once they exist: a sound and a narrator line for every option.
+  Since the clips shipped: every narrator line the recipe names is checked to exist (unit), and a browser test
+  hears the step lines and a name's first three picks. Tests: 20 unit, 5 browser.
 
 ### C. The look and the sound
 - **Art (built 2026-11-21),** original, CC0, in the Crayon Box look (ADR 0016), as data in `look/art.ts` and
@@ -124,8 +131,12 @@ The whole pizza, start to finish. Hidden.
   | a bite | `drive/bump.wav`, short and high |
 
   Wanted as takes of their own: a pat, a squelch, a shake, bubbling, an oven bell, a munch.
-- **Speech (not built):** names on a pick and one line a step, through a queue so lines never talk over each
-  other (the letters game has one in `voice.ts`; share it if it fits). Waits for phase A's clips.
+- **Speech (built 2026-11-21, `voice.ts`):** the recipe names its lines (`say`, `sayDone`, `sayStart`,
+  `sayGone`; an option's name is `food-<id>`). One line plays at a time: a name or a moment cuts in; a step's
+  line waits its turn and is dropped if the kid has moved on, so tapping next quickly says only the step
+  landed on. A line counts as heard when it starts. Names use the coloring game's rule and counter (three times
+  per kid, `kids/<id>/names.json` in Kitchen's own storage). The letters game's queue was not shared: it is
+  built round letters and a held finger.
 - **The idle hand (not built):** after 8 seconds with no touch, a hand shows the step's movement once.
 - **Frame time:** the scene is drawn every frame (about 400 shreds and 80 toppings at most; the oldest are
   dropped quietly); only the eaten pizza is kept on spare canvases. Not yet measured on the laptop: if it is slow

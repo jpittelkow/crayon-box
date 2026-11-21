@@ -80,12 +80,13 @@ The kids asked for hands-on "make a thing" games; the owner picked a Kitchen gam
   stand-in sounds. It and Letters show on the home screen by default
   ([ADR 0045](adr/0045-every-game-shows-by-default.md), the owner's choice). Built on the plan's defaults for the
   rest of K1 to K12, which the owner can still overrule.
-- **Its narrator batch can't wait:** 93 lines, ready in `tools/sounds/generate.mjs` (`ONLY=kitchen`), to be made by
-  2026-12-13, before the voice retires on 2026-12-31 (plan phase A). **Needs the owner's go-ahead to run**; say
-  first if any topping or sauce should change (K3, K4), or the car wash lines be dropped (K8).
-- **Look and play:** the owner tries it in the web app; then a kid.
-- Then: speech and the idle hand (the rest of phase C), the shelf and the parent screen (D), the recipe doc (E),
-  and more recipes (F: cupcake, birthday cake, ice cream, cookie).
+- **Its narrator batch was made 2026-11-21** (93 lines, 279 takes, no errors; plan phase A) and **take 1 of every
+  line ships**; the game speaks (names, step lines, "It's ready!", an ending). Any redo or added line has to be
+  made before the voice retires on 2026-12-31.
+- **Look, listen and play:** the owner tries it in the web app and says which lines need another take
+  (`C:\tmp\gen3\audition.html` has all three); then a kid.
+- Then: the idle hand (the rest of phase C), the shelf and the parent screen (D), the recipe doc (E), and more
+  recipes (F: cupcake, birthday cake, ice cream, cookie).
 
 ## Parked (not planned)
 - iPad version ([ADR 0030](adr/0030-ipad-home-screen-web-app.md), a draft kept for later).

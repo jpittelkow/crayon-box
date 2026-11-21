@@ -4,6 +4,7 @@
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
+import { NameCounter, loadNamesSetting, type NamesSetting } from '../coloring/names';
 import { optionSvg } from './look/art';
 import { drawPiece, PizzaLook, type View } from './look/pizza';
 import { fresh, stepOf, type Made, type Placed, type Pt } from './make/made';
@@ -12,6 +13,7 @@ import { railOf, type Recipe, type Step } from './recipe';
 import { PIZZA } from './recipes/pizza';
 import { KITCHEN_SOUND_FILES, KITCHEN_SOUNDS, SPREAD_RATE } from './sounds';
 import { forgetKid, Making } from './store';
+import { KitchenVoice } from './voice';
 import './kitchen.css';
 
 export const kitchenGame: GameModule = {
@@ -75,6 +77,9 @@ class KitchenGame {
   private made: Made;
   private making!: Making;
   private readonly look = new PizzaLook();
+  private voice: KitchenVoice | undefined;
+  /** How often a picked thing's name is said (the coloring game's rule, ADR 0038), until Kitchen's parent screen sets it. */
+  private names: NamesSetting = 'first';
   private screen!: HTMLElement;
   private canvas!: HTMLCanvasElement;
   private rail!: HTMLElement;
@@ -112,8 +117,15 @@ class KitchenGame {
 
   async start(): Promise<void> {
     this.making = new Making(this.ctx.storage, this.ctx.kid.id, this.recipe);
-    const made = await this.making.load();
+    const counter = new NameCounter(this.ctx.storage, this.ctx.kid.id);
+    const [made, names] = await Promise.all([
+      this.making.load(),
+      loadNamesSetting(this.ctx.storage).catch((): NamesSetting => 'first'),
+      counter.load().catch(() => undefined),
+    ]);
     if (this.stopped) return;
+    this.names = names;
+    this.voice = new KitchenVoice(this.ctx.sound, counter, () => this.names);
     this.made = made;
     this.flat = made.pressed[this.recipe.steps[0].id] ?? 0;
     this.ctx.sound.preload?.(KITCHEN_SOUND_FILES);
@@ -132,6 +144,7 @@ class KitchenGame {
     this.timers.clear();
     this.resize?.disconnect();
     this.ctx.sound.scratch?.(0);
+    this.voice?.stop();
     await this.making?.flush();
   }
 
@@ -206,6 +219,7 @@ class KitchenGame {
             if (!pick(this.made, step, option.id)) return;
             setPicked(buttons, button);
             this.ctx.sound.play('tap');
+            this.voice?.name(option.id);
             this.changed();
           },
         });
@@ -214,10 +228,14 @@ class KitchenGame {
       this.rail.append(...buttons);
       setPicked(buttons, buttons[rail.options.findIndex((o) => o.id === this.made.picked[step.id])]);
     }
+    const cooked = step.verb === 'cook' && (this.made.cooked[step.id] ?? 0) >= 1;
     if (step.verb === 'cook') {
-      if ((this.made.cooked[step.id] ?? 0) >= 1) this.later(OUT_OF_OVEN_MS, () => this.leaveOven(step));
+      if (cooked) this.later(OUT_OF_OVEN_MS, () => this.leaveOven(step));
       else this.ctx.sound.effect?.(KITCHEN_SOUNDS.ovenIn);
     }
+    // The step's line, and before a new thing's first step the recipe's own ("Let's make a pizza!").
+    const untouched = this.made.step === 0 && !this.made.pressed[step.id];
+    if (!cooked) this.voice?.tip([untouched ? this.recipe.sayStart : undefined, step.say]);
     this.show();
   }
 
@@ -259,6 +277,7 @@ class KitchenGame {
     this.busy = true;
     this.fingers.clear();
     this.ctx.sound.play('cheer');
+    this.voice?.moment(this.recipe.sayGone ?? []);
     for (let i = 0; i < 26; i++) this.crumb({ x: (Math.random() - 0.5) * 300, y: (Math.random() - 0.5) * 300 }, 1.2);
     this.show();
     this.later(EMPTY_PLATE_MS, () => {
@@ -401,6 +420,7 @@ class KitchenGame {
     if (step.verb === 'cook' && (this.made.cooked[step.id] ?? 0) < 1) {
       if (cook(this.made, step, seconds)) {
         this.ctx.sound.play('cheer');
+        if (step.sayDone) this.voice?.moment([step.sayDone]);
         this.later(OUT_OF_OVEN_MS, () => this.leaveOven(step));
       }
       this.changed();

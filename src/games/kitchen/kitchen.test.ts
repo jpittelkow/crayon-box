@@ -19,7 +19,8 @@ import {
   touch,
   type Rand,
 } from './make/verbs';
-import { railOf, type Recipe, type Step } from './recipe';
+import { narratorClip } from '../../shell/soundFiles';
+import { clipsOf, railOf, type Recipe, type Step } from './recipe';
 import { PIZZA } from './recipes/pizza';
 
 /** The same "random" numbers every run. */
@@ -42,6 +43,14 @@ describe('the pizza recipe (ADR 0044)', () => {
       expect(rail.options.length, s.id).toBeLessThanOrEqual(8);
       for (const o of rail.options) expect(optionArt(o.id), `${s.id}: ${o.id}`).toBeDefined();
     }
+  });
+
+  it('every narrator line it names ships: each option, each step, the start and the end (ADR 0032)', () => {
+    const keys = clipsOf(PIZZA);
+    // Eleven options, six steps, the oven's "ready", the start, three endings.
+    expect(keys.length).toBe(11 + 6 + 1 + 1 + 3);
+    for (const key of keys) expect(narratorClip(key), key).toBeTruthy();
+    for (const s of PIZZA.steps) expect(s.say, s.id).toBeTruthy();
   });
 
   it('starts as a lump of dough with the first sauce and the first topping picked', () => {

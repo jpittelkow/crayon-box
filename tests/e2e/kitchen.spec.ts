@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { fresh, type Made } from '../../src/games/kitchen/make/made';
 import { PIZZA } from '../../src/games/kitchen/recipes/pizza';
-import { openParentArea, pick } from './helpers';
+import { clips, openParentArea, pick, recordSounds } from './helpers';
 
 // Kitchen (ADR 0044): a pizza made step by step with the fingers. The rules have unit tests
 // (src/games/kitchen/kitchen.test.ts); these check the screen: touches reach the right step, next and back work,
@@ -206,6 +206,40 @@ test('every game shows by default, and the home screen keeps all four tiles on t
   await page.getByRole('button', { name: 'Star kid' }).tap();
   await expect(home.getByRole('button', { name: 'Coloring', exact: true })).toBeVisible();
   await expect(home.getByRole('button', { name: 'Kitchen', exact: true })).toHaveCount(0);
+});
+
+test('the narrator: a line as a step opens, and a picked thing named for its first three picks', async ({ page }) => {
+  await recordSounds(page);
+  await openApp(page);
+  await openKitchen(page);
+  // A new pizza: the recipe's line, then the step's.
+  await expect.poll(() => clips(page, 'cook-lets-make-pizza')).toBe(1);
+  await expect.poll(() => clips(page, 'cook-pat-dough')).toBe(1);
+
+  // Next tapped quickly: only the step the kid lands on is said, not a queue of the ones skipped.
+  await next(page);
+  await next(page);
+  await next(page);
+  await onStep(page, 'toppings');
+  await expect.poll(() => clips(page, 'cook-pick-topping')).toBe(1);
+  expect(await clips(page, 'cook-sprinkle-cheese')).toBe(0);
+
+  // A pick says the thing's name, cutting in; the fourth pick of the same thing is only its sound (ADR 0038).
+  const pickIt = (name: string) => page.getByRole('button', { name, exact: true }).tap();
+  for (let i = 1; i <= 3; i++) {
+    await pickIt('Mushroom');
+    await expect.poll(() => clips(page, 'food-mushroom')).toBe(i);
+    await pickIt('Olive');
+    await expect.poll(() => clips(page, 'food-olive')).toBe(i);
+  }
+  await pickIt('Mushroom');
+  await pickIt('Basil');
+  await expect.poll(() => clips(page, 'food-basil')).toBe(1);
+  expect(await clips(page, 'food-mushroom')).toBe(3);
+
+  // The oven says when it is ready, and the empty plate ends on one of its lines.
+  await next(page);
+  await expect.poll(() => clips(page, 'cook-ready'), { timeout: 20_000 }).toBe(1);
 });
 
 test('eating it all leaves an empty plate, then a new lump of dough', async ({ page }) => {

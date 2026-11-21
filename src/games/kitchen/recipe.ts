@@ -21,6 +21,8 @@ interface StepBase {
   id: string;
   /** For screen readers and tests; never shown (ADR 0003). */
   label: string;
+  /** The narrator's line when the step opens (a clip under `voice/`), said the first few times a kid gets here. */
+  say?: string;
 }
 
 export type Step =
@@ -34,8 +36,8 @@ export type Step =
   | (StepBase & { verb: 'place'; apart: number; most: number; rail: Rail })
   /** Only a pick from the rail. */
   | (StepBase & { verb: 'choose'; rail: Rail })
-  /** Nothing to do: a show that takes `seconds`. */
-  | (StepBase & { verb: 'cook'; seconds: number })
+  /** Nothing to do: a show that takes `seconds`. `sayDone` is the narrator's line when it ends, every time. */
+  | (StepBase & { verb: 'cook'; seconds: number; sayDone?: string })
   /** A touch takes a bite `bite` units across its radius; `enough` of the thing eaten (0 to 1) ends it. */
   | (StepBase & { verb: 'eat'; bite: number; enough: number });
 
@@ -48,6 +50,21 @@ export interface Recipe {
   /** The radius layers and pieces stay inside (a pizza's crust is the ring outside it). */
   inner: number;
   steps: readonly Step[];
+  /** The narrator's line before the first step of a new one ("Let's make a pizza!"), the first few times. */
+  sayStart?: string;
+  /** One of these when it has all been eaten ("Yum!"), every time. */
+  sayGone?: readonly string[];
+}
+
+/** Every narrator clip a recipe names, for the check that each one ships. Options are named `food-<id>`. */
+export function clipsOf(recipe: Recipe): string[] {
+  const keys = [recipe.sayStart, ...(recipe.sayGone ?? [])];
+  for (const step of recipe.steps) {
+    keys.push(step.say);
+    if (step.verb === 'cook') keys.push(step.sayDone);
+    for (const option of railOf(step)?.options ?? []) keys.push(`food-${option.id}`);
+  }
+  return keys.filter((k): k is string => !!k);
 }
 
 /** A step's rail, when it has one. */

@@ -7,11 +7,14 @@ export const PIZZA: Recipe = {
   label: 'Pizza',
   r: 250,
   inner: 208,
+  sayStart: 'cook-lets-make-pizza',
+  sayGone: ['cook-yum', 'cook-yummy', 'cook-all-gone'],
   steps: [
-    { id: 'dough', label: 'Pat the dough', verb: 'press', pats: 8 },
+    { id: 'dough', label: 'Pat the dough', say: 'cook-pat-dough', verb: 'press', pats: 8 },
     {
       id: 'sauce',
       label: 'Spread the sauce',
+      say: 'cook-spread-sauce',
       verb: 'spread',
       brush: 44,
       enough: 0.6,
@@ -24,10 +27,11 @@ export const PIZZA: Recipe = {
         ],
       },
     },
-    { id: 'cheese', label: 'Sprinkle the cheese', verb: 'sprinkle', enough: 40, most: 400 },
+    { id: 'cheese', label: 'Sprinkle the cheese', say: 'cook-sprinkle-cheese', verb: 'sprinkle', enough: 40, most: 400 },
     {
       id: 'toppings',
       label: 'Put the toppings on',
+      say: 'cook-pick-topping',
       verb: 'place',
       apart: 70,
       most: 80,
@@ -45,7 +49,7 @@ export const PIZZA: Recipe = {
         ],
       },
     },
-    { id: 'oven', label: 'The oven', verb: 'cook', seconds: 4 },
-    { id: 'eat', label: 'Eat it', verb: 'eat', bite: 58, enough: 0.9 },
+    { id: 'oven', label: 'The oven', say: 'cook-into-oven', verb: 'cook', seconds: 4, sayDone: 'cook-ready' },
+    { id: 'eat', label: 'Eat it', say: 'cook-eat-it-up', verb: 'eat', bite: 58, enough: 0.9 },
   ],
 };
