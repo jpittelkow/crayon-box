@@ -8,13 +8,13 @@ in the [journal](journal/README.md)); details live in the linked plans and ADRs.
 New maps come last on purpose: every piece a map is made from now exists (targets, set pieces, tiles, the editor,
 loading a map from a folder), but more vehicles come first.
 
-## 1. Finish what is in flight
-- **Release 0.9.0** when there is enough to ship. Nothing a kid can see is waiting: 0.8.1 (released 2026-11-15)
-  carried the Outside theme. It also ships the new narrator clips for letters and coloring, which nothing plays
-  until parts 2 and 5 below are built. (0.8.0, released 2026-11-15, finished milestone 3.)
 ## 1. Look, listen and playtest what was built overnight
 Nothing built on 2026-11-16 has been heard, seen on the laptop or played by a kid. The owner's choices it raised
 are in [open questions](memory/open-questions.md).
+- **Release 0.10.0 is published** (2026-11-21: Kitchen, and Letters and Kitchen shown by default). Installed
+  copies offer it at their next check. The [release checklist](release-checklist.md)'s hand checks were not run
+  first: do them on the laptop as it updates (the update itself, the kiosk lock, files), and listen to Kitchen's
+  narrator lines. A parent can hide Kitchen under Settings, Games if it isn't ready for the kids.
 - **Release 0.9.0** (coloring buttons and wheel; letters sound, tips, how-to and shapes; writing words; driving
   targets, set pieces and folder maps). The release checklist's hand checks on the laptop have not been run.
 - **On the laptop:** the Windows display scale (at 125 % the colour wheel stays hidden); drop
