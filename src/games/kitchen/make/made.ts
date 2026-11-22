@@ -1,7 +1,7 @@
 // The thing being made, as plain data (ADR 0044): small enough to save after every action, and all the look needs
 // to draw it at any size. No DOM here. Places are in the thing's own units, measured from its middle.
 import type { Recipe, Step } from '../recipe';
-import { railOf } from '../recipe';
+import { bodyOf, inArea, inOval, railOf } from '../recipe';
 
 export interface Pt {
   x: number;
@@ -34,6 +34,8 @@ export interface Made {
   pressed: Record<string, number>;
   /** Spread steps: the covered cells of the grid, as a string of 0 and 1, row by row. */
   spread: Record<string, string>;
+  /** Pour steps: 0 (empty) to 1 (full). */
+  poured: Record<string, number>;
   /** Sprinkle steps: the bits, oldest first. */
   bits: Record<string, Bit[]>;
   /** Place steps: the pieces, oldest first (later ones lie on top). */
@@ -56,7 +58,14 @@ export function fresh(recipe: Recipe): Made {
     const rail = railOf(step);
     if (rail) picked[step.id] = rail.options[0].id;
   }
-  return { v: 1, recipe: recipe.id, step: 0, pressed: {}, spread: {}, bits: {}, placed: {}, picked, cooked: {}, bites: {} };
+  return { v: 1, recipe: recipe.id, step: 0, pressed: {}, spread: {}, poured: {}, bits: {}, placed: {}, picked, cooked: {}, bites: {} };
+}
+
+/** Nothing has been done to it yet: it is on its first step, as new (a pick from a rail doesn't count). */
+export function untouched(made: Made): boolean {
+  const empty = (r: Record<string, unknown>) => Object.keys(r).length === 0;
+  return made.step === 0 && empty(made.pressed) && empty(made.spread) && empty(made.poured) && empty(made.bits) &&
+    empty(made.placed) && empty(made.cooked) && empty(made.bites);
 }
 
 export function stepOf(recipe: Recipe, made: Made): Step {
@@ -75,10 +84,11 @@ export function cells(recipe: Recipe): { inner: number[]; whole: number[] } {
   let mask = masks.get(recipe.id);
   if (!mask) {
     mask = { inner: [], whole: [] };
+    const body = bodyOf(recipe);
     for (let i = 0; i < GRID * GRID; i++) {
-      const c = cellAt(recipe, i), d = Math.hypot(c.x, c.y);
-      if (d < recipe.inner) mask.inner.push(i);
-      if (d < recipe.r) mask.whole.push(i);
+      const c = cellAt(recipe, i);
+      if (inArea(recipe, c.x, c.y)) mask.inner.push(i);
+      if (inOval(body, c.x, c.y)) mask.whole.push(i);
     }
     masks.set(recipe.id, mask);
   }
@@ -111,6 +121,9 @@ export function readMade(raw: unknown, recipe: Recipe): Made {
     } else if (step.verb === 'spread') {
       const v = rec(src.spread)[id];
       if (typeof v === 'string' && v.length === GRID * GRID && /^[01]+$/.test(v)) made.spread[id] = v;
+    } else if (step.verb === 'pour') {
+      const v = num(rec(src.poured)[id], 0, 1);
+      if (v) made.poured[id] = v;
     } else if (step.verb === 'sprinkle') {
       const bits: Bit[] = [];
       for (const b of list(rec(src.bits)[id]).slice(-step.most)) {

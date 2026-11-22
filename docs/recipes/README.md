@@ -13,6 +13,7 @@ owner on 2026-11-15. Each file has three parts:
 | [scenery.md](scenery.md) | Toys, solid scenery, decor, animals and set pieces, each with its sounds |
 | [maps.md](maps.md) | A driving map, with its sounds |
 | [sounds.md](sounds.md) | A sound file for the driving game (or the app), from source to shipped |
+| [kitchen.md](kitchen.md) | A thing to make in the Kitchen game (a recipe, its art, its look, its lines) |
 
 In the driving game **sound is part of every asset**, not an afterthought: each recipe there has a sound step,
 and an asset isn't done until it makes its noise (a stand-in is fine; silence is not).

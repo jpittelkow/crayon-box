@@ -80,8 +80,7 @@ All five items of the old section 4 are built: [ADR 0041](adr/0041-driving-targe
 ## 7. Kitchen: a new game (asked 2026-11-21, not yet placed in the order)
 The kids asked for hands-on "make a thing" games; the owner picked a Kitchen game with pizza first.
 [ADR 0044](adr/0044-kitchen-make-it-game-pizza-first.md) (Proposed), [kitchen-plan.md](kitchen-plan.md).
-- **Built 2026-11-21** on the branch `kitchen/pizza` (not committed): a whole pizza can be made, with the look and
-  stand-in sounds. It and Letters show on the home screen by default
+- **Built 2026-11-21 and released in 0.10.0:** a whole pizza can be made, with the look and stand-in sounds. It and Letters show on the home screen by default
   ([ADR 0045](adr/0045-every-game-shows-by-default.md), the owner's choice). Built on the plan's defaults for the
   rest of K1 to K12, which the owner can still overrule.
 - **Its narrator batch was made 2026-11-21** (93 lines, 279 takes, no errors; plan phase A) and **take 1 of every
@@ -89,8 +88,12 @@ The kids asked for hands-on "make a thing" games; the owner picked a Kitchen gam
   made before the voice retires on 2026-12-31.
 - **Look, listen and play:** the owner tries it in the web app and says which lines need another take
   (`C:\tmp\gen3\audition.html` has all three); then a kid.
-- Then: the idle hand (the rest of phase C), the shelf and the parent screen (D), the recipe doc (E), and more
-  recipes (F: cupcake, birthday cake, ice cream, cookie).
+- **The cupcake is built** (2026-11-21, branch `kitchen/cupcake`, after 0.10.0): the second recipe, with a start
+  screen to pick pizza or cupcake, and a [recipe doc](recipes/kitchen.md) for the next one.
+- **Home screen tiles are pictures of the games** (the owner's pick of option B,
+  [ADR 0047](adr/0047-home-tiles-are-pictures-of-the-games.md)): built 2026-11-21 on the same branch.
+- Then: the idle hand (the rest of phase C), the shelf and the parent screen (D), and more recipes (F: birthday
+  cake, ice cream, cookie).
 
 ## Parked (not planned)
 - iPad version ([ADR 0030](adr/0030-ipad-home-screen-web-app.md), a draft kept for later).

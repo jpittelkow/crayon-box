@@ -23,6 +23,8 @@ recommended default. On the branch `kitchen/pizza`, not yet committed:
   2026-12-31.
 - **Phase C, speech: built 2026-11-21** (`voice.ts`): a picked thing's name the first three times per kid, one
   line as each step opens the first three times, "It's ready!" and one of three endings every time.
+- **Phase F, the cupcake: built 2026-11-21** on the branch `kitchen/cupcake`, with a start screen to pick pizza
+  or cupcake (see phase F). Not in 0.10.0.
 - **Left before the kids try it:** the idle hand, the shelf and the parent screen (phase D: until it exists a
   parent can't change how often names are said), the recipe doc and playtest questions (phase E).
 
@@ -147,19 +149,41 @@ The whole pizza, start to finish. Hidden.
 ### D. Keeping what was made
 - A picture and the data of each pizza as it leaves the oven; the newest 24 per kid; one file per pizza
   (ADR 0024's rules, in [gotchas](memory/gotchas.md)).
-- The start screen: the recipe tiles and the shelf (three across, two down, the sixth tile a "more" arrow).
+- The start screen: the recipe tiles (**built 2026-11-21** with the cupcake) and the shelf (three across, two
+  down, the sixth tile a "more" arrow).
 - The parent area's Kitchen section: the names setting, clearing a kid's shelf. `forgetKid`.
 
 ### E. Ready for the kids
-- A recipe doc, `docs/recipes/kitchen.md`: how to add a thing to make (steps, patterns, anti-recipes).
+- A recipe doc, [docs/recipes/kitchen.md](recipes/kitchen.md): how to add a thing to make (**written
+  2026-11-21**, after the second recipe).
 - The [playtest guide](playtest.md) gets Kitchen's questions (ADR 0044's last consequence).
 - The mockup canvas has the Kitchen boards (25 to 34, 2026-11-21); bring them in line with what was built. The
   design system artifact gets the new tile, the counter and the rail ([gotchas](memory/gotchas.md)).
 - ADR 0044 accepted; a release. (It already shows by default: K2.)
 
-### F. More recipes (each its own PR, by the recipe doc)
-Cupcake (`pour`, `squeeze`), birthday cake (`count`: candles tapped out and counted aloud), ice cream, cookie.
-Each is art, sounds, a recipe file, and a new verb where one is needed.
+### F. More recipes (each its own PR, by the [recipe doc](recipes/kitchen.md))
+Birthday cake (`count`: candles tapped out and counted aloud), ice cream, cookie. Each is art, sounds, a recipe
+file, and a new verb where one is needed.
+
+**Cupcake: built 2026-11-21** on the branch `kitchen/cupcake` (asked by the owner the same day), on defaults the
+owner can overrule:
+- **Steps:** pick a wrapper (four colours), pour the batter (vanilla, chocolate, strawberry), the oven, squeeze
+  the frosting on (four kinds), shake sprinkles, put toppers on (cherry, strawberry, blueberry, banana, candy,
+  candle, star, heart), eat it in bites.
+- **One new verb, `pour`:** a held finger fills it in 2.5 seconds, and each touch adds a tenth, wherever it lands.
+  Batter and frosting both use it; a separate `squeeze` was not needed. A jug or a piping bag shows while a
+  finger is down.
+- **A thing that is not round:** a recipe can say where bits and pieces go as a few ovals (the frosting's swirls
+  and its peak) and what gets eaten as one oval. The pizza still uses its circles.
+- **A rail option can name another clip** (`say`): the wrappers say the colour words, the batters and frostings
+  the flavours. Every line the cupcake needs was already in the batch.
+- **The start screen** (phase D's first part): a tile for each thing to make, each a picture of a finished one
+  drawn by the game. Back on the counter goes to it; its own back leaves the game. No shelf yet.
+- The shared drawing (the oven, bites, colours) moved to `look/kit.ts`; each recipe has its own look file.
+- Tests: 12 more unit tests (`cupcake.test.ts`), 2 more browser tests (the start screen, a whole cupcake).
+- Stand-in sound for pouring: `drive/puddle.wav`, short and low, and the crayon loop, lower, while a finger holds.
+- To check in a playtest: whether holding is understood (the youngest tap), whether the jug and bag help, whether
+  2.5 seconds is too long.
 
 ## Not in this plan
 The other five ideas (car wash, vehicle workshop, robot or monster, garden, building site), other dough shapes,

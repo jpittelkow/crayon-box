@@ -1,7 +1,7 @@
 // The verbs (ADR 0044): what a touch does to the thing being made, written once for every recipe. Plain functions
 // with no DOM, like the letters checker and the driving simulation, so they have unit tests. They change `made` in
 // place (a finger rubbing calls them on every move) and say what happened.
-import type { Recipe, Step } from '../recipe';
+import { inArea, pointInArea, type Recipe, type Step } from '../recipe';
 import { cellAt, cells, fresh, GRID, stepOf, type Bit, type Bite, type Made, type Pt } from './made';
 
 /** A random number from 0 up to 1, passed in so tests can fix it. */
@@ -17,8 +17,10 @@ const BIT_SCATTER = 30;
 /** Bits and pieces stay this far inside the inner edge, so none hangs over it. */
 const BIT_MARGIN = 8;
 const PIECE_MARGIN = 10;
-/** A skipped sprinkle step gives itself this many bits, spread evenly. */
-const SELF_SPRINKLE = 170;
+/** A skipped sprinkle step gives itself this share of the most it keeps (and at least "enough"), spread evenly. */
+const SELF_SPRINKLE = 0.4;
+/** How much one touch pours, as a share of full; holding pours the rest. */
+const POUR_SPLASH = 0.1;
 
 /** The thing's radius while it is being pressed flat: a lump at 0, its full size at 1. */
 export function pressedRadius(recipe: Recipe, amount: number): number {
@@ -71,7 +73,7 @@ export function sprinkle(recipe: Recipe, made: Made, step: Of<'sprinkle'>, at: P
   for (let i = 0; i < BITS_A_DROP; i++) {
     const far = BIT_SCATTER * Math.sqrt(rand()), turn = rand() * Math.PI * 2;
     const p = { x: at.x + far * Math.cos(turn), y: at.y + far * Math.sin(turn) };
-    if (Math.hypot(p.x, p.y) > recipe.inner - BIT_MARGIN) continue;
+    if (!inArea(recipe, p.x, p.y, BIT_MARGIN)) continue;
     bits.push(bit(p, rand));
     landed = true;
   }
@@ -83,7 +85,7 @@ export function sprinkle(recipe: Recipe, made: Made, step: Of<'sprinkle'>, at: P
 
 /** A touch with a piece picked: 'placed' when it landed on the thing, 'off' when it missed. */
 export function place(recipe: Recipe, made: Made, step: Of<'place'>, at: Pt, rand: Rand): 'placed' | 'off' {
-  if (Math.hypot(at.x, at.y) > recipe.inner - PIECE_MARGIN) return 'off';
+  if (!inArea(recipe, at.x, at.y, PIECE_MARGIN)) return 'off';
   const placed = (made.placed[step.id] ??= []);
   const kind = made.picked[step.id] ?? step.rail.options[0].id;
   placed.push({ kind, x: Math.round(at.x * 10) / 10, y: Math.round(at.y * 10) / 10, rot: Math.round(rand() * 360) });
@@ -129,11 +131,25 @@ export function bite(recipe: Recipe, made: Made, step: Of<'eat'>, at: Pt): boole
   return true;
 }
 
+/**
+ * Pouring for `seconds` (a held finger, called as time passes). True when it poured anything: a full thing takes
+ * no more.
+ */
+export function pour(made: Made, step: Of<'pour'>, seconds: number): boolean {
+  const before = made.poured[step.id] ?? 0;
+  if (before >= 1 || seconds <= 0) return false;
+  // Ten splashes of a tenth must come to full, whatever the sums of floats say.
+  const now = before + seconds / step.seconds;
+  made.poured[step.id] = now > 0.999 ? 1 : now;
+  return true;
+}
+
 /** How far along a step is, 0 to 1, for the screen and for tests. */
 export function progress(recipe: Recipe, made: Made, step: Step): number {
   switch (step.verb) {
     case 'press': return made.pressed[step.id] ?? 0;
     case 'spread': return covered(recipe, made, step.id);
+    case 'pour': return made.poured[step.id] ?? 0;
     case 'sprinkle': return Math.min(1, (made.bits[step.id]?.length ?? 0) / step.enough);
     case 'place': return Math.min(1, (made.placed[step.id]?.length ?? 0) / step.most);
     case 'choose': return 1;
@@ -147,6 +163,7 @@ export function doneEnough(recipe: Recipe, made: Made, step: Step): boolean {
   switch (step.verb) {
     case 'press': return (made.pressed[step.id] ?? 0) >= 1;
     case 'spread': return covered(recipe, made, step.id) >= step.enough;
+    case 'pour': return (made.poured[step.id] ?? 0) >= 1;
     case 'sprinkle': return (made.bits[step.id]?.length ?? 0) >= step.enough;
     case 'place': return (made.placed[step.id]?.length ?? 0) >= 1;
     case 'choose': return true;
@@ -170,13 +187,14 @@ export function finish(recipe: Recipe, made: Made, step: Step, rand: Rand): void
       made.spread[step.id] = grid.join('');
       break;
     }
+    case 'pour':
+      made.poured[step.id] = 1;
+      break;
     case 'sprinkle': {
       if (doneEnough(recipe, made, step)) break;
       const bits = (made.bits[step.id] ??= []);
-      while (bits.length < SELF_SPRINKLE) {
-        const far = (recipe.inner - BIT_MARGIN) * Math.sqrt(rand()), turn = rand() * Math.PI * 2;
-        bits.push(bit({ x: far * Math.cos(turn), y: far * Math.sin(turn) }, rand));
-      }
+      const want = Math.max(step.enough, Math.round(step.most * SELF_SPRINKLE));
+      while (bits.length < want) bits.push(bit(pointInArea(recipe, rand, BIT_MARGIN), rand));
       break;
     }
     case 'cook':
@@ -198,7 +216,28 @@ export function next(recipe: Recipe, made: Made, rand: Rand): Made {
   return made;
 }
 
-export type Touched = 'pressed' | 'spread' | 'sprinkled' | 'placed' | 'off' | 'bitten' | 'nothing';
+/**
+ * A finished one that nobody made, for a picture of the thing (a recipe's tile on the start screen): every step
+ * done by itself, a few of each kind of piece placed, nothing eaten.
+ */
+export function sample(recipe: Recipe, rand: Rand): Made {
+  const made = fresh(recipe);
+  for (const step of recipe.steps) {
+    if (step.verb === 'place') {
+      const options = step.rail.options;
+      for (let i = 0; i < Math.min(step.most, 6); i++) {
+        made.picked[step.id] = options[i % options.length].id;
+        place(recipe, made, step, pointInArea(recipe, rand, PIECE_MARGIN, 0.7), rand);
+      }
+      made.picked[step.id] = options[0].id;
+    }
+    finish(recipe, made, step, rand);
+  }
+  made.step = recipe.steps.length - 1;
+  return made;
+}
+
+export type Touched = 'pressed' | 'spread' | 'poured' | 'sprinkled' | 'placed' | 'off' | 'bitten' | 'nothing';
 
 /** A finger at `at` in the open step: whichever verb the step has. */
 export function touch(recipe: Recipe, made: Made, at: Pt, rand: Rand): Touched {
@@ -206,6 +245,8 @@ export function touch(recipe: Recipe, made: Made, at: Pt, rand: Rand): Touched {
   switch (step.verb) {
     case 'press': return press(recipe, made, step, at) ? 'pressed' : 'nothing';
     case 'spread': return spread(recipe, made, step, at) ? 'spread' : 'nothing';
+    // A touch anywhere pours a splash; a kid doesn't have to aim at the thing.
+    case 'pour': return pour(made, step, step.seconds * POUR_SPLASH) ? 'poured' : 'nothing';
     case 'sprinkle': return sprinkle(recipe, made, step, at, rand) ? 'sprinkled' : 'nothing';
     case 'place': return place(recipe, made, step, at, rand);
     case 'eat': return bite(recipe, made, step, at) ? 'bitten' : 'nothing';
