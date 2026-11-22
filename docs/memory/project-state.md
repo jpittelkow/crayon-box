@@ -103,6 +103,12 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    of all 93 lines shipped as `voice/food-*`, `cook-*`, `wash-*`). No shelf, idle hand or parent screen yet; not
    seen on the laptop or played by a kid. Its narrator batch (93 lines, `ONLY=kitchen` in `generate.mjs`) was made
    2026-11-21: 279 takes on the laptop in `C:\tmp\gen3\kitchen`; take 1 of each is in the app, none listened to.
+   **The cupcake, the second recipe, was built 2026-11-21** on the branch `kitchen/cupcake` (not in 0.10.0): a
+   wrapper, batter poured by a held finger, the oven, frosting, sprinkles, toppers, bites; and a start screen to
+   pick pizza or cupcake. **Home screen tiles:** two options mocked up the same day (boards 35 and 36 on the
+   canvas); the owner picked B, and it is built on the same branch
+   ([ADR 0047](../adr/0047-home-tiles-are-pictures-of-the-games.md)): each tile is a little picture of its game
+   (`src/ui/tiles.ts`), big and two across with four games or fewer.
    The other ideas offered the same day (car wash, vehicle workshop, robot or monster, garden, building site)
    are not planned.
 
@@ -171,11 +177,14 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   checker, no DOM), `progress.ts` (stars, the game path, prefs and settings, recordings under `voice/`),
   `game.ts` (start, practice, path and tracing screens), `voice.ts` (narrator clips, praise, a parent's
   recordings), `parentSection.ts`. Unit tests in `letters.test.ts`, browser tests in `tests/e2e/letters.spec.ts`.
-- `src/games/kitchen/` (ADR 0044): `recipe.ts` (a recipe is steps, each with a verb) and `recipes/pizza.ts` (data);
-  `make/made.ts` (the thing being made as plain data, `readMade`) and `make/verbs.ts` (the seven verbs, `next`; no
-  DOM); `look/art.ts` (the art as data, raw and baked colours) and `look/pizza.ts` (canvas drawing); `game.ts` (the
-  counter screen, fingers, timers), `store.ts` (`kids/<id>/making/<recipe>.json`), `sounds.ts` (stand-ins). Unit
-  tests in `kitchen.test.ts`, browser tests in `tests/e2e/kitchen.spec.ts`.
+- `src/games/kitchen/` (ADR 0044; adding a thing to make: [recipes/kitchen.md](../recipes/kitchen.md)): `recipe.ts`
+  (a recipe is steps, each with a verb; ovals for a thing that isn't round) and `recipes/pizza.ts`, `cupcake.ts`
+  (data); `make/made.ts` (the thing being made as plain data, `readMade`) and `make/verbs.ts` (the eight verbs,
+  `next`, `sample`; no DOM); `look/art.ts` (the art as data, raw and baked colours), `look/kit.ts` (the oven, bites,
+  pieces) and one look a recipe (`look/pizza.ts`, `look/cupcake.ts`); `game.ts` (the start screen with a tile a
+  recipe, the counter, fingers, timers), `voice.ts` (the narrator's lines), `store.ts`
+  (`kids/<id>/making/<recipe>.json`), `sounds.ts` (stand-ins). Unit tests in `kitchen.test.ts` and
+  `cupcake.test.ts`, browser tests in `tests/e2e/kitchen.spec.ts`.
 - Sounds (ADR 0032): every sound is a file in `assets/sounds/` (`sounds.json` lists each one's source and
   license), loaded through `src/shell/soundFiles.ts`. `tools/sounds/` remakes them: `generate.mjs` (AI clips, run
   inside the sync container) and `prepare.mjs` (trim, level, cut loops; needs ffmpeg) from `picks.json`.

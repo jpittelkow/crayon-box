@@ -1,5 +1,5 @@
 import type { GameEntry } from '../../shell/types';
-import { icons } from '../../ui/icons';
+import { tiles } from '../../ui/tiles';
 
 /**
  * Registry entry: loaded at start-up (ADR 0012). Letter practice (ADR 0026) shows on the home screen by default
@@ -8,7 +8,7 @@ import { icons } from '../../ui/icons';
 export const lettersEntry: GameEntry = {
   id: 'letters',
   label: 'Letters',
-  tileIcon: icons.letters(),
-  tileColor: 'var(--kid-orange-tint)',
+  tileIcon: tiles.letters(),
+  tileColor: '#fffaf0',
   load: () => import('./game').then((m) => m.lettersGame),
 };

@@ -1,30 +1,119 @@
-// Kitchen (ADR 0044): a kid makes a thing step by step with their fingers, pizza first. This file is the counter
-// screen: the canvas with the thing on it, the rail of choices, next and back, the fingers, and the sounds. What a
-// touch does to the thing is in make/verbs.ts (plain rules with unit tests); how it looks is under look/.
+// Kitchen (ADR 0044): a kid makes a thing step by step with their fingers. This file is the game's two screens: the
+// start screen, with a tile for each thing to make, and the counter, with the canvas the thing is on, the rail of
+// choices, next and back, the fingers, and the sounds. What a touch does to the thing is in make/verbs.ts (plain
+// rules with unit tests); how each thing looks is under look/.
 import type { GameContext, GameModule } from '../../shell/types';
 import { icons } from '../../ui/icons';
 import { el, kidButton, setPicked } from '../../ui/kid';
 import { NameCounter, loadNamesSetting, type NamesSetting } from '../coloring/names';
 import { optionSvg } from './look/art';
-import { drawPiece, PizzaLook, type View } from './look/pizza';
-import { fresh, stepOf, type Made, type Placed, type Pt } from './make/made';
-import { cook, doneEnough, next, pick, progress, touch } from './make/verbs';
+import { CupcakeLook } from './look/cupcake';
+import { drawPiece, seeded, type Look, type View } from './look/kit';
+import { PizzaLook } from './look/pizza';
+import { fresh, stepOf, untouched, type Made, type Placed, type Pt } from './make/made';
+import { cook, doneEnough, next, pick, pour, progress, sample, touch } from './make/verbs';
 import { railOf, type Recipe, type Step } from './recipe';
+import { CUPCAKE } from './recipes/cupcake';
 import { PIZZA } from './recipes/pizza';
-import { KITCHEN_SOUND_FILES, KITCHEN_SOUNDS, SPREAD_RATE } from './sounds';
+import { KITCHEN_SOUND_FILES, KITCHEN_SOUNDS, POUR_RATE, SPREAD_RATE } from './sounds';
 import { forgetKid, Making } from './store';
 import { KitchenVoice } from './voice';
 import './kitchen.css';
 
 export const kitchenGame: GameModule = {
   mount(root, ctx) {
-    // One recipe so far, so the game opens straight on the counter (ADR 0044).
-    const game = new KitchenGame(root, ctx, PIZZA);
-    void game.start();
+    const game = new KitchenGame(root, ctx);
+    game.start();
     return () => game.unmount();
   },
   forgetKid,
 };
+
+/** The things to make, in the order of their tiles, each with how it is drawn. */
+const RECIPES: readonly { recipe: Recipe; look: () => Look; tile: { units: number; cy: number } }[] = [
+  { recipe: PIZZA, look: () => new PizzaLook(), tile: { units: 660, cy: 0 } },
+  { recipe: CUPCAKE, look: () => new CupcakeLook(), tile: { units: 560, cy: 26 } },
+];
+type Entry = (typeof RECIPES)[number];
+
+/**
+ * A tile's picture, in CSS px. Each recipe says how many of its units the picture shows across its shorter side, and
+ * where the picture's middle is (a cupcake on its plate is not centred on 0,0).
+ */
+const TILE_W = 300, TILE_H = 240;
+
+/** A picture of a finished one, drawn by the recipe's own look: what its tile on the start screen shows. */
+function tilePicture(entry: Entry): HTMLCanvasElement {
+  const canvas = el('canvas', 'kitchen-tile-picture');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(TILE_W * dpr);
+  canvas.height = Math.round(TILE_H * dpr);
+  const c = canvas.getContext('2d');
+  if (!c) return canvas;
+  const unit = Math.min(TILE_W, TILE_H) / entry.tile.units;
+  c.setTransform(unit * dpr, 0, 0, unit * dpr, canvas.width / 2, canvas.height / 2 - entry.tile.cy * unit * dpr);
+  const view: View = { time: 0, flat: 1, width: TILE_W / unit, height: TILE_H / unit, held: false, pop: () => 1, bubbles: [] };
+  entry.look().draw(c, entry.recipe, sample(entry.recipe, seeded(7)), view);
+  return canvas;
+}
+
+/**
+ * The game: the start screen, then the counter for the thing picked. Back on the counter comes back here; back
+ * here leaves the game.
+ */
+class KitchenGame {
+  private counter: Counter | undefined;
+  private stopped = false;
+
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly ctx: GameContext,
+  ) {}
+
+  start(): void {
+    this.showStart();
+  }
+
+  async unmount(): Promise<void> {
+    this.stopped = true;
+    await this.counter?.unmount();
+  }
+
+  /** One big tile for each thing to make (three across, ADR 0016 rule 6). */
+  private showStart(): void {
+    const screen = el('div', 'kitchen-screen kitchen-start', { 'data-screen': 'kitchen-start' });
+    const back = kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'kitchen-corner', onTap: () => this.ctx.exitToHome() });
+    const row = el('div', 'kitchen-start-row');
+    for (const entry of RECIPES) {
+      const tile = kidButton({
+        kind: 'paper',
+        label: entry.recipe.label,
+        className: 'kitchen-tile',
+        onTap: () => {
+          this.ctx.sound.play('tap');
+          this.open(entry);
+        },
+      });
+      tile.append(tilePicture(entry));
+      row.append(tile);
+    }
+    screen.append(back, row);
+    this.root.replaceChildren(screen);
+  }
+
+  private open(entry: Entry): void {
+    const counter = new Counter(this.root, this.ctx, entry.recipe, entry.look(), () => void this.leave(counter));
+    this.counter = counter;
+    void counter.start();
+  }
+
+  /** Back on the counter: what is being made is saved first, then the start screen shows. */
+  private async leave(counter: Counter): Promise<void> {
+    await counter.unmount();
+    if (this.counter === counter) this.counter = undefined;
+    if (!this.stopped) this.showStart();
+  }
+}
 
 /** A touch reported wider than this (CSS px) is a palm, and is ignored (ADR 0003 rule 3). */
 const PALM_CSS_PX = 80;
@@ -73,10 +162,10 @@ type Fx =
 
 const CRUMB_COLOURS = ['#e2a85c', '#ffcf5a', '#e2a85c', '#c92a20'];
 
-class KitchenGame {
+/** The counter: one thing being made. */
+class Counter {
   private made: Made;
   private making!: Making;
-  private readonly look = new PizzaLook();
   private voice: KitchenVoice | undefined;
   /** How often a picked thing's name is said (the coloring game's rule, ADR 0038), until Kitchen's parent screen sets it. */
   private names: NamesSetting = 'first';
@@ -111,8 +200,16 @@ class KitchenGame {
     private readonly root: HTMLElement,
     private readonly ctx: GameContext,
     private readonly recipe: Recipe,
+    private readonly look: Look,
+    private readonly onBack: () => void,
   ) {
     this.made = fresh(recipe);
+  }
+
+  /** How flat the thing has been pressed (1 for a recipe with nothing to press). */
+  private pressedFlat(): number {
+    const press = this.recipe.steps.find((s) => s.verb === 'press');
+    return press ? (this.made.pressed[press.id] ?? 0) : 1;
   }
 
   async start(): Promise<void> {
@@ -127,7 +224,7 @@ class KitchenGame {
     this.names = names;
     this.voice = new KitchenVoice(this.ctx.sound, counter, () => this.names);
     this.made = made;
-    this.flat = made.pressed[this.recipe.steps[0].id] ?? 0;
+    this.flat = this.pressedFlat();
     this.ctx.sound.preload?.(KITCHEN_SOUND_FILES);
     this.build();
     this.enterStep();
@@ -164,7 +261,7 @@ class KitchenGame {
 
   private build(): void {
     const screen = el('div', 'kitchen-screen', { 'data-screen': 'kitchen-counter' });
-    const back = kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'kitchen-corner', onTap: () => this.ctx.exitToHome() });
+    const back = kidButton({ kind: 'action-lg', label: 'Back', html: icons.back(), className: 'kitchen-corner', onTap: () => this.onBack() });
     const worktop = el('div', 'kitchen-worktop');
     const canvas = el('canvas', 'kitchen-canvas', { role: 'img' });
     worktop.append(canvas);
@@ -219,7 +316,7 @@ class KitchenGame {
             if (!pick(this.made, step, option.id)) return;
             setPicked(buttons, button);
             this.ctx.sound.play('tap');
-            this.voice?.name(option.id);
+            this.voice?.name(option);
             this.changed();
           },
         });
@@ -234,8 +331,7 @@ class KitchenGame {
       else this.ctx.sound.effect?.(KITCHEN_SOUNDS.ovenIn);
     }
     // The step's line, and before a new thing's first step the recipe's own ("Let's make a pizza!").
-    const untouched = this.made.step === 0 && !this.made.pressed[step.id];
-    if (!cooked) this.voice?.tip([untouched ? this.recipe.sayStart : undefined, step.say]);
+    if (!cooked) this.voice?.tip([untouched(this.made) ? this.recipe.sayStart : undefined, step.say]);
     this.show();
   }
 
@@ -352,6 +448,9 @@ class KitchenGame {
         clearTimeout(this.still);
         this.still = setTimeout(() => sound.scratch?.(0), STILL_MS);
         break;
+      case 'poured':
+        sound.effect?.(KITCHEN_SOUNDS.pour);
+        break;
       case 'sprinkled': {
         for (const b of (this.made.bits[step.id] ?? []).slice(-3)) if (!this.born.has(b)) this.born.set(b, this.time);
         const now = performance.now();
@@ -426,6 +525,14 @@ class KitchenGame {
       this.changed();
     } else if (step.verb === 'sprinkle' && !this.busy) {
       for (const finger of this.fingers.values()) if (now - finger.dropped >= HOLD_DROP_MS) this.act(finger, finger.at, false);
+    } else if (step.verb === 'pour' && !this.busy && this.fingers.size) {
+      // A held finger keeps pouring, with a glug while it does.
+      if (pour(this.made, step, seconds)) {
+        this.ctx.sound.scratch?.(0.5, POUR_RATE);
+        this.changed();
+      } else {
+        this.ctx.sound.scratch?.(0);
+      }
     }
   }
 
@@ -435,7 +542,7 @@ class KitchenGame {
     const now = performance.now(), dt = Math.min(0.1, (now - this.lastFrame) / 1000);
     this.lastFrame = now;
     this.time = (now - this.opened) / 1000;
-    const target = this.made.pressed[this.recipe.steps[0].id] ?? 0;
+    const target = this.pressedFlat();
     this.flat += (target - this.flat) * Math.min(1, dt * 14);
     if (Math.abs(target - this.flat) < 0.003) this.flat = target;
 
@@ -451,6 +558,7 @@ class KitchenGame {
       flat: this.flat,
       width: w / this.unit,
       height: h / this.unit,
+      held: this.fingers.size > 0,
       pop: (thing) => this.pop(thing),
       bubbles: this.bubbles,
     };

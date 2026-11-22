@@ -37,10 +37,25 @@ const counter = (page: Page) => page.locator('[data-screen="kitchen-counter"]');
 const onStep = (page: Page, id: string) => expect(counter(page)).toHaveAttribute('data-step', id);
 const progress = async (page: Page) => Number(await counter(page).getAttribute('data-progress'));
 
-async function openKitchen(page: Page): Promise<void> {
+const start = (page: Page) => page.locator('[data-screen="kitchen-start"]');
+
+/** Picks the Star kid, opens Kitchen, and picks a thing to make from its start screen. */
+async function openKitchen(page: Page, thing: 'Pizza' | 'Cupcake' = 'Pizza'): Promise<void> {
   await page.getByRole('button', { name: 'Star kid' }).tap();
   await page.getByRole('button', { name: 'Kitchen', exact: true }).tap();
+  await expect(start(page)).toBeVisible();
+  await start(page).getByRole('button', { name: thing, exact: true }).tap();
   await expect(counter(page)).toBeVisible();
+}
+
+/** One finger held still at a place for a while, with raw touch events. */
+async function hold(page: Page, at: Pt, ms: number): Promise<void> {
+  const cdp = await page.context().newCDPSession(page);
+  const s = await toScreen(page, at);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: s.x, y: s.y, id: 1, radiusX: 4, radiusY: 4 }] });
+  await page.waitForTimeout(ms);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await cdp.detach();
 }
 
 /** The pizza's own units (0,0 is its middle, 250 its edge) to viewport coordinates. */
@@ -153,7 +168,84 @@ test('a pizza made by hand: dough, sauce, cheese, toppings, the oven, a bite, an
   await expect.poll(() => progress(page)).toBeGreaterThan(0);
   const eaten = await progress(page);
   await pick(page, 'Back');
+  // Back on the counter is the start screen, not the home screen.
+  await expect(start(page)).toBeVisible();
+  await start(page).getByRole('button', { name: 'Pizza', exact: true }).tap();
+  await onStep(page, 'eat');
+  expect(await progress(page)).toBe(eaten);
+});
+
+test('the start screen has a tile for each thing to make, and its back leaves the game', async ({ page }) => {
+  await openApp(page);
+  await page.getByRole('button', { name: 'Star kid' }).tap();
   await page.getByRole('button', { name: 'Kitchen', exact: true }).tap();
+  await expect(start(page).getByRole('button', { name: 'Pizza', exact: true })).toBeVisible();
+  await expect(start(page).getByRole('button', { name: 'Cupcake', exact: true })).toBeVisible();
+  expect((await start(page).innerText()).trim()).toBe('');
+  await page.getByRole('button', { name: 'Back', exact: true }).tap();
+  await expect(page.locator('[data-screen="home"]')).toBeVisible();
+});
+
+test('a cupcake made by hand: a wrapper, batter, the oven, frosting, sprinkles, a topper, a bite, and it is kept', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openApp(page);
+  await openKitchen(page, 'Cupcake');
+  const ON_FROSTING = { x: 0, y: -80 }, ON_WRAPPER = { x: 0, y: 150 };
+
+  // A wrapper: only a pick, so it is done at once.
+  await onStep(page, 'wrapper');
+  await expect(page.getByRole('group', { name: 'Wrappers' }).getByRole('button')).toHaveCount(4);
+  await expect(counter(page)).toHaveAttribute('data-done', 'true');
+  await page.getByRole('button', { name: 'Pink wrapper' }).tap();
+  await expect(page.getByRole('button', { name: 'Pink wrapper' })).toHaveAttribute('aria-pressed', 'true');
+
+  // Batter: each touch pours a splash, wherever it lands; ten fill it.
+  await next(page);
+  await onStep(page, 'batter');
+  await tapAt(page, ON_WRAPPER);
+  await expect.poll(() => progress(page)).toBe(10);
+  for (let i = 0; i < 9; i++) await tapAt(page, { x: 200, y: -200 });
+  await expect(counter(page)).toHaveAttribute('data-done', 'true');
+
+  // The oven bakes by itself; then the frosting, squeezed on by a held finger.
+  await next(page);
+  await onStep(page, 'oven');
+  await expect(counter(page)).toHaveAttribute('data-step', 'frosting', { timeout: 30_000 });
+  await page.getByRole('button', { name: 'Chocolate frosting' }).tap();
+  await hold(page, ON_FROSTING, 1200);
+  const squeezed = await progress(page);
+  expect(squeezed).toBeGreaterThan(20);
+  expect(squeezed).toBeLessThan(100);
+  await hold(page, ON_FROSTING, 2600);
+  await expect(counter(page)).toHaveAttribute('data-done', 'true');
+
+  // Sprinkles land on the frosting only.
+  await next(page);
+  await onStep(page, 'sprinkles');
+  await rub(page, [{ x: -60, y: 160 }, { x: 60, y: 160 }]);
+  expect(await progress(page)).toBe(0);
+  await rub(page, [...[-90, -60, -30, 0, 30, 60, 90].map((x) => ({ x, y: -78 })), ...[100, 60, 20, -20, -60, -100].map((x) => ({ x, y: -24 })), ...[-50, 0, 50].map((x) => ({ x, y: -128 }))]);
+  await expect(counter(page)).toHaveAttribute('data-done', 'true');
+
+  // A topper: on the frosting it lands, on the wrapper it misses.
+  await next(page);
+  await onStep(page, 'toppers');
+  await expect(page.getByRole('group', { name: 'Toppers' }).getByRole('button')).toHaveCount(8);
+  await tapAt(page, { x: 0, y: -150 });
+  await tapAt(page, ON_WRAPPER);
+  await expect(counter(page)).toHaveAttribute('data-count', '1');
+
+  // A bite, then away and back: the cupcake is as it was left, and the pizza is its own thing.
+  await next(page);
+  await onStep(page, 'eat');
+  await tapAt(page, ON_WRAPPER);
+  await expect.poll(() => progress(page)).toBeGreaterThan(0);
+  const eaten = await progress(page);
+  await pick(page, 'Back');
+  await start(page).getByRole('button', { name: 'Pizza', exact: true }).tap();
+  await onStep(page, 'dough');
+  await pick(page, 'Back');
+  await start(page).getByRole('button', { name: 'Cupcake', exact: true }).tap();
   await onStep(page, 'eat');
   expect(await progress(page)).toBe(eaten);
 });
@@ -193,10 +285,24 @@ test('every game shows by default, and the home screen keeps all four tiles on t
     expect(box.y + box.height, name).toBeLessThanOrEqual(view.height);
     boxes.push(box);
   }
-  // Three across, then a second row (ADR 0016 rule 6); the back button stays clear of the tiles.
-  expect(boxes[3].y).toBeGreaterThan(boxes[0].y + boxes[0].height);
+  // Four games: big picture tiles, two across and two down (ADR 0047), each filled by its picture.
+  expect(boxes[1].y).toBe(boxes[0].y);
+  expect(boxes[1].x).toBeGreaterThan(boxes[0].x + boxes[0].width);
+  expect(boxes[2].y).toBeGreaterThan(boxes[0].y + boxes[0].height);
+  expect(boxes[3].y).toBe(boxes[2].y);
+  expect(boxes[0].width).toBeGreaterThan(400);
+  const picture = (await home.getByRole('button', { name: 'Kitchen', exact: true }).locator('svg').boundingBox())!;
+  expect(picture.width).toBeGreaterThan(boxes[3].width - 20);
+  expect(picture.height).toBeGreaterThan(boxes[3].height - 20);
+  // The back button and the lock stay clear of the tiles.
+  const apart = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
+    a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
   const back = (await home.getByRole('button', { name: 'Back', exact: true }).boundingBox())!;
-  expect(back.y + back.height).toBeLessThan(boxes[0].y);
+  const lock = (await home.getByRole('button', { name: 'Grown-ups: press and hold' }).boundingBox())!;
+  for (const box of boxes) {
+    expect(apart(back, box)).toBe(true);
+    expect(apart(lock, box)).toBe(true);
+  }
 
   // A parent can hide Kitchen.
   await page.goto('/');

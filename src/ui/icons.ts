@@ -85,35 +85,6 @@ export const icons = {
   less: (size = 96) => svg('<path d="M31 7L14 24l17 17"/>', size, { stroke: 5 }),
   /** A check mark: "I'm done" (letters, ADR 0028). */
   check: (size = 96) => svg('<path d="M9 25l10 10L39 13"/>', size, { stroke: 6 }),
-  coloring: (size = 120) =>
-    svg(
-      '<path d="M11 5h19l8 8v30H11z" fill="#ffffff"/><path d="M30 5v8h8"/>' +
-        '<path d="M17 34c4-6 8-9 14-10" style="stroke: #ff70a6" stroke-width="5"/>',
-      size,
-    ),
-  /** The driving game's home tile: a cartoon car seen from the side (ADR 0021). Original, CC0. */
-  driving: (size = 120) =>
-    svg(
-      '<path d="M5 32v-7l5-2 6-9h15l7 9 5 2v7z" fill="#3a86ff"/><path d="M17 15l-4 8h11v-8zM28 15v8h9l-6-8z" fill="#cfeaff"/>' +
-        '<circle cx="14" cy="34" r="5" fill="#2b2b2b"/><circle cx="35" cy="34" r="5" fill="#2b2b2b"/>',
-      size,
-    ),
-  /** The letters game's home tile: a big A with a crayon line along one leg (ADR 0026). Original, CC0. */
-  letters: (size = 120) =>
-    svg(
-      '<path d="M24 6L10 42M24 6l14 36M15.5 29h17" stroke-width="7"/>' +
-        '<path d="M24 6L10 42M24 6l14 36M15.5 29h17" stroke="#ffffff" stroke-width="3"/>' +
-        '<path d="M23 9L13 36" stroke="#ff9f1c" stroke-width="3"/>',
-      size,
-    ),
-  /** The Kitchen game's home tile: a chef's hat (ADR 0044). Original, CC0. */
-  kitchen: (size = 120) =>
-    svg(
-      '<path d="M14.5 27C6 27 5 15.500 12.500 13.500 12 6 22 3.500 25.500 9.500 29.500 4 39.500 7 38 14.500 45 16.500 43 27 34.500 27Z" fill="#ffffff"/>' +
-        '<path d="M14.500 27h20v10q-10 3-20 0z" fill="#ffffff"/><path d="M19.500 30v7.500M24.500 30.500v8M29.500 30v7.500" stroke-width="2.500"/>',
-      size,
-      { stroke: 3 },
-    ),
   /** An arrow to the right: on to the next step (Kitchen, ADR 0044). The back arrow, the other way. */
   next: (size = 58) => svg('<path d="M27 9l14 15-14 15"/><path d="M40 24H7"/>', size, { stroke: 6 }),
   /** A squeeze-bulb horn, not a speaker, so it never reads as a sound setting. */
