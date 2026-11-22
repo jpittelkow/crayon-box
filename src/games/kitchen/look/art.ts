@@ -62,6 +62,60 @@ export const PIECES: Record<string, readonly Op[]> = {
     { d: 'M-27 0Q0-26 27 0Q0 26-27 0Z', fill: ['#2fa35f', '#27864f'], stroke: INK },
     { d: 'M-19 0H19', stroke: ['#1b6b3c', '#17573a'], width: 3 },
   ],
+  // The cupcake's toppers. They go on after the oven, so they have one colour.
+  cherry: [
+    { d: 'M2-12q4-16 17-18', stroke: INK, width: 4 },
+    { d: circle(0, 6, 20), fill: '#f23b2f', stroke: INK },
+    { d: 'M-9-2q3-7 9-8', stroke: '#ff8f85', width: 3 },
+  ],
+  strawberry: [
+    { d: 'M0 27C-22 13-27-5-19-13Q0-21 19-13C27-5 22 13 0 27Z', fill: '#f23b2f', stroke: INK },
+    { d: 'M-15-13L0-7L15-13L7-22L0-15L-7-22Z', fill: '#2fa35f', stroke: INK, width: 3 },
+    { d: circle(-8, 2, 2) + circle(6, 0, 2) + circle(-1, 12, 2) + circle(9, 11, 2), fill: '#ffe08a' },
+  ],
+  blueberry: [
+    { d: circle(0, 0, 19), fill: '#4d5fd1', stroke: INK },
+    { d: 'M-6-5l6 5 6-5', stroke: '#2b3a9e', width: 3 },
+  ],
+  banana: [
+    { d: circle(0, 0, 22), fill: '#ffe9a0', stroke: INK },
+    { d: circle(0, 0, 13), stroke: '#e3c96a', width: 3 },
+    { d: circle(-4, -3, 2.2) + circle(4, -2, 2.2) + circle(0, 5, 2.2), fill: '#8d5a3b' },
+  ],
+  candy: [
+    { d: 'M-14 0L-28-11V11Z', fill: '#ffd23f', stroke: INK, width: 3.5 },
+    { d: 'M14 0L28-11V11Z', fill: '#ffd23f', stroke: INK, width: 3.5 },
+    { d: circle(0, 0, 15), fill: '#4cc9f0', stroke: INK },
+    { d: 'M-7 2q7-10 14 0', stroke: '#ffffff', width: 3 },
+  ],
+  candle: [
+    { d: pill(-7, -12, 14, 38, 4), fill: '#9b5de5', stroke: INK },
+    { d: 'M-7 0l14-6M-7 12l14-6', stroke: '#ffffff', width: 3 },
+    { d: 'M0-14c-9-8-2-16 0-23 2 7 9 15 0 23z', fill: '#ffd23f', stroke: INK, width: 3 },
+  ],
+  star: [{ d: 'M0-25L7-8L25-7L11 5L15 23L0 13L-15 23L-11 5L-25-7L-7-8Z', fill: '#ffd23f', stroke: INK }],
+  heart: [{ d: 'M0 23S-25 8-25-8A12.500 12.500 0 0 1 0-12A12.500 12.500 0 0 1 25-8C25 8 0 23 0 23Z', fill: '#ff70a6', stroke: INK }],
+};
+
+/** The cupcake's wrappers, by the ids the recipe's rail uses. */
+export const WRAPPERS: Record<string, { fill: string; pleat: string }> = {
+  'blue-wrapper': { fill: '#4c8cf5', pleat: '#1d3a9e' },
+  'pink-wrapper': { fill: '#ff70a6', pleat: '#d81b84' },
+  'yellow-wrapper': { fill: '#ffd23f', pleat: '#e3a21a' },
+  'green-wrapper': { fill: '#44b87b', pleat: '#1b6b3c' },
+};
+/** Its batters: raw, then baked. */
+export const BATTERS: Record<string, Tone> = {
+  'vanilla-batter': ['#f6e3a8', '#e6b866'],
+  'chocolate-batter': ['#8d5a3b', '#5b3a26'],
+  'strawberry-batter': ['#ffb3c7', '#ea8ea6'],
+};
+/** Its frostings: the colour, and the darker line between the swirls. */
+export const FROSTINGS: Record<string, { fill: string; edge: string }> = {
+  'strawberry-frosting': { fill: '#ff70a6', edge: '#d81b84' },
+  'vanilla-frosting': { fill: '#fff4dc', edge: '#e3cfa0' },
+  'chocolate-frosting': { fill: '#8d5a3b', edge: '#5b3a26' },
+  'blue-frosting': { fill: '#4cc9f0', edge: '#12a8a3' },
 };
 
 /** The sauces, by the ids the recipe's rail uses: the layer's colour, its darker edge, and both again when baked. */
@@ -82,15 +136,37 @@ function puddle(): string {
   return d + 'Z';
 }
 
-/** A rail button's art for an option: a piece as it is, a sauce as a puddle of it. Undefined when there is none. */
+/**
+ * A rail button's art for an option: a piece as it is, a sauce or a batter as a puddle of it, a wrapper as a little
+ * wrapper, a frosting as a swirl. Undefined when there is none.
+ */
 export function optionArt(id: string): readonly Op[] | undefined {
   if (PIECES[id]) return PIECES[id];
   const layer = LAYERS[id];
-  if (!layer) return undefined;
-  return [
-    { d: puddle(), fill: layer.fill, stroke: INK },
-    { d: 'M-12-4q8-10 20-6', stroke: layer.edge, width: 4 },
-  ];
+  if (layer) {
+    return [
+      { d: puddle(), fill: layer.fill, stroke: INK },
+      { d: 'M-12-4q8-10 20-6', stroke: layer.edge, width: 4 },
+    ];
+  }
+  const batter = BATTERS[id];
+  if (batter) return [{ d: puddle(), fill: batter, stroke: INK }, { d: 'M-12-4q8-10 20-6', stroke: '#ffffff', width: 4 }];
+  const wrapper = WRAPPERS[id];
+  if (wrapper) {
+    return [
+      { d: 'M-25-18H25L18 22H-18Z', fill: wrapper.fill, stroke: INK },
+      { d: 'M-11-16l3 36M0-16v36M11-16l-3 36', stroke: wrapper.pleat, width: 3 },
+    ];
+  }
+  const frosting = FROSTINGS[id];
+  if (frosting) {
+    return [
+      { d: oval(0, 14, 25, 11), fill: frosting.fill, stroke: INK },
+      { d: oval(0, 1, 18, 10), fill: frosting.fill, stroke: INK },
+      { d: oval(0, -12, 10, 8), fill: frosting.fill, stroke: INK },
+    ];
+  }
+  return undefined;
 }
 
 /** A tone's raw colour. */

@@ -32,6 +32,11 @@ _Last updated: 2026-11-21_
   **Waiting on the owner:** listen to the Kitchen lines in the game, and say which need another take (the other
   takes are on `C:\tmp\gen3\audition.html`; a redo run has to happen before 2026-12-31); and accept the ADR once
   the built game has been looked at.
+- **Home screen tiles** ([ADR 0047](../adr/0047-home-tiles-are-pictures-of-the-games.md), the owner's pick of
+  option B, built 2026-11-21): whether each picture is right, above all Coloring's; the tiles grow to 620 × 350 on
+  a big screen.
+- **The cupcake** (built 2026-11-21 on defaults): its four wrappers, three batters, four frostings and eight
+  toppers; filling by holding for 2.5 seconds or ten taps; "You made a cupcake!" said as the eating step opens.
 - **The family's sync server** was found stopped on 2026-11-21 (its container had exited the morning before and is
   not set to start by itself on the server). It was started to run the batch. Whether it should start by itself
   is the owner's setting on the server's Docker page.

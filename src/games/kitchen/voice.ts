@@ -10,9 +10,7 @@ import { narratorClip } from '../../shell/soundFiles';
 import type { Sound } from '../../shell/types';
 // The counting of names heard is the coloring game's (kept in this game's own storage, per kid).
 import { NAMED_PICKS, NameCounter, saysName, type NamesSetting } from '../coloring/names';
-
-/** The clip that names a rail option, by the option's id. */
-export const nameKey = (optionId: string) => `food-${optionId}`;
+import { nameClipOf, type Option } from './recipe';
 
 export class KitchenVoice {
   private audio: HTMLAudioElement | null = null;
@@ -31,8 +29,8 @@ export class KitchenVoice {
   }
 
   /** A thing was picked: its name, cutting in, while this kid still gets names. */
-  name(optionId: string): void {
-    const key = nameKey(optionId), url = narratorClip(key);
+  name(option: Option): void {
+    const key = nameClipOf(option), url = narratorClip(key);
     if (!this.on || !url || !saysName(this.names(), this.counter.heard(key))) return;
     this.now({ url, key });
   }

@@ -153,8 +153,9 @@ export interface GameModule {
 /** Registry entry, loaded at start-up: enough to draw the home tile. */
 export interface GameEntry {
   id: string;
-  /** SVG markup for the home tile. */
+  /** SVG markup for the home tile: a picture of the game that fills the tile (ADR 0047, `src/ui/tiles.ts`). */
   tileIcon: string;
+  /** The colour behind the picture. */
   tileColor: string;
   /** Accessible name for tests and tools; never shown (ADR 0003). */
   label: string;

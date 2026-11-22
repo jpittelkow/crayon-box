@@ -13,6 +13,9 @@ import type { UpdateController } from './updates';
 import { screenKind, type KioskControl } from './kiosk';
 import type { SyncService } from '../sync/service';
 
+/** With this many games or fewer, the home screen's tiles are the big ones, two across (ADR 0047). */
+const BIG_TILES_UP_TO = 4;
+
 export class Shell {
   private unmount: (() => Promise<void>) | null = null;
   private stopParent: (() => void) | null = null;
@@ -123,7 +126,8 @@ export class Shell {
       className: 'corner',
       onTap: () => void this.showKidPicker(),
     });
-    const row = el('div', 'home-row');
+    // Up to four games get big picture tiles, two across (ADR 0047); more than that, the smaller ones, three across.
+    const row = el('div', games.length <= BIG_TILES_UP_TO ? 'home-row home-row--big' : 'home-row');
     for (const game of games) {
       const tile = kidButton({
         kind: 'paper',

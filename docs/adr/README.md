@@ -21,7 +21,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0013](0013-code-hosting.md) | Code hosting: GitHub (Gitea optional mirror) | Accepted |
 | [0014](0014-web-first-then-kiosk-installer.md) | Web app first, then installer with a kiosk lock | Accepted, partly superseded by 0020, 0021, 0024 |
 | [0015](0015-testing-approach.md) | Testing approach | Accepted |
-| [0016](0016-visual-design-language.md) | Visual design language: Crayon Box | Accepted, partly superseded by 0017–0019, sounds by 0032 |
+| [0016](0016-visual-design-language.md) | Visual design language: Crayon Box | Accepted, partly superseded by 0017–0019, sounds by 0032, home tiles by 0047 |
 | [0017](0017-new-pictures-and-my-pictures.md) | New pictures from the page library, old ones from My pictures | Accepted |
 | [0018](0018-kid-names-and-photos.md) | Kid profiles with names and photos | Accepted, partly superseded by 0024 |
 | [0019](0019-bigger-coloring-page.md) | A bigger coloring page: fills the window, 64 px color buttons | Accepted |
@@ -52,6 +52,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0044](0044-kitchen-make-it-game-pizza-first.md) | Kitchen: a game for making things step by step, pizza first | Proposed |
 | [0045](0045-every-game-shows-by-default.md) | Every game shows on the home screen by default | Accepted |
 | [0046](0046-linux-version.md) | A Linux version: the same Tauri shell, an AppImage, and a kids' session that is only the app | Proposed |
+| [0047](0047-home-tiles-are-pictures-of-the-games.md) | Home screen tiles are little pictures of the games, on bigger tiles | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H

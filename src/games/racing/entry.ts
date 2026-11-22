@@ -1,5 +1,5 @@
 import type { GameEntry } from '../../shell/types';
-import { icons } from '../../ui/icons';
+import { tiles } from '../../ui/tiles';
 
 /**
  * Registry entry: loaded at start-up (ADR 0012). The driving game shows on the home screen by default (owner,
@@ -9,7 +9,7 @@ import { icons } from '../../ui/icons';
 export const racingEntry: GameEntry = {
   id: 'racing',
   label: 'Driving',
-  tileIcon: icons.driving(),
-  tileColor: 'var(--kid-teal-tint)',
+  tileIcon: tiles.driving(),
+  tileColor: 'var(--crayon-pale-blue)',
   load: () => import('./game').then((m) => m.drivingGame),
 };

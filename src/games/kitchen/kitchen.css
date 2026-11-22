@@ -12,6 +12,41 @@
   align-self: flex-start;
 }
 
+/* The start screen: one big tile for each thing to make, each a picture of a finished one. */
+.kitchen-start {
+  align-items: center;
+  justify-content: center;
+}
+.kitchen-start .kitchen-corner {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--space-6);
+}
+.kitchen-start-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 40px 56px;
+  max-width: calc(3 * 340px + 2 * 56px);
+}
+.kitchen-tile.cb-paper {
+  width: 340px;
+  height: 280px;
+  border-width: 6px;
+  border-radius: 40px;
+  box-shadow: 0 10px 0 var(--ink);
+  background-color: var(--crayon-pale-blue);
+}
+.kitchen-tile.cb-paper.is-pressed {
+  transform: translateY(6px);
+  box-shadow: 0 4px 0 var(--ink);
+}
+.kitchen-tile-picture {
+  width: 300px;
+  height: 240px;
+  pointer-events: none;
+}
+
 /* The worktop is the picture's frame: outlined, with a ledge, but it is not a button (the canvas takes the touches). */
 .kitchen-worktop {
   position: relative;

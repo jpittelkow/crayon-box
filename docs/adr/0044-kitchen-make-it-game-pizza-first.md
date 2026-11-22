@@ -32,8 +32,9 @@ art and sounds (ADR 0011).
 - A new game module, **Kitchen** (`src/games/kitchen/`, registry id `kitchen`), with a home tile like the others.
 - Each thing to make is a **recipe**. Pizza is the first. Cupcake, birthday cake, ice cream and cookie are meant
   to follow, each as a new recipe and not a new game.
-- With one recipe the game opens straight on the counter. With more, a start screen shows one big tile per recipe
-  (three across, two down, ADR 0016 rule 6).
+- With one recipe the game opens straight on the counter. With more (since the cupcake, 2026-11-21), a start
+  screen shows one big tile per recipe (three across, two down, ADR 0016 rule 6), each a picture of a finished
+  one; back on the counter returns to it.
 
 ### The counter screen
 - The thing being made sits big in the middle on a counter, on the kid's tint (ADR 0016 rule 7).
@@ -84,7 +85,11 @@ art and sounds (ADR 0011).
   | `cook` | nothing; a short show with a sound and a bell | oven |
   | `eat` | takes a bite | eating |
 
-  A later recipe adds a verb only when it needs one (`pour`, `squeeze`, `count` for candles).
+  A later recipe adds a verb only when it needs one. The cupcake (2026-11-21) added **`pour`**: a held finger
+  fills the thing up, and each touch adds a splash; it serves for batter and for frosting, so no `squeeze` was
+  needed. Still expected: `count` for a birthday cake's candles.
+- **A thing need not be round.** A recipe may say where bits and pieces go as a few ovals, and what gets eaten
+  as one (a cupcake, seen from the side); without them it is a circle round the middle.
 - **What is being made is plain data** (the choices, a small grid of what is covered, the pieces and where they
   lie). The rules that change it are plain TypeScript with no DOM, like the letters checker and the driving
   simulation, so they have unit tests, and the same data draws the pizza at any size.

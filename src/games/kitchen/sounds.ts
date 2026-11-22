@@ -6,6 +6,8 @@ import type { Effect } from '../../shell/types';
 export const KITCHEN_SOUNDS = {
   /** A pat on the dough: the driving game's bump, soft and low. */
   pat: { file: 'drive/bump.wav', gain: 0.45, rate: 0.75, seconds: 0.25 },
+  /** A splash of batter or a squeeze of frosting: the puddle, short and low. */
+  pour: { file: 'drive/puddle.wav', gain: 0.3, rate: 0.8, seconds: 0.25 },
   /** Cheese landing: the tap, quiet and high. */
   sprinkle: { file: 'ui/tap.wav', gain: 0.22, rate: 1.9 },
   /** A topping that missed the pizza: the tap, quiet and low (the app's "nothing"). */
@@ -20,5 +22,7 @@ export const KITCHEN_SOUNDS = {
 
 /** Spreading sauce: the crayon loop (`Sound.scratch`), played this much lower. */
 export const SPREAD_RATE = 0.55;
+/** Pouring while a finger is held: the same loop, lower still. */
+export const POUR_RATE = 0.4;
 
 export const KITCHEN_SOUND_FILES: readonly string[] = [...new Set(Object.values(KITCHEN_SOUNDS).map((s) => s.file))];
