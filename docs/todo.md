@@ -11,10 +11,12 @@ loading a map from a folder), but more vehicles come first.
 ## 1. Look, listen and playtest what was built overnight
 Nothing built on 2026-11-16 has been heard, seen on the laptop or played by a kid. The owner's choices it raised
 are in [open questions](memory/open-questions.md).
-- **Release 0.10.0 is published** (2026-11-21: Kitchen, and Letters and Kitchen shown by default). Installed
-  copies offer it at their next check. The [release checklist](release-checklist.md)'s hand checks were not run
-  first: do them on the laptop as it updates (the update itself, the kiosk lock, files), and listen to Kitchen's
-  narrator lines. A parent can hide Kitchen under Settings, Games if it isn't ready for the kids.
+- **Releases 0.10.0 and 0.11.0 are published** (both 2026-11-21. 0.10.0: Kitchen, and Letters and Kitchen shown
+  by default. 0.11.0: Kitchen's cupcake and start screen, and home tiles that are pictures of the games).
+  Installed copies offer 0.11.0 at their next check. The [release checklist](release-checklist.md)'s hand checks
+  were not run for either: do them on the laptop as it updates (the update itself, the kiosk lock, files), and
+  listen to Kitchen's narrator lines. A parent can hide Kitchen under Settings, Games if it isn't ready for the
+  kids.
 - **Release 0.9.0** (coloring buttons and wheel; letters sound, tips, how-to and shapes; writing words; driving
   targets, set pieces and folder maps). The release checklist's hand checks on the laptop have not been run.
 - **On the laptop:** the Windows display scale (at 125 % the colour wheel stays hidden); drop
@@ -88,10 +90,10 @@ The kids asked for hands-on "make a thing" games; the owner picked a Kitchen gam
   made before the voice retires on 2026-12-31.
 - **Look, listen and play:** the owner tries it in the web app and says which lines need another take
   (`C:\tmp\gen3\audition.html` has all three); then a kid.
-- **The cupcake is built** (2026-11-21, branch `kitchen/cupcake`, after 0.10.0): the second recipe, with a start
-  screen to pick pizza or cupcake, and a [recipe doc](recipes/kitchen.md) for the next one.
+- **The cupcake is built** (2026-11-21, released in 0.11.0): the second recipe, with a start screen to pick pizza
+  or cupcake, and a [recipe doc](recipes/kitchen.md) for the next one.
 - **Home screen tiles are pictures of the games** (the owner's pick of option B,
-  [ADR 0047](adr/0047-home-tiles-are-pictures-of-the-games.md)): built 2026-11-21 on the same branch.
+  [ADR 0047](adr/0047-home-tiles-are-pictures-of-the-games.md)): built 2026-11-21, released in 0.11.0.
 - Then: the idle hand (the rest of phase C), the shelf and the parent screen (D), and more recipes (F: birthday
   cake, ice cream, cookie).
 

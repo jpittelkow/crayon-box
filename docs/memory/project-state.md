@@ -5,10 +5,11 @@ _Last updated: 2026-11-21_
 **What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15, brought up to date 2026-11-16).
 
 ## Phase
-**Latest release: 0.10.0** (published 2026-11-21, on the owner's word, without the release checklist's hand
-checks): the Kitchen game (a pizza, with speech), Letters and Kitchen shown by default (ADR 0045), the home screen
-wrapping to a second row (PR #76). Not yet installed, heard or playtested.
-Before it: 0.9.0 (2026-11-16, the overnight build of to-do sections 2, 4 and 5, PRs #59 to #74, none of it
+**Latest release: 0.11.0** (published 2026-11-21, on the owner's word, without the release checklist's hand
+checks): Kitchen's cupcake with a start screen to pick what to make, and home screen tiles that are pictures of
+the games (ADR 0047, PR #78). Not yet installed, heard or playtested.
+Before it: 0.10.0 (the same day and the same way: the Kitchen game with a pizza and speech, Letters and Kitchen
+shown by default, ADR 0045, PR #76), 0.9.0 (2026-11-16, the overnight build of to-do sections 2, 4 and 5, PRs #59 to #74, none of it
 playtested yet), 0.8.1 (the Outside theme), 0.8.0, 0.7.0 (milestone 3).
 Milestone 1 (web app) in progress. `npm run dev` opens the kid picker. A kid starts a new picture from the page
 library or continues one from My pictures (ADR 0017), and can fill, paint, erase, undo, start over and switch the
@@ -103,10 +104,10 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    of all 93 lines shipped as `voice/food-*`, `cook-*`, `wash-*`). No shelf, idle hand or parent screen yet; not
    seen on the laptop or played by a kid. Its narrator batch (93 lines, `ONLY=kitchen` in `generate.mjs`) was made
    2026-11-21: 279 takes on the laptop in `C:\tmp\gen3\kitchen`; take 1 of each is in the app, none listened to.
-   **The cupcake, the second recipe, was built 2026-11-21** on the branch `kitchen/cupcake` (not in 0.10.0): a
+   **The cupcake, the second recipe, was built 2026-11-21** (released in 0.11.0): a
    wrapper, batter poured by a held finger, the oven, frosting, sprinkles, toppers, bites; and a start screen to
    pick pizza or cupcake. **Home screen tiles:** two options mocked up the same day (boards 35 and 36 on the
-   canvas); the owner picked B, and it is built on the same branch
+   canvas); the owner picked B, and it is built and in 0.11.0
    ([ADR 0047](../adr/0047-home-tiles-are-pictures-of-the-games.md)): each tile is a little picture of its game
    (`src/ui/tiles.ts`), big and two across with four games or fewer.
    The other ideas offered the same day (car wash, vehicle workshop, robot or monster, garden, building site)

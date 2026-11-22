@@ -23,8 +23,8 @@ recommended default. On the branch `kitchen/pizza`, not yet committed:
   2026-12-31.
 - **Phase C, speech: built 2026-11-21** (`voice.ts`): a picked thing's name the first three times per kid, one
   line as each step opens the first three times, "It's ready!" and one of three endings every time.
-- **Phase F, the cupcake: built 2026-11-21** on the branch `kitchen/cupcake`, with a start screen to pick pizza
-  or cupcake (see phase F). Not in 0.10.0.
+- **Phase F, the cupcake: built 2026-11-21**, with a start screen to pick pizza or cupcake (see phase F).
+  Released in 0.11.0.
 - **Left before the kids try it:** the idle hand, the shelf and the parent screen (phase D: until it exists a
   parent can't change how often names are said), the recipe doc and playtest questions (phase E).
 
