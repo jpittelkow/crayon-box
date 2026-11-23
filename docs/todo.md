@@ -11,10 +11,12 @@ loading a map from a folder), but more vehicles come first.
 ## 1. Look, listen and playtest what was built overnight
 Nothing built on 2026-11-16 has been heard, seen on the laptop or played by a kid. The owner's choices it raised
 are in [open questions](memory/open-questions.md).
-- **Release 0.10.0 is published** (2026-11-21: Kitchen, and Letters and Kitchen shown by default). Installed
-  copies offer it at their next check. The [release checklist](release-checklist.md)'s hand checks were not run
-  first: do them on the laptop as it updates (the update itself, the kiosk lock, files), and listen to Kitchen's
-  narrator lines. A parent can hide Kitchen under Settings, Games if it isn't ready for the kids.
+- **Releases 0.10.0 and 0.11.0 are published** (both 2026-11-21. 0.10.0: Kitchen, and Letters and Kitchen shown
+  by default. 0.11.0: Kitchen's cupcake and start screen, and home tiles that are pictures of the games).
+  Installed copies offer 0.11.0 at their next check. The [release checklist](release-checklist.md)'s hand checks
+  were not run for either: do them on the laptop as it updates (the update itself, the kiosk lock, files), and
+  listen to Kitchen's narrator lines. A parent can hide Kitchen under Settings, Games if it isn't ready for the
+  kids.
 - **Release 0.9.0** (coloring buttons and wheel; letters sound, tips, how-to and shapes; writing words; driving
   targets, set pieces and folder maps). The release checklist's hand checks on the laptop have not been run.
 - **On the laptop:** the Windows display scale (at 125 % the colour wheel stays hidden); drop
@@ -26,6 +28,9 @@ are in [open questions](memory/open-questions.md).
 - **A kid playtest:** coloring names, badge, demos and wheel; the letters hint ladder's timings, the how-to and
   shapes; writing a name and a word; stars, stacks, mud, the ford, the roundabout and the harbour.
 - **Look:** the word pictures for pin, tap, red and run; the island's reshaped bay.
+- **The six vehicles and the helicopter pad of 2026-11-23** ([ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)),
+  look at each in the game, listen to its engine, horn and the rotor (all
+  stand-ins), and see whether a kid finds the last picker pages and the helicopter.
 
 ## 2. Coloring: after the playtest
 - The undo icon checked with a kid (plan phase F); revisit modes on the kid screen (C8).
@@ -35,11 +40,11 @@ are in [open questions](memory/open-questions.md).
   says the nearest plain colour word.
 
 ## 3. Driving: more vehicles
-- **Pick the next vehicles with the owner** (ideas: digger loader, crane, street sweeper, mail van, taxi, camper
-  van, quad bike, forklift, helicopter on a pad for show; the highway plan adds a road roller and a big lorry).
-  Built in code like the fourteen in `look/fleet.ts`: each with a moving part, a feel (`VEHICLE_FEEL`), an engine
-  and horn, a parent switch, and a place in traffic and the garage (ADR 0035). The picker already pages five at
-  a time.
+- **Six more are built** (2026-11-23, the owner's picks, [ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)):
+  forklift, road roller, loader, street sweeper, mail van, quad bike; and a helicopter pad on the island. Not
+  released yet.
+- **Ideas not picked** (for a later round): crane, taxi, camper van, a big lorry (may be too long for the island's
+  bends). A twenty-first vehicle needs the swap tray to page first: twenty fill it.
 - **Steering feel** (optional, from [milestone-3.md](milestone-3.md)): a steering wheel shown on screen and a
   per-kid steering sensitivity in the parent Driving screen.
 
@@ -88,10 +93,10 @@ The kids asked for hands-on "make a thing" games; the owner picked a Kitchen gam
   made before the voice retires on 2026-12-31.
 - **Look, listen and play:** the owner tries it in the web app and says which lines need another take
   (`C:\tmp\gen3\audition.html` has all three); then a kid.
-- **The cupcake is built** (2026-11-21, branch `kitchen/cupcake`, after 0.10.0): the second recipe, with a start
-  screen to pick pizza or cupcake, and a [recipe doc](recipes/kitchen.md) for the next one.
+- **The cupcake is built** (2026-11-21, released in 0.11.0): the second recipe, with a start screen to pick pizza
+  or cupcake, and a [recipe doc](recipes/kitchen.md) for the next one.
 - **Home screen tiles are pictures of the games** (the owner's pick of option B,
-  [ADR 0047](adr/0047-home-tiles-are-pictures-of-the-games.md)): built 2026-11-21 on the same branch.
+  [ADR 0047](adr/0047-home-tiles-are-pictures-of-the-games.md)): built 2026-11-21, released in 0.11.0.
 - Then: the idle hand (the rest of phase C), the shelf and the parent screen (D), and more recipes (F: birthday
   cake, ice cream, cookie).
 

@@ -134,6 +134,12 @@ Maps: all, island, town, country (the maps of milestone-3 phase E).
 | `vehicle/cement-mixer` | built (2026-11-15, `look/fleet.ts`) | town | drum turns |
 | `vehicle/ice-cream-van` | built (2026-11-15, `look/fleet.ts`) | island | a cone on the roof; its horn is a little tune (stand-in) |
 | `vehicle/race-car` | built (2026-11-15, `look/fleet.ts`) | all | quickest; painted in the kid's colour |
+| `vehicle/forklift` | built (2026-11-23, ADR 0048, `look/fleetMore.ts`) | all, building site | forks with a crate on a pallet rise when it stops; three high beeps |
+| `vehicle/roller` | built (2026-11-23, ADR 0048, `look/fleetMore.ts`) | all, building site | a road roller: its steel drum turns as it drives; the heaviest, pushes toys furthest |
+| `vehicle/loader` | built (2026-11-23, ADR 0048, `look/fleetMore.ts`) | all, building site | a bucket of earth on two arms lifts when it stops; beep-beep |
+| `vehicle/sweeper` | built (2026-11-23, ADR 0048, `look/fleetMore.ts`) | all, town | a street sweeper: brushes spin, faster the faster it goes; amber lamps |
+| `vehicle/mail` | built (2026-11-23, ADR 0048, `look/fleetMore.ts`) | all, town | a mail van with an envelope on its sides; its back door rolls up when it stops, showing parcels |
+| `vehicle/quad` | built (2026-11-23, ADR 0048, `look/fleetMore.ts`) | all, country | a quad bike: the smallest, quick, bounces on its springs; painted in the kid's colour |
 
 **States every vehicle has** (switched by ground, water and set pieces, not assets of their own):
 | State | Status | Switched on by | Switched off by |
@@ -268,6 +274,7 @@ sails); see Border cases.
 | `setpiece/ford` | built (2026-11-15, ADR 0042, `sim/ford.ts`) | island | where a road crosses a stream: a wade (9 m/s), a bow wave and spray, wet, mud washed off; ripples drift downstream; a big splash (stand-in) |
 | `setpiece/traffic-lights` | built (2026-11-15, ADR 0042, `sim/lights.ts`) | island | at a junction, for show: they cycle; the kid's way turns green as it comes, so the kid never waits; traffic waits at red and queues; a click and a ding (stand-ins) |
 | `setpiece/roundabout` | built (2026-11-16, ADR 0042, `sim/roundabout.ts`) | island, town | on a `road/roundabout`: traffic slows to 7 m/s and goes round one way, leaving by every exit; "follows the road" goes round with it and takes the exits in turn; the kid's car may cut across the bed or go round either way and slides round the fountain's basin; the jets rise and fall; splashing (stand-in) |
+| `setpiece/helipad` | built (2026-11-23, ADR 0048, `sim/helipad.ts`, `look/helipad.ts`) | island | a round pad on the grass beside a road with a helicopter on it, for show: it lifts off and hovers while the kid's car is within 40 m and lands when the kid has gone; never in a car's way; traffic doesn't set it off; a chopping rotor (stand-in) |
 | `setpiece/harbour` | built (2026-11-16, ADR 0042, `sim/harbour.ts`) | island | on a `road/quay`: boats moored along it bob, the last sails out to sea and back every minute; a ship's horn answers the kid's (stand-in); waves lap louder near it (stand-in); traffic drives the quay |
 | `setpiece/windmill` | idea | country | sails turn faster when the car is near |
 | `setpiece/level-crossing` | idea | country | a train crosses on a bridge overhead, never across the road |

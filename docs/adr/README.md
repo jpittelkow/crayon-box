@@ -53,6 +53,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0045](0045-every-game-shows-by-default.md) | Every game shows on the home screen by default | Accepted |
 | [0046](0046-linux-version.md) | A Linux version: the same Tauri shell, an AppImage, and a kids' session that is only the app | Proposed |
 | [0047](0047-home-tiles-are-pictures-of-the-games.md) | Home screen tiles are little pictures of the games, on bigger tiles | Accepted |
+| [0048](0048-driving-six-more-vehicles-and-a-helicopter-pad.md) | Driving game: six more vehicles and a helicopter pad | Accepted |
 
 Both links below are private to the owner.
 - Mockups of every screen: https://claude.ai/artifact/UsUp5kExVUs3ikNq9X9q6H

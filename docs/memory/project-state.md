@@ -1,14 +1,15 @@
 # Project state
 
-_Last updated: 2026-11-21_
+_Last updated: 2026-11-23_
 
 **What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15, brought up to date 2026-11-16).
 
 ## Phase
-**Latest release: 0.10.0** (published 2026-11-21, on the owner's word, without the release checklist's hand
-checks): the Kitchen game (a pizza, with speech), Letters and Kitchen shown by default (ADR 0045), the home screen
-wrapping to a second row (PR #76). Not yet installed, heard or playtested.
-Before it: 0.9.0 (2026-11-16, the overnight build of to-do sections 2, 4 and 5, PRs #59 to #74, none of it
+**Latest release: 0.11.0** (published 2026-11-21, on the owner's word, without the release checklist's hand
+checks): Kitchen's cupcake with a start screen to pick what to make, and home screen tiles that are pictures of
+the games (ADR 0047, PR #78). Not yet installed, heard or playtested.
+Before it: 0.10.0 (the same day and the same way: the Kitchen game with a pizza and speech, Letters and Kitchen
+shown by default, ADR 0045, PR #76), 0.9.0 (2026-11-16, the overnight build of to-do sections 2, 4 and 5, PRs #59 to #74, none of it
 playtested yet), 0.8.1 (the Outside theme), 0.8.0, 0.7.0 (milestone 3).
 Milestone 1 (web app) in progress. `npm run dev` opens the kid picker. A kid starts a new picture from the page
 library or continues one from My pictures (ADR 0017), and can fill, paint, erase, undo, start over and switch the
@@ -60,7 +61,9 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    draws on: targets ([ADR 0041](../adr/0041-driving-targets-to-collect-and-hit.md)), mud, ford, show-only lights,
    roundabout and harbour ([ADR 0042](../adr/0042-driving-more-set-pieces.md)), maps from a folder
    ([ADR 0043](../adr/0043-driving-maps-from-a-folder.md)), and the dev map editor and viewer. The map itself is
-   not started.
+   not started. **Built 2026-11-23:** six more vehicles the
+   owner picked (forklift, road roller, loader, street sweeper, mail van, quad bike; twenty in all) and a helicopter
+   pad on the island ([ADR 0048](../adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)).
 5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
    of the family's own area, made from real map and terrain data, with the roads, the family's house and a few
    neighbours' houses. It must never be committed: it lives in a folder kept out of the repo that can be dropped
@@ -103,10 +106,10 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    of all 93 lines shipped as `voice/food-*`, `cook-*`, `wash-*`). No shelf, idle hand or parent screen yet; not
    seen on the laptop or played by a kid. Its narrator batch (93 lines, `ONLY=kitchen` in `generate.mjs`) was made
    2026-11-21: 279 takes on the laptop in `C:\tmp\gen3\kitchen`; take 1 of each is in the app, none listened to.
-   **The cupcake, the second recipe, was built 2026-11-21** on the branch `kitchen/cupcake` (not in 0.10.0): a
+   **The cupcake, the second recipe, was built 2026-11-21** (released in 0.11.0): a
    wrapper, batter poured by a held finger, the oven, frosting, sprinkles, toppers, bites; and a start screen to
    pick pizza or cupcake. **Home screen tiles:** two options mocked up the same day (boards 35 and 36 on the
-   canvas); the owner picked B, and it is built on the same branch
+   canvas); the owner picked B, and it is built and in 0.11.0
    ([ADR 0047](../adr/0047-home-tiles-are-pictures-of-the-games.md)): each tile is a little picture of its game
    (`src/ui/tiles.ts`), big and two across with four games or fewer.
    The other ideas offered the same day (car wash, vehicle workshop, robot or monster, garden, building site)
@@ -174,7 +177,7 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   `groundPoint` (picture to ground) in `view.ts`) with unit tests; the world comes from a map (`sim/map.ts`: land as an
   outline in `sim/land.ts`, roads with junctions, zones, bridges and tunnels, hills and sand in `sim/ground.ts`;
   the maps are `maps/island.ts` (layout A, grown) and `maps/site.ts` (the building site), listed in `maps/index.ts`;
-  the tests mostly use the old ring, `maps/ring.ts`); fourteen vehicles (`look/vehicles.ts`, `look/fleet.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
+  the tests mostly use the old ring, `maps/ring.ts`); twenty vehicles (`look/vehicles.ts`, `look/fleet.ts`, `look/fleetMore.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
   scenery and decor are registered by id (`sim/assets/` definitions, `look/toys.ts` and `look/scenery.ts` looks;
   dev gallery at `/tools/driving-gallery.html`); `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the

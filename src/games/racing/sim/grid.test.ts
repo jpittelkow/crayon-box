@@ -18,7 +18,7 @@ import { TOY_STATE, TRAFFIC_NEAR, makeWorld, step, waterUnder, type Input, type 
 
 const DT = 1 / 60;
 const GO: Input = { go: true, brake: false, steer: 0 };
-const ZONE_KINDS: ZoneKind[] = ['ramp', 'car-wash', 'garage', 'mud', 'ford', 'lights', 'roundabout', 'harbour'];
+const ZONE_KINDS: ZoneKind[] = ['ramp', 'car-wash', 'garage', 'mud', 'ford', 'lights', 'roundabout', 'harbour', 'helipad'];
 
 afterEach(() => {
   LOOKUP.grid = true;

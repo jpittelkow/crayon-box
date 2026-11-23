@@ -11,9 +11,9 @@ import { VEHICLE_FEEL, VEHICLE_SIZE, makeWorld, step, swapVehicle, type VehicleK
 
 const DT = 1 / 60;
 
-describe('fourteen vehicles (milestone-3 D, ADR 0035)', () => {
+describe('twenty vehicles (milestone-3 D, ADR 0035; six more, ADR 0048)', () => {
   it('every vehicle has a size, a feel, a name, its own colour and an engine', () => {
-    expect(VEHICLES).toHaveLength(14);
+    expect(VEHICLES).toHaveLength(20);
     for (const kind of VEHICLES) {
       expect(VEHICLE_SIZE[kind].half, kind).toBeGreaterThan(VEHICLE_SIZE[kind].side);
       expect(VEHICLE_FEEL[kind].top, kind).toBeGreaterThanOrEqual(12);

@@ -18,7 +18,7 @@ export const VEHICLE_IDS = (Object.keys(VEHICLE_SIZE) as VehicleKind[]).map((k) 
 export const SET_PIECES: Record<ZoneKind, string> = {
   ramp: 'setpiece/ramp', 'car-wash': 'setpiece/car-wash', garage: 'setpiece/garage',
   mud: 'setpiece/mud', ford: 'setpiece/ford', lights: 'setpiece/traffic-lights',
-  roundabout: 'setpiece/roundabout', harbour: 'setpiece/harbour',
+  roundabout: 'setpiece/roundabout', harbour: 'setpiece/harbour', helipad: 'setpiece/helipad',
 };
 export const SET_PIECE_IDS = Object.values(SET_PIECES);
 

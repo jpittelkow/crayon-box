@@ -25,7 +25,8 @@ each one is proven by building it.
    `sand`, `water` (pools, the flood, puddles along roads, `mud`, `streams`: shallow water along a path, ADR 0042).
 5. **Set pieces:** `zones` (ramps, car wash, the **garage**, which every map needs; mud, a ford where a road
    crosses a stream, traffic lights at a junction, a roundabout by its ring's middle, a harbour on a road along the
-   shore with the shore drawn 2 m past the road's edge there and a `sail` path out to sea, ADR 0042). Keep zones
+   shore with the shore drawn 2 m past the road's edge there and a `sail` path out to sea, ADR 0042; a helicopter
+   pad on flat grass by its middle, 15 to 25 m from a road so a kid driving past sets it off, ADR 0048). Keep zones
    apart.
 6. **Filling:** `trees`, `props` (toys by share, some near the roads), `targets` (rows of stars on the roads,
    stacks of boxes just off them, ADR 0041), `decor` clumps, `animals` herds, `boats`.

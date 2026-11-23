@@ -3,7 +3,7 @@
 Non-obvious traps, workarounds and lessons learned. Add one bullet per gotcha with the date found and, if it
 came from a session, the journal entry.
 
-_Last updated: 2026-11-21_
+_Last updated: 2026-11-23_
 
 - ADRs are never rewritten once Accepted; a change gets a new ADR that supersedes the old one (ADR 0001).
   Proposed ADRs may still be edited before acceptance.
@@ -154,6 +154,14 @@ _Last updated: 2026-11-21_
   `kitchen.spec.ts` does (2026-11-21).
 - A game's timed logic should not hang off `requestAnimationFrame` alone: frames stop in a hidden pane. Kitchen's
   oven runs on a timer and only the drawing on frames (2026-11-21).
+- `npm run pictures:driving` redraws every picture; the vehicles come out byte for byte the same, so only what
+  changed shows in `git status`. A new zone on a map changes that map's picture, so run it after placing one
+  (2026-11-23).
+- A shell heredoc holding an odd number of apostrophes fails in the Bash tool here ("unexpected EOF"); write the
+  script with the file tool instead (2026-11-23).
+- Saving a source file while the browser tests run reloads the page under whichever test is open (the test server
+  is the dev server), and that test fails with "element not found". Leave `src/` alone until the run ends
+  (2026-11-23).
 - To see a mockup artboard before publishing it: save a copy without the `support.js` line and with its `{{holes}}`
   filled in, and screenshot that with the repo's Playwright (imported by file URL). The Browser pane shows a local
   file outside the project only as a snapshot its tools can't read. Stay clear of `clipPath`, `mask` and `<use>` in

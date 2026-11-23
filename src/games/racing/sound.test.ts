@@ -3,7 +3,7 @@ import { soundUrl } from '../../shell/soundFiles';
 import { ISLAND } from './maps/island';
 import { MAX_SPEED, makeWorld, step, type VehicleKind } from './sim/sim';
 import { VEHICLES } from './settings';
-import { EFFECTS, ENGINES, engineLoudness, fountainLoudness, wavesLoudness } from './sound';
+import { EFFECTS, ENGINES, engineLoudness, fountainLoudness, rotorLoudness, wavesLoudness } from './sound';
 
 describe('engine sounds (ADR 0025, 0032)', () => {
   it('every kind of vehicle has an engine; the first four have loops of their own (the rest are stand-ins, ADR 0035)', () => {
@@ -67,5 +67,17 @@ describe('set pieces heard nearby (ADR 0042)', () => {
     expect(wavesNear).toBeGreaterThan(wavesLoudness(w));
     at('harbour', 120);
     expect(wavesLoudness(w)).toBe(0);
+  });
+
+  it('a helicopter is heard a little on its pad, more as its rotor speeds up, and not from far off (ADR 0048)', () => {
+    const w = makeWorld(7, 0, 'free', ISLAND);
+    const kid = w.cars[0]!, heli = w.choppers[0]!, pad = w.zones[heli.zone]!;
+    Object.assign(kid, { x: pad.x + 20, z: pad.z });
+    const idling = rotorLoudness(w);
+    expect(idling).toBeGreaterThan(0);
+    heli.rotor = 1;
+    expect(rotorLoudness(w)).toBeGreaterThan(idling * 5);
+    Object.assign(kid, { x: pad.x + 120, z: pad.z });
+    expect(rotorLoudness(w)).toBe(0);
   });
 });

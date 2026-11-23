@@ -57,5 +57,5 @@ export async function loadMap(param: string | null): Promise<NamedMap | { error:
 /** Each set piece's colour on the tools' flat pictures. */
 export const ZONE_COLORS: Record<ZoneKind, string> = {
   ramp: '#e0a030', 'car-wash': '#3ab0e0', garage: '#d23c3c', mud: '#7a5634', ford: '#2f78b8', lights: '#2fa84f',
-  roundabout: '#9b59b6', harbour: '#1f5f8b',
+  roundabout: '#9b59b6', harbour: '#1f5f8b', helipad: '#e0407a',
 };

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { VehicleKind } from '../sim/sim';
 import { chrome, glass, lamp, paint, part, plastic, rbox, ROUND } from './kit';
 import { ambulance, cementMixer, digger, dumpTruck, fireTruck, garbageTruck, iceCreamVan, raceCar, towTruck, tractor } from './fleet';
+import { forklift, loader, mailVan, quadBike, roadRoller, streetSweeper } from './fleetMore';
 import { finish, lights, wheelSet, type Parts, type VehicleModel } from './vehicleKit';
 
 export type { VehicleModel } from './vehicleKit';
@@ -13,13 +14,14 @@ export const OWN_COLOR: Record<VehicleKind, number> = {
   car: 0xe8402c, police: 0x16181d, monster: 0xd8342c, bus: 0xf7b500,
   fire: 0xd8141c, ambulance: 0xf6f7f9, tow: 0x2f6fd6, digger: 0xff9a1a, dump: 0xffc400, mixer: 0xf4f5f7,
   tractor: 0x3aa045, garbage: 0x2e9e4f, icecream: 0xffc8dd, race: 0x1e1f24,
+  forklift: 0xe8502a, roller: 0xf5b500, loader: 0xff8f1f, sweeper: 0x9bc53d, mail: 0x2c4a8c, quad: 0xe2262b,
 };
 
 /**
  * Vehicles a kid's colour can paint (milestone-3 B5, owner's choice 2026-11-15). The others have a look of their
  * own (a police car, a school bus) and fly a flag in the kid's colour instead.
  */
-export const PAINTABLE: ReadonlySet<VehicleKind> = new Set<VehicleKind>(['car', 'monster', 'tow', 'tractor', 'race']);
+export const PAINTABLE: ReadonlySet<VehicleKind> = new Set<VehicleKind>(['car', 'monster', 'tow', 'tractor', 'race', 'quad']);
 
 /** The kid's own vehicle: painted in their colour, or in its own colours with their flag. */
 export function buildKidVehicle(kind: VehicleKind, kidColor: THREE.ColorRepresentation): VehicleModel {
@@ -67,6 +69,12 @@ export function buildVehicle(kind: VehicleKind, color: THREE.ColorRepresentation
     case 'garbage': return finish(garbageTruck());
     case 'icecream': return finish(iceCreamVan());
     case 'race': return finish(raceCar(color));
+    case 'forklift': return finish(forklift());
+    case 'roller': return finish(roadRoller());
+    case 'loader': return finish(loader());
+    case 'sweeper': return finish(streetSweeper());
+    case 'mail': return finish(mailVan());
+    case 'quad': return finish(quadBike(color));
   }
 }
 

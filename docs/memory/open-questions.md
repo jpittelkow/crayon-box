@@ -3,7 +3,7 @@
 Decisions waiting on the owner. Remove an item once it is answered (and record the answer in an ADR or the
 relevant memory file).
 
-_Last updated: 2026-11-21_
+_Last updated: 2026-11-23_
 
 - **Sync security trade-offs** (flagged by an automated review, 2026-11-14, kept as ADR 0024 decided): plain `http`
   on the home network carries the sync token; the Windows app may connect to any `http:`/`https:` address (CSP);
@@ -47,6 +47,12 @@ _Last updated: 2026-11-21_
   the work: L2 (which Linux the laptop runs), L3 (a kids' session that is only the app, or an ordinary desktop),
   L7 (must a release be tried on both systems before publishing) and L10 (where it sits in the to-do order).
   Phase B needs the owner and the real laptop.
+
+- **The six vehicles and the helicopter pad** ([ADR 0048](../adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md),
+  the owner's picks, built 2026-11-23 on defaults): each vehicle's colours, weight, horn and moving part (the table
+  in the ADR); the mail van's door at the back, not the side as first offered; the new six at the end of the
+  picker, on pages four and five; the helicopter lifting off at 40 m and hovering 7 m up, and where its pad is
+  (inside the island's loop, beside the spur).
 
 - **From the overnight build (2026-11-16)**, each built on a default the owner can overrule:
   - **Coloring:** a parent switch to turn the first-time demos off (none now)? Back says "Back" the first 3 times
