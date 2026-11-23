@@ -13,9 +13,10 @@ export interface OnRoad { road: number; at: number; offset?: number }
 /**
  * The kinds of zone a set piece can have (milestone-3 phase B3). ADR 0042 adds a patch of mud, a ford where a
  * stream crosses a road, traffic lights at a junction (for show: they never stop the kid), a roundabout (by the
- * middle of a one-way ring road, `ringRoad`) and a harbour (on a road along the shore: its quay).
+ * middle of a one-way ring road, `ringRoad`) and a harbour (on a road along the shore: its quay). ADR 0048 adds a
+ * helicopter pad (by its middle, beside a road: the helicopter lifts off as the kid comes).
  */
-export type ZoneKind = 'ramp' | 'car-wash' | 'garage' | 'mud' | 'ford' | 'lights' | 'roundabout' | 'harbour';
+export type ZoneKind = 'ramp' | 'car-wash' | 'garage' | 'mud' | 'ford' | 'lights' | 'roundabout' | 'harbour' | 'helipad';
 
 /** A stretch of road, from one fraction along it to another, that the car is held on. */
 export interface GuardDef { kind: 'bridge' | 'tunnel'; road: number; from: number; to: number }

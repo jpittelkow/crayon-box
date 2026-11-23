@@ -28,6 +28,9 @@ are in [open questions](memory/open-questions.md).
 - **A kid playtest:** coloring names, badge, demos and wheel; the letters hint ladder's timings, the how-to and
   shapes; writing a name and a word; stars, stacks, mud, the ford, the roundabout and the harbour.
 - **Look:** the word pictures for pin, tap, red and run; the island's reshaped bay.
+- **The six vehicles and the helicopter pad of 2026-11-23** ([ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)),
+  look at each in the game, listen to its engine, horn and the rotor (all
+  stand-ins), and see whether a kid finds the last picker pages and the helicopter.
 
 ## 2. Coloring: after the playtest
 - The undo icon checked with a kid (plan phase F); revisit modes on the kid screen (C8).
@@ -37,11 +40,11 @@ are in [open questions](memory/open-questions.md).
   says the nearest plain colour word.
 
 ## 3. Driving: more vehicles
-- **Pick the next vehicles with the owner** (ideas: digger loader, crane, street sweeper, mail van, taxi, camper
-  van, quad bike, forklift, helicopter on a pad for show; the highway plan adds a road roller and a big lorry).
-  Built in code like the fourteen in `look/fleet.ts`: each with a moving part, a feel (`VEHICLE_FEEL`), an engine
-  and horn, a parent switch, and a place in traffic and the garage (ADR 0035). The picker already pages five at
-  a time.
+- **Six more are built** (2026-11-23, the owner's picks, [ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)):
+  forklift, road roller, loader, street sweeper, mail van, quad bike; and a helicopter pad on the island. Not
+  released yet.
+- **Ideas not picked** (for a later round): crane, taxi, camper van, a big lorry (may be too long for the island's
+  bends). A twenty-first vehicle needs the swap tray to page first: twenty fill it.
 - **Steering feel** (optional, from [milestone-3.md](milestone-3.md)): a steering wheel shown on screen and a
   per-kid steering sensitivity in the parent Driving screen.
 

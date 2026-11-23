@@ -69,7 +69,7 @@ const SIMPLIFY = 0.35;
 const JOIN_REACH = 3;
 /** Default sizes of a new set piece's zone (as the built-in maps use). */
 export const ZONE_R: Record<ZoneKind, number> = {
-  ramp: 3.5, 'car-wash': 4, garage: 4, mud: 6, ford: 6, lights: 5, roundabout: 12.5, harbour: 14,
+  ramp: 3.5, 'car-wash': 4, garage: 4, mud: 6, ford: 6, lights: 5, roundabout: 12.5, harbour: 14, helipad: 7,
 };
 /** Zone kinds placed on a road (facing along it); the others stand by their middle. */
 export const ON_ROAD_ZONES: readonly ZoneKind[] = ['ramp', 'car-wash', 'garage', 'mud', 'ford', 'lights', 'harbour'];

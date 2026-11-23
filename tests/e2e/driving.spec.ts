@@ -41,7 +41,7 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   await page.getByRole('button', { name: 'Driving', exact: true }).tap();
   const picker = page.locator('.driving-picker');
   await expect(picker).toHaveAttribute('data-ready', 'true', { timeout: 40_000 });
-  // Fourteen vehicles (ADR 0035) on three pages: "more" to go on, "back a page" to go back (playtest, 2026-11-15).
+  // Twenty vehicles (ADR 0035, 0048) on five pages: "more" to go on, "back a page" to go back (playtest, 2026-11-15).
   const more = page.getByRole('button', { name: 'More', exact: true });
   const less = page.getByRole('button', { name: 'Back a page', exact: true });
   await expect(picker.locator('.vehicle-tile')).toHaveCount(6);
@@ -50,10 +50,12 @@ test('the game opens on a vehicle picker; the pick drives, and is remembered nex
   await expect(page.getByRole('button', { name: 'Ambulance', exact: true })).toBeVisible();
   await expect(less).toBeVisible();
   await more.tap();
+  await more.tap();
   await expect(page.getByRole('button', { name: 'Race car', exact: true })).toBeVisible();
+  await more.tap();
+  await expect(page.getByRole('button', { name: 'Quad bike', exact: true })).toBeVisible();
   await expect(more).toHaveCount(0);
-  await less.tap();
-  await less.tap();
+  for (let i = 0; i < 4; i++) await less.tap();
   // The pictures ship with the app (drawn only if one were missing); the car is picked to begin with.
   await expect(picker).toHaveAttribute('data-pictures', 'true', { timeout: 60_000 });
   await expect(picker.locator('.vehicle-tile img').first()).toHaveAttribute('src', /vehicle-car-[0-9a-f]{6}\.webp/);
@@ -266,7 +268,7 @@ test('a tray in the game swaps the vehicle on the spot (playtest, 2026-11-15)', 
   await expect(tray).toBeHidden();
   await page.getByRole('button', { name: 'Change vehicle' }).tap();
   await expect(tray).toBeVisible(SLOW);
-  await expect(tray.locator('.driving-tray-tile')).toHaveCount(14);
+  await expect(tray.locator('.driving-tray-tile')).toHaveCount(20);
   await expect(tray.getByRole('button', { name: 'Car', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await tray.getByRole('button', { name: 'Digger', exact: true }).tap();
   await expect(tray).toBeHidden(SLOW);

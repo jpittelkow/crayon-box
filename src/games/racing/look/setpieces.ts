@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { guardAt, hillReach, type Guard } from '../sim/ground';
 import { QUAY_FACE, type Boat } from '../sim/harbour';
+import { helipad, poseHelicopter, type HelipadLook } from './helipad';
 import { onLand } from '../sim/land';
 import { lampFor, lightsJunction, type Lamp, type Post, type Way } from '../sim/lights';
 import type { HillDef } from '../sim/map';
@@ -594,6 +595,9 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
   const foams: THREE.Material[] = [];
   const lights: { light: number; lamps: Record<Way, Record<Lamp, THREE.MeshStandardMaterial>> }[] = [];
   const fountains: THREE.Object3D[][] = [];
+  // Helicopter pads (ADR 0048), in the order of the world's helicopters.
+  const pads: HelipadLook[] = world.choppers.map((c) => helipad(world.zones[c.zone]!));
+  for (const pad of pads) g.add(pad.group);
   world.zones.forEach((zone, i) => {
     if (zone.kind === 'roundabout') {
       const piece = roundabout(world, zone, i);
@@ -695,6 +699,10 @@ export function buildSetPieces(world: World): { group: THREE.Group; animate(w: W
       }
       showLights(w);
       placeBoats(w.boats);
+      pads.forEach((pad, i) => {
+        const c = w.choppers[i];
+        if (c) poseHelicopter(pad, c.height, c.heading, c.rotor, w.time, dt);
+      });
       // The fountains' jets rise and fall.
       const heights = jetHeights(w.time);
       for (const jets of fountains) {
