@@ -11,6 +11,10 @@ loading a map from a folder), but more vehicles come first.
 ## 1. Look, listen and playtest what was built overnight
 Nothing built on 2026-11-16 has been heard, seen on the laptop or played by a kid. The owner's choices it raised
 are in [open questions](memory/open-questions.md).
+- **A draft of 0.12.0 waits to be published** (built 2026-11-23: six more driving vehicles and a helicopter pad,
+  [ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)). Install the draft's installer on the
+  laptop, run the [release checklist](release-checklist.md), then publish it on GitHub; until then no installed
+  copy is offered it.
 - **Releases 0.10.0 and 0.11.0 are published** (both 2026-11-21. 0.10.0: Kitchen, and Letters and Kitchen shown
   by default. 0.11.0: Kitchen's cupcake and start screen, and home tiles that are pictures of the games).
   Installed copies offer 0.11.0 at their next check. The [release checklist](release-checklist.md)'s hand checks
@@ -41,8 +45,8 @@ are in [open questions](memory/open-questions.md).
 
 ## 3. Driving: more vehicles
 - **Six more are built** (2026-11-23, the owner's picks, [ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)):
-  forklift, road roller, loader, street sweeper, mail van, quad bike; and a helicopter pad on the island. Not
-  released yet.
+  forklift, road roller, loader, street sweeper, mail van, quad bike; and a helicopter pad on the island. In
+  the 0.12.0 draft (PR #79).
 - **Ideas not picked** (for a later round): crane, taxi, camper van, a big lorry (may be too long for the island's
   bends). A twenty-first vehicle needs the swap tray to page first: twenty fill it.
 - **Steering feel** (optional, from [milestone-3.md](milestone-3.md)): a steering wheel shown on screen and a
