@@ -12,6 +12,8 @@ describe('the vehicle picker pages', () => {
   it('leave room for a more tile and a back tile, and show every vehicle once', () => {
     const pages = pagesOf(14);
     expect(pages).toEqual([[0, 1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12, 13]]);
+    // Twenty (ADR 0048) take five pages.
+    expect(pagesOf(20).map((p) => p.length)).toEqual([5, 4, 4, 4, 3]);
     for (let n = 1; n <= 30; n++) {
       const all = pagesOf(n);
       expect(all.flat()).toEqual([...Array(n).keys()]);

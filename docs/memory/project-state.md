@@ -1,6 +1,6 @@
 # Project state
 
-_Last updated: 2026-11-21_
+_Last updated: 2026-11-23_
 
 **What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15, brought up to date 2026-11-16).
 
@@ -61,7 +61,9 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    draws on: targets ([ADR 0041](../adr/0041-driving-targets-to-collect-and-hit.md)), mud, ford, show-only lights,
    roundabout and harbour ([ADR 0042](../adr/0042-driving-more-set-pieces.md)), maps from a folder
    ([ADR 0043](../adr/0043-driving-maps-from-a-folder.md)), and the dev map editor and viewer. The map itself is
-   not started.
+   not started. **Built 2026-11-23:** six more vehicles the
+   owner picked (forklift, road roller, loader, street sweeper, mail van, quad bike; twenty in all) and a helicopter
+   pad on the island ([ADR 0048](../adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)).
 5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
    of the family's own area, made from real map and terrain data, with the roads, the family's house and a few
    neighbours' houses. It must never be committed: it lives in a folder kept out of the repo that can be dropped
@@ -165,7 +167,7 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
   `groundPoint` (picture to ground) in `view.ts`) with unit tests; the world comes from a map (`sim/map.ts`: land as an
   outline in `sim/land.ts`, roads with junctions, zones, bridges and tunnels, hills and sand in `sim/ground.ts`;
   the maps are `maps/island.ts` (layout A, grown) and `maps/site.ts` (the building site), listed in `maps/index.ts`;
-  the tests mostly use the old ring, `maps/ring.ts`); fourteen vehicles (`look/vehicles.ts`, `look/fleet.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
+  the tests mostly use the old ring, `maps/ring.ts`); twenty vehicles (`look/vehicles.ts`, `look/fleet.ts`, `look/fleetMore.ts`) and roads are point paths (`sim/roads.ts`, drawn by `look/roads.ts`); toys,
   scenery and decor are registered by id (`sim/assets/` definitions, `look/toys.ts` and `look/scenery.ts` looks;
   dev gallery at `/tools/driving-gallery.html`); `look/` builds the toy-look vehicles, island, trees
   and props in three.js, baked to one mesh per material; `render.ts` batches and draws them and loads with the

@@ -52,7 +52,7 @@ export const SITE: MapDef = {
   sand: [[[30, -46], [60, -46], [62, -58], [28, -60]]],
   spawn: onLoop(-80, -30),
   propCount: 340,
-  trafficPrefer: ['digger', 'dump', 'mixer', 'tractor', 'garbage'],
+  trafficPrefer: ['digger', 'dump', 'mixer', 'tractor', 'garbage', 'loader', 'roller', 'forklift'],
   zones: [
     { kind: 'ramp', on: onLoop(0, 72), r: 3.5 },
     { kind: 'ramp', on: onLoop(82, 0), r: 3.5 },

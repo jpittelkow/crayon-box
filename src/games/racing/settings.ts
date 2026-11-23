@@ -6,6 +6,8 @@ import type { Assist, VehicleKind } from './sim/sim';
 /** The vehicles a kid can pick, in the picker's order. */
 export const VEHICLES: readonly VehicleKind[] = [
   'car', 'police', 'monster', 'bus', 'fire', 'ambulance', 'tow', 'digger', 'dump', 'mixer', 'tractor', 'garbage', 'icecream', 'race',
+  // Six more (ADR 0048).
+  'forklift', 'roller', 'loader', 'sweeper', 'mail', 'quad',
 ];
 
 export interface KidDriving {

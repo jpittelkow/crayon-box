@@ -127,6 +127,9 @@ export const ISLAND: MapDef = {
     // The roundabout, by its middle; and the harbour on the quay north of the bridge, its last boat sailing out
     // through the bay to the sea and back.
     { kind: 'roundabout', on: spot(ROUNDABOUT), r: RING_R + ROAD_W / 2 },
+    // A helicopter pad (ADR 0048) on the grass inside the loop, 19 m north of the spur: the helicopter lifts off as
+    // the kid drives along the spur.
+    { kind: 'helipad', on: { x: 38, z: -2, heading: 2.2 }, r: 7 },
     {
       kind: 'harbour', on: onLoop([39.6, 20.2]), r: 14,
       sail: ([[52, 15], [60, 9], [70, 5], [78, 0], [72, -6], [62, -2], [54, 8]] as [number, number][]).map(at),

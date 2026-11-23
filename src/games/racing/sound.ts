@@ -43,6 +43,14 @@ export const ENGINES: Record<VehicleKind, EngineVoice> = {
   garbage: { file: 'drive/engine-bus.wav', idleRate: 0.8, perSpeed: 0.04, toneHz: 1150, tonePerSpeed: 150, volume: 0.62 },
   icecream: { file: 'drive/engine-car.wav', idleRate: 0.9, perSpeed: 0.05, toneHz: 1600, tonePerSpeed: 200, volume: 0.55 },
   race: { file: 'drive/engine-police.wav', idleRate: 1.15, perSpeed: 0.08, toneHz: 2600, tonePerSpeed: 340, volume: 0.6 },
+  // Six more (ADR 0048), stand-ins the same way. The roller is the lowest and slowest loop of all; the quad bike a
+  // high buzz; the forklift and the sweeper hum (a loop that hardly rises with speed).
+  forklift: { file: 'drive/engine-car.wav', idleRate: 1.1, perSpeed: 0.03, toneHz: 1300, tonePerSpeed: 120, volume: 0.5 },
+  roller: { file: 'drive/engine-monster.wav', idleRate: 0.62, perSpeed: 0.03, toneHz: 800, tonePerSpeed: 110, volume: 0.68 },
+  loader: { file: 'drive/engine-monster.wav', idleRate: 0.8, perSpeed: 0.04, toneHz: 1050, tonePerSpeed: 150, volume: 0.65 },
+  sweeper: { file: 'drive/engine-bus.wav', idleRate: 1.05, perSpeed: 0.03, toneHz: 1700, tonePerSpeed: 140, volume: 0.55 },
+  mail: { file: 'drive/engine-car.wav', idleRate: 0.95, perSpeed: 0.06, toneHz: 1700, tonePerSpeed: 230, volume: 0.58 },
+  quad: { file: 'drive/engine-police.wav', idleRate: 1.3, perSpeed: 0.075, toneHz: 2400, tonePerSpeed: 320, volume: 0.55 },
 };
 
 /** The effect files, under assets/sounds/. */
@@ -85,6 +93,8 @@ export const SET_PIECE_SOUNDS = {
   fountain: { rate: 1.3, volume: 0.3, near: 7, far: 45 },
   waves: { rate: 0.55, volume: 0.35, near: 10, far: 60, swell: 0.8 },
   shipHorn: { rate: 0.32, volume: 1 },
+  // A helicopter's rotor (ADR 0048): the bus's engine loop, low, chopped `chop` times a second at full speed.
+  rotor: { rate: 0.55, volume: 0.5, near: 14, far: 90, chop: 9 },
 } as const;
 
 /** How loud a looped set piece is at a distance `d` from it: full within `near`, fading, silent past `far`. */
@@ -104,6 +114,15 @@ export function fountainLoudness(world: World): number {
 export function wavesLoudness(world: World): number {
   const kid = world.cars[0]!;
   return Math.max(0, ...world.zones.filter((z) => z.kind === 'harbour').map((z) => nearby(Math.max(0, Math.hypot(z.x - kid.x, z.z - kid.z) - z.r), SET_PIECE_SOUNDS.waves)));
+}
+
+/** How loud the nearest helicopter's rotor is (ADR 0048), before it is chopped: louder the faster it turns. */
+export function rotorLoudness(world: World): number {
+  const kid = world.cars[0]!;
+  return Math.max(0, ...world.choppers.map((c) => {
+    const pad = world.zones[c.zone]!;
+    return nearby(Math.hypot(pad.x - kid.x, pad.z - kid.z), SET_PIECE_SOUNDS.rotor) * c.rotor;
+  }));
 }
 
 /** Lights changing further away than this aren't heard. */
@@ -145,6 +164,13 @@ const HORNS: Record<VehicleKind, { siren?: number; notes?: number[]; gap?: numbe
   garbage: { notes: [0.8], volume: 0.9 },
   icecream: { notes: [1.2, 1.5, 1.35, 1.8], gap: 0.18, volume: 0.6 },
   race: { notes: [1.5], volume: 0.8 },
+  // Six more (ADR 0048): beeps for the building machines, like the digger; two notes for the mail van, low then high.
+  forklift: { notes: [2.1, 2.1, 2.1], gap: 0.2, volume: 0.55 },
+  roller: { notes: [0.52, 0.52], gap: 0.34, volume: 0.95 },
+  loader: { notes: [1.7, 1.7], gap: 0.26, volume: 0.6 },
+  sweeper: { notes: [1.3, 1.3], gap: 0.22, volume: 0.65 },
+  mail: { notes: [0.95, 1.27], gap: 0.22, volume: 0.75 },
+  quad: { notes: [1.75], volume: 0.7 },
 };
 
 /**
@@ -199,9 +225,11 @@ export class DrivingSound {
   /** The hiss of sand under the wheels, made by the app: its loudness. */
   private sand: GainNode | null = null;
   /** Looped set pieces (ADR 0042): a roundabout's fountain and a harbour's waves, each a loudness. */
-  private loops: { fountain: GainNode | null; waves: GainNode | null } = { fountain: null, waves: null };
+  private loops: { fountain: GainNode | null; waves: GainNode | null; rotor: GainNode | null } = { fountain: null, waves: null, rotor: null };
   /** For effects that depend on time or distance between frames. */
   private last = { time: 0, x: 0, z: 0, zone: -1, plank: 0, squelch: 0 };
+  /** How far through its beat the helicopter's rotor is (ADR 0048), radians. */
+  private rotorBeat = 0;
 
   constructor(private readonly enabled: boolean) {}
 
@@ -411,6 +439,12 @@ export class DrivingSound {
     if (waves > 0) this.loops.waves ??= this.loop(ctx, EFFECTS.puddle, SET_PIECE_SOUNDS.waves.rate);
     this.loops.fountain?.gain.setTargetAtTime(fountain, t, 0.2);
     this.loops.waves?.gain.setTargetAtTime(waves * (0.6 + 0.4 * Math.sin(world.time * SET_PIECE_SOUNDS.waves.swell)), t, 0.3);
+    // A helicopter's rotor (ADR 0048): a low loop chopped into beats, faster as the rotor speeds up.
+    const rotor = rotorLoudness(world);
+    if (rotor > 0) this.loops.rotor ??= this.loop(ctx, ENGINES.bus.file, SET_PIECE_SOUNDS.rotor.rate);
+    const spin = Math.max(0, ...world.choppers.map((c) => c.rotor));
+    this.rotorBeat += dt * SET_PIECE_SOUNDS.rotor.chop * spin * Math.PI * 2;
+    this.loops.rotor?.gain.setTargetAtTime(rotor * (0.55 + 0.45 * Math.sin(this.rotorBeat)), t, 0.02);
 
     this.sand ??= this.startSand(ctx);
     const hiss = world.under.sand && kid.h === 0 ? 0.05 + 0.1 * Math.min(1, kid.speed / MAX_SPEED) : 0;
@@ -523,7 +557,7 @@ export class DrivingSound {
     this.siren = null;
     this.echo = null;
     this.sand = null;
-    this.loops = { fountain: null, waves: null };
+    this.loops = { fountain: null, waves: null, rotor: null };
     this.files.clear();
     this.loaded.clear();
   }

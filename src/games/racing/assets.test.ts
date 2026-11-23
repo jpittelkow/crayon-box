@@ -78,7 +78,7 @@ describe('the asset registry', () => {
     expect(CONFETTI_POOL / CONFETTI_BURST).toBeGreaterThanOrEqual(3);
   });
 
-  it('every zone kind is a registered set piece, and the new ones (ADR 0042) look within budget', () => {
+  it('every zone kind is a registered set piece, and the new ones (ADR 0042, 0048) look within budget', () => {
     const setPieces = CATEGORIES.find((c) => c.id === 'setpieces')!.assets;
     expect([...setPieces].sort()).toEqual(Object.values(SET_PIECES).sort());
     const at = (angle: number) => ({ road: 0, at: angle / (Math.PI * 2) });
@@ -108,6 +108,11 @@ describe('the asset registry', () => {
       - triangles(buildSetPieces(makeWorld(1, 0, 'free', { ...island, zones: island.zones!.filter((z) => z.kind !== 'harbour') })).group);
     expect(harbour, 'harbour').toBeGreaterThan(1000);
     expect(harbour, 'harbour').toBeLessThanOrEqual(15000);
+    // A helicopter pad (ADR 0048): the pad and its helicopter.
+    const padded: MapDef = { ...bare, zones: [{ kind: 'helipad', on: { x: 0, z: 0 }, r: 7 }] };
+    const helipad = triangles(buildSetPieces(makeWorld(1, 0, 'free', padded)).group) - empty;
+    expect(helipad, 'helipad').toBeGreaterThan(1000);
+    expect(helipad, 'helipad').toBeLessThanOrEqual(15000);
     // Mud off the wheels: one small pool.
     expect(MUD_POOL).toBeLessThanOrEqual(60);
   });

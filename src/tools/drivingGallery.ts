@@ -46,6 +46,7 @@ const PIECES: { kind: ZoneKind; x: number; z?: number; r: number; note: string }
   { kind: 'mud', x: -22, r: 6, note: 'slow, muddy, a squelch' },
   { kind: 'ford', x: -36, r: 5.5, note: 'splash, slow, wet' },
   { kind: 'harbour', x: -47, z: -2, r: 13, note: 'boats; a ship answers the horn' },
+  { kind: 'helipad', x: 30, z: 12, r: 7, note: 'lifts off as the kid comes' },
 ];
 const RING_AT = PIECES.find((p) => p.kind === 'roundabout')!;
 /** Where the road to the roundabout leaves the loop. */
@@ -77,7 +78,7 @@ const GALLERY: MapDef = {
   zones: !only || only === 'setpieces'
     ? PIECES.map((p) => ({
       kind: p.kind, r: p.r,
-      on: p.kind === 'roundabout' ? { x: p.x, z: p.z! } : onLoop(p.x, p.z ?? 28),
+      on: p.kind === 'roundabout' || p.kind === 'helipad' ? { x: p.x, z: p.z! } : onLoop(p.x, p.z ?? 28),
       // The harbour's last boat sails out to sea and back.
       ...(p.kind === 'harbour' ? { sail: [[-66, -12], [-80, -4], [-72, 8]] as [number, number][] } : {}),
     }))

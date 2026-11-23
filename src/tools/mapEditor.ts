@@ -68,7 +68,7 @@ const TOOLS: [Tool, string, string][] = [
   ['spawn', 'Start', 'Click a road: the kid\'s car starts there.'],
 ];
 const CLOSED: Partial<Record<Tool, boolean>> = { road: false, loop: true, land: true, stream: false, sand: true };
-const ZONE_KINDS: ZoneKind[] = ['ramp', 'car-wash', 'garage', 'mud', 'ford', 'lights', 'roundabout', 'harbour'];
+const ZONE_KINDS: ZoneKind[] = ['ramp', 'car-wash', 'garage', 'mud', 'ford', 'lights', 'roundabout', 'harbour', 'helipad'];
 
 /** What the editor can't make yet, shown beside it (and in recipes/maps.md). */
 const NOT_YET = [

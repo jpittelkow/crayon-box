@@ -35,4 +35,5 @@ the journal is append-only history. Newest entry is the place to pick up from.
   three.js and Babylon.js test, with water
 - [2026-11-15](2026-11-15.md): sound options, the milestone 3 plan for the driving game, driving to a spot (ADR 0031); letters research and plan (ADR 0037 proposed); words research and a draft ADR 0039
 - [2026-11-16](2026-11-16.md): the overnight build of to-do sections 2, 4 and 5, released as 0.9.0
+- [2026-11-23](2026-11-23.md): six more driving vehicles and a helicopter pad (ADR 0048)
 - [2026-11-21](2026-11-21.md): ideas for "make a thing" games; the Kitchen game designed (ADR 0044 proposed, kitchen-plan.md), mocked up and its pizza built; both games shown by default; 0.10.0 released; the cupcake and home tiles that are pictures (ADR 0047); 0.11.0 released

@@ -13,6 +13,7 @@ import { FORD_SPEED, buildStreams } from './ford';
 import { LOOKUP, thingsIn } from './grid';
 import { HARBOUR_HEARS, SHIP_HORN, harbourBoats, quayGuard, stepBoats, type Boat } from './harbour';
 import { LIGHTS_NEAR, lampFor, lightPosts, lightsJunction, stepLight, wayAt, wayOf, type Light, type Post } from './lights';
+import { chopper, stepChopper, type Chopper } from './helipad';
 import type { MapDef, OnRoad, ZoneKind } from './map';
 import { MUD_FLY, MUD_POOL, MUD_RINSE, MUD_SPEED, MUD_UP, MUD_WASH, MUD_WATER, zoneAt } from './mud';
 import { HOP_GRAVITY, groundHeight } from './ramps';
@@ -41,6 +42,13 @@ export const VEHICLE_FEEL: Record<VehicleKind, { top: number; push: number; wade
   garbage: { top: 13, push: 1.2, wade: 1 },
   icecream: { top: 13, push: 0.9, wade: 0 },
   race: { top: 19, push: 0.9, wade: 0 },
+  // Six more (ADR 0048). The roller is the heaviest of all; the quad bike is light, quick and splashes through.
+  forklift: { top: 12, push: 1.1, wade: 0 },
+  roller: { top: 12, push: 1.6, wade: 1 },
+  loader: { top: 13, push: 1.5, wade: 2 },
+  sweeper: { top: 13, push: 0.9, wade: 0 },
+  mail: { top: 17, push: 1, wade: 0 },
+  quad: { top: 18, push: 0.8, wade: 2 },
 };
 /** How fast a car goes through a car wash (milestone-3 B3): slow enough to see the brushes and the bubbles. */
 export const WASH_SPEED = 5;
@@ -88,7 +96,9 @@ export const CRUISE = 0, JOIN = 1, ALONG = 2, LEAVE = 3;
 /** The kinds of vehicle (ADR 0025). Each has its own size, look and engine sound. */
 export type VehicleKind = 'car' | 'police' | 'monster' | 'bus'
   // Milestone 3, phase D (ADR 0035).
-  | 'fire' | 'ambulance' | 'tow' | 'digger' | 'dump' | 'mixer' | 'tractor' | 'garbage' | 'icecream' | 'race';
+  | 'fire' | 'ambulance' | 'tow' | 'digger' | 'dump' | 'mixer' | 'tractor' | 'garbage' | 'icecream' | 'race'
+  // Six more (ADR 0048).
+  | 'forklift' | 'roller' | 'loader' | 'sweeper' | 'mail' | 'quad';
 
 /** Half the length and half the width of each kind, in metres, for bumping into things. */
 export const VEHICLE_SIZE: Record<VehicleKind, { half: number; side: number }> = {
@@ -106,6 +116,12 @@ export const VEHICLE_SIZE: Record<VehicleKind, { half: number; side: number }> =
   garbage: { half: 3.6, side: 1.25 },
   icecream: { half: 2.8, side: 1.12 },
   race: { half: 2.3, side: 1.0 },
+  forklift: { half: 2.0, side: 0.95 },
+  roller: { half: 2.5, side: 1.15 },
+  loader: { half: 3.2, side: 1.3 },
+  sweeper: { half: 2.6, side: 1.1 },
+  mail: { half: 2.6, side: 1.1 },
+  quad: { half: 1.5, side: 0.9 },
 };
 
 /** Points along a vehicle's middle, front to back, that together cover its length with circles of `side`. */
@@ -292,6 +308,8 @@ export interface World {
   lightChanges: { light: number; green: boolean }[];
   /** The harbours' boats (ADR 0042): moored along a quay, bobbing; one sails out now and then. */
   boats: Boat[];
+  /** The helicopters on the map's pads (ADR 0048): each lifts off while the kid's car is near its pad. */
+  choppers: Chopper[];
   /** Harbours whose ship's horn answered the kid's horn in the last step (zone indices), for the sounds. */
   shipHorns: number[];
   /** A ship's horn on its way (seconds until it sounds, and from which harbour), and seconds before it may again. */
@@ -369,7 +387,7 @@ export function makeWorld(
     waters: [], drops: [], dropNext: 0, ripples: [], rippleNext: 0, splashes: [],
     assist, rescue: 0, mark: { x: 0, z: 0, t: 0 }, goal: null, steer: 0,
     muds: [], mudNext: 0, streams: [], lights: [], posts: [], lightChanges: [],
-    boats: [], shipHorns: [], shipHorn: { in: -1, zone: -1, rest: 0 }, awake: [], awakeOf: null,
+    boats: [], choppers: [], shipHorns: [], shipHorn: { in: -1, zone: -1, rest: 0 }, awake: [], awakeOf: null,
   };
   for (const z of map.zones ?? []) {
     const p = 'road' in z.on ? pointAt(roads[z.on.road]!, along(w, z.on), z.on.offset ?? 0) : z.on;
@@ -384,6 +402,7 @@ export function makeWorld(
   });
   // Roundabouts know their ring; a harbour's quay is guarded on its sea side, with boats moored along it (ADR 0042).
   w.zones.forEach((zone, i) => {
+    if (zone.kind === 'helipad') w.choppers.push(chopper(i, zone.heading));
     if (zone.kind === 'roundabout') zone.ring = ringOf(zone, roads);
     if (zone.kind !== 'harbour') return;
     const quay = quayGuard(zone, roads, w.land);
@@ -466,7 +485,7 @@ export function makeWorld(
     if (!offRoad(x, z, trees.roadGap)) continue;
     if (w.waters.some((p) => Math.hypot(x - p.x, z - p.z) < p.r + trees.waterGap)) continue;
     if (onHill(x, z, 2) || onSand(w.sand, x, z)) continue;
-    if (w.zones.some((zone) => zone.kind === 'roundabout' && Math.hypot(x - zone.x, z - zone.z) < zone.r + 1)) continue;
+    if (w.zones.some((zone) => (zone.kind === 'roundabout' || zone.kind === 'helipad') && Math.hypot(x - zone.x, z - zone.z) < zone.r + 1)) continue;
     w.trees.push({ kind: pick(trees.kinds), x, z, scale: trees.scale[0] + rand(w) * trees.scale[1] });
   }
 
@@ -1579,6 +1598,7 @@ export function step(w: World, input: Input, dt: number): void {
   stepMud(w, dt);
   stepAnimals(w.animals, w.cars[0]!, w.honked, dt, () => rand(w), w.calls);
   stepHarbour(w, dt);
+  for (const c of w.choppers) stepChopper(c, Math.hypot(w.cars[0]!.x - w.zones[c.zone]!.x, w.cars[0]!.z - w.zones[c.zone]!.z), dt);
   w.honked = false;
   stepWater(w, dt);
   stepProps(w, dt);

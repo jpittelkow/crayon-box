@@ -41,7 +41,7 @@ Write down what happened, not what should have happened. One line per moment is 
 | A kid finding their own badge by photo or name | Names and photos are new (ADR 0018) | Badge design |
 | Driving: a kid who can't make the car go where they want, backs up by mistake, or rests a hand that moves it | The joystick is new (ADR 0036) | Joystick numbers, palm handling |
 | Driving: a picture that stutters or freezes, on the big maps or near traffic | The laptop's graphics are unmeasured; the game turns its picture down when slow | Map size, the look |
-| Driving: the picker (14 vehicles, 2 maps, colours) too busy; a siren too loud or scary | ADR 0035 | Picker layout, which vehicles are on |
+| Driving: the picker (20 vehicles on five pages, 2 maps, colours) too busy, or the last pages never found; a siren too loud or scary | ADR 0035 | Picker layout, which vehicles are on |
 | Curiosity about the lock in the corner | It should be ignored (ADR 0008) | Lock size and contrast |
 | Boredom: what the kids ask for that isn't there | Pages, colors, sounds | What to build next |
 
