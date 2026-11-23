@@ -19,10 +19,12 @@ the kids or the family's machines (CLAUDE.md).
   WSL (Ubuntu 26.04) the branch builds from scratch with no compiler warnings, and the smoke run passes against
   both the bare program and the AppImage: it starts, a fill lands, the finished picture is written, the sounds
   decode, the driving game opens.
-- **Not checked: the CI job on GitHub.** It has never run. Its runner is Ubuntu 22.04, where one package has a
-  different name than in WSL (`webkit2gtk-driver`); the first pull request shows whether it holds.
-- **The AppImage's size:** 96 MB without the sound plugins, 171 MB in WSL with every plugin that machine had
-  (including `gstreamer1.0-libav`). CI installs only the base and good sets, so its file should sit between.
+- **Checked on GitHub (2026-11-22, pull request #77):** the `linux-appimage` job passes on the Ubuntu 22.04 runner
+  in about five and a half minutes, with all seven smoke checks against the built AppImage (the app starts in
+  1.6 s, the driving game is ready in 3.9 s). The runner has no real graphics, touch or speakers, so it says
+  nothing about driving speed, touch, pen or sound heard: that is phase B.
+- **The AppImage's size:** 98 MB from CI, which installs only the base and good sound plugin sets. In WSL it was
+  96 MB without the sound plugins and 171 MB with every plugin that machine had (including `gstreamer1.0-libav`).
 - The trial's scripts are in `spikes/linux-trial/` (a record, like the other spikes).
 - **Unknown until the real laptop (phase B):** the driving game's speed, touch, pen, the microphone, sounds heard.
 

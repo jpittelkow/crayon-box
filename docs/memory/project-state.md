@@ -121,8 +121,8 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    phases A to F, the GitHub build and release work and the owner's choices L1 to L10 are in
    [linux-plan.md](../linux-plan.md). A trial build ran in WSL the same day (`spikes/linux-trial/`): it builds and
    runs. **Phase A is built** on the branch `linux/phase-a` (2026-11-21): the trial's faults fixed,
-   `src-tauri/tauri.linux.conf.json`, `tools/linux-smoke.mjs` and CI's `linux-appimage` job; checked in WSL, the
-   job not yet run on GitHub. Phase B is a gate on the real laptop (driving speed, touch) before anything past
+   `src-tauri/tauri.linux.conf.json`, `tools/linux-smoke.mjs` and CI's `linux-appimage` job; checked in WSL, and
+   the job passes on GitHub (pull request #77, 2026-11-22). Phase B is a gate on the real laptop (driving speed, touch) before anything past
    phase A.
 
 Built in this order (owner's decision, 2026-11-14). The racing game comes after the installer because it needs

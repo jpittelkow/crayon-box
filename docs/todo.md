@@ -106,7 +106,7 @@ the owner's choices L1 to L10. A trial build ran on 2026-11-21 (`spikes/linux-tr
 under WebKitGTK.
 - **Phase A is built** on the branch `linux/phase-a` (2026-11-21): the faults the trial found are fixed, the Linux
   bundle settings are in, and CI has a `linux-appimage` job with a smoke run beside `windows-installer`. Checked
-  in WSL; **the job has not run on GitHub yet**: the first pull request shows whether it holds there.
+  in WSL, and **the job passes on GitHub** (pull request #77, 2026-11-22: all seven smoke checks, a 98 MB AppImage).
 - **Phase B, the gate (next, the owner):** try the AppImage from that pull request's run on the real laptop: the
   driving game's speed, touch, pen, sound. Go or no-go for everything after it.
 - Then: what differs in the app (C), the kids' session and the Linux setup guide (D), releases and in-app updates
