@@ -11,14 +11,12 @@ loading a map from a folder), but more vehicles come first.
 ## 1. Look, listen and playtest what was built overnight
 Nothing built on 2026-11-16 has been heard, seen on the laptop or played by a kid. The owner's choices it raised
 are in [open questions](memory/open-questions.md).
-- **A draft of 0.12.0 waits to be published** (built 2026-11-23: six more driving vehicles and a helicopter pad,
-  [ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)). Install the draft's installer on the
-  laptop, run the [release checklist](release-checklist.md), then publish it on GitHub; until then no installed
-  copy is offered it.
-- **Releases 0.10.0 and 0.11.0 are published** (both 2026-11-21. 0.10.0: Kitchen, and Letters and Kitchen shown
-  by default. 0.11.0: Kitchen's cupcake and start screen, and home tiles that are pictures of the games).
-  Installed copies offer 0.11.0 at their next check. The [release checklist](release-checklist.md)'s hand checks
-  were not run for either: do them on the laptop as it updates (the update itself, the kiosk lock, files), and
+- **Releases 0.10.0, 0.11.0 and 0.12.0 are published** (0.10.0 and 0.11.0 on 2026-11-21, 0.12.0 on 2026-11-23.
+  0.10.0: Kitchen, and Letters and Kitchen shown by default. 0.11.0: Kitchen's cupcake and start screen, and home
+  tiles that are pictures of the games. 0.12.0: six more driving vehicles and a helicopter pad,
+  [ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)).
+  Installed copies offer 0.12.0 at their next check. The [release checklist](release-checklist.md)'s hand checks
+  were not run for any of them: do them on the laptop as it updates (the update itself, the kiosk lock, files), and
   listen to Kitchen's narrator lines. A parent can hide Kitchen under Settings, Games if it isn't ready for the
   kids.
 - **Release 0.9.0** (coloring buttons and wheel; letters sound, tips, how-to and shapes; writing words; driving
@@ -45,8 +43,8 @@ are in [open questions](memory/open-questions.md).
 
 ## 3. Driving: more vehicles
 - **Six more are built** (2026-11-23, the owner's picks, [ADR 0048](adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)):
-  forklift, road roller, loader, street sweeper, mail van, quad bike; and a helicopter pad on the island. In
-  the 0.12.0 draft (PR #79).
+  forklift, road roller, loader, street sweeper, mail van, quad bike; and a helicopter pad on the island.
+  Released in 0.12.0 (PR #79).
 - **Ideas not picked** (for a later round): crane, taxi, camper van, a big lorry (may be too long for the island's
   bends). A twenty-first vehicle needs the swap tray to page first: twenty fill it.
 - **Steering feel** (optional, from [milestone-3.md](milestone-3.md)): a steering wheel shown on screen and a

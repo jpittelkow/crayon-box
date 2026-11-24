@@ -5,13 +5,11 @@ _Last updated: 2026-11-23_
 **What is next:** the ordered [to-do list](../todo.md) (agreed with the owner 2026-11-15, brought up to date 2026-11-16).
 
 ## Phase
-**A draft of 0.12.0 is built, not published** (2026-11-23, tag `v0.12.0`): six more driving vehicles and a
-helicopter pad on the island (ADR 0048, PR #79). Installed copies are not offered it until the owner publishes the
-draft on GitHub; the release checklist's hand checks were not run.
-**Latest published release: 0.11.0** (published 2026-11-21, on the owner's word, without the release checklist's hand
-checks): Kitchen's cupcake with a start screen to pick what to make, and home screen tiles that are pictures of
-the games (ADR 0047, PR #78). Not yet installed, heard or playtested.
-Before it: 0.10.0 (the same day and the same way: the Kitchen game with a pizza and speech, Letters and Kitchen
+**Latest release: 0.12.0** (published 2026-11-23, on the owner's word, without the release checklist's hand
+checks): six more driving vehicles and a helicopter pad on the island (ADR 0048, PR #79). Installed copies offer
+it at their next check. Not yet installed, heard or playtested.
+Before it: 0.11.0 (2026-11-21, the same way: Kitchen's cupcake with a start screen to pick what to make, and home
+screen tiles that are pictures of the games, ADR 0047, PR #78), 0.10.0 (the same day and the same way: the Kitchen game with a pizza and speech, Letters and Kitchen
 shown by default, ADR 0045, PR #76), 0.9.0 (2026-11-16, the overnight build of to-do sections 2, 4 and 5, PRs #59 to #74, none of it
 playtested yet), 0.8.1 (the Outside theme), 0.8.0, 0.7.0 (milestone 3).
 Milestone 1 (web app) in progress. `npm run dev` opens the kid picker. A kid starts a new picture from the page
@@ -64,7 +62,7 @@ committed (`e89cdd4`); CI has not run on GitHub yet (not pushed).
    draws on: targets ([ADR 0041](../adr/0041-driving-targets-to-collect-and-hit.md)), mud, ford, show-only lights,
    roundabout and harbour ([ADR 0042](../adr/0042-driving-more-set-pieces.md)), maps from a folder
    ([ADR 0043](../adr/0043-driving-maps-from-a-folder.md)), and the dev map editor and viewer. The map itself is
-   not started. **Built 2026-11-23, in the 0.12.0 draft:** six more vehicles the
+   not started. **Built 2026-11-23, released in 0.12.0:** six more vehicles the
    owner picked (forklift, road roller, loader, street sweeper, mail van, quad bike; twenty in all) and a helicopter
    pad on the island ([ADR 0048](../adr/0048-driving-six-more-vehicles-and-a-helicopter-pad.md)).
 5. **Home map** (asked by the owner 2026-11-14, its own milestone, after the driving game's MVP): a driving map
