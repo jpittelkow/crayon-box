@@ -194,6 +194,11 @@ Built in this order (owner's decision, 2026-11-14). The racing game comes after 
 - Sounds (ADR 0032): every sound is a file in `assets/sounds/` (`sounds.json` lists each one's source and
   license), loaded through `src/shell/soundFiles.ts`. `tools/sounds/` remakes them: `generate.mjs` (AI clips, run
   inside the sync container) and `prepare.mjs` (trim, level, cut loops; needs ffmpeg) from `picks.json`.
+- **The narrator's voice ends on 2026-12-31** (ElevenLabs retires Matilda,
+  [ADR 0032](../adr/0032-sounds-as-files.md)). Shipped clips keep working. A new or redone line has to be made
+  before then; after it, a line is made in her stand-in (Maisie) or the whole set is remade in a new voice, which
+  is the owner's choice and not made yet. Before building anything that speaks, check its lines exist (last
+  confirmed 2026-11-23: every planned line for letters, words, coloring and Kitchen is shipped).
 - `pages/`: three original CC0 placeholder pages in the ADR 0005 format.
 
 ## Milestone 1: remaining phases (agreed with the owner 2026-11-14)
