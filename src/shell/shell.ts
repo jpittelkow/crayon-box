@@ -31,6 +31,8 @@ export class Shell {
     private readonly platform: {
       finished?: FinishedPictures;
       pagesFolder?: PagesFolder;
+      /** True in the app when the account has no Pictures folder (ADR 0046); the parent area says so. */
+      noPicturesFolder?: boolean;
       mapsFolder?: MapsFolder;
       updates?: UpdateController;
       kiosk?: KioskControl;
@@ -192,6 +194,7 @@ export class Shell {
       games: this.games,
       finished: this.platform.finished,
       pagesFolder: this.platform.pagesFolder,
+      noPicturesFolder: this.platform.noPicturesFolder,
       mapsFolder: this.platform.mapsFolder,
       updates: this.platform.updates,
       kiosk: this.platform.kiosk,

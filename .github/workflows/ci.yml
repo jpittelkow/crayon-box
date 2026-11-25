@@ -62,3 +62,54 @@ jobs:
           name: cargo-lock
           path: src-tauri/Cargo.lock
           retention-days: 14
+
+  # ADR 0046, linux-plan.md phase A: the Linux twin of the job above. The AppImage is unsigned and not a release:
+  # take it from the run's artifacts to try a change on a Linux machine. Built on the oldest runner that has
+  # WebKitGTK 4.1, so it also runs on older systems.
+  linux-appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      # Tauri's documented packages for a Linux build; `patchelf` and the GStreamer plugins, which the AppImage
+      # carries so the shipped sounds play on a bare system (`bundleMediaFramework`); then, for the smoke run, a
+      # headless display and WebKit's WebDriver.
+      - name: System packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends \
+            libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev \
+            libayatana-appindicator3-dev librsvg2-dev \
+            patchelf gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            xvfb xauth dbus-x11 webkit2gtk-driver
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      # The same Rust tests as on Windows; here they also prove the kiosk module compiles without its hook.
+      - run: |
+          mkdir -p dist
+          cargo test --manifest-path src-tauri/Cargo.toml
+      - run: npx tauri build --bundles appimage
+      # The AppImage itself under WebKitGTK, on a headless display: it starts, a fill lands, the finished picture
+      # reaches the Pictures folder, the sounds decode, the driving game opens (tools/linux-smoke.mjs).
+      - name: Smoke run
+        run: |
+          export APP="$(ls src-tauri/target/release/bundle/appimage/*.AppImage)"
+          dbus-run-session -- xvfb-run -a -s "-screen 0 1920x1080x24" node tools/linux-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: linux-smoke
+          path: test-results/linux-smoke/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crayon-box-appimage
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 14

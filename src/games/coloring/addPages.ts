@@ -323,6 +323,13 @@ export async function renderAddPages(el: HTMLElement, ctx: ParentSectionContext)
         h('div', { class: 'pw-row' }, button('Open the Pages folder', () => void folder.openFolder().catch((err) => console.error(err)))),
       ),
     );
+  } else if (ctx.noPicturesFolder) {
+    el.append(
+      card(
+        h('h2', {}, 'The Pages folder'),
+        h('p', { class: 'pw-muted', 'data-no-pictures-folder': '' }, 'This account has no Pictures folder, so there is no Pages folder to put files in. Choose a file above instead.'),
+      ),
+    );
   }
 }
 

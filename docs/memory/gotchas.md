@@ -166,3 +166,25 @@ _Last updated: 2026-11-23_
   filled in, and screenshot that with the repo's Playwright (imported by file URL). The Browser pane shows a local
   file outside the project only as a snapshot its tools can't read. Stay clear of `clipPath`, `mask` and `<use>` in
   artboards: none of the canvas's boards use them, so they are untried there (2026-11-21).
+- **Linux (found in the trial build, 2026-11-21; ADR 0046):**
+  - On Linux the fs plugin's scope does not match names that start with a dot, so `$PICTURE/Coloring Book/**`
+    refuses `.<name>.tmp` ("forbidden path") while Windows allows it. Keep temp names free of a leading dot
+    (`finishedTempName` in `tauriFiles.ts`, fixed in phase A).
+  - `$PICTURE` only resolves when the account has its standard folders (`~/.config/user-dirs.dirs`); without them
+    there is no Pictures folder. The app checks at start (`picturesFolderFound`) and the parent area says so.
+  - Off Windows the key rules in `kiosk.rs` are unused, and Ubuntu's rustc 1.93.1 crashed while printing those
+    warnings (the file's line ends made no difference). `main.rs` allows dead code on the module off Windows.
+  - An AppImage with `bundleMediaFramework` needs `patchelf` on the build machine, or the packager stops with
+    only "failed to run linuxdeploy" (`--verbose` shows why). On a new distro it also needs `NO_STRIP=true`. The
+    file carries every GStreamer plugin the build machine has: 96 MB without, 171 MB with `gstreamer1.0-libav`.
+  - `tools/linux-smoke.mjs` drives the built app (or the AppImage, `APP=`) and is what CI's `linux-appimage` job
+    runs. A fix for a Linux-only fault gets a check there: the browser tests run on Chromium and can't see it.
+  - WebKitGTK has no `speechSynthesis` and can't encode WebP from a canvas; WebGL reports "Apple GPU" on every
+    machine, so the page can't tell real graphics from software drawing.
+  - WebKit's WebDriver grants the microphone by itself, so a driven run says nothing about recording in a normal
+    run, where nothing answers the permission request yet.
+  - The app can be driven on Linux without `tauri-driver`: `WebKitWebDriver` with `webkitgtk:browserOptions` and
+    `TAURI_WEBVIEW_AUTOMATION=true` (`spikes/linux-trial/probe.mjs`). Run it on `xvfb` with `WAYLAND_DISPLAY`
+    unset: under WSL the app would otherwise open full screen on the Windows desktop and ignore close requests.
+  - Scripts run in WSL from Git Bash: put them in a file and give WSL a Linux-only `PATH`. Piped in, a Windows
+    `npm` on WSL's `PATH` reads the rest of the script as its input.

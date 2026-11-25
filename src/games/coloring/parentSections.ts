@@ -104,7 +104,9 @@ export async function renderPictures(el: HTMLElement, ctx: ParentSectionContext)
       { class: 'pw-muted' },
       ctx.finished
         ? 'Restore brings back how a picture looked before it was last opened; restoring again swaps back. A copy of each picture, with its lines, is kept in Pictures, Coloring Book, Art, in one folder per kid.'
-        : 'Restore brings back how a picture looked before it was last opened; restoring again swaps back. In this web version, pictures live in this browser only.',
+        : ctx.noPicturesFolder
+          ? 'Restore brings back how a picture looked before it was last opened; restoring again swaps back. This account has no Pictures folder, so pictures are kept in the app only, with no copies for you to find.'
+          : 'Restore brings back how a picture looked before it was last opened; restoring again swaps back. In this web version, pictures live in this browser only.',
     ),
     ...(ctx.finished ? [h('div', { class: 'pw-row' }, button('Open the pictures folder', () => void ctx.finished?.openFolder().catch((err) => console.error(err))))] : []),
     list,

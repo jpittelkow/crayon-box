@@ -51,6 +51,7 @@ A Proposed ADR may still be edited; an Accepted one is changed only by a new ADR
 | [0043](0043-driving-maps-from-a-folder.md) | Driving game: maps loaded from a folder on the device, checked as they load | Accepted |
 | [0044](0044-kitchen-make-it-game-pizza-first.md) | Kitchen: a game for making things step by step, pizza first | Proposed |
 | [0045](0045-every-game-shows-by-default.md) | Every game shows on the home screen by default | Accepted |
+| [0046](0046-linux-version.md) | A Linux version: the same Tauri shell, an AppImage, and a kids' session that is only the app | Proposed |
 | [0047](0047-home-tiles-are-pictures-of-the-games.md) | Home screen tiles are little pictures of the games, on bigger tiles | Accepted |
 | [0048](0048-driving-six-more-vehicles-and-a-helicopter-pad.md) | Driving game: six more vehicles and a helicopter pad | Accepted |
 
